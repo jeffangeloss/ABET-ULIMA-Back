@@ -1,0 +1,2029 @@
+{
+ "carrera": "Ingeniería Ambiental",
+ "so": [
+  {
+   "numero": 1,
+   "descripcion": "Habilidad para identificar, formular y resolver problemas de ingeniería complejos al aplicar los principios de ingeniería, ciencias y matemáticas."
+  },
+  {
+   "numero": 2,
+   "descripcion": "Habilidad para aplicar diseños de ingeniería para producir soluciones que cumplan necesidades específicas según la salud pública, la seguridad y el bienestar, así como los factores globales,"
+  },
+  {
+   "numero": 3,
+   "descripcion": "Habilidad para comunicarse efectivamente con una variedad de audiencias."
+  },
+  {
+   "numero": 4,
+   "descripcion": "Habilidad para reconocer responsabilidades éticas y profesionales en situaciones de ingeniería y realizar juicios informados, los cuales deben considerar el impacto de soluciones de ingeniería en contextos globales, económicos, ambientales y sociales."
+  },
+  {
+   "numero": 5,
+   "descripcion": "Habilidad para trabajar efectivamente en un equipo cuyos miembros provean liderazgo, la creación de un ambiente colaborativo e inclusivo, de modo que se establezcan metas, planifiquen tareas y tracen objetivos."
+  },
+  {
+   "numero": 6,
+   "descripcion": "Habilidad para desarrollar y realizar experimentos apropiados, analizar e interpretar la data y usar juicios ingenieriles para obtener conclusiones."
+  },
+  {
+   "numero": 7,
+   "descripcion": "Habilidad para adquirir y aplicar nuevos conocimientos según sean necesarios al usar apropiadas estrategias de aprendizaje."
+  }
+ ],
+ "pi": [
+  {
+   "codigo": "1.1",
+   "so": 1,
+   "valor_en_excel": 1.1,
+   "descripcion": "1.1 Identifica problemas complejos de ingeniería",
+   "niveles": {
+    "-1": "Presenta una identificación incorrecta del problema de ingeniería, sin distinguir con claridad la brecha técnica a resolver.",
+    "1": "Describe de forma incompleta la situación técnica del sistema; no distingue con claridad la brecha técnica que debe resolverse.",
+    "2": "Identifica el problema mediante una descripción cualitativa de la situación técnica del sistema en el contexto del proyecto.",
+    "3": "Identifica el problema estableciendo la brecha técnica del sistema; diferencia el desempeño actual del desempeño esperado.",
+    "4": "Identifica el problema mediante un análisis cuantitativo de la brecha técnica del sistema; expresa la diferencia entre el desempeño actual y el requerido mediante variables medibles.",
+    "5": "Identifica el problema complejo mediante un análisis cuantitativo y cualitativo de la brecha técnica y de su impacto en el sistema; reconoce variables relevantes, distingue su incidencia y establece criterios para priorizarlas aplicando principios de ingeniería, ciencias y matemáticas."
+   }
+  },
+  {
+   "codigo": "1.2",
+   "so": 1,
+   "valor_en_excel": 1.2,
+   "descripcion": "1.2 Formula soluciones de problemas complejos aplicando principios de ingeniería, ciencias y matemáticas",
+   "niveles": {
+    "-1": "Formula una solución de manera incorrecta.",
+    "1": "Formula soluciones generales con sustento limitado, sin representar de manera clara variables, relaciones o supuestos del sistema.",
+    "2": "Formula una solución utilizando relaciones, ecuaciones o modelos proporcionados en la actividad o proyecto.",
+    "3": "Formula una solución mediante un modelo básico aplicando principios de ingeniería, ciencias y matemáticas; representa variables principales y relaciones básicas del sistema.",
+    "4": "Formula soluciones mediante modelos coherentes; establece indicadores verificables considerando supuestos y restricciones y aplicando principios de ingeniería, ciencias y matemáticas.",
+    "5": "Formula soluciones integrando modelos, variables, supuestos y restricciones del sistema; fundamenta técnicamente la propuesta y justifica los indicadores establecidos aplicando principios de ingeniería, ciencias y matemáticas."
+   }
+  },
+  {
+   "codigo": "1.3",
+   "so": 1,
+   "valor_en_excel": 1.3,
+   "descripcion": "1.3 Resuelve problemas complejos de ingeniería aplicando principios de ingeniería, ciencias y matemáticas",
+   "niveles": {
+    "-1": "No desarrolla una solución del problema de ingeniería.",
+    "1": "Presenta un intento de resolución, pero evidencia errores en la selección o ejecución de los procedimientos utilizados.",
+    "2": "Resuelve el problema utilizando procedimientos o métodos proporcionados en la actividad.",
+    "3": "Resuelve parcialmente el problema aplicando algunos principios de ingeniería, ciencias o matemáticas.",
+    "4": "Resuelve el problema verificando resultados y analizando limitaciones de la solución propuesta en un escenario real aplicando principios de ingeniería, ciencias y matemáticas.",
+    "5": "Resuelve el problema validando la aplicabilidad de la solución en un escenario real y complejo, justificando decisiones técnicas y comparando alternativas o ajustes cuando corresponde, aplicando principios de ingeniería, ciencias y matemáticas."
+   }
+  },
+  {
+   "codigo": "2.1",
+   "so": 2,
+   "valor_en_excel": 2.1,
+   "descripcion": "2.1 Desarrolla la ingeniería conceptual de una solución considerando necesidades específicas, criterios técnicos y factores contextuales",
+   "niveles": {
+    "-1": "No reconoce ni comprende herramientas de ingeniería pertinentes para plantear una solución de diseño.",
+    "1": "Reconoce algunas herramientas o enfoques de diseño, pero no logra aplicarlos a la necesidad planteada.",
+    "2": "Propone una solución conceptual utilizando herramientas de ingeniería pertinentes, aunque sin articular de manera consistente la necesidad, los criterios técnicos y la configuración del diseño.",
+    "3": "Integra herramientas de ingeniería pertinentes para plantear un diseño conceptual coherente con la necesidad identificada, explicando de manera básica por qué la solución propuesta debería funcionar.",
+    "4": "Desarrolla la ingeniería conceptual de la solución considerando necesidades específicas, criterios técnicos, restricciones, normas técnicas, estándares de diseño y factores contextuales; integra consideraciones de salud pública, seguridad y bienestar para justificar por qué la solución debería funcionar.",
+    "5": "Desarrolla una ingeniería conceptual sólida integrando necesidades, criterios técnicos, restricciones, normas técnicas, estándares de diseño y factores contextuales; sustenta la solución mediante principios de ingeniería e integra de manera consistente consideraciones de salud pública, seguridad, bienestar y factores globales, culturales, sociales, ambientales y económicos, anticipando implicancias para su implementación y desempeño."
+   }
+  },
+  {
+   "codigo": "2.2",
+   "so": 2,
+   "valor_en_excel": 2.2,
+   "descripcion": "2.2 Desarrolla la ingeniería de detalle de la solución mediante entregables técnicos coherentes con el diseño conceptual",
+   "niveles": {
+    "-1": "No reconoce ni desarrolla entregables técnicos pertinentes para detallar la solución propuesta.",
+    "1": "Reconoce algunos entregables técnicos pertinentes, pero los presenta de forma incompleta o sin relación clara con el diseño conceptual de la solución.",
+    "2": "Elabora entregables técnicos básicos coherentes con el diseño conceptual de la solución; sin embargo, los presenta como elementos aislados y aún no reconoce con claridad la relación entre ellos.",
+    "3": "Desarrolla entregables técnicos coherentes con el diseño conceptual y reconoce la relación entre ellos para comprender la estructura, el funcionamiento o la implementación básica de la solución.",
+    "4": "Desarrolla la ingeniería de detalle mediante entregables técnicos articulados entre sí y consistentes con el diseño conceptual, los criterios de diseño y las restricciones; incorpora consideraciones de salud pública, seguridad y bienestar en la definición técnica de la solución, basándose en normas técnicas, estándares de diseño de ingeniería y condiciones de implementación.",
+    "5": "Desarrolla la ingeniería de detalle mediante entregables técnicos articulados entre sí y coherentes con el diseño conceptual, los criterios de diseño y las restricciones; integra de manera explícita consideraciones de salud pública, seguridad, bienestar y factores globales, culturales, sociales, ambientales y económicos en la definición técnica de la solución, basándose en normas técnicas, estándares de diseño de ingeniería y condiciones de implementación, y sustentando su implementación, evaluación o mejora."
+   }
+  },
+  {
+   "codigo": "3.1",
+   "so": 3,
+   "valor_en_excel": 3.1,
+   "descripcion": "3.1 Estructura el mensaje técnico de acuerdo con la audiencia y el propósito comunicativo",
+   "niveles": {
+    "-1": "Presenta un mensaje desorganizado o incomprensible; no se identifica con claridad una idea principal ni guarda relación con el propósito comunicativo o la audiencia.",
+    "1": "Presenta una idea principal de forma general, pero sin organización clara ni ideas secundarias que la desarrollen; no emplea lenguaje técnico pertinente.",
+    "2": "Presenta una idea principal reconocible y algunas ideas secundarias relacionadas, con claridad parcial; emplea algunos términos técnicos, aunque con uso limitado o poco preciso.",
+    "3": "Estructura el mensaje con una idea principal clara y ideas secundarias que la desarrollan de manera coherente; emplea lenguaje técnico pertinente y responde de manera adecuada al propósito comunicativo.",
+    "4": "Estructura el mensaje con efectividad mediante una idea principal claramente definida y ideas secundarias que la explican o sustentan; adapta el lenguaje técnico, los ejemplos y el nivel de detalle según la audiencia y el propósito comunicativo.",
+    "5": "Estructura el mensaje mediante una idea principal sólida y ideas secundarias jerarquizadas que la desarrollan, sustentan o amplían; selecciona y adapta el lenguaje técnico según la audiencia, el propósito comunicativo y la comprensión evidenciada."
+   }
+  },
+  {
+   "codigo": "3.2",
+   "so": 3,
+   "valor_en_excel": 3.2,
+   "descripcion": "3.2 Emplea herramientas y recursos de comunicación de manera pertinente para apoyar la comprensión del mensaje",
+   "niveles": {
+    "-1": "No emplea herramientas o recursos de apoyo, o los utiliza de forma que dificultan la comprensión del mensaje.",
+    "1": "Emplea herramientas o recursos de manera limitada, con escasa relación con el mensaje o el propósito comunicativo.",
+    "2": "Emplea herramientas o recursos básicos acordes al mensaje, aunque con aporte parcial a su comprensión.",
+    "3": "Emplea herramientas y recursos pertinentes que apoyan la comprensión del mensaje y guardan relación con el propósito comunicativo.",
+    "4": "Emplea herramientas y recursos apropiados según la audiencia y el propósito comunicativo, reforzando la claridad y comprensión del mensaje.",
+    "5": "Selecciona y emplea herramientas y recursos de comunicación para distintos tipos de audiencia; ajusta su uso según retroalimentación o evidencias de comprensión del mensaje."
+   }
+  },
+  {
+   "codigo": "4.1",
+   "so": 4,
+   "valor_en_excel": 4.1,
+   "descripcion": "4.1 Aplica responsabilidades éticas y profesionales en una situación de ingeniería",
+   "niveles": {
+    "-1": "Presenta un tratamiento insuficiente de normas, códigos o criterios éticos; omite, distorsiona o presenta como válida información no verificable o falsa en el trabajo académico analizado.",
+    "1": "Menciona normas, códigos o criterios éticos de forma general, sin vincularlos claramente con el trabajo académico desarrollado.",
+    "2": "Identifica normas, códigos o criterios éticos pertinentes al trabajo académico y los incorpora como referencia básica para orientar su análisis.",
+    "3": "Aplica normas, códigos y responsabilidades profesionales pertinentes para sustentar decisiones o actuaciones en la situación de ingeniería analizada.",
+    "4": "Sustenta decisiones de ingeniería integrando normas, códigos y responsabilidades profesionales de manera consistente y técnicamente pertinente.",
+    "5": "Integra normas, códigos y responsabilidades profesionales para justificar decisiones de ingeniería, explicando sus implicancias técnicas, éticas, sociales y académicas."
+   }
+  },
+  {
+   "codigo": "4.2",
+   "so": 4,
+   "valor_en_excel": 4.2,
+   "descripcion": "4.2 Justifica un juicio informado sobre una solución o decisión de ingeniería",
+   "niveles": {
+    "-1": "Presenta una valoración insuficiente de la situación; omite, distorsiona o sustenta su posición con información no verificable o presentada falsamente como válida.",
+    "1": "Expresa una opinión general sobre la solución o decisión de ingeniería, con sustento limitado o poco pertinente en el trabajo académico.",
+    "2": "Identifica información relevante y formula un juicio básico sobre la solución o decisión de ingeniería, con apoyo guiado.",
+    "3": "Emite un juicio informado sobre la solución o decisión de ingeniería, sustentándolo con información pertinente y criterios básicos de análisis.",
+    "4": "Justifica su juicio considerando evidencia, criterios técnicos y consecuencias relevantes de la solución o decisión de ingeniería.",
+    "5": "Justifica su juicio comparando alternativas o implicancias de la decisión, sustentando su posición con evidencia y criterios técnicos y éticos pertinentes."
+   }
+  },
+  {
+   "codigo": "4.3",
+   "so": 4,
+   "valor_en_excel": 4.3,
+   "descripcion": "4.3 Valora el impacto de las soluciones de ingeniería en contextos globales, económicos, ambientales y sociales",
+   "niveles": {
+    "-1": "Presenta una valoración insuficiente de los impactos de la solución de ingeniería; omite, minimiza o distorsiona información relevante sobre dimensiones del contexto.",
+    "1": "Menciona de forma general posibles impactos de la solución de ingeniería, sin diferenciarlos claramente por contexto en el trabajo académico.",
+    "2": "Identifica impactos de la solución de ingeniería en al menos una dimensión contextual relevante, con sustento guiado.",
+    "3": "Valora impactos de la solución de ingeniería en contextos globales, económicos, ambientales y sociales, con sustento básico.",
+    "4": "Valora impactos a corto y mediano plazo en contextos globales, económicos, ambientales y sociales, y justifica su análisis con información pertinente, evidencia o criterios técnicos.",
+    "5": "Valora impactos de corto y largo plazo en contextos globales, económicos, ambientales y sociales; compara implicancias y sustenta su posición con criterios técnicos, éticos y evidencia relevante."
+   }
+  },
+  {
+   "codigo": "5.1",
+   "so": 5,
+   "valor_en_excel": 5.1,
+   "descripcion": "5.1 Contribuye al cumplimiento de tareas y metas del equipo",
+   "niveles": {
+    "-1": "No asume tareas ni contribuye al avance del equipo.",
+    "1": "Asume tareas de forma limitada y las cumple parcialmente o fuera de plazo.",
+    "2": "Asume tareas asignadas, y las cumple requiriendo apoyo del equipo.",
+    "3": "Cumple sus tareas con calidad y puntualidad; contribuye al logro de metas comunes limitandose a su rol.",
+    "4": "Cumple sus tareas de manera autónoma; contribuye al logro eficiente de las metas comunes y responde a necesidades del equipo relacionadas con su trabajo.",
+    "5": "Cumple sus tareas de manera autónoma; anticipa necesidades del trabajo del equipo, apoya el cumplimiento de tareas más allá de su rol y contribuye al logro eficiente de las metas comunes"
+   }
+  },
+  {
+   "codigo": "5.2",
+   "so": 5,
+   "valor_en_excel": 5.2,
+   "descripcion": "5.2 Participa en la planificación y organización del trabajo para el logro de objetivos",
+   "niveles": {
+    "-1": "No participa en la organización ni planificación del trabajo del equipo.",
+    "1": "Participa de forma limitada en la organización de tareas sin aportar al proceso.",
+    "2": "Participa en la planificación básica del trabajo y en la organización de tareas asignadas.",
+    "3": "Contribuye activamente a la planificación, organización y seguimiento del trabajo del equipo.",
+    "4": "Organiza tareas, da seguimiento al avance y contribuye al cumplimiento de los objetivos del equipo.",
+    "5": "Planifica estratégicamente el trabajo, propone ajustes oportunos y contribuye al logro sostenido de los objetivos del equipo."
+   }
+  },
+  {
+   "codigo": "5.3",
+   "so": 5,
+   "valor_en_excel": 5.3,
+   "descripcion": "5.3 Favorece un entorno colaborativo e inclusivo y ejerce liderazgo compartido cuando corresponde",
+   "niveles": {
+    "-1": "No favorece la colaboración ni la integración del equipo.",
+    "1": "Escucha opiniones con dificultad para incorporarlas al trabajo del equipo.",
+    "2": "Escucha y acepta sugerencias; participa en el trabajo colaborativo del equipo.",
+    "3": "Favorece la cooperación e integración del equipo respetando la participación de sus integrantes.",
+    "4": "Facilita la colaboración, integra aportes diversos y apoya la toma de decisiones del equipo.",
+    "5": "Promueve activamente un entorno inclusivo, gestiona desacuerdos cuando corresponde y ejerce liderazgo compartido para el logro de los objetivos del equipo."
+   }
+  },
+  {
+   "codigo": "6.1",
+   "so": 6,
+   "valor_en_excel": 6.1,
+   "descripcion": "6.1 Desarrollo de experimentos",
+   "niveles": {
+    "-1": "No ejecuta el experimento o no sigue los procedimientos básicos establecidos; el registro no permite identificar variables, método ni condiciones de ejecución.",
+    "1": "Ejecuta experimentos de forma básica, sin identificar variables relevantes ni justificar el procedimiento empleado.",
+    "2": "Ejecuta experimentos siguiendo los procedimientos y métodos establecidos; identifica algunas variables relevantes del proceso.",
+    "3": "Desarrolla y ejecuta experimentos identificando variables, materiales y condiciones de trabajo; aplica los procedimientos establecidos y resuelve, con criterio técnico, dificultades operativas o desviaciones simples surgidas durante la ejecución.",
+    "4": "Desarrolla y ejecuta experimentos considerando variables, controles y condiciones relevantes; resuelve dificultades operativas determinantes para el logro del objetivo experimental mediante ajustes técnicamente pertinentes.",
+    "5": "Diseña, planifica y desarrolla experimentos de forma sistemática; integra variables, controles, condiciones y criterios de ejecución, y anticipa resultados o comportamientos esperados con base en el diseño experimental."
+   }
+  },
+  {
+   "codigo": "6.2",
+   "so": 6,
+   "valor_en_excel": 6.2,
+   "descripcion": "6.2 Interpreta datos experimentales y concluye sobre el resultado del experimento",
+   "niveles": {
+    "-1": "No reconoce la relación entre los datos obtenidos y el resultado del experimento.",
+    "1": "Describe o presenta los datos obtenidos, pero no los analiza ni formula conclusiones sustentadas en ellos.",
+    "2": "Analiza los datos obtenidos en relación con el experimento, pero no los interpreta para sustentar conclusiones.",
+    "3": "Interpreta los resultados utilizando conceptos básicos del experimento y formula conclusiones coherentes con los datos obtenidos.",
+    "4": "Interpreta los resultados considerando variaciones, tendencias y relaciones entre variables; sustenta las conclusiones con criterios técnicos y evidencia experimental.",
+    "5": "Interpreta y proyecta los resultados utilizando juicios ingenieriles; sustenta conclusiones con evidencia experimental, criterios técnicos y, cuando corresponde, modelos o relaciones cuantitativas para explicar el comportamiento observado."
+   }
+  },
+  {
+   "codigo": "7.1",
+   "so": 7,
+   "valor_en_excel": 7.1,
+   "descripcion": "7.1 Adquiere nuevos conocimientos",
+   "niveles": {
+    "-1": "No se evidencia adquisición de conceptos o información técnica, a pesar de que se proporcionan fuentes para la actividad y se solicita su uso.",
+    "1": "Intenta adquirir conceptos o información técnica a partir de las fuentes proporcionadas, pero presenta errores en la identificación, interpretación o registro de la información contenida en dichas fuentes.",
+    "2": "Adquiere conceptos o información técnica pertinentes al tema del proyecto mediante la consulta de las fuentes proporcionadas en la actividad cuando se solicita explícitamente su uso.",
+    "3": "Adquiere nuevos conceptos o información técnica relacionados con el tema del proyecto mediante la consulta de fuentes adicionales identificadas por el estudiante, sin aplicar criterios explícitos de verificación de confiabilidad.",
+    "4": "Adquiere nuevos conceptos o información técnica pertinentes al tema del proyecto mediante la consulta de fuentes adicionales cuya confiabilidad verifica explícitamente utilizando criterios como autoría identificable, publicación académica o indexación en bases de datos reconocidas.",
+    "5": "Adquiere nuevos conceptos o información técnica pertinentes al tema del proyecto mediante la aplicación de una estrategia estructurada de búsqueda de información, que incluye definición de palabras clave, uso de bases de datos o repositorios especializados y criterios de selección de fuentes."
+   }
+  },
+  {
+   "codigo": "7.2",
+   "so": 7,
+   "valor_en_excel": 7.2,
+   "descripcion": "7.2 Aplica el nuevo conocimiento",
+   "niveles": {
+    "-1": "No se evidencia aplicación de conceptos o información técnica en el desarrollo del proyecto, a pesar de que se solicita su uso.",
+    "1": "Intenta aplicar conceptos o información técnica en el desarrollo del proyecto, pero presenta errores en su selección, interpretación o implementación.",
+    "2": "Aplica conceptos o información técnica proporcionados en las fuentes indicadas cuando se solicita su uso en el desarrollo del proyecto.",
+    "3": "Aplica nuevos conceptos o información técnica en una parte del desarrollo del proyecto, incorporándolos en procedimientos, cálculos, modelos o análisis relacionados con el problema abordado.",
+    "4": "Aplica nuevos conceptos o información técnica pertinentes al problema del proyecto mediante su incorporación explícita en el desarrollo de la solución, describiendo cómo estos conceptos influyen en el procedimiento o en las decisiones técnicas del trabajo.",
+    "5": "Aplica nuevos conceptos o información técnica pertinentes al problema del proyecto mediante su integración sistemática en el diseño, desarrollo o análisis de la solución, mostrando la relación entre dichos conceptos y las decisiones técnicas adoptadas."
+   }
+  }
+ ],
+ "competencias": [
+  {
+   "codigo": "G1",
+   "codigo_original": "G1",
+   "nombre": "Pensamiento sistémico",
+   "tipo": "Genérica",
+   "so": null
+  },
+  {
+   "codigo": "G2",
+   "codigo_original": "G2",
+   "nombre": "Solución de problemas",
+   "tipo": "Genérica",
+   "so": null
+  },
+  {
+   "codigo": "G3",
+   "codigo_original": "G3",
+   "nombre": "Comunicación efectiva",
+   "tipo": "Genérica",
+   "so": 3
+  },
+  {
+   "codigo": "G4",
+   "codigo_original": "G4",
+   "nombre": "Trabajo colaborativo",
+   "tipo": "Genérica",
+   "so": 5
+  },
+  {
+   "codigo": "G5",
+   "codigo_original": "G5",
+   "nombre": "Investigación",
+   "tipo": "Genérica",
+   "so": null
+  },
+  {
+   "codigo": "G6",
+   "codigo_original": "G6",
+   "nombre": "Autogestión del aprendizaje",
+   "tipo": "Genérica",
+   "so": 7
+  },
+  {
+   "codigo": "G7",
+   "codigo_original": "G7",
+   "nombre": "Pensamiento crítico",
+   "tipo": "Genérica",
+   "so": null
+  },
+  {
+   "codigo": "G8",
+   "codigo_original": "G8",
+   "nombre": "Comportamiento ético",
+   "tipo": "Genérica",
+   "so": 4
+  },
+  {
+   "codigo": "E1",
+   "codigo_original": "E1 ",
+   "nombre": "Solución de problemas complejos",
+   "tipo": "Específica",
+   "so": 1
+  },
+  {
+   "codigo": "E2",
+   "codigo_original": "E2",
+   "nombre": "Diseño de soluciones",
+   "tipo": "Específica",
+   "so": 2
+  },
+  {
+   "codigo": "E3",
+   "codigo_original": "E3",
+   "nombre": "Experimentación y análisis de datos",
+   "tipo": "Específica",
+   "so": 6
+  }
+ ],
+ "asignatura_so": [
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "codigo": "510003",
+   "so": 3,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "codigo": "510003",
+   "so": 5,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Procesos Psicológicos",
+   "nivel": 1,
+   "codigo": "510006",
+   "so": 4,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Ética Ciudadana",
+   "nivel": 1,
+   "codigo": "510007",
+   "so": 4,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Metodología de la Investigación",
+   "nivel": 1,
+   "codigo": "6508",
+   "so": 7,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "codigo": "6511",
+   "so": 3,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "codigo": "6511",
+   "so": 5,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Filosofía Aplicada",
+   "nivel": 2,
+   "codigo": "510010",
+   "so": 4,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Fundamentos de Economía",
+   "nivel": 2,
+   "codigo": "510015",
+   "so": 7,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Introducción al Comercio Internacional",
+   "nivel": 2,
+   "codigo": "510011",
+   "so": 4,
+   "instrumento": "-"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "codigo": "450001",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "codigo": "450001",
+   "so": 7,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Física I",
+   "nivel": 3,
+   "codigo": "560041",
+   "so": 6,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Química General",
+   "nivel": 3,
+   "codigo": "5643",
+   "so": 6,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Cálculo II",
+   "nivel": 3,
+   "codigo": "560042",
+   "so": 1,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "codigo": "450002",
+   "so": 4,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "codigo": "450002",
+   "so": 5,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Estadística y Probabilidad",
+   "nivel": 4,
+   "codigo": "560046",
+   "so": 3,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Biología Ambiental",
+   "nivel": 4,
+   "codigo": "450003",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Física II",
+   "nivel": 4,
+   "codigo": "560045",
+   "so": 6,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Química Ambiental",
+   "nivel": 4,
+   "codigo": "450004",
+   "so": 6,
+   "instrumento": "Portafolio"
+  },
+  {
+   "asignatura": "Cálculo III",
+   "nivel": 4,
+   "codigo": "450046",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "codigo": "450047",
+   "so": 6,
+   "instrumento": "Trabajo Integrador / Portafolio"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "codigo": "450047",
+   "so": 7,
+   "instrumento": "Trabajo Integrador / Portafolio"
+  },
+  {
+   "asignatura": "Derecho y Legislación Ambiental",
+   "nivel": 5,
+   "codigo": "450005",
+   "so": 4,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Cambio Climático",
+   "nivel": 5,
+   "codigo": "450006",
+   "so": 3,
+   "instrumento": "Exposición"
+  },
+  {
+   "asignatura": "Termodinámica",
+   "nivel": 5,
+   "codigo": "450007",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Ciencia del Suelo",
+   "nivel": 5,
+   "codigo": "450008",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Técnicas Instrumentales de Análisis",
+   "nivel": 5,
+   "codigo": "450009",
+   "so": 3,
+   "instrumento": "Exposición"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "codigo": "450010",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "codigo": "450010",
+   "so": 5,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Costeo de Proyectos Ambientales",
+   "nivel": 6,
+   "codigo": "450011",
+   "so": 5,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "codigo": "450012",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "codigo": "450012",
+   "so": 7,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Energías Renovables",
+   "nivel": 6,
+   "codigo": "450013",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "codigo": "450014",
+   "so": 7,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "codigo": "450014",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Microbiología Ambiental",
+   "nivel": 6,
+   "codigo": "450015",
+   "so": 6,
+   "instrumento": "Portafolio"
+  },
+  {
+   "asignatura": "Medio Ambiente y Sociedad",
+   "nivel": 7,
+   "codigo": "450016",
+   "so": 4,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Recursos Naturales y Ecosistemas",
+   "nivel": 7,
+   "codigo": "450017",
+   "so": 6,
+   "instrumento": "Portafolio"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "codigo": "450018",
+   "so": 7,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "codigo": "450018",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Ética y Responsabilidad Social",
+   "nivel": 7,
+   "codigo": "450019",
+   "so": 4,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Sistemas Integrados de Gestión",
+   "nivel": 7,
+   "codigo": "560066",
+   "so": 3,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Economía Ambiental",
+   "nivel": 7,
+   "codigo": "450045",
+   "so": 5,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Evaluación del Impacto Ambiental",
+   "nivel": 8,
+   "codigo": "450020",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Hidrología",
+   "nivel": 8,
+   "codigo": "450048",
+   "so": 7,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Suelo",
+   "nivel": 8,
+   "codigo": "450021",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Inteligencia de Negocios",
+   "nivel": 9,
+   "codigo": "560060",
+   "so": 3,
+   "instrumento": "CII"
+  },
+  {
+   "asignatura": "Gestión de Recursos Energéticos",
+   "nivel": 8,
+   "codigo": "450022",
+   "so": 1,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "codigo": "450023",
+   "so": 1,
+   "instrumento": "Trabajo Integrador / Portafolio"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "codigo": "450023",
+   "so": 6,
+   "instrumento": "Trabajo Integrador / Portafolio"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "codigo": "450024",
+   "so": 7,
+   "instrumento": "Proyecto"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "codigo": "450024",
+   "so": 1,
+   "instrumento": "Proyecto"
+  },
+  {
+   "asignatura": "Formulación Y Evaluación  De Proyectos Sostenibles",
+   "nivel": 8,
+   "codigo": "450025",
+   "so": 2,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "so": 3,
+   "instrumento": "Proyecto"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "so": 2,
+   "instrumento": "Proyecto"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "so": 6,
+   "instrumento": "Proyecto"
+  },
+  {
+   "asignatura": "Restauración y Compensación Ambiental",
+   "nivel": 10,
+   "codigo": "450027",
+   "so": 5,
+   "instrumento": "Trabajo Integrador"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "codigo": "5674",
+   "so": 3,
+   "instrumento": "CIS"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "codigo": "5674",
+   "so": 5,
+   "instrumento": "CIS"
+  }
+ ],
+ "asignatura_competencia_nivel": [
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "codigo": "510003",
+   "estadio": "Inicial",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "codigo": "510003",
+   "estadio": "Inicial",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Procesos Psicológicos",
+   "nivel": 1,
+   "codigo": "510006",
+   "estadio": "Inicial",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Procesos Psicológicos",
+   "nivel": 1,
+   "codigo": "510006",
+   "estadio": "Inicial",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Ética Ciudadana",
+   "nivel": 1,
+   "codigo": "510007",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Ética Ciudadana",
+   "nivel": 1,
+   "codigo": "510007",
+   "estadio": "Inicial",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Introducción a la Ingeniería",
+   "nivel": 1,
+   "codigo": "510005",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Metodología de la Investigación",
+   "nivel": 1,
+   "codigo": "6508",
+   "estadio": "Inicial",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Metodología de la Investigación",
+   "nivel": 1,
+   "codigo": "6508",
+   "estadio": "Inicial",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Precálculo",
+   "nivel": 1,
+   "codigo": "510014",
+   "estadio": "Inicial",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Precálculo",
+   "nivel": 1,
+   "codigo": "510014",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "codigo": "6511",
+   "estadio": "Inicial",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "codigo": "6511",
+   "estadio": "Inicial",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Filosofía Aplicada",
+   "nivel": 2,
+   "codigo": "510010",
+   "estadio": "Inicial",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Filosofía Aplicada",
+   "nivel": 2,
+   "codigo": "510010",
+   "estadio": "Inicial",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Fundamentos de Economía",
+   "nivel": 2,
+   "codigo": "510015",
+   "estadio": "Inicial",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Fundamentos de Economía",
+   "nivel": 2,
+   "codigo": "510015",
+   "estadio": "Inicial",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Introducción al Comercio Internacional",
+   "nivel": 2,
+   "codigo": "510011",
+   "estadio": "Inicial",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Introducción al Comercio Internacional",
+   "nivel": 2,
+   "codigo": "510011",
+   "estadio": "Inicial",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Álgebra lineal",
+   "nivel": 2,
+   "codigo": "6384",
+   "estadio": "Inicial",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Álgebra lineal",
+   "nivel": 2,
+   "codigo": "6384",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Cálculo I",
+   "nivel": 2,
+   "codigo": "6503",
+   "estadio": "Inicial",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Cálculo I",
+   "nivel": 2,
+   "codigo": "6503",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Inteligencia Artificial Aplicada",
+   "nivel": 3,
+   "codigo": "560040",
+   "estadio": "Inicial",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Inteligencia Artificial Aplicada",
+   "nivel": 3,
+   "codigo": "560040",
+   "estadio": "Inicial",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "codigo": "450001",
+   "estadio": "Inicial",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "codigo": "450001",
+   "estadio": "Inicial",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Fundamentos de Programación",
+   "nivel": 3,
+   "codigo": "560044",
+   "estadio": "Inicial",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Física I",
+   "nivel": 3,
+   "codigo": "560041",
+   "estadio": "Inicial",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Química General",
+   "nivel": 3,
+   "codigo": "5643",
+   "estadio": "Inicial",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Cálculo II",
+   "nivel": 3,
+   "codigo": "560042",
+   "estadio": "Inicial",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Cálculo II",
+   "nivel": 3,
+   "codigo": "560042",
+   "estadio": "Inicial",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "codigo": "450002",
+   "estadio": "Refuerzo",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "codigo": "450002",
+   "estadio": "Refuerzo",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Estadística y Probabilidad",
+   "nivel": 4,
+   "codigo": "560046",
+   "estadio": "Refuerzo",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Biología Ambiental",
+   "nivel": 4,
+   "codigo": "450003",
+   "estadio": "Refuerzo",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Biología Ambiental",
+   "nivel": 4,
+   "codigo": "450003",
+   "estadio": "Refuerzo",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Física II",
+   "nivel": 4,
+   "codigo": "560045",
+   "estadio": "Refuerzo",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Química Ambiental",
+   "nivel": 4,
+   "codigo": "450004",
+   "estadio": "Refuerzo",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Cálculo III",
+   "nivel": 4,
+   "codigo": "450046",
+   "estadio": "Refuerzo",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Cálculo III",
+   "nivel": 4,
+   "codigo": "450046",
+   "estadio": "Refuerzo",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "codigo": "450047",
+   "estadio": "Refuerzo",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "codigo": "450047",
+   "estadio": "Refuerzo",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Derecho y Legislación Ambiental",
+   "nivel": 5,
+   "codigo": "450005",
+   "estadio": "Refuerzo",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Derecho y Legislación Ambiental",
+   "nivel": 5,
+   "codigo": "450005",
+   "estadio": "Refuerzo",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Cambio Climático",
+   "nivel": 5,
+   "codigo": "450006",
+   "estadio": "Refuerzo",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Cambio Climático",
+   "nivel": 5,
+   "codigo": "450006",
+   "estadio": "Refuerzo",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Termodinámica",
+   "nivel": 5,
+   "codigo": "450007",
+   "estadio": "Refuerzo",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Termodinámica",
+   "nivel": 5,
+   "codigo": "450007",
+   "estadio": "Refuerzo",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Ciencia del Suelo",
+   "nivel": 5,
+   "codigo": "450008",
+   "estadio": "Refuerzo",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Ciencia del Suelo",
+   "nivel": 5,
+   "codigo": "450008",
+   "estadio": "Refuerzo",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Técnicas Instrumentales de Análisis",
+   "nivel": 5,
+   "codigo": "450009",
+   "estadio": "Refuerzo",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Técnicas Instrumentales de Análisis",
+   "nivel": 5,
+   "codigo": "450009",
+   "estadio": "Refuerzo",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "codigo": "450010",
+   "estadio": "Refuerzo",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "codigo": "450010",
+   "estadio": "Refuerzo",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Costeo de Proyectos Ambientales",
+   "nivel": 6,
+   "codigo": "450011",
+   "estadio": "Refuerzo",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "codigo": "450012",
+   "estadio": "Refuerzo",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "codigo": "450012",
+   "estadio": "Refuerzo",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Energías Renovables",
+   "nivel": 6,
+   "codigo": "450013",
+   "estadio": "Refuerzo",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Energías Renovables",
+   "nivel": 6,
+   "codigo": "450013",
+   "estadio": "Refuerzo",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "codigo": "450014",
+   "estadio": "Refuerzo",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "codigo": "450014",
+   "estadio": "Refuerzo",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Microbiología Ambiental",
+   "nivel": 6,
+   "codigo": "450015",
+   "estadio": "Refuerzo",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Microbiología Ambiental",
+   "nivel": 6,
+   "codigo": "450015",
+   "estadio": "Refuerzo",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Medio Ambiente y Sociedad",
+   "nivel": 7,
+   "codigo": "450016",
+   "estadio": "Logrado",
+   "competencia": "G7"
+  },
+  {
+   "asignatura": "Medio Ambiente y Sociedad",
+   "nivel": 7,
+   "codigo": "450016",
+   "estadio": "Logrado",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Recursos Naturales y Ecosistemas",
+   "nivel": 7,
+   "codigo": "450017",
+   "estadio": "Logrado",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Recursos Naturales y Ecosistemas",
+   "nivel": 7,
+   "codigo": "450017",
+   "estadio": "Logrado",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "codigo": "450018",
+   "estadio": "Logrado",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "codigo": "450018",
+   "estadio": "Logrado",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Ética y Responsabilidad Social",
+   "nivel": 7,
+   "codigo": "450019",
+   "estadio": "Logrado",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Sistemas Integrados de Gestión",
+   "nivel": 7,
+   "codigo": "560066",
+   "estadio": "Logrado",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Sistemas Integrados de Gestión",
+   "nivel": 7,
+   "codigo": "560066",
+   "estadio": "Logrado",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Economía Ambiental",
+   "nivel": 7,
+   "codigo": "450045",
+   "estadio": "Logrado",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Evaluación del Impacto Ambiental",
+   "nivel": 8,
+   "codigo": "450020",
+   "estadio": "Logrado",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Evaluación del Impacto Ambiental",
+   "nivel": 8,
+   "codigo": "450020",
+   "estadio": "Logrado",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Hidrología",
+   "nivel": 8,
+   "codigo": "450048",
+   "estadio": "Logrado",
+   "competencia": "G1"
+  },
+  {
+   "asignatura": "Hidrología",
+   "nivel": 8,
+   "codigo": "450048",
+   "estadio": "Logrado",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Suelo",
+   "nivel": 8,
+   "codigo": "450021",
+   "estadio": "Logrado",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Inteligencia de Negocios",
+   "nivel": 9,
+   "codigo": "560060",
+   "estadio": "Logrado",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Gestión de Recursos Energéticos",
+   "nivel": 8,
+   "codigo": "450022",
+   "estadio": "Logrado",
+   "competencia": "G2"
+  },
+  {
+   "asignatura": "Gestión de Recursos Energéticos",
+   "nivel": 8,
+   "codigo": "450022",
+   "estadio": "Logrado",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "codigo": "450023",
+   "estadio": "Logrado",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "codigo": "450023",
+   "estadio": "Logrado",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "codigo": "450024",
+   "estadio": "Logrado",
+   "competencia": "G6"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "codigo": "450024",
+   "estadio": "Logrado",
+   "competencia": "G8"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "codigo": "450024",
+   "estadio": "Logrado",
+   "competencia": "E1"
+  },
+  {
+   "asignatura": "Formulación Y Evaluación  De Proyectos Sostenibles",
+   "nivel": 8,
+   "codigo": "450025",
+   "estadio": "Logrado",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "estadio": "Logrado",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "estadio": "Logrado",
+   "competencia": "E2"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "codigo": "450026",
+   "estadio": "Logrado",
+   "competencia": "E3"
+  },
+  {
+   "asignatura": "Restauración y Compensación Ambiental",
+   "nivel": 10,
+   "codigo": "450027",
+   "estadio": "Logrado",
+   "competencia": "G4"
+  },
+  {
+   "asignatura": "Restauración y Compensación Ambiental",
+   "nivel": 10,
+   "codigo": "450027",
+   "estadio": "Logrado",
+   "competencia": "G5"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "codigo": "5674",
+   "estadio": "Logrado",
+   "competencia": "G3"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "codigo": "5674",
+   "estadio": "Logrado",
+   "competencia": "G4"
+  }
+ ],
+ "asignatura_competencia_cursos": [
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "competencia": "G3",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación I",
+   "nivel": 1,
+   "competencia": "G4",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Procesos Psicológicos",
+   "nivel": 1,
+   "competencia": "G1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Procesos Psicológicos",
+   "nivel": 1,
+   "competencia": "G8",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Ética Ciudadana",
+   "nivel": 1,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Ética Ciudadana",
+   "nivel": 1,
+   "competencia": "G8",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Introducción a la Ingeniería",
+   "nivel": 1,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Metodología de la Investigación",
+   "nivel": 1,
+   "competencia": "G5",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Metodología de la Investigación",
+   "nivel": 1,
+   "competencia": "G6",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Precálculo",
+   "nivel": 1,
+   "competencia": "G1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Precálculo",
+   "nivel": 1,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "competencia": "G3",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Lenguaje y Comunicación II",
+   "nivel": 2,
+   "competencia": "G4",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Filosofía Aplicada",
+   "nivel": 2,
+   "competencia": "G7",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Filosofía Aplicada",
+   "nivel": 2,
+   "competencia": "G8",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Fundamentos de Economía",
+   "nivel": 2,
+   "competencia": "G6",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Fundamentos de Economía",
+   "nivel": 2,
+   "competencia": "G7",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Introducción al Comercio Internacional",
+   "nivel": 2,
+   "competencia": "G7",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Introducción al Comercio Internacional",
+   "nivel": 2,
+   "competencia": "G8",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Álgebra lineal",
+   "nivel": 2,
+   "competencia": "G1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Álgebra lineal",
+   "nivel": 2,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Cálculo I",
+   "nivel": 2,
+   "competencia": "G1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Cálculo I",
+   "nivel": 2,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Inteligencia Artificial Aplicada",
+   "nivel": 3,
+   "competencia": "G1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Inteligencia Artificial Aplicada",
+   "nivel": 3,
+   "competencia": "G7",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "competencia": "G6",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Sistemas de Información Geográfica",
+   "nivel": 3,
+   "competencia": "E2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Fundamentos de Programación",
+   "nivel": 3,
+   "competencia": "G5",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Física I",
+   "nivel": 3,
+   "competencia": "E3",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Química General",
+   "nivel": 3,
+   "competencia": "E3",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Cálculo II",
+   "nivel": 3,
+   "competencia": "G2",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Cálculo II",
+   "nivel": 3,
+   "competencia": "E1",
+   "estadio": "I"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "competencia": "G4",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Principios de Ingeniería Sostenible",
+   "nivel": 4,
+   "competencia": "G8",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Estadística y Probabilidad",
+   "nivel": 4,
+   "competencia": "G3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Biología Ambiental",
+   "nivel": 4,
+   "competencia": "G2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Biología Ambiental",
+   "nivel": 4,
+   "competencia": "E1",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Física II",
+   "nivel": 4,
+   "competencia": "E3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Química Ambiental",
+   "nivel": 4,
+   "competencia": "E3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Cálculo III",
+   "nivel": 4,
+   "competencia": "G2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Cálculo III",
+   "nivel": 4,
+   "competencia": "E1",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "competencia": "G6",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Estadística Aplicada",
+   "nivel": 5,
+   "competencia": "E3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Derecho y Legislación Ambiental",
+   "nivel": 5,
+   "competencia": "G5",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Derecho y Legislación Ambiental",
+   "nivel": 5,
+   "competencia": "G8",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Cambio Climático",
+   "nivel": 5,
+   "competencia": "G1",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Cambio Climático",
+   "nivel": 5,
+   "competencia": "G3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Termodinámica",
+   "nivel": 5,
+   "competencia": "G2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Termodinámica",
+   "nivel": 5,
+   "competencia": "E1",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Ciencia del Suelo",
+   "nivel": 5,
+   "competencia": "G7",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Ciencia del Suelo",
+   "nivel": 5,
+   "competencia": "E1",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Técnicas Instrumentales de Análisis",
+   "nivel": 5,
+   "competencia": "G3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Técnicas Instrumentales de Análisis",
+   "nivel": 5,
+   "competencia": "G5",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "competencia": "G4",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Gestión Sostenible de Residuos",
+   "nivel": 6,
+   "competencia": "E2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Costeo de Proyectos Ambientales",
+   "nivel": 6,
+   "competencia": "G4",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "competencia": "G6",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Aire",
+   "nivel": 6,
+   "competencia": "E2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Energías Renovables",
+   "nivel": 6,
+   "competencia": "G5",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Energías Renovables",
+   "nivel": 6,
+   "competencia": "E2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "competencia": "G6",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Mecánica de Fluidos",
+   "nivel": 6,
+   "competencia": "E2",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Microbiología Ambiental",
+   "nivel": 6,
+   "competencia": "G7",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Microbiología Ambiental",
+   "nivel": 6,
+   "competencia": "E3",
+   "estadio": "R"
+  },
+  {
+   "asignatura": "Medio Ambiente y Sociedad",
+   "nivel": 7,
+   "competencia": "G7",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Medio Ambiente y Sociedad",
+   "nivel": 7,
+   "competencia": "G8",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Recursos Naturales y Ecosistemas",
+   "nivel": 7,
+   "competencia": "G5",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Recursos Naturales y Ecosistemas",
+   "nivel": 7,
+   "competencia": "E3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "competencia": "G6",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Agua",
+   "nivel": 7,
+   "competencia": "E2",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Ética y Responsabilidad Social",
+   "nivel": 7,
+   "competencia": "G8",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Sistemas Integrados de Gestión",
+   "nivel": 7,
+   "competencia": "G1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Sistemas Integrados de Gestión",
+   "nivel": 7,
+   "competencia": "G3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Economía Ambiental",
+   "nivel": 7,
+   "competencia": "G4",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Evaluación del Impacto Ambiental",
+   "nivel": 8,
+   "competencia": "G5",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Evaluación del Impacto Ambiental",
+   "nivel": 8,
+   "competencia": "E1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Hidrología",
+   "nivel": 8,
+   "competencia": "G1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Hidrología",
+   "nivel": 8,
+   "competencia": "G6",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Tecnologías de Control de la Contaminación del Suelo",
+   "nivel": 8,
+   "competencia": "E2",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Inteligencia de Negocios",
+   "nivel": 9,
+   "competencia": "G3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Gestión de Recursos Energéticos",
+   "nivel": 8,
+   "competencia": "G2",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Gestión de Recursos Energéticos",
+   "nivel": 8,
+   "competencia": "E1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "competencia": "E1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Ecotoxicología Ambiental",
+   "nivel": 9,
+   "competencia": "E3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "competencia": "G6",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "competencia": "G8",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada I",
+   "nivel": 9,
+   "competencia": "E1",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Formulación Y Evaluación  De Proyectos Sostenibles",
+   "nivel": 8,
+   "competencia": "E2",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "competencia": "G3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "competencia": "E2",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Proyecto de Ingeniería Aplicada II",
+   "nivel": 10,
+   "competencia": "E3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Restauración y Compensación Ambiental",
+   "nivel": 10,
+   "competencia": "G4",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Restauración y Compensación Ambiental",
+   "nivel": 10,
+   "competencia": "G5",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "competencia": "G3",
+   "estadio": "L"
+  },
+  {
+   "asignatura": "Gestión De Proyectos",
+   "nivel": 10,
+   "competencia": "G4",
+   "estadio": "L"
+  }
+ ],
+ "conteos": {
+  "so": 7,
+  "pi": 17,
+  "competencias": 11,
+  "asignatura_so": 61,
+  "asignatura_competencia_nivel": 95,
+  "asignatura_competencia_cursos": 95,
+  "asignaturas_union": 53
+ }
+}

@@ -1,0 +1,24 @@
+# Configuración de Flyway para ABET_SIS_MED (PostgreSQL 16).
+# Las credenciales nunca van escritas en este archivo ni en ningún otro del repositorio.
+# Se leen de las variables de entorno ABET_DB_USER y ABET_DB_PASSWORD.
+# Los ajustes personales van en flyway.user.toml, que .gitignore excluye.
+
+[flyway]
+locations = ["filesystem:db/migration"]
+createSchemas = true
+validateMigrationNaming = true
+cleanDisabled = true
+outOfOrder = false
+environment = "dev"
+
+# En el formato TOML, schemas es un ajuste del entorno, no de [flyway].
+[environments.dev]
+url = "jdbc:postgresql://localhost:5432/abet_sis_med_dev"
+schemas = ["abet"]
+user = "${env.ABET_DB_USER}"
+password = "${env.ABET_DB_PASSWORD}"
+
+# dev es el entorno por defecto y el único definido, así que toda ejecución sin -environment, incluido el CI,
+# corre con clean permitido. Un entorno compartido se agrega con su propio bloque y sin este override.
+[environments.dev.flyway]
+cleanDisabled = false
