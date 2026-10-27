@@ -1,10 +1,13 @@
 # Configuración de Flyway para ABET_SIS_MED (PostgreSQL 16).
 # Las credenciales nunca van escritas en este archivo ni en ningún otro del repositorio.
-# Se leen de las variables de entorno ABET_DB_USER y ABET_DB_PASSWORD.
+# Se leen de variables de entorno, ABET_DB_USER y ABET_DB_PASSWORD para la base local
+# y NEON_HOST, NEON_DB, NEON_DB_USER y NEON_DB_PASSWORD para la base en Neon.
 # Los ajustes personales van en flyway.user.toml, que .gitignore excluye.
 
 [flyway]
-locations = ["filesystem:db/migration"]
+# db/callbacks guarda afterMigrate__permisos_lectura.sql, que vuelve a dar los permisos de lectura de las vistas
+# después de cada migrate. No es una migración, así que no entra en flyway_schema_history.
+locations = ["filesystem:db/migration", "filesystem:db/callbacks"]
 createSchemas = true
 validateMigrationNaming = true
 cleanDisabled = true
@@ -18,7 +21,19 @@ schemas = ["abet"]
 user = "${env.ABET_DB_USER}"
 password = "${env.ABET_DB_PASSWORD}"
 
-# dev es el entorno por defecto y el único definido, así que toda ejecución sin -environment, incluido el CI,
-# corre con clean permitido. Un entorno compartido se agrega con su propio bloque y sin este override.
+# dev es el entorno por defecto, así que toda ejecución sin -environment, incluido el CI, corre contra la base
+# local con clean permitido. Un entorno compartido se agrega con su propio bloque y sin este override.
 [environments.dev.flyway]
 cleanDisabled = false
+
+# Base compartida en Neon (PostgreSQL 16, región aws-sa-east-1). Se llama siempre con -environment=neon.
+# NEON_HOST es el host de la conexión directa, sin "-pooler" (por ejemplo ep-xxxx.sa-east-1.aws.neon.tech),
+# porque Flyway toma bloqueos de asesoría y el repartidor de conexiones de Neon trabaja en modo transacción.
+# sslmode=verify-full cifra la conexión y comprueba que el certificado sea del host; DefaultJavaSSLFactory
+# valida ese certificado con los certificados raíz de Java, porque en un runner no existe ~/.postgresql/root.crt.
+# Sin override de cleanDisabled, este entorno hereda cleanDisabled = true de [flyway] y clean queda prohibido.
+[environments.neon]
+url = "jdbc:postgresql://${env.NEON_HOST}/${env.NEON_DB}?sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory"
+schemas = ["abet"]
+user = "${env.NEON_DB_USER}"
+password = "${env.NEON_DB_PASSWORD}"

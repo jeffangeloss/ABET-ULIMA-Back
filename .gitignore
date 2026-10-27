@@ -4,6 +4,11 @@
 *.xlsx
 *.xlsm
 
+# Respaldos de la base: pueden tener datos personales, aunque vayan cifrados.
+respaldo/
+*.dump
+*.dump.gpg
+
 # Configuración local y credenciales
 flyway.user.toml
 .env

@@ -1,0 +1,60 @@
+# Respaldo diario de la base en Neon (todavía sin probar en GitHub).
+# El plan gratuito de Neon solo deja volver la base a las últimas 6 horas, así que este flujo guarda cada día
+# una copia cifrada con pg_dump y gpg como artefacto del repositorio, que GitHub conserva 14 días.
+# La copia diaria además deja actividad en la base, por si Neon borra proyectos gratuitos sin uso.
+#
+# Secretos del repositorio que necesita (Settings > Secrets and variables > Actions):
+#   NEON_HOST, NEON_DB                    host de la conexión directa de Neon y nombre de la base
+#   NEON_RESPALDO_USER (abet_respaldo)    usuario de solo lectura que crea db/plataforma/neon/crear_roles_lectura.sql,
+#   NEON_RESPALDO_PASSWORD                así este secreto no sirve para cambiar ni borrar la base
+#   RESPALDO_CLAVE                        frase de cifrado de gpg, guardada también fuera de GitHub
+# Este flujo no usa Flyway ni acciones de Redgate.
+name: respaldo-neon
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # 08:00 UTC son las 03:00 en Lima, que no cambia de hora en el año.
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: respaldo-neon
+  cancel-in-progress: false
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      # Ubuntu 24.04 trae PostgreSQL 16 en sus repositorios. Se fija esa versión para que el respaldo
+      # se pueda restaurar con el pg_restore 16 de la Mac.
+      - name: Instalar el cliente de PostgreSQL 16
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-client-16
+          echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
+
+      - name: Respaldar, comprobar y cifrar
+        env:
+          NEON_HOST: ${{ secrets.NEON_HOST }}
+          NEON_DB: ${{ secrets.NEON_DB }}
+          NEON_DB_USER: ${{ secrets.NEON_RESPALDO_USER }}
+          NEON_DB_PASSWORD: ${{ secrets.NEON_RESPALDO_PASSWORD }}
+          RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: |
+          pg_dump --version
+          ./herramientas/respaldar_neon.sh respaldo
+
+      - name: Guardar el respaldo cifrado
+        uses: actions/upload-artifact@v7
+        with:
+          # run_attempt separa los reintentos de una misma ejecución, que comparten run_number.
+          name: respaldo-neon-${{ github.run_number }}-${{ github.run_attempt }}
+          path: respaldo/
+          retention-days: 14
+          if-no-files-found: error

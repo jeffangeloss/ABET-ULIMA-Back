@@ -6,14 +6,18 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 
 | Ruta | Para qué sirve |
 | --- | --- |
-| `flyway.toml` | Configuración de Flyway, con el esquema `abet` y las credenciales tomadas de variables de entorno |
+| `flyway.toml` | Configuración de Flyway, con el esquema `abet`, el entorno local `dev`, el entorno `neon` y las credenciales tomadas de variables de entorno |
 | `db/migration/` | Migraciones versionadas `V1_01` a `V1_08` y repetibles `R__` con las vistas |
+| `db/callbacks/afterMigrate__permisos_lectura.sql` | Callback de Flyway que, al final de cada migrate, repone los permisos de los roles de lectura |
+| `db/plataforma/neon/crear_roles_lectura.sql` | Script que se corre en Neon para crear los roles de solo lectura de Power BI y del respaldo |
 | `referencia/ambiental_2026.json` | Datos curriculares de Ambiental (SO, PI, rúbrica, competencias y asignaturas), sin datos personales |
 | `herramientas/generar_v1_03.py` | Generador determinista de `V1_03` a partir de la referencia, con la huella SHA-256 del JSON |
 | `pruebas/datos_sinteticos.sql` | Datos inventados con la forma de un export real de Blackboard |
 | `pruebas/pruebas.sql` | Aserciones que lanzan ERROR si algo no se cumple |
 | `pruebas/correr_pruebas.sh` | Corre todas las pruebas sobre bases desechables, sin Flyway |
+| `herramientas/respaldar_neon.sh` | Respaldo de la base en Neon con `pg_dump`, comprobado con `pg_restore --list` y cifrado con `gpg` |
 | `.github/workflows/bd.yml` | CI propuesto con PostgreSQL 16 y Flyway Community |
+| `.github/workflows/respaldo_neon.yml` | Respaldo diario de Neon a las 03:00 de Lima, guardado cifrado como artefacto durante 14 días |
 
 ## Qué crea la entrega 1
 
@@ -32,7 +36,7 @@ Todo vive en el esquema `abet`, que Flyway crea con `schemas = ["abet"]` en `[en
 | `R__vista_r17_por_pi.sql` | Vista | Números del R-17 por carga PUBLICADA y PI, con el conteo por nivel 1 a 4, el nivel esperado y la meta del conjunto de reglas de la carga |
 | `R__vista_tabla_maestra_pi.sql` | Vista | Tabla_Maestra_PI con las columnas que Power BI espera hoy, más ESTADO DE EVIDENCIA |
 
-El bloque `DO` del final de `V1_03` es la única excepción a la regla de no usar plpgsql. Funciona como aserción de carga (7 SO, 17 PI, 102 descriptores de rúbrica, 11 competencias, 7 pares competencia y SO, 53 asignaturas, 53 filas de plan de estudios, 61 pares asignatura y SO, 95 pares asignatura y competencia, además de 7 instrumentos) y en T-SQL se traduce a `IF ... THROW`.
+El bloque `DO` del final de `V1_03` es la única excepción a la regla de no usar plpgsql dentro de las migraciones. Fuera de ellas, el callback de permisos y el script de roles de Neon usan bloques `DO` para no fallar cuando un rol todavía no existe. Funciona como aserción de carga (7 SO, 17 PI, 102 descriptores de rúbrica, 11 competencias, 7 pares competencia y SO, 53 asignaturas, 53 filas de plan de estudios, 61 pares asignatura y SO, 95 pares asignatura y competencia, además de 7 instrumentos) y en T-SQL se traduce a `IF ... THROW`.
 
 La vista del R-17 muestra dos porcentajes con nombres explícitos, uno sobre los calificados y otro sobre el total que incluye SIN_EVIDENCIA, porque la carrera todavía no fija el trato del estudiante sin evidencia (H08). La columna `pct_logro_segun_regla` toma uno u otro según TRATO_SIN_EVIDENCIA y sale NULL mientras ese parámetro siga PENDIENTE. La columna `provisional` vale verdadero mientras el conjunto de reglas de la carga no esté APROBADO o le falte DEFINIR NIVEL_ESPERADO, META_LOGRO o TRATO_SIN_EVIDENCIA. Si el conjunto de reglas de la carga no tiene NIVEL_ESPERADO DEFINIDO, los conteos contra el esperado y los dos porcentajes salen NULL y nunca 0, mientras el conteo por nivel 1 a 4 sigue disponible. En la vista de la tabla maestra, PROFESOR queda NULL porque docentes, roles y ámbitos entran en la entrega 2, y el SO y el ciclo del curso salen del catálogo, nunca del número de sección.
 
@@ -93,13 +97,106 @@ export ABET_DB_USER="$USER" ABET_DB_PASSWORD=""
 flyway info && flyway migrate && flyway validate
 ```
 
-En CI el orden es `info`, `migrate` y `validate`, con la versión de Flyway fija en el flujo. `flyway clean` está deshabilitado en `[flyway]`, pero `dev` es el entorno por defecto y el único definido, y lo permite para reconstruir la base local desde cero. En la práctica, toda ejecución sin `-environment`, incluido el CI, corre con `clean` permitido, lo que se acepta porque ambas bases son desechables. Un entorno compartido entra con su propio bloque `[environments.<nombre>]`, sin ese override, y se llama con `-environment=<nombre>`. El archivo `.github/workflows/bd.yml` todavía no corre en GitHub, porque la carpeta aún no es un repositorio, y la acción `red-gate/setup-flyway` pide aceptar la licencia de uso de Redgate, que el equipo revisa antes de activarla.
+En CI el orden es `info`, `migrate` y `validate`, con la versión de Flyway fija en el flujo. `flyway clean` está deshabilitado en `[flyway]`, pero `dev` es el entorno por defecto y el único definido, y lo permite para reconstruir la base local desde cero. En la práctica, toda ejecución sin `-environment`, incluido el CI, corre con `clean` permitido, lo que se acepta porque ambas bases son desechables. Un entorno compartido entra con su propio bloque `[environments.<nombre>]`, sin ese override, y se llama con `-environment=<nombre>`, como `neon`. El repositorio está en GitHub con GitHub Actions apagado, porque la acción `red-gate/setup-flyway` de `.github/workflows/bd.yml` pide aceptar la licencia de uso de Redgate, que el equipo revisa antes de activarla.
 
 ## Estado de la base local
 
 La base `abet_sis_med_dev` de la Mac de Jefferson está en la versión 1.08. El 22/10/2026, Flyway OSS 13.10.3 con openjdk 21.0.12 aplica las ocho versionadas y las dos repetibles en 0,25 segundos, `flyway validate` pasa con 11 migraciones y un segundo `flyway migrate` responde que el esquema está al día. El `pg_dump --schema-only` de esa base, sin la tabla `flyway_schema_history`, coincide línea por línea con el de una base armada con `psql` como en las pruebas, y los datos de referencia coinciden tabla por tabla. La base no tiene estudiantes ni mediciones, porque los datos sintéticos solo se cargan en las bases desechables de las pruebas.
 
 En Windows, que usa Stefanny, el camino equivalente es PostgreSQL 16 con el instalador oficial para Windows y la descarga de línea de comandos de Flyway para Windows, que trae su propio JRE. `pruebas/correr_pruebas.sh` necesita una terminal bash, como Git Bash o WSL.
+
+## Base en Neon
+
+La base compartida se propone en Neon, un servicio de PostgreSQL 16 en la nube, sin pasar por la unidad de informática de la universidad. Al principio solo lleva datos inventados. Los datos reales de estudiantes entran después de la autorización escrita que gestiona la carrera, la revisión del Oficial de Datos Personales, la decisión de la universidad sobre el consentimiento, el contrato con el proveedor y la comunicación del envío a la Autoridad Nacional de Protección de Datos Personales, porque guardar datos personales fuera del Perú es un flujo transfronterizo según la Ley 29733. El documento `Entregables/Arquitectura_BD_explicada.docx`, en su capítulo 10, explica el porqué.
+
+### Crear el proyecto
+
+El proyecto se crea a mano en la consola de Neon, dentro de una organización con un segundo administrador, por ejemplo un docente de la carrera, para que la base no dependa de una sola cuenta. La región es AWS São Paulo (`aws-sa-east-1`), que no se puede cambiar después, y la versión es PostgreSQL 16. De la consola se copian el host de la conexión directa, que no lleva `-pooler`, el nombre de la base y el usuario dueño.
+
+### Migrar con Flyway
+
+El entorno `neon` de `flyway.toml` arma la URL con `sslmode=verify-full`, que cifra la conexión y comprueba el certificado, y con `DefaultJavaSSLFactory`, que lo valida con los certificados raíz de Java. Usa la conexión directa, porque Flyway toma bloqueos de asesoría que el repartidor de conexiones de Neon no garantiza en modo transacción. No lleva el override de `cleanDisabled`, así que `flyway clean` queda prohibido en Neon. Como `dev` sigue siendo el entorno por defecto, cada orden contra Neon lleva `-environment=neon`.
+
+```sh
+export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
+export NEON_HOST=ep-xxxx.sa-east-1.aws.neon.tech   # host de la conexión directa, sin -pooler
+export NEON_DB=neondb NEON_DB_USER=neondb_owner
+read -rs NEON_DB_PASSWORD && export NEON_DB_PASSWORD   # se escribe sin que quede en el historial
+flyway info -environment=neon
+flyway migrate -environment=neon
+flyway validate -environment=neon
+```
+
+Al final de cada `migrate`, haya o no migraciones pendientes, Flyway corre `db/callbacks/afterMigrate__permisos_lectura.sql`. Ese callback repone los permisos de los roles de lectura, porque las repetibles borran y recrean las vistas, y con eso PostgreSQL borra sus permisos, y porque una migración nueva puede crear tablas nuevas. Si los roles no existen, como en la base local y en el CI, no hace nada. El callback no entra en `flyway_schema_history` ni cambia ningún checksum.
+
+Las dos vistas se crean con `security_barrier`. Sin esa opción, quien consulta puede escribir una función que PostgreSQL evalúa antes del filtro de la vista, y con ella ver filas que la vista oculta, como las de cargas que no están PUBLICADAS. Como las repetibles cambian, la base local de cada persona necesita un `flyway migrate` para recrear las vistas con la opción, y hasta entonces `flyway validate` las marca como pendientes.
+
+### Roles de solo lectura
+
+`db/plataforma/neon/crear_roles_lectura.sql` se corre con el usuario dueño después del primer `migrate`, y se puede repetir sin romper nada. Crea tres roles.
+
+- `abet_lectura`, un rol de grupo sin inicio de sesión, con uso del esquema `abet` y SELECT solo sobre las dos vistas.
+- `powerbi_lectura`, el usuario de Power BI, miembro de `abet_lectura`, con un máximo de 5 conexiones.
+- `abet_respaldo`, el usuario del respaldo diario, con SELECT sobre todas las tablas y secuencias de `abet`, que `pg_dump` necesita. Así el secreto que guarda GitHub sirve para leer y no para cambiar ni borrar la base.
+
+El script quita además a PUBLIC el permiso de crear tablas y funciones temporales en la base, que es la vía para intentar saltar el filtro de una vista, y evita que las funciones de migraciones futuras queden ejecutables por cualquiera. Las sesiones de los dos usuarios empiezan en solo lectura, pero eso es un valor por defecto que el propio usuario puede apagar, así que solo es una defensa adicional. El control real son los permisos. El script termina con una comprobación que se detiene si algún rol tiene un atributo de administración o pertenece a otro rol, si `powerbi_lectura` puede leer una tabla o crear objetos temporales, o si una vista no tiene `security_barrier`.
+
+Los roles se crean por SQL y no desde la consola de Neon, porque Neon da a los roles de la consola el rol `neon_superuser`, con atributos de administración que un usuario de lectura no necesita. Las contraseñas se leen de las variables de entorno `POWERBI_CLAVE` y `RESPALDO_DB_CLAVE`, así que no pasan por la línea de comandos ni por el historial. Neon pide recibirlas en texto plano para revisar que sean robustas, por eso el script no usa `\password`, que las manda ya cifradas.
+
+```sh
+export POWERBI_CLAVE="$(openssl rand -base64 24)"       # se guarda en el gestor de contraseñas
+export RESPALDO_DB_CLAVE="$(openssl rand -base64 24)"   # se guarda en el gestor y en los secretos de GitHub
+psql -q "host=$NEON_HOST dbname=$NEON_DB user=$NEON_DB_USER sslmode=verify-full sslrootcert=system" \
+     -v ON_ERROR_STOP=1 -f db/plataforma/neon/crear_roles_lectura.sql
+unset POWERBI_CLAVE RESPALDO_DB_CLAVE
+```
+
+En Power BI Desktop, el conector PostgreSQL usa como servidor el host de la conexión directa, la base de `NEON_DB` y el usuario `powerbi_lectura`, y lee solo las dos vistas del esquema `abet`. Si Power BI responde que falta el endpoint ID, Neon documenta poner `endpoint=<id del endpoint>$<contraseña>` en el campo de contraseña. La conexión sigue cifrada, pero la autenticación baja de SCRAM a contraseña simple.
+
+Cuando la entrega 2 agregue políticas de seguridad por fila, las vistas que lee Power BI no las aplicarán solas, porque consultan las tablas con los permisos de su dueño, y en Neon el dueño salta esas políticas. En ese momento las vistas pasan a `security_invoker` con SELECT sobre las tablas bajo las políticas, o a un dueño sin BYPASSRLS que no sea dueño de las tablas. El usuario del respaldo necesitará entonces leer todas las filas, porque `pg_dump` se detiene ante una tabla con políticas que filtran.
+
+### Respaldo diario
+
+El plan gratuito de Neon solo deja volver la base a las últimas 6 horas. `herramientas/respaldar_neon.sh` vuelca el esquema `abet` con `pg_dump` en formato custom, comprueba con `pg_restore --list` que el archivo se lee y que trae el historial de Flyway, lo cifra con `gpg` en AES-256 con una derivación de clave lenta y fija, y escribe su huella SHA-256. La copia sin cifrar nunca sale de una carpeta temporal privada que se borra al terminar, y la frase de cifrado no pasa por la línea de comandos ni queda guardada en `gpg-agent`. El script exige que `pg_dump` y `pg_restore` sean de la versión mayor 16 (`PG_MAYOR`), la misma del servidor y del `pg_restore` con que se restaura, porque un `pg_restore` más viejo no lee el archivo de un `pg_dump` más nuevo.
+
+`.github/workflows/respaldo_neon.yml` corre ese script cada día a las 08:00 UTC, que son las 03:00 en Lima, y también a mano desde la pestaña Actions. Se conecta con el usuario `abet_respaldo` y guarda el archivo cifrado como artefacto del repositorio durante 14 días. La copia diaria deja además actividad en la base. El flujo no usa Flyway ni acciones de Redgate.
+
+El flujo necesita cinco secretos del repositorio, `NEON_HOST`, `NEON_DB`, `NEON_RESPALDO_USER` (con el valor `abet_respaldo`), `NEON_RESPALDO_PASSWORD` y `RESPALDO_CLAVE`. La frase `RESPALDO_CLAVE` se genera al azar, por ejemplo con `openssl rand -base64 32`, y se guarda también fuera de GitHub, en un gestor de contraseñas, porque sin ella ningún respaldo se puede abrir. Mientras la base tenga datos reales, cada artefacto es una copia más de datos personales fuera del Perú, aunque vaya cifrada, y entra en la misma autorización que la base.
+
+Para correr solo este flujo, el orden importa, porque `bd.yml` se dispara con cada push a `main` y acepta la licencia de Redgate. Primero, con Actions todavía apagado, se sube todo lo pendiente. Después se enciende Actions en Settings > Actions con la opción «Allow select actions», con solo `actions/checkout` y `actions/upload-artifact` en la lista, y enseguida se apaga el flujo `bd` con `gh workflow disable bd.yml`. Con esa lista, la acción de Redgate queda bloqueada aunque `bd.yml` llegue a dispararse.
+
+Desde la Mac, el mismo respaldo se corre con las variables de Neon exportadas.
+
+```sh
+read -rs RESPALDO_CLAVE && export RESPALDO_CLAVE
+PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH" ./herramientas/respaldar_neon.sh respaldo
+```
+
+### Restaurar un respaldo
+
+Si el error cae dentro de las últimas 6 horas, lo más directo es restablecer la rama de Neon a un momento anterior desde su consola. Pasada esa ventana, se usa el respaldo diario. Se comprueba la huella y se descifra directo hacia `pg_restore`, sin dejar un archivo sin cifrar en el disco, dentro de una base vacía creada para eso, que puede estar en una rama aparte de Neon pero nunca es la base en uso. `--single-transaction` hace que un error no deje la restauración a medias.
+
+```sh
+shasum -a 256 -c abet_neondb_<fecha>.dump.gpg.sha256
+psql "host=$NEON_HOST dbname=$NEON_DB user=$NEON_DB_USER sslmode=verify-full sslrootcert=system" -c "CREATE DATABASE abet_restaurada"
+gpg --decrypt abet_neondb_<fecha>.dump.gpg | pg_restore --no-owner --exit-on-error --single-transaction \
+    -d "host=$NEON_HOST dbname=abet_restaurada user=$NEON_DB_USER sslmode=verify-full sslrootcert=system"
+NEON_DB=abet_restaurada flyway validate -environment=neon
+```
+
+El respaldo no guarda roles ni permisos, así que en la base restaurada se corre después `crear_roles_lectura.sql`.
+
+### Qué está probado
+
+El 26/10/2026 todo esto se prueba en un clúster desechable de PostgreSQL 16.14 que imita a Neon. Ese clúster tiene un dueño sin superusuario con CREATEROLE, la base `neondb` y SSL con un certificado firmado por una autoridad de prueba. Sin esa autoridad entre los certificados de confianza de Java, Flyway rechaza la conexión, lo que confirma que el certificado se verifica. Con ella, `migrate` aplica las diez migraciones y corre el callback, `validate` pasa con 11 y `clean` queda bloqueado.
+
+El script de roles corre dos veces sin errores, la primera con las contraseñas tomadas de las variables y la segunda avisando que faltan. `powerbi_lectura` lee las dos vistas y recibe «permission denied» en las tablas y al crear tablas o funciones temporales, aun después de apagar el modo de solo lectura. `abet_respaldo` lee las tablas y recibe «permission denied» al intentar borrar.
+
+Para probar `security_barrier`, se devuelve por un momento el permiso temporal a `powerbi_lectura` y se agrega un estudiante sin mediciones publicadas. Con una función temporal que avisa cada código que ve, una vista de control sin la opción deja ver a ese estudiante, mientras que la vista de control con la opción y `v_tabla_maestra_pi` muestran solo sus 33 filas. Tras quitar los permisos de las vistas, un `migrate` sin pendientes los repone.
+
+El respaldo hecho con `abet_respaldo` pesa unos 29 KB cifrado, usa AES-256 con S2K iterado y SHA-512, y no deja ningún archivo sin cifrar. Restaurado por tubería en una base vacía, da los mismos conteos que el origen (33 mediciones, 12 estudiantes, 17 PI, 11 filas de historial y 3 filas del R-17), con las vistas protegidas, y `flyway validate` pasa sobre la copia. Las pruebas de `pruebas/correr_pruebas.sh` siguen pasando.
+
+Falta probar contra Neon de verdad, en GitHub Actions y desde Power BI, en especial la actualización programada de Power BI Service sin puerta de enlace.
 
 ## Cómo agregar una migración
 
@@ -142,14 +239,14 @@ La entrega 1 deja fuera, a propósito, lo que todavía depende de decisiones abi
 - Seudónimos para el código de estudiante, guardados fuera del modelo que lee Power BI.
 - Equipos de Capstone unidos por código de estudiante.
 - La regla R-018 y las competencias en los tableros.
-- Lo específico del alojamiento (roles de base, Microsoft Entra ID, pgaudit y políticas de seguridad por fila), que va en una ubicación aparte, `db/plataforma/<destino>`, cuando se conozca el destino.
+- Lo específico del alojamiento que falta, como los roles de escritura del programa de carga, el registro de accesos y las políticas de seguridad por fila, en `db/plataforma/neon/` junto al script de roles de lectura.
 - La aprobación de las reglas pendientes (corte rojo del semáforo, conversión de 1 a 4 a la escala de 0 a 1 y trato del estudiante sin evidencia) en un conjunto de reglas nuevo, sin editar R-2026-BORRADOR, que llega a las cargas publicadas por reemplazo.
 
 ## Por qué PostgreSQL
 
-PostgreSQL 16 corre nativo en la Mac con Apple Silicon y ya está instalado, mientras que SQL Server no tiene una imagen de contenedor soportada para arm64 y en la Mac no hay Docker. Azure Database for PostgreSQL ofrece la versión 16, así que el motor de desarrollo coincide con un destino de producción posible (paridad entre desarrollo y producción). Flyway funciona igual con PostgreSQL, SQL Server y Azure SQL; lo que cambia entre ellos es el dialecto de cada archivo.
+PostgreSQL 16 corre nativo en la Mac con Apple Silicon y ya está instalado, mientras que SQL Server no tiene una imagen de contenedor soportada para arm64 y en la Mac no hay Docker. Neon, el alojamiento propuesto, ofrece la versión 16, así que el motor de desarrollo coincide con el de la base compartida (paridad entre desarrollo y producción). Flyway funciona igual con PostgreSQL, SQL Server y Azure SQL; lo que cambia entre ellos es el dialecto de cada archivo.
 
-Si informática exige SQL Server o Azure SQL, el esquema se traduce a una ubicación propia (`db/migration/sqlserver`) antes del primer despliegue compartido y ambas secuencias se prueban con los mismos datos sintéticos. Estas son las diferencias que hay que reescribir.
+Si algún día el alojamiento pasa a SQL Server o Azure SQL, el esquema se traduce a una ubicación propia (`db/migration/sqlserver`) antes del primer despliegue compartido y ambas secuencias se prueban con los mismos datos sintéticos. Estas son las diferencias que hay que reescribir.
 
 - `GENERATED ALWAYS AS IDENTITY` pasa a `IDENTITY(1,1)`.
 - Los CHECK con expresiones regulares (`~` y `!~`) no existen en T-SQL y se reescriben con `LEN` y `LIKE`, por ejemplo `LEN(codigo) = 8 AND codigo NOT LIKE '%[^0-9]%'`; la huella usa además una intercalación binaria para distinguir mayúsculas.
