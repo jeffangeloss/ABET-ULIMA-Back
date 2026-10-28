@@ -30,7 +30,26 @@ Un arreglo urgente sale de `main` en `hotfix/*`, sube la versión de parche y vu
 | `pruebas` | CI, en cada PR y en cada push a `develop` y `main` | `scripts/preflight.sh` sin fallas. Ninguna planilla, export ni respaldo fuera de `tests/datos_inventados/`, solo códigos de estudiante que empiezan con 99 dentro de esa carpeta, ningún `.env` versionado, ningún secreto con valor y, en un PR, `MEMORIA.md` actualizado. Las pruebas de la base, del backend y de aceptación se suman a este job cuando existan |
 | `flujo` | CI, en cada PR a `main` | Que el origen sea `develop` o `hotfix/*` |
 | `pre-commit` | En cada clon, activado con `git config core.hooksPath scripts/hooks` | La misma revisión sobre lo preparado, más `MEMORIA.md` dentro del commit |
-| SonarQube Cloud y Snyk | CI, como checks informativos | Se agregan cuando Jefferson cree los proyectos y guarde los tokens como secretos del repositorio |
+| Hook `Stop` de Claude Code | `.claude/settings.json`, al final de cada turno de Claude | Si quedan cambios sin commit y `MEMORIA.md` no está entre ellos, Claude sigue trabajando hasta registrarlos (`scripts/recordar_memoria.sh`) |
+| `secretos` | CI, en cada PR y push | gitleaks 8.30.1 sobre todo el historial, fijado por versión y suma SHA-256. Informativo hasta confirmar que no da falsos positivos |
+| SonarQube Cloud | Análisis automático, configurado en `.sonarcloud.properties` | Calidad y seguridad del código nuevo con la puerta «Sonar way» |
+| Snyk | Integración de Snyk con GitHub, con la política `.snyk` | Vulnerabilidades de las dependencias, con excepciones que vencen |
+| Dependabot | `.github/dependabot.yml`, cada lunes | PR a `develop` con la versión nueva de cada acción de GitHub y su SHA |
+
+## SonarQube Cloud, Snyk y secretos
+
+Los tres controles siguen el modelo de IQBF y se refuerzan con gitleaks y Dependabot.
+
+- **SonarQube Cloud.** El plan gratuito admite repos privados hasta 50 000 líneas por organización, y en IQBF ese límite ya detuvo el análisis el 18/10/2026. `.sonarcloud.properties` deja fuera lo que no se despliega para no gastar ese cupo. Como el plan gratuito solo analiza la rama principal y los PR hacia ella, la rama principal del proyecto en la consola debe ser `develop`. Cuando existan pruebas con cobertura, el análisis pasa a la CI con la acción oficial fijada por SHA y el secreto `SONAR_TOKEN`, y se apaga el análisis automático.
+- **Snyk.** La integración con GitHub publica el estado `security/snyk` en cada commit, como en IQBF. Toda excepción en `.snyk` lleva la razón técnica, una fecha de vencimiento de seis meses como máximo y su fecha de creación. Snyk no lee `uv.lock` en el plan gratuito, así que el backend en Python exporta un `requirements.txt` para el análisis. El análisis de código de Snyk guarda el código en su región de Estados Unidos, lo que se acepta porque el código no lleva datos personales.
+- **gitleaks.** El escaneo de secretos de GitHub en repos privados es de pago, y gitleaks es gratis en cuentas personales. `.gitleaks.toml` usa sus reglas por defecto y solo excluye `scripts/probar_preflight.sh`, que trae un secreto falso a propósito.
+- **Dependabot.** Sus PR no escriben `MEMORIA.md`, así que la CI no les exige la memoria y la actualización se registra en el siguiente cambio.
+
+Lo que hace Jefferson en las consolas, sin pasar ninguna credencial por un agente:
+
+1. En SonarQube Cloud, importar los dos repos, cambiar la rama principal a `develop`, dejar la puerta «Sonar way» y fijar el código nuevo por versión anterior. Conviene una organización aparte para ABET, para no compartir el cupo de 50 000 líneas con IQBF.
+2. En Snyk, importar los dos repos con la rama `develop`.
+3. Instalar en los dos repos la aplicación de GitGuardian, como en IQBF, si quiere una segunda revisión de secretos en cada PR.
 
 ## Memoria del trabajo
 
