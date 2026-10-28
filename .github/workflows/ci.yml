@@ -1,0 +1,49 @@
+# Pruebas de cada cambio y control del flujo de ramas (docs/devops.md).
+# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh). Las pruebas de
+# la base, del backend y de aceptación se suman a este mismo job cuando existan,
+# para que el check requerido por la protección de ramas siga llamándose igual.
+# No usa acciones ni imágenes de Redgate mientras su licencia esté en revisión.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Prueba de la revisión previa (casos que deben pasar y que deben fallar)
+        run: bash scripts/probar_preflight.sh
+      - name: Revisión previa (datos inventados, secretos y memoria)
+        env:
+          EVENTO: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENTO" = "pull_request" ]; then
+            bash scripts/preflight.sh --pr "origin/$BASE_REF"
+          else
+            bash scripts/preflight.sh
+          fi
+
+  # main solo recibe versiones (desde develop) o arreglos urgentes (hotfix/*).
+  flujo:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rama de origen permitida
+        env:
+          ORIGEN: ${{ github.head_ref }}
+        run: |
+          case "$ORIGEN" in
+            develop|hotfix/*) echo "PR a main desde $ORIGEN: permitido" ;;
+            *) echo "::error::Un PR a main solo puede salir de develop o de hotfix/*, no de $ORIGEN"; exit 1 ;;
+          esac

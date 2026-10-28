@@ -1,0 +1,42 @@
+# Exports, planillas y respaldos con datos personales: nunca entran al repositorio.
+# Los datos inventados de prueba van en tests/datos_inventados/, y scripts/preflight.sh
+# comprueba que solo traigan códigos de estudiante que empiezan con 99.
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.xlsm
+*.ods
+*.dump
+*.dump.gpg
+respaldo/
+!tests/datos_inventados/
+!tests/datos_inventados/**
+
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+flyway.user.toml
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node y Playwright de las pruebas de aceptación
+node_modules/
+playwright-report/
+test-results/
+
+# Sistema y registros
+.DS_Store
+*.log

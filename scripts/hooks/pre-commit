@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Revisión previa antes de cada commit. Se activa una vez por clon con
+#   git config core.hooksPath scripts/hooks
+# Solo en una emergencia se salta con git commit --no-verify, y la CI lo vuelve a revisar.
+exec bash "$(git rev-parse --show-toplevel)/scripts/preflight.sh" --staged
