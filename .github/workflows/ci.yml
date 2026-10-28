@@ -1,7 +1,8 @@
 # Pruebas de cada cambio y control del flujo de ramas (docs/devops.md).
-# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh) y las pruebas de la
-# base (db/pruebas/). Las del backend y las de aceptación se suman a este mismo job
-# cuando existan, para que el check requerido por la protección de ramas siga llamándose igual.
+# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh), las pruebas de la base
+# (db/pruebas/) y pytest, que incluye la lectura del Gherkin en español de specs/ y los exports
+# inventados. Los pasos de aceptación (T050) entran en ese mismo pytest, para que el check
+# requerido por la protección de ramas siga llamándose igual.
 # No usa acciones ni imágenes de Redgate mientras su licencia esté en revisión.
 name: CI
 
@@ -55,6 +56,18 @@ jobs:
           PGHOST: localhost
           PGUSER: postgres
         run: bash db/pruebas/correr_pruebas.sh
+      - name: uv 0.12.8 con Python 3.12
+        # v10.3.0 (2026-10-09) y no una más nueva: una versión con menos de 14 días publicada espera,
+        # igual que los paquetes de PyPI de uv.lock (pyproject.toml) y la espera de Dependabot.
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.8"
+          python-version: "3.12"
+      - name: Dependencias de Python exactamente como las fija uv.lock
+        run: uv sync --frozen
+      - name: Pruebas de Python (esqueleto, exports inventados y lectura del Gherkin en español)
+        # --frozen también aquí, para que uv run no vuelva a resolver ni toque uv.lock.
+        run: uv run --frozen pytest -q
 
   # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
   # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).

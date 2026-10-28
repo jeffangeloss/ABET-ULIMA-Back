@@ -15,11 +15,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-28
 - **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la base de `ABET_ULIMA` en `db/` con su historia y sus pruebas en el job `pruebas` (T023, en local)
-- **En curso**: corte 1 en `feat/001-mvp-carga-r17`, con la fase 1 (contrato) y la parte local de la fase 2
-- **Siguiente paso**: specs vivas y contrato (T011 a T016), esqueleto de Python y exports inventados (T010, T017 y T030) y V1_09 con su rol, su guardia y los datos de 2026-2 (T024 a T026)
-- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, pasa a `db/` de este repo)
+- **Último cambio**: esqueleto de Python con uv, exports inventados y pytest en el job `pruebas` (T010, T017 y T030, en local)
+- **En curso**: segunda vuelta de corrección del contrato (T011 a T016) y de V1_09 con su rol, su guardia y los datos de 2026-2 (T024 a T026), y la demo de la carga con el R-17 (T031 a T035)
+- **Siguiente paso**: los commits de la base y del contrato, y después la demo en la Mac con el export con error (11 leídas, 10 aceptadas y 1 rechazada, con 60,0 / 60,0 / 70,0 en el R-17)
+- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-28 17:19 (Lima) · feat/001-mvp-carga-r17 · Esqueleto de Python, exports inventados y pytest en la CI (T010, T017 y T030, en local)
+
+- **Quién**: Claude Code con un flujo de agentes (wf_dd13b8f0-ea8, pista B). Un implementador escribe el esqueleto, el generador y la prueba de T010. Tres verificadores lo revisan con las lentes de ejecución, datos y refutación y dejan 14 hallazgos, uno de severidad media (el README describía la regla 2 con un alcance mayor que el real); aprueban la ejecución y los datos, y la refutación no. Un corrector cierra los 13 hallazgos que caen en los archivos de la pista, y un reverificador sin escribir en el worktree confirma 0 hallazgos abiertos con 70 pruebas, la revisión previa y dos corridas del generador. Claude Code repite esas comprobaciones antes de aceptar el trabajo y corrige `setup-uv`, Dependabot, la documentación y `tasks.md`.
+- **Qué cambió**: `pyproject.toml`, `uv.lock` (43 paquetes con al menos 14 días en PyPI) y `requirements.txt` con hashes para Snyk; `.env.example` con los dos secretos sin valor y tres parámetros de ejemplo; `abet_carga/__init__.py` y `app/__init__.py`; `scripts/generar_exports_inventados.py` y los diez archivos de `tests/datos_inventados/` con su README; `tests/` con las pruebas del esqueleto, del generador y de la lectura del Gherkin en español con pytest-bdd 9.0.0; uv y pytest en el job `pruebas` de `.github/workflows/ci.yml`, con `astral-sh/setup-uv` en v10.3.0; `.github/dependabot.yml` con uv y 14 días de espera; `docs/devops.md`, `README.md`, `CHANGELOG.md` y `tasks.md` (T010, T017 y T030 hechas).
+- **Por qué**: T010, T017 y T030 del corte 1 (US-05 a US-16), aprobadas con la spec 001.
+- **Lo que debe hacer, cómo se probó**: `uv run --frozen pytest -q -W error` da 70 passed; `uv lock --check --offline` resuelve 43 paquetes; `bash scripts/preflight.sh` sin fallas y `bash scripts/probar_preflight.sh` con 19 bien y 0 mal; dos corridas del generador con `--salida` dan las mismas 10 huellas SHA-256, iguales a las versionadas.
+- **Lo que no debe hacer, cómo se probó**: la guardia del generador no escribe el export con el código 10000004 dentro de `tests/datos_inventados/`, ni por su ruta, ni por `..`, ni con otras mayúsculas; la prueba de la regla 2 falla con un código fuera de 99 en `core.xml`, en `styles.xml` fuera de `rgb`, en `theme1.xml` fuera de `ang`, en `workbook.xml` o en un zip sin directorio central; `test_uv_lock_y_requirements_txt_estan_al_dia` falla si `uv.lock` cambia sin regenerar `requirements.txt`; la prueba de T010 falla si un escenario citado cambia de título.
+- **Correcciones**: el corrector cierra los 13 hallazgos de la pista, entre ellos el alcance real de la regla 2 en el README, la guardia comparada por identidad de archivo, un corte de resolución que reproduce el lock, un protegido que msoffcrypto-tool 5.4.2 lee como libro cifrado, las siglas sin glosa y pytest-bdd fijado en ~=9.0.0. `setup-uv` v10.3.3 sale hoy y no cumple la espera de 14 días, así que queda v10.3.0 (2026-10-09, commit 1c37ad07, comprobado con `gh api`). Para la regla 2, Claude Code mantiene el alcance de `preflight.sh` (hojas y cadenas compartidas), porque las 27 constantes de 8 dígitos de `styles.xml` y `theme1.xml` son colores y ángulos y no códigos de estudiante.
+- **Cómo se reporta**: esta entrada, `CHANGELOG.md` en «Sin publicar» y el PR del corte 1.
+- **Pendiente y siguiente paso**: la primera corrida del job `pruebas` con uv en GitHub, que espera el empuje; las variantes con mayúsculas de la prueba de la guardia corren solo en Linux; T031 suma la prueba que abre `protegido_410.xlsx` con el lector; llevar la regla 2 a todas las partes del zip y a los .xlsx que no abren como zip queda para la auditoría de la fase 6.
 
 ### 2026-10-28 14:45 (Lima) · feat/001-mvp-carga-r17 · Base de ABET_ULIMA en db/ con su historia (T023, en local)
 

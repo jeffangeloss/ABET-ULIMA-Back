@@ -10,9 +10,13 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - CI con la revisión previa `scripts/preflight.sh` (datos inventados, secretos y memoria) y `release.yml`, que crea el tag y el Release desde este archivo.
 - `MEMORIA.md` como memoria de trabajo, `AGENTS.md` con las reglas para personas y agentes, y el hook `pre-commit`.
 - Hook `Stop` de Claude Code (`.claude/settings.json`) que no deja terminar un turno con cambios sin registrar en `MEMORIA.md`.
-- Spec 001 del MVP «del export de Blackboard al R-17 desde la base»: constitución, 21 historias auditadas con 127 escenarios en Gherkin en español, plan por fases y tareas, pendiente de aprobación.
+- Spec 001 del MVP «del export de Blackboard al R-17 desde la base»: constitución, 21 historias auditadas con 127 escenarios en Gherkin en español, plan por fases y tareas, aprobada por Jefferson en el chat el 2026-10-28.
+- Base de datos en `db/` con su historia desde `jeffangeloss/ABET_ULIMA` (V1_01 a V1_08, las vistas R__ y sus pruebas), que el job `pruebas` corre en un PostgreSQL 16 desechable.
+- Esqueleto de Python con uv (`pyproject.toml`, `uv.lock` y `requirements.txt` con hashes para Snyk), `.env.example` y pytest en el job `pruebas`, con la lectura del Gherkin en español por pytest-bdd.
+- Generador determinista de los exports inventados de `tests/datos_inventados/` (`scripts/generar_exports_inventados.py`).
 
 ### Seguridad
 
 - Job `secretos` con gitleaks 8.30.1 fijado por suma SHA-256, y `.gitleaks.toml`.
 - Dependabot para las acciones de GitHub, `.sonarcloud.properties` para SonarQube Cloud y `.snyk` con excepciones que vencen.
+- `astral-sh/setup-uv` fijado por SHA en v10.3.0, con más de 14 días publicada, y Dependabot para `uv.lock`, con la misma espera de 14 días en las acciones y en los paquetes.

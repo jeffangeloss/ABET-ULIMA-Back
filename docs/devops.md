@@ -27,7 +27,7 @@ Un arreglo urgente sale de `main` en `hotfix/*`, sube la versión de parche y vu
 
 | Control | Dónde corre | Qué exige |
 |---|---|---|
-| `pruebas` | CI, en cada PR y en cada push a `develop` y `main` | `scripts/preflight.sh` sin fallas. Ninguna planilla, export ni respaldo fuera de `tests/datos_inventados/`, solo códigos de estudiante que empiezan con 99 dentro de esa carpeta, ningún `.env` versionado, ningún secreto con valor y, en un PR, `MEMORIA.md` actualizado. Las pruebas de la base, del backend y de aceptación se suman a este job cuando existan |
+| `pruebas` | CI, en cada PR y en cada push a `develop` y `main` | `scripts/preflight.sh` sin fallas. Ninguna planilla, export ni respaldo fuera de `tests/datos_inventados/`, solo códigos de estudiante que empiezan con 99 dentro de esa carpeta, ningún `.env` versionado, ningún secreto con valor y, en un PR, `MEMORIA.md` actualizado. Además, `db/pruebas/correr_pruebas.sh` en un PostgreSQL 16 desechable (migraciones, rechazos de cada restricción y consultas de control Q01 a Q14) y `uv run --frozen pytest -q` con las dependencias exactas de `uv.lock`. Los pasos de aceptación (T050) entran en ese mismo pytest |
 | `flujo` | CI, en cada PR a `main` | Que el origen sea `develop` o `hotfix/*` |
 | `pre-commit` | En cada clon, activado con `git config core.hooksPath scripts/hooks` | La misma revisión sobre lo preparado, más `MEMORIA.md` dentro del commit |
 | Hook `Stop` de Claude Code | `.claude/settings.json`, al final de cada turno de Claude | Si quedan cambios sin commit y `MEMORIA.md` no está entre ellos, Claude sigue trabajando hasta registrarlos (`scripts/recordar_memoria.sh`) |

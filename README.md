@@ -2,7 +2,7 @@
 
 Backend del sistema de medición ABET de la Carrera de Ingeniería Ambiental de la Universidad de Lima. Recibe el export de Blackboard de una sección, lo valida, guarda sus datos en PostgreSQL 16 (Neon, São Paulo) en una sola transacción y genera el Excel del R-17 con la constancia de la carga, que el profesor conserva como evidencia.
 
-**Estado al 28/10/2026.** El repositorio está en arranque. El plan del MVP está en revisión y todavía no hay código de producto. La base de datos vive por ahora en el repositorio privado `jeffangeloss/ABET_ULIMA` y pasa a la carpeta `db/` de este repositorio cuando termine su despliegue en Neon.
+**Estado al 28/10/2026.** Jefferson aprueba el plan del MVP (spec 001) y el corte 1 avanza en la rama `feat/001-mvp-carga-r17`, todavía en local. La base de datos ya está en `db/`, traída con su historia desde el repositorio privado `jeffangeloss/ABET_ULIMA`, y el esqueleto de Python corre sus pruebas con uv. La carga del export y el R-17 todavía no existen.
 
 ## Antes de trabajar
 
