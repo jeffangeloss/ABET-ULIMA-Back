@@ -1,0 +1,17 @@
+# Exports y planillas con datos personales: nunca entran al repositorio.
+*.csv
+*.xls
+*.xlsx
+*.xlsm
+
+# Configuración local y credenciales
+flyway.user.toml
+.env
+.env.*
+*.pem
+*.key
+
+# Archivos de trabajo
+*.log
+__pycache__/
+.DS_Store
