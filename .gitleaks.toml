@@ -1,0 +1,9 @@
+# Configuración de gitleaks 8.30.1 (docs/devops.md, sección «SonarQube Cloud, Snyk y secretos»).
+# Usa las reglas por defecto de gitleaks y solo deja fuera el arnés de prueba de la revisión previa,
+# que trae a propósito un secreto falso para probar la regla 4 de scripts/preflight.sh.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Arnés con un secreto falso para probar la revisión previa"
+paths = ['''^scripts/probar_preflight\.sh$''']

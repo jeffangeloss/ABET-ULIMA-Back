@@ -1,0 +1,16 @@
+# Actualizaciones de las acciones de GitHub (docs/devops.md). Dependabot propone cada semana la
+# versión nueva de cada acción con su SHA y su comentario de versión, en un PR a develop.
+# Los ecosistemas pip y npm se suman cuando existan sus manifiestos.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Lima
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5

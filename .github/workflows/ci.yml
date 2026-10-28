@@ -21,18 +21,36 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Prueba de la revisión previa (casos que deben pasar y que deben fallar)
+      - name: Prueba de la revisión previa y del hook de memoria (casos que deben pasar y que deben fallar)
         run: bash scripts/probar_preflight.sh
       - name: Revisión previa (datos inventados, secretos y memoria)
+        # Los PR de Dependabot no escriben MEMORIA.md; se revisa el repositorio completo y la
+        # actualización queda registrada en la memoria con el siguiente cambio (docs/devops.md).
         env:
           EVENTO: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
+          AUTOR: ${{ github.actor }}
         run: |
-          if [ "$EVENTO" = "pull_request" ]; then
+          if [ "$EVENTO" = "pull_request" ] && [ "$AUTOR" != "dependabot[bot]" ]; then
             bash scripts/preflight.sh --pr "origin/$BASE_REF"
           else
             bash scripts/preflight.sh
           fi
+
+  # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
+  # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).
+  secretos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: gitleaks 8.30.1 sobre el historial
+        run: |
+          curl -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
 
   # main solo recibe versiones (desde develop) o arreglos urgentes (hotfix/*).
   flujo:

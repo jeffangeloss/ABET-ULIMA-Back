@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Prueba scripts/preflight.sh en un repositorio temporal con casos que deben pasar y casos que
-# deben fallar. Lo corre el check «pruebas» de la CI antes de la revisión previa.
+# Prueba scripts/preflight.sh y el hook scripts/recordar_memoria.sh en un repositorio temporal, con
+# casos que deben pasar y casos que deben fallar. Lo corre el check «pruebas» de la CI.
 #   bash scripts/probar_preflight.sh
 # Solo usa bash, git y python3 de la biblioteca estándar; los archivos de prueba se generan aquí
 # con datos inventados y un secreto falso que nunca debe aparecer en la salida.
 set -u
 
-PREFLIGHT="$(cd "$(dirname "$0")" && pwd)/preflight.sh"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+PREFLIGHT="$SCRIPTS/preflight.sh"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
 cd "$T"
@@ -15,6 +16,7 @@ git config user.name prueba
 git config user.email prueba@example.invalid
 mkdir -p scripts tests/datos_inventados
 cp "$PREFLIGHT" scripts/preflight.sh
+cp "$SCRIPTS/recordar_memoria.sh" scripts/recordar_memoria.sh
 echo "# memoria" > MEMORIA.md
 echo "x" > README.md
 git add -A
@@ -67,6 +69,10 @@ caso "referencia a un secreto de Actions pasa" 0 bash -c 'echo "SONAR_TOKEN: \${
 caso "PR sin MEMORIA.md falla" 1 bash -c "git checkout -qb feat/x; echo y >> README.md; git commit -qam c --no-verify; bash scripts/preflight.sh --pr $RAMA_BASE"
 caso "PR con MEMORIA.md pasa" 0 bash -c "git checkout -qb feat/y; echo y >> README.md; echo e >> MEMORIA.md; git commit -qam c --no-verify; bash scripts/preflight.sh --pr $RAMA_BASE"
 caso "repositorio limpio en modo completo pasa" 0 bash scripts/preflight.sh
+caso "hook de memoria: repositorio limpio no bloquea" 0 bash -c 'printf "{}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
+caso "hook de memoria: cambio sin MEMORIA.md bloquea" 1 bash -c 'echo y >> README.md; printf "{}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
+caso "hook de memoria: cambio con MEMORIA.md no bloquea" 0 bash -c 'echo y >> README.md; echo e >> MEMORIA.md; printf "{}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
+caso "hook de memoria: no bloquea dos veces seguidas" 0 bash -c 'echo y >> README.md; printf "{\"stop_hook_active\": true}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
 
-echo "Prueba de la revisión previa: $bien bien, $mal mal."
+echo "Prueba de la revisión previa y del hook de memoria: $bien bien, $mal mal."
 [ "$mal" -eq 0 ]

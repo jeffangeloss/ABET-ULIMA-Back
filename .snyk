@@ -1,0 +1,6 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+# Regla del proyecto (docs/devops.md): cada excepción lleva «reason» con la razón técnica de por qué
+# la vulnerabilidad no aplica, «expires» a seis meses como máximo y «created», como en IQBF.
+version: v1.25.1
+ignore: {}
+patch: {}
