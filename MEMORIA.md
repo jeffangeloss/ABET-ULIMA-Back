@@ -13,12 +13,12 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-10-28
-- **Rama de trabajo**: `docs/plan-mvp`, en PR a `develop` (después de `chore/seguridad-y-memoria`, PR #1)
+- **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: spec 001 del MVP con historias auditadas, `.feature`, plan, tareas y constitución
-- **En curso**: aprobación de la spec `specs/001-mvp-carga-r17/` por Jefferson (merge de este PR o su «apruebo» explícito)
-- **Siguiente paso**: con la spec aprobada, fase 1 (contrato y specs vivas) y fase 2 (base en Neon, traslado de `bd/` y V1_09), en `feat/001-mvp-carga-r17`
-- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
+- **Último cambio**: Jefferson aprueba la spec 001 en el chat el 2026-10-28, con la constitución ratificada
+- **En curso**: corte 1 en `feat/001-mvp-carga-r17`, empezando por el traslado de la base a `db/` (T023) y la fase 1 (contrato)
+- **Siguiente paso**: specs vivas y contrato (T011 a T016), esqueleto de Python y exports inventados (T010, T017 y T030) y V1_09 con su rol, su guardia y los datos de 2026-2 (T024 a T026)
+- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, pasa a `db/` de este repo)
 
 ## Plantilla de una entrada
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-28 14:40 (Lima) · feat/001-mvp-carga-r17 · Aprobación de la spec 001 en el chat
+
+- **Quién**: Jefferson aprueba; Claude Code registra la aprobación, sin subagentes.
+- **Qué cambió**: `MEMORIA.md` («Punto actual» y esta entrada), `.specify/memory/constitution.md` (ratificada el 2026-10-28 con la aprobación del plan) y `specs/001-mvp-carga-r17/tasks.md` (T004 anotada y T005 hecha).
+- **Por qué**: Jefferson responde «Apruebo el plan» a la pregunta «¿Apruebas la spec 001 para empezar el corte 1?». La skill `specs-back-front` (paso 5) acepta el «apruebo» explícito en el chat como aprobación, con su registro en `MEMORIA.md` y en el PR. Con el plan quedan confirmados los valores recomendados de J-01 (Python con FastAPI), J-02 (un solo rol de aplicación), J-03 (contraseña asignada en el corte 1), J-06 (traslado de `bd/` a `db/` de este repositorio) y J-07 (Vercel Hobby en el piloto), y las demás decisiones siguen con su valor provisional.
+- **Lo que debe hacer, cómo se probó**: `bash scripts/preflight.sh --staged` sin fallas en el commit.
+- **Lo que no debe hacer, cómo se probó**: la aprobación no fusiona los PR #1 y #2 ni empuja ramas, porque eso pide el permiso explícito de Jefferson (`AGENTS.md`, regla 5); `origin/develop` sigue en a3b31f6.
+- **Correcciones**: las horas de las entradas anteriores no coinciden con sus commits (por ejemplo, la spec 001 se guarda a las 14:25 y su entrada dice 16:55). La hora válida de esas entradas es la de su commit, que da `git log -- MEMORIA.md`, y desde esta entrada la hora sale de `TZ=America/Lima date`.
+- **Cómo se reporta**: esta entrada y, cuando Jefferson autorice el empuje, una nota en el PR #2.
+- **Pendiente y siguiente paso**: Jefferson fusiona los PR #1 y #2 o autoriza la fusión, y el corte 1 sigue con el traslado de la base (T023) y la fase 1.
 
 ### 2026-10-28 16:55 (Lima) · docs/plan-mvp · Spec 001 del MVP con historias auditadas
 

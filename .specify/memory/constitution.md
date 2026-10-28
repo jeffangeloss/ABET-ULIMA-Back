@@ -69,4 +69,4 @@ El Sistema ABET mide el logro de los resultados del estudiante (student outcomes
 - Una enmienda entra por PR a `develop` que cambia este archivo, documenta el porqué en la spec afectada y en `MEMORIA.md` y sube la versión con versionado semántico (MAJOR al quitar o redefinir un principio, MINOR al agregar un principio o una regla, PATCH al corregir la redacción). Jefferson la ratifica con la fusión del PR.
 - Los commits y los PR van solo a nombre de Jefferson, ningún agente empuja sin su permiso explícito y ninguna credencial pasa por un agente (`AGENTS.md`, reglas 5 y 7).
 
-**Versión**: 1.0.0 · **Ratificada**: pendiente de Jefferson · **Última enmienda**: 2026-10-28
+**Versión**: 1.0.0 · **Ratificada**: 2026-10-28, con la aprobación del plan por Jefferson en el chat · **Última enmienda**: 2026-10-28

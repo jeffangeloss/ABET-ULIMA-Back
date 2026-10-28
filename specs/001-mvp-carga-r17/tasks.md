@@ -1,6 +1,6 @@
 # Tasks: Del export de Blackboard al R-17 desde la base
 
-**Input**: spec.md, plan.md · **Estado al 2026-10-28**: fase 0 hecha; las fases 1 a 7 esperan la aprobación de la spec
+**Input**: spec.md, plan.md · **Estado al 2026-10-28**: Jefferson aprueba la spec en el chat; la fase 0 queda hecha salvo la fusión de T004 y el corte 1 está en curso
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Neon]` es la base en la nube y `[Jefferson]` marca lo que solo puede hacer él, porque exige su cuenta, su pago o sus credenciales. Ninguna credencial pasa por un agente. Al final, cada tarea lleva las historias que habilita o audita, y un rango como `[US-05..US-16]` incluye las historias intermedias.
 
@@ -9,8 +9,8 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre. `[Back]` es
 - [x] T001 [Back] Leer la base de `jeffangeloss/ABET_ULIMA` (V1_01 a V1_08, `R__vista_r17_por_pi.sql`, `R__vista_tabla_maestra_pi.sql`, `pruebas/pruebas.sql` y `pruebas/datos_sinteticos.sql`), el export `export_inventado_410_con_error.xlsx` y la plantilla del R-17 de Ambiental [US-01..US-21]
 - [x] T002 [Back] Escribir 25 historias candidatas con Gherkin en español, auditarlas con las lentes de necesidad, tamaño y verificabilidad y con la crítica de arquitectura, y dejar el resultado en `specs/001-mvp-carga-r17/revision-historias.md` [US-01..US-21]
 - [x] T003 [Back] Redactar `specs/001-mvp-carga-r17/spec.md`, `plan.md`, `tasks.md`, `.specify/memory/constitution.md` y `specs/README.md` en la rama `docs/plan-mvp` [US-01..US-21]
-- [ ] T004 [Jefferson] Revisar y fusionar la solicitud de integración (pull request, PR) de `docs/plan-mvp` a `develop`, que aprueba la spec, y ratificar la constitución con su fecha [US-01..US-21]
-- [ ] T005 [Jefferson] Confirmar J-01 (Python con FastAPI), J-02 (un solo rol de aplicación), J-03 (contraseña asignada en el corte 1) y J-07 (Vercel Hobby para el piloto) [US-02] [US-05..US-17]
+- [ ] T004 [Jefferson] Revisar y fusionar la solicitud de integración (pull request, PR) de `docs/plan-mvp` a `develop`, que aprueba la spec, y ratificar la constitución con su fecha [US-01..US-21] · Aprobada y ratificada en el chat el 2026-10-28; falta la fusión
+- [x] T005 [Jefferson] Confirmar J-01 (Python con FastAPI), J-02 (un solo rol de aplicación), J-03 (contraseña asignada en el corte 1) y J-07 (Vercel Hobby para el piloto) [US-02] [US-05..US-17] · Confirmadas con la aprobación del plan el 2026-10-28
 - [ ] T009 [Back] Auditar la fase (cada historia de la spec con su traza en `revision-historias.md`) y registrarla en `MEMORIA.md` de Back y Front [US-01..US-21]
 
 ## Phase 1: Contrato
