@@ -37,6 +37,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-10-28 14:55 (Lima) · chore/seguridad-y-memoria · Descarga de gitleaks solo por HTTPS
+
+- **Quién**: Claude Code, tras el hallazgo de SonarQube Cloud en el PR #1 del Back («Not enforcing HTTPS here might allow for redirections to insecure websites», `.github/workflows/ci.yml:50`), que dejó la puerta de calidad en «C Security Rating on New Code».
+- **Qué cambió**: el `curl` del job `secretos` lleva `--proto '=https' --tlsv1.2`, de modo que una redirección no puede llevar la descarga a HTTP. Corrige la entrada «Hook de memoria, secretos, SonarQube Cloud y Snyk» de esta misma fecha.
+- **Por qué**: la suma SHA-256 ya detectaba un archivo alterado, pero la regla de SonarQube Cloud pide además que la descarga no salga de HTTPS.
+- **Lo que debe hacer, cómo se probó**: la nueva corrida del PR debe dejar la puerta de calidad de SonarQube Cloud en verde y el job `secretos` en verde.
+- **Lo que no debe hacer, cómo se probó**: con `--proto '=https'`, curl rechaza seguir una redirección a una dirección http.
+- **Correcciones**: esta entrada corrige la anterior; la anterior no se edita.
+- **Cómo se reporta**: el check de SonarQube Cloud y el job `secretos` del PR.
+- **Pendiente y siguiente paso**: ninguno nuevo.
+
 ### 2026-10-28 14:10 (Lima) · chore/seguridad-y-memoria · Hook de memoria, secretos, SonarQube Cloud y Snyk
 
 - **Quién**: Claude Code, a pedido de Jefferson («todos los cambios que se hagan deben quedar documentados en un archivo de memoria … siempre luego de cada cambio» e «implementa buenas prácticas de uso de SonarQube y Snyk»). Un flujo de cuatro investigadores con un verificador cada uno revisó SonarQube Cloud, Snyk, la seguridad de GitHub en repos privados y las skills de DevOps; los verificadores corrigieron datos de planes y confirmaron los 8 SHA de acciones contra sus tags.
