@@ -1,7 +1,7 @@
-"""Genera db/migration/V1_03__cargar_referencia_ambiental.sql desde referencia/ambiental_2026.json.
+"""Genera migration/V1_03__cargar_referencia_ambiental.sql desde referencia/ambiental_2026.json.
 
 Uso (desde la carpeta bd):
-    python3 -I herramientas/generar_v1_03.py referencia/ambiental_2026.json db/migration/V1_03__cargar_referencia_ambiental.sql
+    python3 -I herramientas/generar_v1_03.py referencia/ambiental_2026.json migration/V1_03__cargar_referencia_ambiental.sql
 
 Reglas:
 - Salida determinista: el mismo JSON produce el mismo archivo byte a byte (orden fijo, sin fechas),

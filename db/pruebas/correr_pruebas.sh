@@ -37,12 +37,12 @@ paso() { printf '\n== %s\n' "$*"; }
 
 paso "Generador de V1_03 determinista"
 "$PYTHON" -I "$RAIZ/herramientas/generar_v1_03.py" "$RAIZ/referencia/ambiental_2026.json" "$TMP/V1_03.sql"
-diff -u "$RAIZ/db/migration/V1_03__cargar_referencia_ambiental.sql" "$TMP/V1_03.sql"
+diff -u "$RAIZ/migration/V1_03__cargar_referencia_ambiental.sql" "$TMP/V1_03.sql"
 echo "ok V1_03 regenerada es idéntica a la guardada"
 
 # Versionadas en orden de versión (V1_01 < V1_02 < ... < V2_01) y repetibles en orden alfabético.
-VERSIONADAS=$(cd "$RAIZ/db/migration" && ls V*__*.sql | sort -t_ -k1,1V -k2,2n)
-REPETIBLES=$(cd "$RAIZ/db/migration" && ls R__*.sql 2>/dev/null | LC_ALL=C sort || true)
+VERSIONADAS=$(cd "$RAIZ/migration" && ls V*__*.sql | sort -t_ -k1,1V -k2,2n)
+REPETIBLES=$(cd "$RAIZ/migration" && ls R__*.sql 2>/dev/null | LC_ALL=C sort || true)
 
 aplicar_migraciones() {
     local bd="$1"
@@ -50,7 +50,7 @@ aplicar_migraciones() {
     "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$bd" -c "CREATE SCHEMA abet"
     for f in $VERSIONADAS $REPETIBLES; do
         PGOPTIONS="-c client_min_messages=warning" \
-            "$PSQL" -X -q -1 -v ON_ERROR_STOP=1 -d "$bd" -f "$RAIZ/db/migration/$f" >/dev/null
+            "$PSQL" -X -q -1 -v ON_ERROR_STOP=1 -d "$bd" -f "$RAIZ/migration/$f" >/dev/null
         echo "ok $bd  $f"
     done
 }

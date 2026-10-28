@@ -15,8 +15,8 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-28
 - **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: Jefferson aprueba la spec 001 en el chat el 2026-10-28, con la constitución ratificada
-- **En curso**: corte 1 en `feat/001-mvp-carga-r17`, empezando por el traslado de la base a `db/` (T023) y la fase 1 (contrato)
+- **Último cambio**: la base de `ABET_ULIMA` en `db/` con su historia y sus pruebas en el job `pruebas` (T023, en local)
+- **En curso**: corte 1 en `feat/001-mvp-carga-r17`, con la fase 1 (contrato) y la parte local de la fase 2
 - **Siguiente paso**: specs vivas y contrato (T011 a T016), esqueleto de Python y exports inventados (T010, T017 y T030) y V1_09 con su rol, su guardia y los datos de 2026-2 (T024 a T026)
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, pasa a `db/` de este repo)
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-28 14:45 (Lima) · feat/001-mvp-carga-r17 · Base de ABET_ULIMA en db/ con su historia (T023, en local)
+
+- **Quién**: Claude Code, sin subagentes.
+- **Qué cambió**: `git subtree add --prefix=db` trae `main` de `ABET_ULIMA` (dc2b098) con su historia, en el commit 197b93a. Después `db/db/migration/` pasa a `db/migration/`, `db/flyway.toml` lee `filesystem:migration` porque Flyway corre desde `db/`, y `db/pruebas/correr_pruebas.sh`, `db/herramientas/generar_v1_03.py` y `db/README.md` nombran la ruta nueva. Sale `db/.github/workflows/bd.yml`, que GitHub no ejecuta fuera de la raíz y que el job `pruebas` reemplaza, y `.github/workflows/ci.yml` suma a ese job un PostgreSQL 16 desechable (imagen `postgres:16`) con el paso `bash db/pruebas/correr_pruebas.sh`.
+- **Por qué**: T023 y J-06. El traslado se adelanta en local, antes de T021 y T022, para no frenar V1_09 ni la carga. `bd/` y la sesión del despliegue en Neon no cambian, y esta rama no se empuja hasta que `preparacion-neon` (4ff1952) llegue a `main` de `ABET_ULIMA` y entre aquí con `git subtree pull --prefix=db`.
+- **Lo que debe hacer, cómo se probó**: `PGUSER=$USER PGHOST=localhost bash db/pruebas/correr_pruebas.sh` termina con «RESULTADO: todo pasó» (V1_03 regenerada idéntica, dos bases con el mismo esquema y Q01 a Q14 en cero); `bash scripts/preflight.sh` sin fallas; el YAML de la CI carga sin errores, aunque todavía no corre en GitHub.
+- **Lo que no debe hacer, cómo se probó**: los 38 rechazos de `db/pruebas/pruebas.sql` siguen rechazados en la ruta nueva; `bd/` sigue en `preparacion-neon` sin cambios (`git -C ../bd status`); la CI no usa acciones ni imágenes de Redgate ni escribe contraseñas, porque el servicio usa `POSTGRES_HOST_AUTH_METHOD: trust` y vive lo que dura el job.
+- **Correcciones**: ninguna.
+- **Cómo se reporta**: esta entrada y el paso nuevo del job `pruebas` en el PR del corte 1.
+- **Pendiente y siguiente paso**: `git subtree pull --prefix=db` de `ABET_ULIMA` cuando Jefferson fusione `preparacion-neon` en `main`, con el choque esperado en la línea `locations` de `db/flyway.toml`, donde entra `filesystem:callbacks`; mover `respaldo_neon.yml` a `.github/workflows/` cuando existan sus secretos; archivar `ABET_ULIMA` después (T022).
 
 ### 2026-10-28 14:40 (Lima) · feat/001-mvp-carga-r17 · Aprobación de la spec 001 en el chat
 

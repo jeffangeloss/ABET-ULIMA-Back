@@ -4,7 +4,7 @@
 # Los ajustes personales van en flyway.user.toml, que .gitignore excluye.
 
 [flyway]
-locations = ["filesystem:db/migration"]
+locations = ["filesystem:migration"]
 createSchemas = true
 validateMigrationNaming = true
 cleanDisabled = true

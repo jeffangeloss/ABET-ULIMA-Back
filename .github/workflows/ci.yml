@@ -1,7 +1,7 @@
 # Pruebas de cada cambio y control del flujo de ramas (docs/devops.md).
-# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh). Las pruebas de
-# la base, del backend y de aceptación se suman a este mismo job cuando existan,
-# para que el check requerido por la protección de ramas siga llamándose igual.
+# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh) y las pruebas de la
+# base (db/pruebas/). Las del backend y las de aceptación se suman a este mismo job
+# cuando existan, para que el check requerido por la protección de ramas siga llamándose igual.
 # No usa acciones ni imágenes de Redgate mientras su licencia esté en revisión.
 name: CI
 
@@ -17,6 +17,20 @@ permissions:
 jobs:
   pruebas:
     runs-on: ubuntu-latest
+    # PostgreSQL 16 desechable para las pruebas de la base (db/pruebas/), que aplican las
+    # migraciones con psql, sin Flyway ni imágenes de Redgate. Vive solo lo que dura el job.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,6 +50,11 @@ jobs:
           else
             bash scripts/preflight.sh
           fi
+      - name: Pruebas de la base (migraciones, rechazos de cada restricción y consultas de control Q01 a Q14)
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+        run: bash db/pruebas/correr_pruebas.sh
 
   # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
   # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).

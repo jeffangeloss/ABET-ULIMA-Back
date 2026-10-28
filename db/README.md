@@ -7,7 +7,7 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 | Ruta | Para qué sirve |
 | --- | --- |
 | `flyway.toml` | Configuración de Flyway, con el esquema `abet` y las credenciales tomadas de variables de entorno |
-| `db/migration/` | Migraciones versionadas `V1_01` a `V1_08` y repetibles `R__` con las vistas |
+| `migration/` | Migraciones versionadas `V1_01` a `V1_08` y repetibles `R__` con las vistas |
 | `referencia/ambiental_2026.json` | Datos curriculares de Ambiental (SO, PI, rúbrica, competencias y asignaturas), sin datos personales |
 | `herramientas/generar_v1_03.py` | Generador determinista de `V1_03` a partir de la referencia, con la huella SHA-256 del JSON |
 | `pruebas/datos_sinteticos.sql` | Datos inventados con la forma de un export real de Blackboard |
@@ -149,7 +149,7 @@ La entrega 1 deja fuera, a propósito, lo que todavía depende de decisiones abi
 
 PostgreSQL 16 corre nativo en la Mac con Apple Silicon y ya está instalado, mientras que SQL Server no tiene una imagen de contenedor soportada para arm64 y en la Mac no hay Docker. Azure Database for PostgreSQL ofrece la versión 16, así que el motor de desarrollo coincide con un destino de producción posible (paridad entre desarrollo y producción). Flyway funciona igual con PostgreSQL, SQL Server y Azure SQL; lo que cambia entre ellos es el dialecto de cada archivo.
 
-Si informática exige SQL Server o Azure SQL, el esquema se traduce a una ubicación propia (`db/migration/sqlserver`) antes del primer despliegue compartido y ambas secuencias se prueban con los mismos datos sintéticos. Estas son las diferencias que hay que reescribir.
+Si informática exige SQL Server o Azure SQL, el esquema se traduce a una ubicación propia (`migration/sqlserver`) antes del primer despliegue compartido y ambas secuencias se prueban con los mismos datos sintéticos. Estas son las diferencias que hay que reescribir.
 
 - `GENERATED ALWAYS AS IDENTITY` pasa a `IDENTITY(1,1)`.
 - Los CHECK con expresiones regulares (`~` y `!~`) no existen en T-SQL y se reescriben con `LEN` y `LIKE`, por ejemplo `LEN(codigo) = 8 AND codigo NOT LIKE '%[^0-9]%'`; la huella usa además una intercalación binaria para distinguir mayúsculas.
