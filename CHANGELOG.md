@@ -10,6 +10,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - CI con la revisión previa `scripts/preflight.sh` (datos inventados, secretos y memoria) y `release.yml`, que crea el tag y el Release desde este archivo.
 - `MEMORIA.md` como memoria de trabajo, `AGENTS.md` con las reglas para personas y agentes, y el hook `pre-commit`.
 - Hook `Stop` de Claude Code (`.claude/settings.json`) que no deja terminar un turno con cambios sin registrar en `MEMORIA.md`.
+- Spec 001 del MVP «del export de Blackboard al R-17 desde la base»: constitución, 21 historias auditadas con 127 escenarios en Gherkin en español, plan por fases y tareas, pendiente de aprobación.
 
 ### Seguridad
 

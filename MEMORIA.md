@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-10-28
-- **Rama de trabajo**: `chore/seguridad-y-memoria`, en PR a `develop`
+- **Rama de trabajo**: `docs/plan-mvp`, en PR a `develop` (después de `chore/seguridad-y-memoria`, PR #1)
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: hook de memoria para Claude Code, gitleaks, Dependabot y la configuración de SonarQube Cloud y Snyk
-- **En curso**: plan del MVP (carga del export de Blackboard, datos en Neon y R-17), en revisión por Jefferson
-- **Siguiente paso**: fusionar este PR, aprobar el plan del MVP y abrir su spec en `specs/` por PR a `develop`
+- **Último cambio**: spec 001 del MVP con historias auditadas, `.feature`, plan, tareas y constitución
+- **En curso**: aprobación de la spec `specs/001-mvp-carga-r17/` por Jefferson (merge de este PR o su «apruebo» explícito)
+- **Siguiente paso**: con la spec aprobada, fase 1 (contrato y specs vivas) y fase 2 (base en Neon, traslado de `bd/` y V1_09), en `feat/001-mvp-carga-r17`
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, pasa a `db/` de este repo)
 
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-28 16:55 (Lima) · docs/plan-mvp · Spec 001 del MVP con historias auditadas
+
+- **Quién**: Claude Code, con flujos de agentes. Tres escritores redactaron 29 historias desde los ángulos del profesor, del coordinador con la base y de la evidencia con la privacidad, y quedaron 25 candidatas al unirlas. Tres auditores trataron de refutarlas (necesidad, solapamiento y tamaño, verificabilidad contra la base) y un crítico atacó las decisiones técnicas. Después, cinco redactores escribieron la spec, los `.feature`, el plan y las tareas con el esquema de IQBF; cuatro revisores (constructor, consistencia, hechos y estilo) hallaron 99 problemas, y tres vueltas de corrección con verificador los cerraron.
+- **Qué cambió**: `.specify/memory/constitution.md` (seis principios, versión 1.0.0 sin ratificar), `specs/README.md`, `specs/001-mvp-carga-r17/spec.md` (21 historias US-01 a US-21, FR, SC, decisiones D-01 a D-13 y J-01 a J-09), `revision-historias.md` (veredictos de la auditoría por candidata C-01 a C-25), `aceptacion/*.feature` (seis archivos, 127 escenarios en Gherkin en español), `plan.md` (fases 0 a 7 y cortes) y `tasks.md`.
+- **Por qué**: pedido de Jefferson del 28/10/2026, «Dime el plan que implementaremos», con el objetivo del sprint en sus palabras (base en la nube, subir el export, generar el R-17 y cargar los datos) y el método de historias auditadas.
+- **Lo que debe hacer, cómo se probó**: el revisor de hechos recalculó contra `bd/pruebas/datos_sinteticos.sql` las cifras de los escenarios (63,6 / 63,6 / 72,7 con 11 estudiantes; 60,0 / 60,0 / 70,0 con la fila 3 rechazada; 90,9 % con las reglas aprobadas de prueba) y cotejó cada nombre con las migraciones; el verificador final confirma que IDs, títulos, cortes, rutas, mensajes y archivos coinciden entre la spec, los `.feature`, el plan y las tareas. `bash scripts/preflight.sh --staged` sin fallas.
+- **Lo que no debe hacer, cómo se probó**: los únicos códigos fuera del rango 99 son los valores de prueba de la guardia (10000004 y 98999999) dentro de `specs/`; los correos son `@example.invalid`; no hay credenciales (barridos con grep de los revisores).
+- **Correcciones**: la spec citaba 20 archivos `.feature` que no existían, los `.feature` tenían dos ubicaciones, las candidatas compartían numeración con las historias finales, el export sin sección declarada tenía tres comportamientos y la constitución nombraba una columna inexistente (`nombre` en lugar de `nombre_archivo`); todo quedó corregido. Quedan cuatro diferencias menores entre la spec y los `.feature`: escenarios de US-07 a US-14 que nombran P3 o P4, US-01 escenario 1 sin `abet.so` ni `abet.instrumento`, US-08 escenario 3 que promete el registro de la aplicación y SC-006, que cita los registros de Vercel.
+- **Cómo se reporta**: PR de `docs/plan-mvp` a `develop`; su merge es la aprobación de la spec.
+- **Pendiente y siguiente paso**: las decisiones D y J de la spec; crear el proyecto de Neon (Jefferson); fusionar `preparacion-neon` antes de trasladar `bd/`.
 
 ### 2026-10-28 14:55 (Lima) · chore/seguridad-y-memoria · Descarga de gitleaks solo por HTTPS
 
