@@ -18,6 +18,10 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - V1_09 con el esquema `acceso` (usuarios autorizados, credenciales, sesiones, intentos fallidos, docentes por sección y códigos de acceso), el autor de cada carga, cuatro motivos nuevos de rechazo y el PI de los rechazos por PI; el rol de la aplicación con privilegio mínimo, las consultas de control de Neon, la guardia de datos inventados y los datos inventados de 2026-2, con sus pruebas.
 - Escenarios del profesor con varias secciones de varias asignaturas (`varias_secciones.feature`, con 133 escenarios en siete archivos), sus datos inventados (`db/datos/varias_secciones_2026_2_inventado.sql`, solo en las bases desechables de las pruebas) y tres exports nuevos con su generador.
 
+### Cambiado
+
+- Jefferson decide el 2026-10-28 dos puntos abiertos. J-06 adelanta en local el traslado de `bd/` a `db/` con git subtree, antes del primer `flyway migrate` en Neon y de V1_09, y J-10 suma el esquema `acceso` al respaldo diario de Neon sin los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso`.
+
 ### Seguridad
 
 - Job `secretos` con gitleaks 8.30.1 fijado por suma SHA-256, y `.gitleaks.toml`.

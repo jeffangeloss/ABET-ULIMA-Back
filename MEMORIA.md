@@ -15,10 +15,10 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-29
 - **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: los escenarios y los datos del profesor con varias secciones de varios cursos (`varias_secciones.feature`, 133 escenarios en siete archivos), en local
+- **Último cambio**: las decisiones J-06 y J-10 de Jefferson registradas en la spec, en `specs/README.md` y en `tasks.md`, en local
 - **En curso**: la demo de la carga con el R-17 (T031 a T035), con su código en el árbol de trabajo y sin commit todavía
-- **Siguiente paso**: registrar la decisión de Jefferson sobre J-06 y J-10, y después el commit de la demo del corte 1
-- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
+- **Siguiente paso**: el commit de la demo del corte 1 (T031 a T035), la fusión de `preparacion-neon` en `main` de `ABET_ULIMA` (T022) y su `git subtree pull`
+- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
 ## Plantilla de una entrada
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-29 08:21 (Lima) · feat/001-mvp-carga-r17 · J-06 y J-10 decididas por Jefferson
+- Quién: Claude Code como integrador, sin subagentes. Jefferson responde «Sí, corrige J-06» a «¿Corrijo J-06 en la spec para registrar el traslado adelantado de la base a db/?» y «Súmalo sin claves» a «¿Cómo respaldo el esquema acceso en el respaldo diario de Neon?». Antes de aceptar el cambio, Claude Code compara con una búsqueda cada mención del orden del traslado en la spec, el plan, `specs/README.md` y `tasks.md`.
+- Qué cambió: `spec.md` (FR-002 con el traslado adelantado, la fila J-06 como decidida y la fila J-10 nueva del respaldo del esquema `acceso`); `specs/README.md` (la línea del orden del traslado); `plan.md` (el rango de decisiones de Jefferson pasa a J-01 a J-10); `tasks.md` (T022 con la aprobación de J-06 y T027 con el respaldo de `acceso` y el cambio de `locations` al traer `preparacion-neon`); `CHANGELOG.md`.
+- Por qué: el traslado de `bd/` a `db/` ya está hecho en local (T023, commit b244b72) antes del primer `flyway migrate` en Neon, y la spec seguía diciendo lo contrario. El respaldo diario vuelca solo `abet` y el esquema `acceso` quedaba fuera, aunque guarda los usuarios y sus secciones.
+- Lo que debe hacer, cómo se probó: `grep` sobre `specs/`, `README.md` y `db/README.md` no encuentra ninguna frase que ponga el traslado después del primer `flyway migrate`, y FR-002, J-06, `specs/README.md` y T022 dicen el mismo hecho. `bash scripts/preflight.sh` pasa sin fallas.
+- Lo que no debe hacer, cómo se probó: el respaldo no incluye los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso`, y así lo fijan J-10 y T027. Este cambio no toca código, y `db/flyway.toml` queda igual hasta que `preparacion-neon` llegue con `git subtree pull`.
+- Correcciones: ninguna. El cambio de `plan.md` solo actualiza el rango de decisiones, que quedaba corto frente a la tabla de la spec.
+- Cómo se reporta: esta entrada y `CHANGELOG.md`.
+- Pendiente y siguiente paso: T022 sigue pendiente, porque falta fusionar `preparacion-neon` en `main` de `ABET_ULIMA`, traerla con `git subtree pull --prefix=db` y archivar el repositorio. T027 espera además el proyecto de Neon. La prueba del volcado y de la restauración con `acceso` sin claves se escribe cuando llegue esa rama.
 
 ### 2026-10-29 08:20 (Lima) · feat/001-mvp-carga-r17 · Escenarios y datos del profesor con varias secciones de varios cursos
 - Quién: Claude Code como integrador, a pedido de Jefferson, que escribe el 2026-10-28 en el chat «se espera lo siguiente / un profesor está dictando muchos cursos de muchas secciones / él solo puede cargar el export de su sección que le corresponde en el lugar donde le corresponde» y aprueba con «Sí, agrégalos». El flujo wf_d0250dfb-fda reparte el trabajo entre siete subagentes. El agente escribir:escenarios redacta `varias_secciones.feature`, sus trazas en la spec, en las specs vivas y en el plan, y los dos mensajes nuevos del contrato del Front. El agente escribir:datos redacta el archivo de datos, los cambios de `db/pruebas/`, el generador y los tres exports. Tres verificadores revisan en solo lectura. Consistencia y el refutador rechazan el trabajo, y datos lo aprueba con un hallazgo bajo. Un corrector cierra los tres hallazgos medios y 13 de los 21 bajos, y un reverificador aprueba con 12 bajos abiertos. Antes de aceptar el trabajo, Claude Code repite `correr_pruebas.sh`, las pruebas del generador y de la lectura del Gherkin, y el conteo del parser oficial, y compara los archivos cambiados del Back con las listas de archivos de los informes.

@@ -538,7 +538,7 @@ Como profesor, quiero que el sistema me pida confirmar la sección cuando el exp
 ## Requirements *(mandatory)*
 
 - **FR-001** El esquema `abet` se aplica en Neon con Flyway desde el entorno `neon` con `cleanDisabled = true`, y `controles_neon.sql` corre Q01 a Q14 con `abet_respaldo` en solo lectura.
-- **FR-002** El contenido de `bd/` pasa a `db/` de este repositorio con su historia (git subtree) después del primer `flyway migrate` en Neon y de fusionar `preparacion-neon`, y antes de escribir V1_09; después `ABET_ULIMA` se archiva.
+- **FR-002** El contenido de `bd/` pasa a `db/` de este repositorio con su historia (git subtree). Jefferson aprueba el 2026-10-28 adelantar el traslado en local, antes del primer `flyway migrate` en Neon y de V1_09 (J-06); los commits de `preparacion-neon` entran después con `git subtree pull --prefix=db`, y `ABET_ULIMA` se archiva cuando termina T022.
 - **FR-003** `V1_09__crear_acceso.sql` crea el esquema `acceso` con `usuario_autorizado`, `credencial`, `sesion`, `intento_fallido`, `docente_seccion` y `codigo_acceso`, las columnas `abet.carga.subida_por` y `abet.rechazo_fila.pi_id` y los motivos COLUMNA_CODIGO_AUSENTE, PI_REPETIDO, PERIODO_NO_COINCIDE y SECCION_SIN_DECLARAR, y `pruebas.sql` gana un caso que debe pasar y uno que no por cada restricción nueva.
 - **FR-004** La API se conecta con el rol `abet_app` de `db/plataforma/neon/crear_rol_app.sql`, que no tiene DELETE ni TRUNCATE en `abet` y solo actualiza `estado`, `filas_leidas`, `filas_aceptadas`, `filas_rechazadas` y `terminada_en` de `carga`.
 - **FR-005** `db/plataforma/neon/guardia_datos_inventados.sql` agrega `ck_estudiante_codigo_inventado` solo en Neon, y la API, con `GUARDIA_DATOS_INVENTADOS=1`, rechaza con 422 y sin escribir todo export con un código fuera de 99000000 a 99999999.
@@ -614,10 +614,11 @@ De Jefferson (J).
 | J-03 | Identidad de la semana 1 | Contraseña asignada (recomendado); el código por correo llega en el corte 2 | Jefferson |
 | J-04 | Dominio propio y proveedor de correo | Resend en el piloto y Amazon SES en la región sa-east-1 de AWS para datos reales; el dominio se compra el primer día para que su registro en el DNS se propague antes del corte 2 | Jefferson |
 | J-05 | Organización de SonarQube Cloud | Una organización aparte de IQBF (propuesta) | Jefferson |
-| J-06 | Traslado de `bd/` al Back y archivo de `ABET_ULIMA` | Después del primer `flyway migrate` y antes de V1_09, con git subtree | Jefferson |
+| J-06 | Traslado de `bd/` al Back y archivo de `ABET_ULIMA` | Decidida el 2026-10-28: el traslado se adelanta en local con git subtree desde `main` (dc2b098), antes del primer `flyway migrate` en Neon y de V1_09, y `preparacion-neon` entra después con `git subtree pull` | Jefferson |
 | J-07 | Plan de Vercel para el piloto | Vercel Hobby, con la consulta a soporte por la cláusula de uso no comercial | Jefferson |
 | J-08 | Controles de la CI | `secretos` como verificación (check) requerida, acciones fijadas por SHA y alertas de Dependabot (propuesta, los tres) | Jefferson |
 | J-09 | La prueba de humo corre en la CI o contra la vista previa | Contra la vista previa (Preview) de `develop` antes de pasar a `main`; la prueba de humo no corre en Production | Jefferson |
+| J-10 | Respaldo diario del esquema `acceso` | Decidida el 2026-10-28: el respaldo suma `acceso` con los usuarios y sus secciones, sin los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso`, y `abet_respaldo` puede leer esas tablas, porque pg_dump las bloquea aunque no vuelque sus datos | Jefferson |
 
 ## Fuera de alcance
 
