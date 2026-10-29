@@ -158,3 +158,26 @@ Característica: R-17 Capstone y tabla maestra en el formato nuevo generados des
     Cuando se comparan las columnas de abet.v_r17_por_pi con las de la spec 001 por information_schema.columns.ordinal_position
     Entonces las columnas de la spec 001 siguen en sus posiciones con sus tipos
     Y tipo_curso es la última columna
+
+  # Escenarios agregados con la evidencia de los R-17 reales de Capstone (2026-10-29)
+
+  @US-19 @corte1
+  Escenario: El R-17 Capstone no muestra el nombre del profesor
+    Dado el export de la 420 publicado y la plantilla publicada con 11 proyectos
+    Cuando el profesor descarga el R-17 de esa carga
+    Entonces el campo Profesor de la cabecera de "Cursos Capstone" está vacío (valor provisional de D-17)
+    Y la columna PROFESOR de la tabla de estudiantes está vacía en las 33 filas
+    Y la hoja "Constancia" muestra "docente420@example.invalid" como el correo de quien sube el export, como D-12 de la spec 001
+    Y ninguna hoja del libro contiene una firma ni un comentario libre leídos de un archivo
+
+  @US-19 @corte1
+  Esquema del escenario: La tabla de Cursos Capstone admite 224 filas y no se trunca
+    Dado un export inventado de la 420 con <estudiantes> estudiantes desde 99000201 y los PI 1.1, 1.2 y 1.3, generado en tmp_path y publicado con <mediciones> mediciones
+    Cuando el profesor descarga el R-17 de esa carga
+    Entonces la respuesta es <estado>
+    Y <resultado>
+
+    Ejemplos:
+      | estudiantes | mediciones | estado | resultado                                                                                 |
+      | 74          | 222        | 200    | la tabla de estudiantes ocupa las filas 49 a 270 de "Cursos Capstone"                      |
+      | 75          | 225        | 422    | el detail es "La sección supera las filas de la plantilla del R-17." y no se genera el libro |

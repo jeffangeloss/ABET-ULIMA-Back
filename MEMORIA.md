@@ -15,7 +15,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-29
 - **Rama de trabajo**: `docs/002-capstone` (spec 002, apilada sobre `feat/001-mvp-carga-r17`, solo en local); el corte 1 sigue en `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: D-14 decidida (2026-10-29) en la spec 002 de Capstone, con los tres cursos 450025, 450024 y 450026 (en local, rama `docs/002-capstone`), pendiente de aprobación
+- **Último cambio**: spec 002 ajustada con la estructura de ocho R-17 reales de PIA (85 escenarios, en local, rama `docs/002-capstone`), pendiente de aprobación
 - **En curso**: la demo de la carga con el R-17 (T031 a T035), detenida a las 20:21 por el incidente de `abet_sis_med_dev` y por reanudar con el clúster desechable
 - **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-15 a D-29 y J-11 a J-16 (D-14 ya está decidida); sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-29 09:15 (Lima) · docs/002-capstone · Spec 002 ajustada con la estructura de R-17 reales de PIA
+
+- **Quién**: Jefferson adjunta el 2026-10-29 ocho R-17 reales de Capstone con «aquí hay cursos capstone como PIA». Claude Code coordina el flujo y delega así. Un agente en Sonnet extrae la estructura de los ocho archivos sin copiar datos personales. Un agente en Sonnet revisa la privacidad de esa extracción. Un agente de ajuste edita la spec con la skill redaccion-ieee-q1. Un agente en Sonnet revisa el resultado, y esta entrada y el commit los hace Claude Code. De la revisión se verificó que el parser cuenta 85 escenarios, que `preflight.sh` no falla y que el diff no trae nombres ni códigos reales.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` agrega un párrafo de Evidencia y actualiza D-16, D-17, D-25 y D-29 (valores provisionales con su pregunta), US-19, US-21, FR-017, el caso límite de filas y Fuera de alcance. `aceptacion/evidencia_capstone.feature` suma dos escenarios al final (profesor sin nombre y límite de 224 filas con 222 y 225 mediciones). `tasks.md` ajusta T003, T006, T033 y T034, y `plan.md` y `revision-historias.md` pasan el conteo a 85.
+- **Por qué**: los R-17 reales de PIA fijan la forma de la hoja «Cursos Capstone» y del dato del profesor, y la spec debe partir de esa evidencia.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`) lee los cuatro `.feature` y cuenta 85 escenarios (12, 50, 17 y 6). `bash scripts/preflight.sh` termina sin fallas. El catálogo de `V1_03` coincide con lo escrito sobre 450024, 450025 y 450026, y el SO 2 trae solo 2.1 y 2.2.
+- **Lo que no debe hacer, cómo se probó**: ningún dato personal entra al repositorio. La revisión de privacidad no halló nombres de personas ni códigos fuera de 99000000 a 99999999, y el único correo es el inventado `docente420@example.invalid`. Las copias temporales de los R-17 se borraron.
+- **Correcciones**: la revisión solo trajo un hallazgo de severidad baja, el detalle de la celda doble del profesor en Evidencia. Se retiró para dejar «nombres de profesores y firma».
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson responde D-16, D-17, D-25 y D-29 (qué PI mide 450026) y aprueba la spec 002.
 
 ### 2026-10-29 08:47 (Lima) · docs/002-capstone · D-14 decidida, los tres cursos Capstone (en local)
 

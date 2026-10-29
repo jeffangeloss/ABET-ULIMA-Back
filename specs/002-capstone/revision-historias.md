@@ -158,3 +158,17 @@ Tres revisores leen la spec escrita y dejan diez hallazgos. La corrección no ca
 | T037 condicional | Baja | T037 pasa a una prueba que falla mientras el reemplazo del export exista sin el 409 de J-16 |
 | `security_barrier` sin justificar | Baja, parcialmente falsa | Las vistas `R__` de este `db/` no lo usan, pero sus versiones del subtree de `preparacion-neon` sí, y `crear_roles_lectura.sql` lo exige (líneas 128 a 130). FR-018 lo dice en lugar de quitarlo |
 | La hoja «Hoja1» remite a una decisión equivocada | Baja, falsa | D-26 ya pregunta «¿Se identifica la hoja por el nombre «Hoja1» o se toma la primera?», así que la remisión queda |
+
+## Ajuste con los R-17 reales de Capstone (2026-10-29)
+
+Jefferson adjunta ocho R-17 reales de 560073 «Proyecto de Ingeniería Aplicada II» de Ingeniería Industrial del periodo 2025-1, y el integrador los resume sin copiar ningún dato personal. El ajuste no cambia ningún veredicto de las lentes ni del crítico, conserva la numeración de historias, decisiones y escenarios y suma dos escenarios al final de `evidencia_capstone.feature` (85 en total).
+
+| Hecho observado | Efecto en la spec |
+|---|---|
+| Los ocho R-17 usan el formato de siempre y ninguno trae la hoja «Cursos Capstone» | D-25 pregunta si la Oficina de Calidad adopta esa hoja, y el valor provisional la conserva |
+| Los ocho miden solo el PI 2.3 del SO 2, que el catálogo de Ambiental no tiene, y la hoja «Base de Cursos - SO» coincide con `asignatura_so` de V1_03 | D-29 deja los PI en `plan_medicion` por curso y periodo, sin PI fijo en el código |
+| Cada fila trae solo el CÓDIGO y la nota, sin datos de proyecto ni SO, PI o PROFESOR | D-16 deja como obligatorias solo CÓDIGO DEL ESTUDIANTE y CALIFICACIÓN |
+| El profesor es un dato de la sección, con nombres y firma en origen | D-17 deja vacíos la cabecera y la columna PROFESOR y pregunta a Jefferson, y el escenario nuevo de US-19 lo prueba |
+| Las fórmulas de los conteos y la fecha tienen rangos desplazados en 4 de 8 archivos | FR-017 escribe también los conteos y la fecha como valores, y T034 lo prueba |
+| La plantilla base admite 224 filas, de la 49 a la 272, y la sección real más grande tiene 36 estudiantes | El caso límite del R-17 fija las 224 filas, y el esquema nuevo de US-19 prueba 222 y 225 mediciones |
+| Las tolerancias de lectura y la norma de privacidad de un importador de R-17 históricos | Quedan en Fuera de alcance, porque la spec 002 genera el R-17 y no lo importa |

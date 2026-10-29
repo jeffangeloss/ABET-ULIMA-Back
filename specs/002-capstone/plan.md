@@ -23,7 +23,7 @@ Hoy la spec 001 lleva el export de Blackboard de una sección a la base y genera
 | II · Privacidad por diseño y solo datos inventados | La columna ALUMNO se descarta, Q04 suma «alumno» y las tablas de proyecto, el RUC de persona natural no se guarda, la guardia cubre código y RUC en la API y en Neon, y ningún rechazo guarda el valor leído (fases 2 y 3) |
 | III · Toda carga es atómica y trazable | La plantilla se escribe en una transacción con su huella SHA-256, `subida_por` y sus rechazos por fila, columna y motivo, y se ata a la carga publicada del export por clave foránea compuesta (fase 3) |
 | IV · Las reglas son datos versionados y lo provisional se ve | El tipo de curso vive en `plan_estudios`, la marca de 450025, 450024 y 450026 la fija D-14 (2026-10-29) y la pone V1_10, el R-17 conserva la franja PROVISIONAL y suma la de «SIN DATOS DE PROYECTO» (fases 2 y 3) |
-| V · Contrato, historias auditadas y prueba antes de desplegar | 46 candidatas auditadas en la fase 0, contrato y specs vivas en la fase 1, `.feature` con 83 escenarios, pruebas en la fase 5 y `audit.md` en la fase 6, con `MEMORIA.md` en cada commit |
+| V · Contrato, historias auditadas y prueba antes de desplegar | 46 candidatas auditadas en la fase 0, contrato y specs vivas en la fase 1, `.feature` con 85 escenarios, pruebas en la fase 5 y `audit.md` en la fase 6, con `MEMORIA.md` en cada commit |
 | VI · Capas y privilegio mínimo | `abet_carga` sin FastAPI, `app/permisos.py` como dueño de la visibilidad y `abet_app` sin DELETE ni TRUNCATE y con UPDATE solo de las columnas de cierre de `carga_proyecto` |
 
 ## Project Structure
