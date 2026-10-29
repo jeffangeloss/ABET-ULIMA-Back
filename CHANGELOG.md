@@ -14,9 +14,11 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Base de datos en `db/` con su historia desde `jeffangeloss/ABET_ULIMA` (V1_01 a V1_08, las vistas R__ y sus pruebas), que el job `pruebas` corre en un PostgreSQL 16 desechable.
 - Esqueleto de Python con uv (`pyproject.toml`, `uv.lock` y `requirements.txt` con hashes para Snyk), `.env.example` y pytest en el job `pruebas`, con la lectura del Gherkin en español por pytest-bdd.
 - Generador determinista de los exports inventados de `tests/datos_inventados/` (`scripts/generar_exports_inventados.py`).
+- V1_09 con el esquema `acceso` (usuarios autorizados, credenciales, sesiones, intentos fallidos, docentes por sección y códigos de acceso), el autor de cada carga, cuatro motivos nuevos de rechazo y el PI de los rechazos por PI; el rol de la aplicación con privilegio mínimo, las consultas de control de Neon, la guardia de datos inventados y los datos inventados de 2026-2, con sus pruebas.
 
 ### Seguridad
 
 - Job `secretos` con gitleaks 8.30.1 fijado por suma SHA-256, y `.gitleaks.toml`.
 - Dependabot para las acciones de GitHub, `.sonarcloud.properties` para SonarQube Cloud y `.snyk` con excepciones que vencen.
 - `astral-sh/setup-uv` fijado por SHA en v10.3.0, con más de 14 días publicada, y Dependabot para `uv.lock`, con la misma espera de 14 días en las acciones y en los paquetes.
+- Las pruebas de la base corren en un clúster de PostgreSQL desechable propio (`db/pruebas/cluster_desechable.sh`) y nunca en el de la Mac, después de que una prueba de mutación borrara la base local `abet_sis_med_dev` el 2026-10-28.

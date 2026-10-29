@@ -1,4 +1,5 @@
--- Pruebas de la entrega 1. Se corren sobre una base desechable con las migraciones y los datos sintéticos.
+-- Pruebas de la base. Se corren sobre una base desechable con las migraciones, los datos sintéticos y los datos de
+-- 2026-2 de db/datos/periodo_2026_2_inventado.sql, que correr_pruebas.sh aplica dos veces después de los sintéticos.
 -- Cada aserción lanza ERROR si no se cumple; psql se detiene en el primer error (ON_ERROR_STOP).
 -- Los bloques DO de este archivo son el arnés de pruebas y no forman parte del esquema.
 \set ON_ERROR_STOP 1
@@ -271,6 +272,192 @@ BEGIN
     RAISE NOTICE 'ok A03 reemplazo con el mismo archivo y reglas aprobadas (R-17 oficial, la anterior guarda sus reglas)';
 END $$;
 
+-- A04. V1_09 crea el esquema acceso con sus seis tablas, la columna carga.subida_por y los motivos nuevos (US-04).
+DO $$
+BEGIN
+    IF (SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.tables
+         WHERE table_schema = 'acceso')
+       IS DISTINCT FROM 'codigo_acceso,credencial,docente_seccion,intento_fallido,sesion,usuario_autorizado' THEN
+        RAISE EXCEPTION 'FALLA A04: acceso debe tener usuario_autorizado, credencial, sesion, intento_fallido, docente_seccion y codigo_acceso';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'abet' AND table_name = 'carga' AND column_name = 'subida_por'
+                      AND is_nullable = 'YES' AND data_type = 'integer')
+       OR NOT EXISTS (SELECT 1 FROM pg_constraint
+                       WHERE conname = 'fk_carga_subida_por' AND conrelid = 'abet.carga'::regclass
+                         AND confrelid = 'acceso.usuario_autorizado'::regclass) THEN
+        RAISE EXCEPTION 'FALLA A04: abet.carga.subida_por debe admitir nulo y apuntar a acceso.usuario_autorizado';
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE n.nspname = 'acceso' AND c.relkind = 'r' AND obj_description(c.oid, 'pg_class') IS NULL)
+       OR obj_description('acceso'::regnamespace, 'pg_namespace') IS NULL THEN
+        RAISE EXCEPTION 'FALLA A04: el esquema acceso y cada una de sus tablas deben llevar COMMENT ON';
+    END IF;
+    IF EXISTS (SELECT 1 FROM abet.carga WHERE subida_por IS NOT NULL) THEN
+        RAISE EXCEPTION 'FALLA A04: las cargas de los datos sintéticos y de A02 y A03 no registran quién las sube';
+    END IF;
+    RAISE NOTICE 'ok A04 V1_09 crea acceso con sus seis tablas comentadas y abet.carga.subida_por nulo con su FK';
+END $$;
+
+-- A05. Datos de 2026-2 de db/datos/periodo_2026_2_inventado.sql. correr_pruebas.sh los aplica dos veces después de
+-- datos_sinteticos.sql, y ninguna fila se duplica ni choca con las de los datos sintéticos (US-03 y US-04).
+DO $$
+BEGIN
+    IF (SELECT count(*) FROM abet.catalogo_vigencia) <> 1
+       OR (SELECT string_agg(s.numero || '=' || s.curso_blackboard, ',' ORDER BY s.numero)
+             FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+            WHERE s.numero IN ('410', '411'))
+          IS DISTINCT FROM '410=SINTETICO_20262_450002_410,411=SINTETICO_20262_450002_411'
+       OR (SELECT string_agg(p.codigo, ',' ORDER BY p.codigo)
+             FROM abet.plan_medicion pm JOIN abet.pi p ON p.pi_id = pm.pi_id
+             JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id AND a.codigo = '450002')
+          IS DISTINCT FROM '5.1,5.2,5.3'
+       OR (SELECT count(*) FROM abet.plan_medicion) <> 4 THEN
+        RAISE EXCEPTION 'FALLA A05: la vigencia, las secciones 410 y 411 y el plan de 2026-2 deben estar una sola vez';
+    END IF;
+    IF (SELECT string_agg(u.correo || '=' || u.rol || ':' || u.activo, ',' ORDER BY u.correo)
+          FROM acceso.usuario_autorizado u)
+       IS DISTINCT FROM 'coordinacion@example.invalid=COORDINADOR:true,docente410@example.invalid=PROFESOR:true,'
+                        || 'docente411@example.invalid=PROFESOR:true'
+       OR (SELECT string_agg(u.correo || '=' || s.numero, ',' ORDER BY u.correo)
+             FROM acceso.docente_seccion d JOIN acceso.usuario_autorizado u ON u.usuario_id = d.usuario_id
+             JOIN abet.seccion s ON s.seccion_id = d.seccion_id)
+          IS DISTINCT FROM 'docente410@example.invalid=410,docente411@example.invalid=411'
+       OR (SELECT count(*) FROM acceso.credencial) + (SELECT count(*) FROM acceso.sesion)
+          + (SELECT count(*) FROM acceso.intento_fallido) + (SELECT count(*) FROM acceso.codigo_acceso) <> 0 THEN
+        RAISE EXCEPTION 'FALLA A05: deben quedar 3 usuarios activos, 2 asignaciones y ninguna credencial, sesión, intento ni código';
+    END IF;
+    RAISE NOTICE 'ok A05 datos de 2026-2 aplicados dos veces sobre los datos sintéticos, sin duplicar ni chocar';
+END $$;
+
+-- A06. Filas válidas de las tablas de acceso, una carga con subida_por y los 14 motivos de rechazo con su efecto,
+-- en una transacción que se deshace. El hash Argon2id es inventado y no corresponde a ninguna contraseña.
+BEGIN;
+INSERT INTO acceso.credencial (usuario_id, hash_clave)
+SELECT usuario_id, '$argon2id$v=19$m=65536,t=3,p=4$cHJ1ZWJh$cHJ1ZWJh'
+FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid';
+
+-- Sesión con la vigencia por defecto de 12 horas, cerrada después sin borrarla, con el cierre del COMMENT de
+-- acceso.sesion.expira_en.
+INSERT INTO acceso.sesion (usuario_id, hash_token)
+SELECT usuario_id, encode(sha256(convert_to('sesion A06', 'UTF8')), 'hex')
+FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid';
+UPDATE acceso.sesion SET expira_en = least(expira_en, clock_timestamp())
+WHERE hash_token = encode(sha256(convert_to('sesion A06', 'UTF8')), 'hex');
+
+-- Intento fallido con un correo que no está en usuario_autorizado, guardado como hash en hexadecimal minúscula.
+INSERT INTO acceso.intento_fallido (hash_cuenta)
+VALUES (encode(sha256(convert_to('desconocido@example.invalid', 'UTF8')), 'hex'));
+
+-- Código del corte 2 con la vigencia por defecto de 10 minutos y sus 5 intentos agotados.
+INSERT INTO acceso.codigo_acceso (usuario_id, hash_codigo, intentos)
+SELECT usuario_id, encode(sha256(convert_to('codigo A06', 'UTF8')), 'hex'), 5
+FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid';
+
+-- Carga RECHAZADA de la 411 subida por su profesor, con un registro por cada motivo de la lista de V1_09.
+INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
+VALUES (encode(sha256(convert_to('sondeo motivos V1_09', 'UTF8')), 'hex'), 'sondeo_motivos.xlsx', 'Hoja1', 2);
+INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version,
+                        estado, terminada_en, subida_por)
+SELECT s.seccion_id, ao.archivo_id, 2, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', 'RECHAZADA', now(),
+       u.usuario_id
+FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002',
+     abet.archivo_origen ao, abet.conjunto_reglas cr, acceso.usuario_autorizado u
+WHERE s.numero = '411' AND ao.nombre_archivo = 'sondeo_motivos.xlsx' AND cr.version = 'R-2026-BORRADOR'
+  AND u.correo = 'docente411@example.invalid';
+INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto)
+SELECT c.carga_id, v.fila, v.motivo, v.efecto
+FROM (VALUES (2, 'CODIGO_VACIO', 'RECHAZA_FILA'), (2, 'CODIGO_INVALIDO', 'RECHAZA_FILA'),
+             (2, 'CODIGO_DUPLICADO', 'RECHAZA_FILA'), (2, 'NIVEL_FUERA_DE_ESCALA', 'RECHAZA_FILA'),
+             (2, 'NIVEL_NO_NUMERICO', 'RECHAZA_FILA'), (NULL, 'COLUMNA_PI_FUERA_DEL_PLAN', 'AVISO'),
+             (NULL, 'PI_DEL_PLAN_AUSENTE', 'RECHAZA_CARGA'), (NULL, 'ARCHIVO_SIN_FILAS', 'RECHAZA_CARGA'),
+             (NULL, 'SECCION_NO_COINCIDE', 'RECHAZA_CARGA'), (NULL, 'PUNTAJE_MAXIMO_DISTINTO', 'AVISO'),
+             (NULL, 'COLUMNA_CODIGO_AUSENTE', 'RECHAZA_CARGA'), (NULL, 'PI_REPETIDO', 'RECHAZA_CARGA'),
+             (NULL, 'PERIODO_NO_COINCIDE', 'RECHAZA_CARGA'), (NULL, 'SECCION_SIN_DECLARAR', 'AVISO'))
+     AS v (fila, motivo, efecto)
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'sondeo_motivos.xlsx'
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id;
+
+DO $$
+BEGIN
+    IF (SELECT count(*) FROM acceso.credencial WHERE actualizado_en IS NOT NULL) <> 1
+       OR (SELECT count(*) FROM acceso.sesion WHERE expira_en <= clock_timestamp() AND expira_en > creada_en) <> 1
+       OR (SELECT count(*) FROM acceso.intento_fallido WHERE intentado_en = now()) <> 1
+       OR (SELECT count(*) FROM acceso.codigo_acceso WHERE expira_en = creado_en + interval '10 minutes' AND usado_en IS NULL) <> 1 THEN
+        RAISE EXCEPTION 'FALLA A06: credencial, sesión cerrada, intento fallido y código del corte 2 válidos deben aceptarse';
+    END IF;
+    IF (SELECT count(DISTINCT r.motivo) FROM abet.rechazo_fila r JOIN abet.carga c ON c.carga_id = r.carga_id
+          JOIN acceso.usuario_autorizado u ON u.usuario_id = c.subida_por AND u.correo = 'docente411@example.invalid') <> 14 THEN
+        RAISE EXCEPTION 'FALLA A06: los 14 motivos deben aceptarse en una carga con subida_por';
+    END IF;
+    RAISE NOTICE 'ok A06 credencial, sesión cerrada sin borrar, intento fallido de un correo desconocido, código del corte 2, carga con subida_por y 14 motivos aceptados';
+END $$;
+ROLLBACK;
+
+-- A07. rechazo_fila.pi_id guarda el PI del plan en PI_DEL_PLAN_AUSENTE y en PI_REPETIDO (V1_09, US-12 y FR-016). Dos
+-- cargas RECHAZADAS de la 410, como las de un export sin la columna del PI 5.2 y de otro con dos columnas del PI 5.1,
+-- quedan cada una con filas_leidas 0, un solo rechazo y ninguna columna, en una transacción que se deshace.
+BEGIN;
+INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
+VALUES (encode(sha256(convert_to('sondeo A07 sin 5.2', 'UTF8')), 'hex'), 'sondeo_sin_5_2.xlsx', 'Hoja1', 11),
+       (encode(sha256(convert_to('sondeo A07 5.1 repetido', 'UTF8')), 'hex'), 'sondeo_5_1_repetido.xlsx', 'Hoja1', 11);
+INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version,
+                        estado, terminada_en, subida_por)
+SELECT s.seccion_id, ao.archivo_id, ao.filas_de_datos, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba',
+       'RECHAZADA', now(), u.usuario_id
+FROM abet.seccion s
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
+JOIN abet.archivo_origen ao ON ao.nombre_archivo IN ('sondeo_sin_5_2.xlsx', 'sondeo_5_1_repetido.xlsx')
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN acceso.usuario_autorizado u ON u.correo = 'docente410@example.invalid'
+WHERE s.numero = '410';
+-- El PI de cada rechazo sale del plan de medición de la sección, como lo toma el programa de carga.
+INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto, pi_id)
+SELECT c.carga_id, NULL, v.motivo, 'RECHAZA_CARGA', pm.pi_id
+FROM (VALUES ('sondeo_sin_5_2.xlsx', 'PI_DEL_PLAN_AUSENTE', '5.2'), ('sondeo_5_1_repetido.xlsx', 'PI_REPETIDO', '5.1'))
+     AS v (archivo, motivo, pi)
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = v.archivo
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+JOIN abet.plan_medicion pm ON pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id
+                          AND pm.carrera_id = c.carrera_id
+JOIN abet.pi p ON p.pi_id = pm.pi_id AND p.codigo = v.pi;
+
+DO $$
+BEGIN
+    -- El programa de carga escribe esta columna, así que su tipo y su nulidad quedan fijos, como los de subida_por.
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'abet' AND table_name = 'rechazo_fila' AND column_name = 'pi_id'
+                      AND is_nullable = 'YES' AND data_type = 'smallint') THEN
+        RAISE EXCEPTION 'FALLA A07: abet.rechazo_fila.pi_id debe ser smallint, como abet.pi.pi_id, y admitir nulo';
+    END IF;
+    -- La constancia lee el PI de cada rechazo por pi_id, y ese PI es del plan de la sección de la carga.
+    IF (SELECT string_agg(c.estado || ':' || c.filas_leidas || ':' || r.motivo || ':' || r.efecto || ':' || p.codigo,
+                          ',' ORDER BY r.motivo)
+          FROM abet.rechazo_fila r
+          JOIN abet.carga c ON c.carga_id = r.carga_id
+          JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+               AND ao.nombre_archivo IN ('sondeo_sin_5_2.xlsx', 'sondeo_5_1_repetido.xlsx')
+          JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+          JOIN abet.plan_medicion pm ON pm.pi_id = r.pi_id AND pm.periodo_id = s.periodo_id
+                                    AND pm.asignatura_id = s.asignatura_id AND pm.carrera_id = c.carrera_id
+          JOIN abet.pi p ON p.pi_id = r.pi_id)
+       IS DISTINCT FROM 'RECHAZADA:0:PI_DEL_PLAN_AUSENTE:RECHAZA_CARGA:5.2,RECHAZADA:0:PI_REPETIDO:RECHAZA_CARGA:5.1' THEN
+        RAISE EXCEPTION 'FALLA A07: PI_DEL_PLAN_AUSENTE y PI_REPETIDO deben guardar en pi_id el PI 5.2 y el 5.1 del plan de la 410';
+    END IF;
+    IF (SELECT count(*) FROM abet.rechazo_fila r JOIN abet.carga c ON c.carga_id = r.carga_id
+          JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+         WHERE ao.nombre_archivo IN ('sondeo_sin_5_2.xlsx', 'sondeo_5_1_repetido.xlsx')) <> 2
+       OR EXISTS (SELECT 1 FROM abet.carga_columna cc JOIN abet.carga c ON c.carga_id = cc.carga_id
+                    JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+                   WHERE ao.nombre_archivo IN ('sondeo_sin_5_2.xlsx', 'sondeo_5_1_repetido.xlsx')) THEN
+        RAISE EXCEPTION 'FALLA A07: cada carga rechazada debe quedar con un solo rechazo y sin columnas';
+    END IF;
+    RAISE NOTICE 'ok A07 rechazo_fila.pi_id, smallint y con nulo admitido, guarda el PI 5.2 de PI_DEL_PLAN_AUSENTE y el 5.1 de PI_REPETIDO, del plan de la 410, en dos cargas RECHAZADAS sin columnas';
+END $$;
+ROLLBACK;
+
 -- ---------------------------------------------------------------------------------------------
 -- 3. Números del R-17 de la sección 410 de 450002 (misma distribución que el caso real)
 -- ---------------------------------------------------------------------------------------------
@@ -306,6 +493,8 @@ BEGIN
         RAISE EXCEPTION 'FALLA R-17: se esperaban 3 PI en la sección 410 y hay %', v_n;
     END IF;
 END $$;
+-- El R-17 del export con error (60,0 / 60,0 / 70,0) está en la sección 7, porque comprueba además Q01 a Q14
+-- dentro de su transacción.
 
 -- R-17 con TRATO_SIN_EVIDENCIA DEFINIDO en un conjunto que sigue en BORRADOR: el porcentaje según la regla
 -- sale del trato, pero la vista sigue provisional porque el conjunto no está APROBADO.
@@ -595,7 +784,114 @@ $q$, '23503', 'fk_medicion_fila'),
       abet.carga_columna cc JOIN abet.carga c ON c.carga_id = cc.carga_id
  WHERE c.carga_id <> c410.carga_id
  LIMIT 1
-$q$, '23503', 'fk_rechazo_fila_columna');
+$q$, '23503', 'fk_rechazo_fila_columna'),
+-- V1_09. Los usuarios de prueba vienen de db/datos/periodo_2026_2_inventado.sql (US-04, FR-003).
+('R39', 'usuario con el rol ADMIN, que no existe', $q$
+ INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('otro@example.invalid', 'ADMIN')
+$q$, '23514', 'ck_usuario_autorizado_rol'),
+('R40', 'otra vez el usuario docente410@example.invalid con rol PROFESOR', $q$
+ INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('docente410@example.invalid', 'PROFESOR')
+$q$, '23505', 'uq_usuario_autorizado_correo'),
+('R41', 'correo sin normalizar « Docente412@EXAMPLE.invalid »', $q$
+ INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (' Docente412@EXAMPLE.invalid ', 'PROFESOR')
+$q$, '23514', 'ck_usuario_autorizado_correo'),
+('R42', 'correo sin arroba', $q$
+ INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('sin-arroba.example.invalid', 'PROFESOR')
+$q$, '23514', 'ck_usuario_autorizado_correo'),
+('R43', 'otra vez la sección 410 a docente410@example.invalid', $q$
+ INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
+ SELECT d.usuario_id, d.seccion_id FROM acceso.docente_seccion d
+ JOIN acceso.usuario_autorizado u ON u.usuario_id = d.usuario_id AND u.correo = 'docente410@example.invalid'
+$q$, '23505', 'uq_docente_seccion'),
+('R44', 'sección que no existe asignada a docente410@example.invalid', $q$
+ INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
+ SELECT u.usuario_id, (SELECT max(seccion_id) + 1000 FROM abet.seccion) FROM acceso.usuario_autorizado u
+ WHERE u.correo = 'docente410@example.invalid'
+$q$, '23503', 'fk_docente_seccion_seccion'),
+('R45', 'sección asignada a un usuario que no existe', $q$
+ INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
+ SELECT (SELECT max(usuario_id) + 1000 FROM acceso.usuario_autorizado), seccion_id FROM abet.seccion WHERE numero = '411'
+$q$, '23503', 'fk_docente_seccion_usuario'),
+('R46', 'credencial con un texto que no es un hash Argon2id', $q$
+ INSERT INTO acceso.credencial (usuario_id, hash_clave)
+ SELECT usuario_id, 'texto-que-no-es-un-hash' FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_credencial_hash'),
+('R47', 'dos credenciales para el mismo usuario', $q$
+ INSERT INTO acceso.credencial (usuario_id, hash_clave)
+ SELECT usuario_id, '$argon2id$v=19$m=65536,t=3,p=4$cHJ1ZWJh$cHJ1ZWJh' FROM acceso.usuario_autorizado, generate_series(1, 2)
+ WHERE correo = 'docente410@example.invalid'
+$q$, '23505', 'pk_credencial'),
+('R48', 'credencial de un usuario que no existe', $q$
+ INSERT INTO acceso.credencial (usuario_id, hash_clave)
+ SELECT max(usuario_id) + 1000, '$argon2id$v=19$m=65536,t=3,p=4$cHJ1ZWJh$cHJ1ZWJh' FROM acceso.usuario_autorizado
+$q$, '23503', 'fk_credencial_usuario'),
+('R49', 'intento fallido que guarda el correo y no su hash', $q$
+ INSERT INTO acceso.intento_fallido (hash_cuenta) VALUES ('docente410@example.invalid')
+$q$, '23514', 'ck_intento_fallido_hash'),
+('R50', 'intento fallido con el hash en mayúsculas, que contaría aparte los intentos del mismo correo', $q$
+ INSERT INTO acceso.intento_fallido (hash_cuenta)
+ VALUES (upper(encode(sha256(convert_to('docente410@example.invalid', 'UTF8')), 'hex')))
+$q$, '23514', 'ck_intento_fallido_hash'),
+('R51', 'sesión que guarda el token y no su hash SHA-256', $q$
+ INSERT INTO acceso.sesion (usuario_id, hash_token)
+ SELECT usuario_id, 'token-en-claro' FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_sesion_token'),
+('R52', 'dos sesiones con el mismo hash de token', $q$
+ INSERT INTO acceso.sesion (usuario_id, hash_token)
+ SELECT usuario_id, encode(sha256(convert_to('sesion repetida', 'UTF8')), 'hex')
+ FROM acceso.usuario_autorizado, generate_series(1, 2) WHERE correo = 'docente410@example.invalid'
+$q$, '23505', 'uq_sesion_token'),
+('R53', 'sesión de 13 horas, más larga que la cookie abet_sesion', $q$
+ INSERT INTO acceso.sesion (usuario_id, hash_token, expira_en)
+ SELECT usuario_id, encode(sha256(convert_to('sesion larga', 'UTF8')), 'hex'), now() + interval '13 hours'
+ FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_sesion_vigencia'),
+('R54', 'sesión de un usuario que no existe', $q$
+ INSERT INTO acceso.sesion (usuario_id, hash_token)
+ SELECT max(usuario_id) + 1000, encode(sha256(convert_to('sesion sin usuario', 'UTF8')), 'hex')
+ FROM acceso.usuario_autorizado
+$q$, '23503', 'fk_sesion_usuario'),
+('R55', 'código de acceso guardado en claro', $q$
+ INSERT INTO acceso.codigo_acceso (usuario_id, hash_codigo)
+ SELECT usuario_id, '123456' FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_codigo_acceso_hash'),
+('R56', 'código de acceso con 6 intentos', $q$
+ INSERT INTO acceso.codigo_acceso (usuario_id, hash_codigo, intentos)
+ SELECT usuario_id, encode(sha256(convert_to('codigo con intentos', 'UTF8')), 'hex'), 6
+ FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_codigo_acceso_intentos'),
+('R57', 'código de acceso vigente 11 minutos', $q$
+ INSERT INTO acceso.codigo_acceso (usuario_id, hash_codigo, expira_en)
+ SELECT usuario_id, encode(sha256(convert_to('codigo largo', 'UTF8')), 'hex'), now() + interval '11 minutes'
+ FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'
+$q$, '23514', 'ck_codigo_acceso_vigencia'),
+('R58', 'código de acceso de un usuario que no existe', $q$
+ INSERT INTO acceso.codigo_acceso (usuario_id, hash_codigo)
+ SELECT max(usuario_id) + 1000, encode(sha256(convert_to('codigo sin usuario', 'UTF8')), 'hex')
+ FROM acceso.usuario_autorizado
+$q$, '23503', 'fk_codigo_acceso_usuario'),
+('R59', 'carga subida por un usuario que no existe', $q$
+ UPDATE abet.carga c SET subida_por = (SELECT max(usuario_id) + 1000 FROM acceso.usuario_autorizado)
+ FROM abet.archivo_origen ao WHERE ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
+$q$, '23503', 'fk_carga_subida_por'),
+('R60', 'rechazo con un motivo que no existe (CODIGO_RARO)', $q$
+ INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto)
+ SELECT carga_id, NULL, 'CODIGO_RARO', 'RECHAZA_CARGA' FROM abet.carga LIMIT 1
+$q$, '23514', 'ck_rechazo_fila_motivo'),
+('R61', 'rechazo CODIGO_VACIO con el PI 5.1 del plan en pi_id, que solo admiten PI_DEL_PLAN_AUSENTE y PI_REPETIDO', $q$
+ INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto, pi_id)
+ SELECT c.carga_id, 2, 'CODIGO_VACIO', 'RECHAZA_FILA', p.pi_id
+ FROM abet.carga c JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+      AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx',
+      abet.pi p
+ WHERE p.codigo = '5.1'
+$q$, '23514', 'ck_rechazo_fila_pi'),
+('R62', 'rechazo PI_REPETIDO con un pi_id que no existe en abet.pi', $q$
+ INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto, pi_id)
+ SELECT c.carga_id, NULL, 'PI_REPETIDO', 'RECHAZA_CARGA', (SELECT max(pi_id) + 1000 FROM abet.pi)
+ FROM abet.carga c JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+      AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
+$q$, '23503', 'fk_rechazo_fila_pi');
 
 DO $$
 DECLARE
@@ -721,7 +1017,9 @@ FROM abet.carga c JOIN abet.archivo_origen r ON r.archivo_id = c.archivo_id AND 
 WHERE ao.nombre_archivo = 'sondeo_sin_columnas.csv';
 -- Q08: el estudiante 99000001 también aparece con el PI 5.1 en la sección 411 del mismo curso y periodo.
 -- Q10: la 411 se publica con R-PRUEBA-APROBADO mientras la 410 sigue con R-2026-BORRADOR.
-INSERT INTO abet.seccion (periodo_id, asignatura_id, numero) SELECT periodo_id, asignatura_id, '411' FROM abet.seccion WHERE numero = '410';
+-- La 411 ya existe cuando la base trae los datos de 2026-2, y entonces el INSERT no hace nada.
+INSERT INTO abet.seccion (periodo_id, asignatura_id, numero) SELECT periodo_id, asignatura_id, '411' FROM abet.seccion WHERE numero = '410'
+ON CONFLICT DO NOTHING;
 INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version)
 SELECT s.seccion_id, ao.archivo_id, 1, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba'
 FROM abet.seccion s, abet.archivo_origen ao, abet.conjunto_reglas cr
@@ -790,5 +1088,335 @@ BEGIN
         RAISE NOTICE 'ok % 0 filas: %', q.id, q.descripcion;
     END LOOP;
 END $$;
+
+-- Q15 (US-04). El filtro de columnas de Q04 aplicado al esquema acceso solo encuentra el correo de
+-- usuario_autorizado, que es el único dato de contacto de la base.
+DO $$
+BEGIN
+    IF (SELECT string_agg(table_name || '.' || column_name, ',' ORDER BY table_name, column_name)
+          FROM information_schema.columns
+         WHERE table_schema = 'acceso'
+           AND (column_name ~ '(apellido|first_name|last_name|correo|email|telefono|dni)'
+                OR (table_name IN ('estudiante', 'medicion', 'carga', 'rechazo_fila', 'carga_columna') AND column_name LIKE '%nombre%')))
+       IS DISTINCT FROM 'usuario_autorizado.correo' THEN
+        RAISE EXCEPTION 'FALLA Q15: en acceso solo usuario_autorizado.correo debe pasar el filtro de Q04';
+    END IF;
+    RAISE NOTICE 'ok Q15 el filtro de Q04 sobre acceso solo encuentra usuario_autorizado.correo';
+END $$;
+
+-- db/plataforma/neon/controles_neon.sql debe traer Q01 a Q14 iguales a las de arriba, salvo espacios, cada una sola
+-- entre su \echo y su \set qNN :ROW_COUNT, y su cierre debe sumar las catorce (T025). Las órdenes de psql que fijan
+-- variables en ese archivo son solo \set ON_ERROR_STOP 1, un \set qNN :ROW_COUNT por consulta y el \gset del cierre,
+-- sin repetirse. Así, un \set qNN de más, un \set que no lee :ROW_COUNT, un control que falta, una condición agregada
+-- a una consulta o una consulta comentada rompen la prueba. correr_pruebas.sh pasa la ruta del archivo en la variable
+-- controles_neon; sin ella, la comparación se salta con un aviso.
+\if :{?controles_neon}
+\set texto_controles_neon `cat :'controles_neon'`
+CREATE TEMP TABLE texto_controles_neon AS SELECT CAST(:'texto_controles_neon' AS text) AS texto;
+DO $$
+DECLARE
+    q        record;
+    v_crudo  text;
+    v_bloque text;
+    v_suma   text;
+    v_sobra  text;
+    v_falta  text;
+BEGIN
+    SELECT texto INTO v_crudo FROM texto_controles_neon;
+    -- Cada orden que fija variables, con el resto de su línea y los espacios reducidos a uno, aun dentro de un
+    -- comentario, frente a las que el archivo debe traer. EXCEPT ALL cuenta las repetidas.
+    WITH archivo AS (
+        SELECT btrim(regexp_replace(m[1], '\s+', ' ', 'g')) AS orden
+        FROM regexp_matches(v_crudo, '(\\(?:set|gset|getenv|prompt|unset)\M[^\n]*)', 'g') AS m
+    ), esperado AS (
+        SELECT '\set ON_ERROR_STOP 1' AS orden
+        UNION ALL SELECT '\set ' || lower(id) || ' :ROW_COUNT' FROM control_cero
+        UNION ALL SELECT '\gset'
+    )
+    SELECT (SELECT string_agg(orden, ' | ' ORDER BY orden COLLATE "C")
+              FROM (SELECT orden FROM archivo EXCEPT ALL SELECT orden FROM esperado) AS s),
+           (SELECT string_agg(orden, ' | ' ORDER BY orden COLLATE "C")
+              FROM (SELECT orden FROM esperado EXCEPT ALL SELECT orden FROM archivo) AS f)
+      INTO v_sobra, v_falta;
+    IF v_sobra IS NOT NULL OR v_falta IS NOT NULL THEN
+        RAISE EXCEPTION 'FALLA controles_neon.sql: las órdenes que fijan variables no son las esperadas (sobra %; falta %)',
+            coalesce(v_sobra, 'nada'), coalesce(v_falta, 'nada');
+    END IF;
+    FOR q IN SELECT * FROM control_cero ORDER BY id LOOP
+        v_bloque := (regexp_match(v_crudo, '\\echo ''' || q.id || '\.[^\n]*\n(.*?)\n\\set ' || lower(q.id)
+                                           || ' :ROW_COUNT\n'))[1];
+        IF v_bloque IS NULL OR btrim(regexp_replace(v_bloque, '\s+', ' ', 'g'))
+                               IS DISTINCT FROM btrim(regexp_replace(q.consulta, '\s+', ' ', 'g')) || ';' THEN
+            RAISE EXCEPTION 'FALLA %: controles_neon.sql no trae entre su \echo y su \set la misma consulta que pruebas.sql', q.id;
+        END IF;
+    END LOOP;
+    SELECT '(' || string_agg(':' || lower(id), ' + ' ORDER BY id) || ') = 0' INTO v_suma FROM control_cero;
+    IF position('SELECT ' || v_suma || ' AS controles_en_cero \gset' IN regexp_replace(v_crudo, '\s+', ' ', 'g')) = 0 THEN
+        RAISE EXCEPTION 'FALLA controles_neon.sql: su cierre no suma las catorce consultas como %', v_suma;
+    END IF;
+    RAISE NOTICE 'ok controles_neon.sql trae Q01 a Q14 iguales a las de pruebas.sql, cada una con su único \set qNN :ROW_COUNT, solo las órdenes esperadas que fijan variables y el cierre que las suma todas';
+END $$;
+\else
+\echo '  aviso: sin -v controles_neon=<ruta> no se compara controles_neon.sql con estas consultas'
+\endif
+
+-- ---------------------------------------------------------------------------------------------
+-- 7. R-17 del export con error de la sección 410 (60,0 / 60,0 / 70,0), junto al del export correcto de la sección 3
+-- ---------------------------------------------------------------------------------------------
+-- export_inventado_410_con_error.xlsx trae los mismos 11 estudiantes con un 5 en el PI 5.2 de la fila 3 (99000002).
+-- La fila completa queda fuera con NIVEL_FUERA_DE_ESCALA y RECHAZA_FILA, así que la carga lee 11 filas, acepta 10,
+-- guarda 30 mediciones y el R-17 da 6 de 10, 6 de 10 y 7 de 10. La 410 admite una sola carga PUBLICADA, así que la
+-- carga entra como reemplazo de la del export correcto, y la transacción se deshace al final (US-10 y US-15).
+BEGIN;
+INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
+VALUES (encode(sha256(convert_to('export inventado 2026-2 450002 410 con error', 'UTF8')), 'hex'),
+        'export_inventado_410_con_error.xlsx', 'gc_SINTETICO_20262_450002_410_f', 11);
+
+INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version,
+                        reemplaza_carga_id, subida_por)
+SELECT a.seccion_id, ao.archivo_id, ao.filas_de_datos, a.carrera_id, a.conjunto_reglas_id, 'v0.0.0-prueba', a.carga_id,
+       u.usuario_id
+FROM abet.carga a
+JOIN abet.archivo_origen aa ON aa.archivo_id = a.archivo_id AND aa.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+JOIN acceso.usuario_autorizado u ON u.correo = 'docente410@example.invalid';
+
+-- Las mismas tres columnas del export correcto, con el Total Pts de 20 en el PI 5.3.
+INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
+                                pi_codigo, posicion, encabezado, bb_columna_id, puntaje_maximo_declarado)
+SELECT b.carga_id, cc.seccion_id, cc.carrera_id, cc.periodo_id, cc.asignatura_id, cc.plan_medicion_id, cc.pi_id,
+       cc.pi_codigo, cc.posicion, cc.encabezado, cc.bb_columna_id, cc.puntaje_maximo_declarado
+FROM abet.carga b
+JOIN abet.archivo_origen bo ON bo.archivo_id = b.archivo_id AND bo.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+JOIN abet.carga_columna cc ON cc.carga_id = b.reemplaza_carga_id;
+
+-- El rechazo de la fila 3 en la columna de 5.2 y el aviso de 5.3, sin el valor leído.
+INSERT INTO abet.rechazo_fila (carga_id, fila_origen, carga_columna_id, motivo, efecto)
+SELECT cc.carga_id, v.fila, cc.carga_columna_id, v.motivo, v.efecto
+FROM (VALUES ('5.2', 3, 'NIVEL_FUERA_DE_ESCALA', 'RECHAZA_FILA'), ('5.3', NULL, 'PUNTAJE_MAXIMO_DISTINTO', 'AVISO'))
+     AS v (pi, fila, motivo, efecto)
+JOIN abet.carga_columna cc ON cc.pi_codigo = v.pi
+JOIN abet.carga b ON b.carga_id = cc.carga_id
+JOIN abet.archivo_origen bo ON bo.archivo_id = b.archivo_id AND bo.nombre_archivo = 'export_inventado_410_con_error.xlsx';
+
+-- Las 10 filas aceptadas y sus 30 mediciones, con los mismos niveles del export correcto salvo la fila 3.
+INSERT INTO abet.carga_fila (carga_id, fila_origen, estudiante_id)
+SELECT b.carga_id, f.fila_origen, f.estudiante_id
+FROM abet.carga b
+JOIN abet.archivo_origen bo ON bo.archivo_id = b.archivo_id AND bo.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+JOIN abet.carga_fila f ON f.carga_id = b.reemplaza_carga_id
+WHERE f.fila_origen <> 3;
+
+INSERT INTO abet.medicion (carga_id, carga_columna_id, pi_id, estudiante_id, estado_evidencia, nivel_original, fila_origen)
+SELECT b.carga_id, nc.carga_columna_id, m.pi_id, m.estudiante_id, m.estado_evidencia, m.nivel_original, m.fila_origen
+FROM abet.carga b
+JOIN abet.archivo_origen bo ON bo.archivo_id = b.archivo_id AND bo.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+JOIN abet.medicion m ON m.carga_id = b.reemplaza_carga_id AND m.fila_origen <> 3
+JOIN abet.carga_columna nc ON nc.carga_id = b.carga_id AND nc.pi_id = m.pi_id;
+
+UPDATE abet.carga a SET estado = 'REEMPLAZADA'
+FROM abet.archivo_origen aa
+WHERE aa.archivo_id = a.archivo_id AND aa.nombre_archivo = 'sintetico_20262_450002_410.xlsx';
+
+UPDATE abet.carga b
+SET estado = 'PUBLICADA', filas_leidas = 11, filas_aceptadas = 10, filas_rechazadas = 1, terminada_en = clock_timestamp()
+FROM abet.archivo_origen bo
+WHERE bo.archivo_id = b.archivo_id AND bo.nombre_archivo = 'export_inventado_410_con_error.xlsx';
+
+DO $$
+DECLARE
+    r   record;
+    q   record;
+    v_n int := 0;
+    v_c bigint;
+BEGIN
+    FOR r IN
+        SELECT v.pi, v.n_total, v.n_esperado_o_superior, v.n_sin_evidencia, v.pct_logro_sobre_calificados,
+               v.pct_logro_sobre_total_con_sin_evidencia, v.provisional, ao.nombre_archivo, e.*
+        FROM abet.v_r17_por_pi v
+        JOIN abet.carga c ON c.carga_id = v.carga_id
+        JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+        JOIN (VALUES ('5.1', 6, 60.0), ('5.2', 6, 60.0), ('5.3', 7, 70.0)) AS e (pi_e, ok_e, pct_e) ON e.pi_e = v.pi
+        WHERE v.periodo = '2026-2' AND v.codigo_asignatura = '450002' AND v.seccion = '410'
+        ORDER BY v.pi
+    LOOP
+        v_n := v_n + 1;
+        IF r.nombre_archivo <> 'export_inventado_410_con_error.xlsx' OR r.n_total <> 10 OR r.n_sin_evidencia <> 0
+           OR r.n_esperado_o_superior <> r.ok_e OR r.pct_logro_sobre_calificados <> r.pct_e
+           OR r.pct_logro_sobre_total_con_sin_evidencia <> r.pct_e OR r.provisional IS NOT TRUE THEN
+            RAISE EXCEPTION 'FALLA R-17 con error en PI %: %', r.pi, r;
+        END IF;
+        RAISE NOTICE 'ok R-17 con error PI %: % de 10 en nivel 3 o más = % %%', r.pi, r.n_esperado_o_superior,
+                     r.pct_logro_sobre_calificados;
+    END LOOP;
+    IF v_n <> 3 THEN
+        RAISE EXCEPTION 'FALLA R-17 con error: se esperaban 3 PI en la sección 410 y hay %', v_n;
+    END IF;
+    -- 30 filas de medición, 3 PI por 10 estudiantes, sin el estudiante de la fila 3.
+    IF (SELECT sum(n_total) FROM abet.v_r17_por_pi WHERE codigo_asignatura = '450002' AND seccion = '410') <> 30
+       OR (SELECT count(*) FROM abet.v_tabla_maestra_pi
+            WHERE "CÓDIGO DEL CURSO" = '450002' AND "SECCIÓN" = '410'
+              AND "ARCHIVO" = 'export_inventado_410_con_error.xlsx') <> 30
+       OR EXISTS (SELECT 1 FROM abet.v_tabla_maestra_pi
+                   WHERE "SECCIÓN" = '410' AND "CÓDIGO DEL ESTUDIANTE" = '99000002') THEN
+        RAISE EXCEPTION 'FALLA R-17 con error: se esperaban 30 filas de medición sin el estudiante de la fila 3';
+    END IF;
+    -- Lo que muestra la constancia: 11 / 10 / 1, quién sube la carga, el rechazo de la fila 3 en 5.2 y el aviso de 5.3.
+    IF (SELECT c.filas_leidas || '/' || c.filas_aceptadas || '/' || c.filas_rechazadas || ' ' || u.correo
+          FROM abet.carga c
+          JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+                                     AND ao.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+          JOIN acceso.usuario_autorizado u ON u.usuario_id = c.subida_por)
+       IS DISTINCT FROM '11/10/1 docente410@example.invalid'
+       OR (SELECT string_agg(rf.motivo || ':' || rf.efecto || ':' || coalesce(CAST(rf.fila_origen AS text), '-') || ':'
+                             || cc.pi_codigo, ',' ORDER BY rf.motivo)
+             FROM abet.rechazo_fila rf
+             JOIN abet.carga c ON c.carga_id = rf.carga_id
+             JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+                                        AND ao.nombre_archivo = 'export_inventado_410_con_error.xlsx'
+             JOIN abet.carga_columna cc ON cc.carga_columna_id = rf.carga_columna_id)
+          IS DISTINCT FROM 'NIVEL_FUERA_DE_ESCALA:RECHAZA_FILA:3:5.2,PUNTAJE_MAXIMO_DISTINTO:AVISO:-:5.3' THEN
+        RAISE EXCEPTION 'FALLA R-17 con error: la carga debe quedar en 11 / 10 / 1, subida por docente410, con el rechazo de la fila 3 y el aviso de 5.3';
+    END IF;
+    -- Q01 a Q14 en cero con la carga del export con error publicada y la del export correcto REEMPLAZADA.
+    FOR q IN SELECT * FROM control_cero ORDER BY id LOOP
+        EXECUTE 'SELECT count(*) FROM (' || q.consulta || ') AS t' INTO v_c;
+        IF v_c <> 0 THEN
+            RAISE EXCEPTION 'FALLA R-17 con error: % devolvió % filas (%)', q.id, v_c, q.descripcion;
+        END IF;
+    END LOOP;
+    RAISE NOTICE 'ok R-17 del export con error: 11 / 10 / 1, 30 mediciones sin la fila 3 y Q01 a Q14 en 0 filas';
+END $$;
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------------------------
+-- 8. Q08 con la 410 y la 411 publicadas (FR-030)
+-- ---------------------------------------------------------------------------------------------
+-- export_inventado_411.xlsx, de tests/datos_inventados/, trae los códigos 99000012 a 99000022 y los niveles de la 410
+-- en orden inverso, así que su R-17 repite 63,6 / 63,6 / 72,7 sin ningún estudiante de la 410. La carga de la 411 se
+-- publica junto a la de la 410 en una transacción que se deshace al final, y Q01 a Q14, Q08 entre ellas, deben
+-- seguir en 0 filas (US-02 y US-06).
+BEGIN;
+INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
+VALUES (encode(sha256(convert_to('export inventado 2026-2 450002 411', 'UTF8')), 'hex'),
+        'export_inventado_411.xlsx', 'gc_SINTETICO_20262_450002_411_f', 11);
+
+INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version, subida_por)
+SELECT s.seccion_id, ao.archivo_id, ao.filas_de_datos, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', u.usuario_id
+FROM abet.seccion s
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN acceso.usuario_autorizado u ON u.correo = 'docente411@example.invalid'
+WHERE s.numero = '411';
+
+-- Las tres columnas del export, con los mismos ids de Blackboard inventados de la 410 y el Total Pts de 20 en 5.3.
+INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
+                                pi_codigo, posicion, encabezado, bb_columna_id, puntaje_maximo_declarado)
+SELECT c.carga_id, s.seccion_id, c.carrera_id, s.periodo_id, s.asignatura_id, pm.plan_medicion_id, pm.pi_id,
+       p.codigo, v.posicion, v.pi || ' [Total Pts: ' || v.puntos || ' Score] |' || v.bb_id, v.bb_id, v.puntos
+FROM (VALUES ('5.1', 5, '9000051', 4), ('5.2', 6, '9000052', 4), ('5.3', 7, '9000053', 20))
+     AS v (pi, posicion, bb_id, puntos)
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+JOIN abet.plan_medicion pm ON pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id
+                          AND pm.carrera_id = c.carrera_id
+JOIN abet.pi p ON p.pi_id = pm.pi_id AND p.codigo = v.pi;
+
+INSERT INTO abet.rechazo_fila (carga_id, fila_origen, carga_columna_id, motivo, efecto)
+SELECT cc.carga_id, NULL, cc.carga_columna_id, 'PUNTAJE_MAXIMO_DISTINTO', 'AVISO'
+FROM abet.carga_columna cc
+JOIN abet.carga c ON c.carga_id = cc.carga_id
+JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'export_inventado_411.xlsx'
+WHERE cc.pi_codigo = '5.3';
+
+INSERT INTO abet.estudiante (codigo)
+SELECT CAST(99000000 + n AS varchar(8)) FROM generate_series(12, 22) AS g (n);
+
+-- 99000012 está en la fila 2 y 99000022 en la fila 12.
+INSERT INTO abet.carga_fila (carga_id, fila_origen, estudiante_id)
+SELECT c.carga_id, CAST(e.codigo AS integer) - 99000010, e.estudiante_id
+FROM abet.estudiante e
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+WHERE e.codigo BETWEEN '99000012' AND '99000022';
+
+-- Niveles por fila (5.1, 5.2, 5.3) del export. 99000012 lleva los de 99000011 y 99000022 los de 99000001.
+INSERT INTO abet.medicion (carga_id, carga_columna_id, pi_id, estudiante_id, estado_evidencia, nivel_original, fila_origen)
+SELECT cc.carga_id, cc.carga_columna_id, cc.pi_id, f.estudiante_id, 'CALIFICADO',
+       CASE cc.pi_codigo WHEN '5.1' THEN v.n51 WHEN '5.2' THEN v.n52 ELSE v.n53 END, f.fila_origen
+FROM (VALUES
+ ( 2, 2, 2, 2),
+ ( 3, 3, 4, 3),
+ ( 4, 4, 3, 4),
+ ( 5, 2, 1, 1),
+ ( 6, 3, 4, 3),
+ ( 7, 4, 3, 4),
+ ( 8, 1, 2, 2),
+ ( 9, 3, 2, 3),
+ (10, 2, 3, 3),
+ (11, 4, 3, 4),
+ (12, 3, 4, 3)
+) AS v (fila, n51, n52, n53)
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.carga_fila f ON f.carga_id = c.carga_id AND f.fila_origen = v.fila
+JOIN abet.carga_columna cc ON cc.carga_id = c.carga_id;
+
+UPDATE abet.carga c
+SET estado = 'PUBLICADA', filas_leidas = 11, filas_aceptadas = 11, filas_rechazadas = 0, terminada_en = clock_timestamp()
+FROM abet.archivo_origen ao
+WHERE ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'export_inventado_411.xlsx';
+
+DO $$
+DECLARE
+    r   record;
+    q   record;
+    v_n int := 0;
+    v_c bigint;
+BEGIN
+    FOR r IN
+        SELECT v.pi, v.n_total, v.n_esperado_o_superior, v.pct_logro_sobre_calificados, v.provisional,
+               v.n_nivel_1, v.n_nivel_2, v.n_nivel_3, v.n_nivel_4, e.*
+        FROM abet.v_r17_por_pi v
+        JOIN (VALUES ('5.1', 7, 63.6, 1, 3, 4, 3), ('5.2', 7, 63.6, 1, 3, 4, 3), ('5.3', 8, 72.7, 1, 2, 5, 3))
+             AS e (pi_e, ok_e, pct_e, n1_e, n2_e, n3_e, n4_e) ON e.pi_e = v.pi
+        WHERE v.periodo = '2026-2' AND v.codigo_asignatura = '450002' AND v.seccion = '411'
+        ORDER BY v.pi
+    LOOP
+        v_n := v_n + 1;
+        IF r.n_total <> 11 OR r.n_esperado_o_superior <> r.ok_e OR r.pct_logro_sobre_calificados <> r.pct_e
+           OR r.provisional IS NOT TRUE
+           OR (r.n_nivel_1, r.n_nivel_2, r.n_nivel_3, r.n_nivel_4) IS DISTINCT FROM (r.n1_e, r.n2_e, r.n3_e, r.n4_e) THEN
+            RAISE EXCEPTION 'FALLA R-17 de la 411 en PI %: %', r.pi, r;
+        END IF;
+        RAISE NOTICE 'ok R-17 de la 411 PI %: % de 11 en nivel 3 o más = % %%', r.pi, r.n_esperado_o_superior,
+                     r.pct_logro_sobre_calificados;
+    END LOOP;
+    IF v_n <> 3 THEN
+        RAISE EXCEPTION 'FALLA R-17 de la 411: se esperaban 3 PI en la sección 411 y hay %', v_n;
+    END IF;
+    -- Las dos secciones publicadas, cada una con sus 33 mediciones y sus propios estudiantes.
+    IF (SELECT string_agg(s.numero || ':' || (SELECT count(*) FROM abet.medicion m WHERE m.carga_id = c.carga_id), ','
+                          ORDER BY s.numero)
+          FROM abet.carga c JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+          JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+         WHERE c.estado = 'PUBLICADA') IS DISTINCT FROM '410:33,411:33'
+       OR (SELECT min("CÓDIGO DEL ESTUDIANTE") || '-' || max("CÓDIGO DEL ESTUDIANTE")
+             FROM abet.v_tabla_maestra_pi WHERE "CÓDIGO DEL CURSO" = '450002' AND "SECCIÓN" = '411')
+          IS DISTINCT FROM '99000012-99000022' THEN
+        RAISE EXCEPTION 'FALLA Q08 con dos secciones: la 410 y la 411 deben quedar PUBLICADAS con 33 mediciones cada una y la 411 con 99000012 a 99000022';
+    END IF;
+    FOR q IN SELECT * FROM control_cero ORDER BY id LOOP
+        EXECUTE 'SELECT count(*) FROM (' || q.consulta || ') AS t' INTO v_c;
+        IF v_c <> 0 THEN
+            RAISE EXCEPTION 'FALLA Q08 con dos secciones: % devolvió % filas (%)', q.id, v_c, q.descripcion;
+        END IF;
+    END LOOP;
+    RAISE NOTICE 'ok Q08 con la 410 y la 411 publicadas: 33 mediciones en cada una, 63,6 / 63,6 / 72,7 en la 411 y Q01 a Q14 en 0 filas';
+END $$;
+ROLLBACK;
 
 \echo 'TODAS LAS PRUEBAS PASARON'

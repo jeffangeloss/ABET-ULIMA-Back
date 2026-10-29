@@ -11,14 +11,18 @@ cleanDisabled = true
 outOfOrder = false
 environment = "dev"
 
-# En el formato TOML, schemas es un ajuste del entorno, no de [flyway].
+# En el formato TOML, schemas es un ajuste del entorno, no de [flyway]. abet va primero porque guarda
+# flyway_schema_history. Con createSchemas = true, Flyway crea en cada migrate el esquema de la lista que
+# falte, aunque el historial ya exista, y lo anota como << Flyway Schema Creation >>. El CREATE SCHEMA IF NOT
+# EXISTS de V1_09__crear_acceso.sql queda para los caminos con psql y para un entorno que no liste acceso.
 [environments.dev]
 url = "jdbc:postgresql://localhost:5432/abet_sis_med_dev"
-schemas = ["abet"]
+schemas = ["abet", "acceso"]
 user = "${env.ABET_DB_USER}"
 password = "${env.ABET_DB_PASSWORD}"
 
-# dev es el entorno por defecto y el único definido, así que toda ejecución sin -environment, incluido el CI,
-# corre con clean permitido. Un entorno compartido se agrega con su propio bloque y sin este override.
+# dev es el entorno por defecto y el único definido, así que toda ejecución sin -environment corre con clean
+# permitido. Flyway corre en la Mac y en Neon (T027), y la CI aplica las migraciones con psql, sin Flyway. Un
+# entorno compartido, como el de Neon, se agrega con su propio bloque y sin este override.
 [environments.dev.flyway]
 cleanDisabled = false
