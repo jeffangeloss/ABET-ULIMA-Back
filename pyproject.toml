@@ -59,3 +59,8 @@ addopts = ["--import-mode=importlib"]
 # scenarios() resuelve las rutas desde la raíz del repositorio, así que los pasos de
 # tests/aceptacion/pasos/ leen specs/001-mvp-carga-r17/aceptacion/*.feature sin copiarlos.
 bdd_features_base_dir = "."
+# tests/conftest.py pone el marcador base en toda prueba que pide una base desechable, y
+# pytest -m "not base" las deja fuera en una máquina sin PostgreSQL 16.
+markers = [
+    "base: usa una base PostgreSQL 16 desechable con el prefijo abet_demo_ (tests/base_desechable.py)",
+]
