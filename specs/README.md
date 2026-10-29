@@ -4,7 +4,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 
 ## Contexto actual
 
-- Estado al 2026-10-28. No hay código de producto. La spec `001-mvp-carga-r17` está en revisión en la rama `docs/plan-mvp`, y nada se implementa hasta la fusión (merge) de su PR en `develop`.
+- Estado al 2026-10-28. `develop` no tiene código de producto. Jefferson aprueba la spec `001-mvp-carga-r17` en el chat el mismo día, y `MEMORIA.md` registra la aprobación. La aprobación formal que pide el Principio V de la constitución es la fusión (merge) en `develop` del PR de la spec desde la rama `docs/plan-mvp` (T004), que espera el permiso de Jefferson. Mientras tanto, el corte 1 avanza en local en la rama `feat/001-mvp-carga-r17`.
 - Solo datos inventados (códigos de estudiante de 99000000 a 99999999) en este repositorio, en Neon y en Vercel, hasta que la universidad autorice los reales (D-10). Ningún nombre de estudiante se guarda ni se muestra, y ningún rechazo guarda el valor leído de una celda.
 - La base vive todavía en el repositorio privado `jeffangeloss/ABET_ULIMA` (carpeta local `bd/`). Pasa a `db/` de este repositorio con su historia después del primer `flyway migrate` en Neon y antes de escribir `V1_09__crear_acceso.sql`.
 - Ninguna tabla, columna, restricción ni rol nace sin una spec aprobada. Todo cambio de la base entra como migración nueva en `db/migration/` o como script de plataforma en `db/plataforma/neon/`, y nunca edita una migración aplicada.
@@ -37,6 +37,7 @@ ABET-ULIMA-Back/
     callbacks/                      afterMigrate__permisos_lectura.sql
     plataforma/neon/                crear_roles_lectura.sql, crear_rol_app.sql, guardia_datos_inventados.sql, controles_neon.sql
     datos/                          periodo_2026_2_inventado.sql (vigencia, secciones 410 y 411, plan y usuarios de prueba)
+                                    varias_secciones_2026_2_inventado.sql (profesor con tres secciones de 450002 y 450010, solo en las pruebas)
     pruebas/                        correr_pruebas.sh, pruebas.sql (Q01 a Q14), datos_sinteticos.sql
   abet_carga/                       biblioteca de carga, sin FastAPI
     lector.py                       revisión del zip y lectura con openpyxl en solo lectura, sin pandas
@@ -58,7 +59,7 @@ ABET-ULIMA-Back/
   specs/
     README.md
     001-mvp-carga-r17/              revision-historias, spec, plan, tasks y audit
-      aceptacion/                   base_neon, acceso, carga, r17_constancia, despliegue y reemplazo_y_cargas (.feature)
+      aceptacion/                   base_neon, acceso, carga, r17_constancia, despliegue, reemplazo_y_cargas y varias_secciones (.feature)
     features/<feature>/<feature>.spec.md
   docs/
     devops.md

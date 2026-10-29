@@ -5,8 +5,9 @@ Uso, desde la raíz del repositorio
     uv run python -I scripts/generar_exports_inventados.py --salida /carpeta/temporal
     uv run python -I scripts/generar_exports_inventados.py --plantilla /ruta/de/export_inventado_410_con_error.xlsx
 
-Todo es inventado. Los códigos de estudiante van de 99000001 a 99000011 en la sección 410 y de
-99000012 a 99000022 en la 411, y los nombres son genéricos, como en el export de ejemplo.
+Todo es inventado. Los códigos de estudiante van de 99000001 a 99000011 en la sección 410, de
+99000012 a 99000022 en la 411 y de 99000023 a 99000055 en las tres secciones del profesor con
+varias secciones, y los nombres son genéricos, como en el export de ejemplo.
 
 La plantilla es export_inventado_410_con_error.xlsx, la copia byte a byte del export inventado de
 ejemplo, con un 5 en el PI 5.2 de la fila 3. El generador comprueba su huella SHA-256, copia de
@@ -14,6 +15,13 @@ ella la estructura (nombre de hoja, encabezado, columnas de identificación, de 
 actividades y de los PI con su puntaje posible) y toma los niveles de los PI de la sección 410 de
 db/pruebas/datos_sinteticos.sql (NIVELES_410). La salida es la misma byte a byte en cada corrida,
 porque las propiedades del libro y las fechas de las partes del zip son fijas.
+
+Los exports de docente.varias@example.invalid (SECCIONES_DE_VARIAS) son los de la 412 de 450002 y
+de la 410 y la 412 de 450010, las secciones de db/datos/varias_secciones_2026_2_inventado.sql.
+Conservan las columnas de identificación, de acceso y de actividades del export correcto de la 410,
+con los ids de Blackboard de su propio curso, y llevan al final las columnas de PI del plan de su
+asignatura, todas con un puntaje posible de 4, con niveles que dan porcentajes distintos en cada
+sección.
 
 El export de la guardia, con un código que no es inventado en la fila 4, nunca se versiona.
 escribir_export_guardia() lo arma en la ruta que pida la prueba, por ejemplo dentro de tmp_path.
@@ -56,10 +64,16 @@ NOMBRE_VACIO = "vacio_410.xlsx"
 NOMBRE_SIN_5_2 = "sin_5_2_410.xlsx"
 NOMBRE_SIN_CODIGO = "sin_username_ni_student_id_410.xlsx"
 NOMBRE_HOJA1 = "hoja1_sin_seccion.xlsx"
+NOMBRE_450002_412 = "sintetico_20262_450002_412.xlsx"
+NOMBRE_450010_410 = "sintetico_20262_450010_410.xlsx"
+NOMBRE_450010_412 = "sintetico_20262_450010_412.xlsx"
 
 HOJA_410 = "gc_SINTETICO_20262_450002_410_f"
 HOJA_411 = "gc_SINTETICO_20262_450002_411_f"
 PI_DEL_PLAN = ("5.1", "5.2", "5.3")
+# Plan de 450010 en 2026-2 de db/datos/varias_secciones_2026_2_inventado.sql, con los PI 2.1 y 2.2 del
+# SO 2 y el 5.1 del SO 5. PI_DEL_PLAN es el de 450002.
+PLAN_450010 = ("2.1", "2.2", "5.1")
 
 # Fechas fijas, las mismas del export de ejemplo, para que la salida no dependa del reloj.
 # FECHA_PROPIEDADES va en created y modified de docProps/core.xml (UTC) y FECHA_PARTES_ZIP en cada
@@ -93,6 +107,58 @@ DESPLAZAMIENTO_411 = 11
 CODIGO_GUARDIA = 10000004
 FILA_GUARDIA = 4
 
+# Niveles de las tres secciones de docente.varias@example.invalid, con la fila del archivo, el código y
+# un nivel por PI en el orden del plan de la asignatura. db/pruebas/pruebas.sql (sección 9) carga los
+# mismos niveles, y tests/test_generador_exports.py lo comprueba y calcula aparte las cifras del R-17.
+# La 412 de 450002 da 81,8 %, 54,5 % y 90,9 % de estudiantes con nivel 3 o 4 en 5.1, 5.2 y 5.3.
+NIVELES_450002_412: tuple[tuple[int, int, tuple[int, int, int]], ...] = (
+    (2, 99000023, (4, 3, 4)),
+    (3, 99000024, (3, 2, 4)),
+    (4, 99000025, (4, 4, 3)),
+    (5, 99000026, (3, 1, 4)),
+    (6, 99000027, (2, 2, 3)),
+    (7, 99000028, (3, 3, 4)),
+    (8, 99000029, (4, 2, 2)),
+    (9, 99000030, (1, 1, 3)),
+    (10, 99000031, (3, 3, 4)),
+    (11, 99000032, (3, 4, 3)),
+    (12, 99000033, (4, 3, 4)),
+)
+# La 410 de 450010 da 72,7 %, 45,5 % y 36,4 % en 2.1, 2.2 y 5.1.
+NIVELES_450010_410: tuple[tuple[int, int, tuple[int, int, int]], ...] = (
+    (2, 99000034, (3, 2, 2)),
+    (3, 99000035, (4, 3, 1)),
+    (4, 99000036, (2, 1, 2)),
+    (5, 99000037, (4, 4, 3)),
+    (6, 99000038, (3, 2, 1)),
+    (7, 99000039, (1, 1, 2)),
+    (8, 99000040, (4, 3, 3)),
+    (9, 99000041, (3, 2, 4)),
+    (10, 99000042, (2, 2, 1)),
+    (11, 99000043, (4, 4, 2)),
+    (12, 99000044, (3, 3, 3)),
+)
+# La 412 de 450010 da 90,9 %, 63,6 % y 54,5 % en 2.1, 2.2 y 5.1.
+NIVELES_450010_412: tuple[tuple[int, int, tuple[int, int, int]], ...] = (
+    (2, 99000045, (4, 3, 3)),
+    (3, 99000046, (3, 2, 1)),
+    (4, 99000047, (4, 4, 4)),
+    (5, 99000048, (3, 3, 2)),
+    (6, 99000049, (2, 1, 2)),
+    (7, 99000050, (4, 3, 4)),
+    (8, 99000051, (3, 2, 1)),
+    (9, 99000052, (4, 3, 3)),
+    (10, 99000053, (3, 4, 2)),
+    (11, 99000054, (4, 2, 4)),
+    (12, 99000055, (3, 3, 3)),
+)
+
+# Cada curso de Blackboard numera sus columnas por su cuenta, así que los ids de cada sección de
+# docente.varias se mueven a su bloque, 1000 por bloque sobre los del export de ejemplo (9000101 de la
+# «Actividad 01» pasa a 9001101 en el bloque 1).
+DESPLAZAMIENTO_POR_BLOQUE = 1000
+_ID_DE_BLACKBOARD = re.compile(r"\|([0-9]+)$")
+
 
 @dataclass(frozen=True)
 class Export:
@@ -115,6 +181,34 @@ class Export:
     def valor(self, fila: int, columna: str) -> object:
         """Valor de la celda en la fila del libro (la primera de datos es la 2) y la columna dada."""
         return self.filas[fila - 2][self.indice(columna)]
+
+
+@dataclass(frozen=True)
+class SeccionDeVarias:
+    """Sección de docente.varias@example.invalid en db/datos/varias_secciones_2026_2_inventado.sql y su export.
+
+    plan trae los PI de la asignatura en el orden de sus columnas, niveles trae por fila del libro el
+    código y un nivel por PI del plan, y bloque elige los ids de Blackboard del curso de la sección.
+    """
+
+    nombre: str
+    asignatura: str
+    seccion: str
+    plan: tuple[str, ...]
+    bloque: int
+    niveles: tuple[tuple[int, int, tuple[int, ...]], ...]
+
+    @property
+    def hoja(self) -> str:
+        """Hoja gc_<curso_blackboard>_f, con el curso SINTETICO_20262_<asignatura>_<sección> de la base."""
+        return f"gc_SINTETICO_20262_{self.asignatura}_{self.seccion}_f"
+
+
+SECCIONES_DE_VARIAS = (
+    SeccionDeVarias(NOMBRE_450002_412, "450002", "412", PI_DEL_PLAN, 1, NIVELES_450002_412),
+    SeccionDeVarias(NOMBRE_450010_410, "450010", "410", PLAN_450010, 2, NIVELES_450010_410),
+    SeccionDeVarias(NOMBRE_450010_412, "450010", "412", PLAN_450010, 3, NIVELES_450010_412),
+)
 
 
 def con_celda(export: Export, fila: int, columna: str, valor: object) -> Export:
@@ -275,6 +369,50 @@ def export_411(plantilla: Export) -> Export:
 def export_guardia(plantilla: Export) -> Export:
     """Export correcto de la 410 con un código que no es inventado en la fila 4 (US-08)."""
     return con_celda(export_410(plantilla), FILA_GUARDIA, "Username", CODIGO_GUARDIA)
+
+
+def id_de_blackboard(pi: str, bloque: int = 0) -> str:
+    """Id de Blackboard inventado de la columna de un PI, como 9000051 para el 5.1 del export de ejemplo."""
+    so, numero = (int(parte) for parte in pi.split("."))
+    if not 1 <= numero <= 9:
+        raise ValueError(f"El PI {pi} no cabe en el esquema de ids de Blackboard del generador.")
+    return str(9000000 + DESPLAZAMIENTO_POR_BLOQUE * bloque + 10 * so + numero)
+
+
+def con_bloque_de_blackboard(export: Export, bloque: int) -> Export:
+    """Copia del export con los ids de Blackboard de su encabezado movidos al bloque de otro curso."""
+
+    def mover(encabezado: str) -> str:
+        return _ID_DE_BLACKBOARD.sub(
+            lambda id_: f"|{int(id_.group(1)) + DESPLAZAMIENTO_POR_BLOQUE * bloque}", encabezado
+        )
+
+    return Export(export.hoja, tuple(mover(e) for e in export.encabezado), export.filas)
+
+
+def export_de_varias(plantilla: Export, seccion: SeccionDeVarias) -> Export:
+    """Export correcto de una sección de docente.varias, con la estructura de la plantilla y el plan de su asignatura.
+
+    Parte del export correcto de la 410, cambia su hoja, mueve los ids de Blackboard al bloque de la
+    sección y reemplaza las columnas 5.1, 5.2 y 5.3 por las del plan, al final y con un puntaje
+    posible de 4. Cada fila recibe el código de la sección y el nombre genérico que le corresponde.
+    """
+    export = con_bloque_de_blackboard(sin_columnas(con_hoja(export_410(plantilla), seccion.hoja), *PI_DEL_PLAN),
+                                      seccion.bloque)
+    if [fila for fila, _, _ in seccion.niveles] != list(range(2, len(export.filas) + 2)):
+        raise ValueError(f"Los niveles de {seccion.nombre} no cubren en orden las filas de datos de la plantilla.")
+    if any(len(niveles) != len(seccion.plan) for _, _, niveles in seccion.niveles):
+        raise ValueError(f"Cada fila de {seccion.nombre} lleva un nivel por PI del plan.")
+    for posicion, pi in enumerate(seccion.plan):
+        export = con_columna(
+            export,
+            f"{pi} [Total Pts: 4 Score] |{id_de_blackboard(pi, seccion.bloque)}",
+            (niveles[posicion] for _, _, niveles in seccion.niveles),
+        )
+    for fila, codigo, _ in seccion.niveles:
+        export = con_celda(export, fila, "Last Name", f"Inventado {codigo - 99000000:02d}")
+        export = con_celda(export, fila, "Username", codigo)
+    return export
 
 
 def _cae_en_la_carpeta_de_datos(destino: Path) -> bool:
@@ -488,6 +626,8 @@ def generar(salida: Path = CARPETA_DATOS, ruta_plantilla: Path = RUTA_PLANTILLA)
         NOMBRE_SIN_CODIGO: a_bytes(sin_columnas(correcto, "Username", "Student ID")),
         NOMBRE_HOJA1: a_bytes(con_hoja(correcto, "Hoja1")),
     }
+    for seccion in SECCIONES_DE_VARIAS:
+        archivos[seccion.nombre] = a_bytes(export_de_varias(plantilla, seccion))
     salida.mkdir(parents=True, exist_ok=True)
     rutas = {}
     for nombre, datos in archivos.items():

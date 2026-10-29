@@ -16,6 +16,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Generador determinista de los exports inventados de `tests/datos_inventados/` (`scripts/generar_exports_inventados.py`).
 - Specs vivas de carga, R-17, acceso y periodo con 43 reglas BR (`specs/features/`), y los seis `.feature` del corte 1 definitivos, con 127 escenarios.
 - V1_09 con el esquema `acceso` (usuarios autorizados, credenciales, sesiones, intentos fallidos, docentes por sección y códigos de acceso), el autor de cada carga, cuatro motivos nuevos de rechazo y el PI de los rechazos por PI; el rol de la aplicación con privilegio mínimo, las consultas de control de Neon, la guardia de datos inventados y los datos inventados de 2026-2, con sus pruebas.
+- Escenarios del profesor con varias secciones de varias asignaturas (`varias_secciones.feature`, con 133 escenarios en siete archivos), sus datos inventados (`db/datos/varias_secciones_2026_2_inventado.sql`, solo en las bases desechables de las pruebas) y tres exports nuevos con su generador.
 
 ### Seguridad
 

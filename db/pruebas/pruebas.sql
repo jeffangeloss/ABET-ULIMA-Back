@@ -1,5 +1,7 @@
--- Pruebas de la base. Se corren sobre una base desechable con las migraciones, los datos sintéticos y los datos de
--- 2026-2 de db/datos/periodo_2026_2_inventado.sql, que correr_pruebas.sh aplica dos veces después de los sintéticos.
+-- Pruebas de la base. Se corren sobre una base desechable con las migraciones, los datos sintéticos, los datos de
+-- 2026-2 de db/datos/periodo_2026_2_inventado.sql y los del profesor con varias secciones de
+-- db/datos/varias_secciones_2026_2_inventado.sql. correr_pruebas.sh aplica dos veces cada script de datos, en ese orden,
+-- después de los sintéticos.
 -- Cada aserción lanza ERROR si no se cumple; psql se detiene en el primer error (ON_ERROR_STOP).
 -- Los bloques DO de este archivo son el arnés de pruebas y no forman parte del esquema.
 \set ON_ERROR_STOP 1
@@ -300,7 +302,8 @@ BEGIN
 END $$;
 
 -- A05. Datos de 2026-2 de db/datos/periodo_2026_2_inventado.sql. correr_pruebas.sh los aplica dos veces después de
--- datos_sinteticos.sql, y ninguna fila se duplica ni choca con las de los datos sintéticos (US-03 y US-04).
+-- datos_sinteticos.sql, y ninguna fila se duplica ni choca con las de los datos sintéticos (US-03 y US-04). Los datos
+-- del profesor con varias secciones, que llegan después, tienen su propia aserción en A08.
 DO $$
 BEGIN
     IF (SELECT count(*) FROM abet.catalogo_vigencia) <> 1
@@ -312,20 +315,23 @@ BEGIN
              FROM abet.plan_medicion pm JOIN abet.pi p ON p.pi_id = pm.pi_id
              JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id AND a.codigo = '450002')
           IS DISTINCT FROM '5.1,5.2,5.3'
-       OR (SELECT count(*) FROM abet.plan_medicion) <> 4 THEN
+       OR (SELECT count(*) FROM abet.plan_medicion pm
+             JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id AND a.codigo IN ('450002', '450020')) <> 4 THEN
         RAISE EXCEPTION 'FALLA A05: la vigencia, las secciones 410 y 411 y el plan de 2026-2 deben estar una sola vez';
     END IF;
     IF (SELECT string_agg(u.correo || '=' || u.rol || ':' || u.activo, ',' ORDER BY u.correo)
-          FROM acceso.usuario_autorizado u)
+          FROM acceso.usuario_autorizado u
+         WHERE u.correo IN ('coordinacion@example.invalid', 'docente410@example.invalid', 'docente411@example.invalid'))
        IS DISTINCT FROM 'coordinacion@example.invalid=COORDINADOR:true,docente410@example.invalid=PROFESOR:true,'
                         || 'docente411@example.invalid=PROFESOR:true'
        OR (SELECT string_agg(u.correo || '=' || s.numero, ',' ORDER BY u.correo)
              FROM acceso.docente_seccion d JOIN acceso.usuario_autorizado u ON u.usuario_id = d.usuario_id
-             JOIN abet.seccion s ON s.seccion_id = d.seccion_id)
+             JOIN abet.seccion s ON s.seccion_id = d.seccion_id
+            WHERE u.correo IN ('coordinacion@example.invalid', 'docente410@example.invalid', 'docente411@example.invalid'))
           IS DISTINCT FROM 'docente410@example.invalid=410,docente411@example.invalid=411'
        OR (SELECT count(*) FROM acceso.credencial) + (SELECT count(*) FROM acceso.sesion)
           + (SELECT count(*) FROM acceso.intento_fallido) + (SELECT count(*) FROM acceso.codigo_acceso) <> 0 THEN
-        RAISE EXCEPTION 'FALLA A05: deben quedar 3 usuarios activos, 2 asignaciones y ninguna credencial, sesión, intento ni código';
+        RAISE EXCEPTION 'FALLA A05: los 3 usuarios de 2026-2 deben quedar activos, con 2 asignaciones, y la base sin credenciales, sesiones, intentos ni códigos';
     END IF;
     RAISE NOTICE 'ok A05 datos de 2026-2 aplicados dos veces sobre los datos sintéticos, sin duplicar ni chocar';
 END $$;
@@ -457,6 +463,82 @@ BEGIN
     RAISE NOTICE 'ok A07 rechazo_fila.pi_id, smallint y con nulo admitido, guarda el PI 5.2 de PI_DEL_PLAN_AUSENTE y el 5.1 de PI_REPETIDO, del plan de la 410, en dos cargas RECHAZADAS sin columnas';
 END $$;
 ROLLBACK;
+
+-- A08. Datos del profesor con varias secciones de db/datos/varias_secciones_2026_2_inventado.sql, que
+-- correr_pruebas.sh aplica dos veces después de los de 2026-2 (US-04, US-06, BR-ACCESO-07 y D-09).
+-- docente.varias@example.invalid dicta la 412 de 450002 y la 410 y la 412 de 450010, y ninguna más. La 410 y la 411
+-- de 450002 siguen con su profesor, el coordinador sigue sin secciones y nada se duplica. Los textos se ordenan con
+-- COLLATE "C", porque docente.varias y docente410 no quedan en el mismo orden en todas las configuraciones regionales.
+DO $$
+BEGIN
+    -- El plan de 450010 mide 2.1 y 2.2 del SO 2 y 5.1 del SO 5, los dos SO que asignatura_so le asigna, con su
+    -- instrumento, en la versión vigente de Ambiental. Las 7 filas de plan son las 4 de los datos sintéticos y estas 3.
+    IF (SELECT string_agg(p.codigo || '=' || p.so_numero || '=' || i.nombre || '=' || cv.codigo || '=' || c.codigo, ','
+                          ORDER BY p.codigo COLLATE "C")
+          FROM abet.plan_medicion pm
+          JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id AND pe.codigo = '2026-2'
+          JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id AND a.codigo = '450010'
+          JOIN abet.pi p ON p.pi_id = pm.pi_id
+          JOIN abet.instrumento i ON i.instrumento_id = pm.instrumento_id
+          JOIN abet.catalogo_version cv ON cv.catalogo_version_id = pm.catalogo_version_id
+          JOIN abet.carrera c ON c.carrera_id = pm.carrera_id)
+       IS DISTINCT FROM '2.1=2=Trabajo Integrador=AMB-2026=AMB,2.2=2=Trabajo Integrador=AMB-2026=AMB,'
+                        || '5.1=5=Trabajo Integrador=AMB-2026=AMB'
+       OR (SELECT count(*) FROM abet.plan_medicion) <> 7 THEN
+        RAISE EXCEPTION 'FALLA A08: el plan de 450010 en 2026-2 debe ser 2.1 y 2.2 del SO 2 y 5.1 del SO 5 con Trabajo Integrador, una sola vez';
+    END IF;
+    -- Las cinco secciones con curso de Blackboard, una sola vez cada una, y la 412 en dos asignaturas con cursos
+    -- distintos. Las 7 secciones de 2026-2 son esas cinco y las dos 301 de A01, que no tienen curso.
+    IF (SELECT string_agg(a.codigo || '-' || s.numero || '=' || s.curso_blackboard, ','
+                          ORDER BY a.codigo COLLATE "C", s.numero COLLATE "C")
+          FROM abet.seccion s
+          JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
+          JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id
+         WHERE s.curso_blackboard IS NOT NULL)
+       IS DISTINCT FROM '450002-410=SINTETICO_20262_450002_410,450002-411=SINTETICO_20262_450002_411,'
+                        || '450002-412=SINTETICO_20262_450002_412,450010-410=SINTETICO_20262_450010_410,'
+                        || '450010-412=SINTETICO_20262_450010_412'
+       OR (SELECT count(*) FROM abet.seccion) <> 7 THEN
+        RAISE EXCEPTION 'FALLA A08: la 412 de 450002 y la 410 y la 412 de 450010 deben estar una sola vez, con su curso de Blackboard';
+    END IF;
+    -- Cuatro usuarios activos y cinco asignaciones en toda la base, las tres de docente.varias entre ellas.
+    IF (SELECT string_agg(u.correo || '=' || u.rol || '=' || u.activo, ',' ORDER BY u.correo COLLATE "C")
+          FROM acceso.usuario_autorizado u)
+       IS DISTINCT FROM 'coordinacion@example.invalid=COORDINADOR=true,docente.varias@example.invalid=PROFESOR=true,'
+                        || 'docente410@example.invalid=PROFESOR=true,docente411@example.invalid=PROFESOR=true'
+       OR (SELECT string_agg(a.codigo || '-' || s.numero || '=' || u.correo, ','
+                             ORDER BY a.codigo COLLATE "C", s.numero COLLATE "C", u.correo COLLATE "C")
+             FROM acceso.docente_seccion d
+             JOIN acceso.usuario_autorizado u ON u.usuario_id = d.usuario_id
+             JOIN abet.seccion s ON s.seccion_id = d.seccion_id
+             JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id)
+          IS DISTINCT FROM '450002-410=docente410@example.invalid,450002-411=docente411@example.invalid,'
+                           || '450002-412=docente.varias@example.invalid,450010-410=docente.varias@example.invalid,'
+                           || '450010-412=docente.varias@example.invalid' THEN
+        RAISE EXCEPTION 'FALLA A08: deben quedar 4 usuarios activos y 5 asignaciones, las de docente.varias@example.invalid solo en la 412 de 450002 y en la 410 y la 412 de 450010';
+    END IF;
+    -- Lo que la regla de visibilidad le muestra a docente.varias en 2026-2 (BR-ACCESO-07 y BR-PERIODO-04), que son sus
+    -- tres secciones con los PI del plan de su asignatura, sin carga PUBLICADA y sin la 410 ni la 411 de 450002.
+    IF (SELECT string_agg(a.codigo || '-' || s.numero || '='
+                          || coalesce((SELECT string_agg(p.codigo, ' ' ORDER BY p.codigo COLLATE "C")
+                                         FROM abet.plan_medicion pm JOIN abet.pi p ON p.pi_id = pm.pi_id
+                                        WHERE pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id),
+                                      'sin plan')
+                          || '=' || CASE WHEN EXISTS (SELECT 1 FROM abet.carga c
+                                                       WHERE c.seccion_id = s.seccion_id AND c.estado = 'PUBLICADA')
+                                         THEN 'PUBLICADA' ELSE 'SIN_CARGA' END,
+                          ',' ORDER BY a.codigo COLLATE "C", s.numero COLLATE "C")
+          FROM acceso.docente_seccion d
+          JOIN acceso.usuario_autorizado u ON u.usuario_id = d.usuario_id AND u.correo = 'docente.varias@example.invalid'
+          JOIN abet.seccion s ON s.seccion_id = d.seccion_id
+          JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
+          JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id)
+       IS DISTINCT FROM '450002-412=5.1 5.2 5.3=SIN_CARGA,450010-410=2.1 2.2 5.1=SIN_CARGA,'
+                        || '450010-412=2.1 2.2 5.1=SIN_CARGA' THEN
+        RAISE EXCEPTION 'FALLA A08: docente.varias@example.invalid debe ver solo sus tres secciones, cada una con su plan y sin carga';
+    END IF;
+    RAISE NOTICE 'ok A08 datos de varias secciones aplicados dos veces, sin duplicar, con el plan 2.1, 2.2 y 5.1 de 450010 y las tres secciones de docente.varias@example.invalid, y solo esas';
+END $$;
 
 -- ---------------------------------------------------------------------------------------------
 -- 3. Números del R-17 de la sección 410 de 450002 (misma distribución que el caso real)
@@ -1017,12 +1099,17 @@ FROM abet.carga c JOIN abet.archivo_origen r ON r.archivo_id = c.archivo_id AND 
 WHERE ao.nombre_archivo = 'sondeo_sin_columnas.csv';
 -- Q08: el estudiante 99000001 también aparece con el PI 5.1 en la sección 411 del mismo curso y periodo.
 -- Q10: la 411 se publica con R-PRUEBA-APROBADO mientras la 410 sigue con R-2026-BORRADOR.
--- La 411 ya existe cuando la base trae los datos de 2026-2, y entonces el INSERT no hace nada.
-INSERT INTO abet.seccion (periodo_id, asignatura_id, numero) SELECT periodo_id, asignatura_id, '411' FROM abet.seccion WHERE numero = '410'
+-- La 411 ya existe cuando la base trae los datos de 2026-2, y entonces el INSERT no hace nada. La 410 y la 411 se buscan
+-- con su asignatura y no solo por su número, porque 450010 también tiene una 410 (C13).
+INSERT INTO abet.seccion (periodo_id, asignatura_id, numero)
+SELECT s.periodo_id, s.asignatura_id, '411'
+FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+WHERE s.numero = '410'
 ON CONFLICT DO NOTHING;
 INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version)
 SELECT s.seccion_id, ao.archivo_id, 1, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba'
-FROM abet.seccion s, abet.archivo_origen ao, abet.conjunto_reglas cr
+FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002',
+     abet.archivo_origen ao, abet.conjunto_reglas cr
 WHERE s.numero = '411' AND ao.nombre_archivo = 'sondeo_411.csv' AND cr.version = 'R-PRUEBA-APROBADO';
 INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
                                 pi_codigo, posicion, encabezado)
@@ -1416,6 +1503,204 @@ BEGIN
         END IF;
     END LOOP;
     RAISE NOTICE 'ok Q08 con la 410 y la 411 publicadas: 33 mediciones en cada una, 63,6 / 63,6 / 72,7 en la 411 y Q01 a Q14 en 0 filas';
+END $$;
+ROLLBACK;
+
+-- ---------------------------------------------------------------------------------------------
+-- 9. Cada export del profesor con varias secciones publicado en su sección (BR-ACCESO-07 y BR-CARGA-11)
+-- ---------------------------------------------------------------------------------------------
+-- sintetico_20262_450002_412.xlsx, sintetico_20262_450010_410.xlsx y sintetico_20262_450010_412.xlsx, de
+-- tests/datos_inventados/, traen 11 filas cada uno, con los códigos 99000023 a 99000033, 99000034 a 99000044 y
+-- 99000045 a 99000055, y las tres columnas del plan de su asignatura con Total Pts 4 en las posiciones 25 a 27. Las
+-- tres cargas, subidas por docente.varias@example.invalid, se publican junto a la de la 410 de 450002 en una
+-- transacción que se deshace al final. Cada sección queda con una sola carga PUBLICADA y con su propio R-17, la 412 de
+-- 450002 y la 412 de 450010 no se mezclan, la 410 de 450002 conserva sus cifras y Q01 a Q14, Q08 entre ellas, siguen
+-- en 0 filas. tests/test_generador_exports.py comprueba que las columnas y los niveles de abajo son los de los tres
+-- exports.
+BEGIN;
+INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
+SELECT encode(sha256(convert_to('export inventado 2026-2 ' || v.asignatura || ' ' || v.numero, 'UTF8')), 'hex'),
+       'sintetico_20262_' || v.asignatura || '_' || v.numero || '.xlsx',
+       'gc_SINTETICO_20262_' || v.asignatura || '_' || v.numero || '_f', 11
+FROM (VALUES ('450002', '412'), ('450010', '410'), ('450010', '412')) AS v (asignatura, numero);
+
+-- Una carga por sección de docente.varias, con el archivo cuyo nombre declara su asignatura y su número.
+INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version, subida_por)
+SELECT s.seccion_id, ao.archivo_id, ao.filas_de_datos, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', u.usuario_id
+FROM acceso.usuario_autorizado u
+JOIN acceso.docente_seccion d ON d.usuario_id = u.usuario_id
+JOIN abet.seccion s ON s.seccion_id = d.seccion_id
+JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'sintetico_20262_' || a.codigo || '_' || s.numero || '.xlsx'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+WHERE u.correo = 'docente.varias@example.invalid';
+
+-- Las columnas de cada export, con el id de Blackboard del curso de su sección.
+INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
+                                pi_codigo, posicion, encabezado, bb_columna_id, puntaje_maximo_declarado)
+SELECT c.carga_id, s.seccion_id, c.carrera_id, s.periodo_id, s.asignatura_id, pm.plan_medicion_id, pm.pi_id,
+       p.codigo, v.posicion, p.codigo || ' [Total Pts: 4 Score] |' || v.bb_id, v.bb_id, 4
+FROM (VALUES ('sintetico_20262_450002_412.xlsx', '5.1', 25, '9001051'),
+             ('sintetico_20262_450002_412.xlsx', '5.2', 26, '9001052'),
+             ('sintetico_20262_450002_412.xlsx', '5.3', 27, '9001053'),
+             ('sintetico_20262_450010_410.xlsx', '2.1', 25, '9002021'),
+             ('sintetico_20262_450010_410.xlsx', '2.2', 26, '9002022'),
+             ('sintetico_20262_450010_410.xlsx', '5.1', 27, '9002051'),
+             ('sintetico_20262_450010_412.xlsx', '2.1', 25, '9003021'),
+             ('sintetico_20262_450010_412.xlsx', '2.2', 26, '9003022'),
+             ('sintetico_20262_450010_412.xlsx', '5.1', 27, '9003051')) AS v (archivo, pi, posicion, bb_id)
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = v.archivo
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+JOIN abet.plan_medicion pm ON pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id
+                          AND pm.carrera_id = c.carrera_id
+JOIN abet.pi p ON p.pi_id = pm.pi_id AND p.codigo = v.pi;
+
+INSERT INTO abet.estudiante (codigo)
+SELECT CAST(99000000 + n AS varchar(8)) FROM generate_series(23, 55) AS g (n);
+
+-- Fila del export, código y niveles de las columnas 25, 26 y 27 (5.1, 5.2 y 5.3 en 450002, y 2.1, 2.2 y 5.1 en
+-- 450010).
+CREATE TEMP TABLE nivel_varias AS
+SELECT * FROM (VALUES
+ ('sintetico_20262_450002_412.xlsx',  2, '99000023', 4, 3, 4),
+ ('sintetico_20262_450002_412.xlsx',  3, '99000024', 3, 2, 4),
+ ('sintetico_20262_450002_412.xlsx',  4, '99000025', 4, 4, 3),
+ ('sintetico_20262_450002_412.xlsx',  5, '99000026', 3, 1, 4),
+ ('sintetico_20262_450002_412.xlsx',  6, '99000027', 2, 2, 3),
+ ('sintetico_20262_450002_412.xlsx',  7, '99000028', 3, 3, 4),
+ ('sintetico_20262_450002_412.xlsx',  8, '99000029', 4, 2, 2),
+ ('sintetico_20262_450002_412.xlsx',  9, '99000030', 1, 1, 3),
+ ('sintetico_20262_450002_412.xlsx', 10, '99000031', 3, 3, 4),
+ ('sintetico_20262_450002_412.xlsx', 11, '99000032', 3, 4, 3),
+ ('sintetico_20262_450002_412.xlsx', 12, '99000033', 4, 3, 4),
+ ('sintetico_20262_450010_410.xlsx',  2, '99000034', 3, 2, 2),
+ ('sintetico_20262_450010_410.xlsx',  3, '99000035', 4, 3, 1),
+ ('sintetico_20262_450010_410.xlsx',  4, '99000036', 2, 1, 2),
+ ('sintetico_20262_450010_410.xlsx',  5, '99000037', 4, 4, 3),
+ ('sintetico_20262_450010_410.xlsx',  6, '99000038', 3, 2, 1),
+ ('sintetico_20262_450010_410.xlsx',  7, '99000039', 1, 1, 2),
+ ('sintetico_20262_450010_410.xlsx',  8, '99000040', 4, 3, 3),
+ ('sintetico_20262_450010_410.xlsx',  9, '99000041', 3, 2, 4),
+ ('sintetico_20262_450010_410.xlsx', 10, '99000042', 2, 2, 1),
+ ('sintetico_20262_450010_410.xlsx', 11, '99000043', 4, 4, 2),
+ ('sintetico_20262_450010_410.xlsx', 12, '99000044', 3, 3, 3),
+ ('sintetico_20262_450010_412.xlsx',  2, '99000045', 4, 3, 3),
+ ('sintetico_20262_450010_412.xlsx',  3, '99000046', 3, 2, 1),
+ ('sintetico_20262_450010_412.xlsx',  4, '99000047', 4, 4, 4),
+ ('sintetico_20262_450010_412.xlsx',  5, '99000048', 3, 3, 2),
+ ('sintetico_20262_450010_412.xlsx',  6, '99000049', 2, 1, 2),
+ ('sintetico_20262_450010_412.xlsx',  7, '99000050', 4, 3, 4),
+ ('sintetico_20262_450010_412.xlsx',  8, '99000051', 3, 2, 1),
+ ('sintetico_20262_450010_412.xlsx',  9, '99000052', 4, 3, 3),
+ ('sintetico_20262_450010_412.xlsx', 10, '99000053', 3, 4, 2),
+ ('sintetico_20262_450010_412.xlsx', 11, '99000054', 4, 2, 4),
+ ('sintetico_20262_450010_412.xlsx', 12, '99000055', 3, 3, 3)
+) AS v (archivo, fila, codigo, n25, n26, n27);
+
+INSERT INTO abet.carga_fila (carga_id, fila_origen, estudiante_id)
+SELECT c.carga_id, v.fila, e.estudiante_id
+FROM nivel_varias v
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = v.archivo
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.estudiante e ON e.codigo = v.codigo;
+
+INSERT INTO abet.medicion (carga_id, carga_columna_id, pi_id, estudiante_id, estado_evidencia, nivel_original, fila_origen)
+SELECT cc.carga_id, cc.carga_columna_id, cc.pi_id, f.estudiante_id, 'CALIFICADO',
+       CASE cc.posicion WHEN 25 THEN v.n25 WHEN 26 THEN v.n26 ELSE v.n27 END, v.fila
+FROM nivel_varias v
+JOIN abet.archivo_origen ao ON ao.nombre_archivo = v.archivo
+JOIN abet.carga c ON c.archivo_id = ao.archivo_id
+JOIN abet.carga_fila f ON f.carga_id = c.carga_id AND f.fila_origen = v.fila
+JOIN abet.carga_columna cc ON cc.carga_id = c.carga_id;
+
+UPDATE abet.carga c
+SET estado = 'PUBLICADA', filas_leidas = 11, filas_aceptadas = 11, filas_rechazadas = 0, terminada_en = clock_timestamp()
+FROM abet.archivo_origen ao
+WHERE ao.archivo_id = c.archivo_id
+  AND ao.nombre_archivo IN ('sintetico_20262_450002_412.xlsx', 'sintetico_20262_450010_410.xlsx',
+                            'sintetico_20262_450010_412.xlsx');
+
+DO $$
+DECLARE
+    r   record;
+    q   record;
+    v_n int := 0;
+    v_c bigint;
+BEGIN
+    -- Cifras del R-17 por sección y PI, que tests/datos_inventados/README.md anota como esperadas.
+    FOR r IN
+        SELECT v.codigo_asignatura, v.seccion, v.pi, v.n_total, v.n_esperado_o_superior, v.pct_logro_sobre_calificados,
+               v.provisional, v.n_nivel_1, v.n_nivel_2, v.n_nivel_3, v.n_nivel_4, e.*
+        FROM abet.v_r17_por_pi v
+        JOIN (VALUES ('450002', '412', '5.1',  9, 81.8, 1, 1, 5, 4),
+                     ('450002', '412', '5.2',  6, 54.5, 2, 3, 4, 2),
+                     ('450002', '412', '5.3', 10, 90.9, 0, 1, 4, 6),
+                     ('450010', '410', '2.1',  8, 72.7, 1, 2, 4, 4),
+                     ('450010', '410', '2.2',  5, 45.5, 2, 4, 3, 2),
+                     ('450010', '410', '5.1',  4, 36.4, 3, 4, 3, 1),
+                     ('450010', '412', '2.1', 10, 90.9, 0, 1, 5, 5),
+                     ('450010', '412', '2.2',  7, 63.6, 1, 3, 5, 2),
+                     ('450010', '412', '5.1',  6, 54.5, 2, 3, 3, 3))
+             AS e (asignatura_e, seccion_e, pi_e, ok_e, pct_e, n1_e, n2_e, n3_e, n4_e)
+          ON e.asignatura_e = v.codigo_asignatura AND e.seccion_e = v.seccion AND e.pi_e = v.pi
+        WHERE v.periodo = '2026-2'
+        ORDER BY v.codigo_asignatura, v.seccion, v.pi
+    LOOP
+        v_n := v_n + 1;
+        IF r.n_total <> 11 OR r.n_esperado_o_superior <> r.ok_e OR r.pct_logro_sobre_calificados <> r.pct_e
+           OR r.provisional IS NOT TRUE
+           OR (r.n_nivel_1, r.n_nivel_2, r.n_nivel_3, r.n_nivel_4) IS DISTINCT FROM (r.n1_e, r.n2_e, r.n3_e, r.n4_e) THEN
+            RAISE EXCEPTION 'FALLA R-17 de la % de % en el PI %: %', r.seccion, r.codigo_asignatura, r.pi, r;
+        END IF;
+        RAISE NOTICE 'ok R-17 de la % de % PI %: % de 11 en nivel 3 o más = % %%', r.seccion, r.codigo_asignatura,
+                     r.pi, r.n_esperado_o_superior, r.pct_logro_sobre_calificados;
+    END LOOP;
+    IF v_n <> 9
+       OR (SELECT count(*) FROM abet.v_r17_por_pi
+            WHERE periodo = '2026-2'
+              AND (codigo_asignatura, seccion) IN (('450002', '412'), ('450010', '410'), ('450010', '412'))) <> 9 THEN
+        RAISE EXCEPTION 'FALLA R-17 de varias secciones: se esperaban 9 filas, 3 PI en cada sección, y hay %', v_n;
+    END IF;
+    -- Una sola carga PUBLICADA en cada sección de 450002 y 450010, con sus 33 mediciones y quien la sube.
+    IF (SELECT string_agg(a.codigo || '-' || s.numero || '=' || (SELECT count(*) FROM abet.medicion m WHERE m.carga_id = c.carga_id)
+                          || '=' || coalesce(u.correo, 'sin usuario'), ',' ORDER BY a.codigo COLLATE "C", s.numero COLLATE "C")
+          FROM abet.carga c
+          JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+          JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo IN ('450002', '450010')
+          LEFT JOIN acceso.usuario_autorizado u ON u.usuario_id = c.subida_por
+         WHERE c.estado = 'PUBLICADA')
+       IS DISTINCT FROM '450002-410=33=sin usuario,450002-412=33=docente.varias@example.invalid,'
+                        || '450010-410=33=docente.varias@example.invalid,450010-412=33=docente.varias@example.invalid' THEN
+        RAISE EXCEPTION 'FALLA varias secciones: cada sección de 450002 y 450010 debe tener una sola carga PUBLICADA con 33 mediciones';
+    END IF;
+    -- La 412 de 450002 y la 412 de 450010 no se mezclan, y cada sección muestra sus PI y sus propios códigos.
+    IF (SELECT string_agg(t.linea, ',' ORDER BY t.linea COLLATE "C")
+          FROM (SELECT "CÓDIGO DEL CURSO" || '-' || "SECCIÓN" || '=' || string_agg(DISTINCT "PI", ' ' ORDER BY "PI")
+                       || '=' || min("CÓDIGO DEL ESTUDIANTE") || '-' || max("CÓDIGO DEL ESTUDIANTE") || '=' || count(*)
+                       AS linea
+                  FROM abet.v_tabla_maestra_pi
+                 WHERE "AÑO" = 2026 AND "CICLO" = 2
+                   AND ("CÓDIGO DEL CURSO", "SECCIÓN") IN (('450002', '412'), ('450010', '410'), ('450010', '412'))
+                 GROUP BY "CÓDIGO DEL CURSO", "SECCIÓN") AS t)
+       IS DISTINCT FROM '450002-412=5.1 5.2 5.3=99000023-99000033=33,450010-410=2.1 2.2 5.1=99000034-99000044=33,'
+                        || '450010-412=2.1 2.2 5.1=99000045-99000055=33' THEN
+        RAISE EXCEPTION 'FALLA varias secciones: la tabla maestra debe separar las tres secciones con sus PI y sus códigos';
+    END IF;
+    -- La 410 de 450002 conserva el R-17 del export correcto aunque 450010 también tenga una 410 publicada.
+    IF (SELECT string_agg(pi || '=' || pct_logro_sobre_calificados, ',' ORDER BY pi)
+          FROM abet.v_r17_por_pi WHERE periodo = '2026-2' AND codigo_asignatura = '450002' AND seccion = '410')
+       IS DISTINCT FROM '5.1=63.6,5.2=63.6,5.3=72.7' THEN
+        RAISE EXCEPTION 'FALLA varias secciones: la 410 de 450002 debe seguir con 63,6 / 63,6 / 72,7';
+    END IF;
+    FOR q IN SELECT * FROM control_cero ORDER BY id LOOP
+        EXECUTE 'SELECT count(*) FROM (' || q.consulta || ') AS t' INTO v_c;
+        IF v_c <> 0 THEN
+            RAISE EXCEPTION 'FALLA varias secciones: % devolvió % filas (%)', q.id, v_c, q.descripcion;
+        END IF;
+    END LOOP;
+    RAISE NOTICE 'ok varias secciones: tres cargas PUBLICADAS de docente.varias@example.invalid, una en cada sección, con sus cifras propias, la 410 de 450002 sin cambios y Q01 a Q14 en 0 filas';
 END $$;
 ROLLBACK;
 

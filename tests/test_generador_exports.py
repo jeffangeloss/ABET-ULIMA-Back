@@ -6,12 +6,19 @@ en todas las demás, porcentajes y estructura copiada de la plantilla) y lo que 
 carpeta versionada, también por otra ruta, y una plantilla alterada). Leen los libros con openpyxl
 por su cuenta, sin el lector del generador, para que la comprobación no dependa del código que
 comprueba.
+
+Los tres exports del profesor con varias secciones (docente.varias@example.invalid) se prueban
+además contra las cifras del R-17 escritas aquí a mano, que el README de la carpeta y la sección 9
+de db/pruebas/pruebas.sql repiten, y contra lo que no debe pasar entre secciones (un código o una
+huella compartidos, el mismo porcentaje de un PI en dos secciones y columnas que no son del plan de
+su asignatura).
 """
 
 from __future__ import annotations
 
 import base64
 import fnmatch
+import hashlib
 import io
 import os
 import re
@@ -34,6 +41,8 @@ RAIZ = Path(__file__).resolve().parent.parent
 CARPETA = RAIZ / "tests" / "datos_inventados"
 SCRIPT = RAIZ / "scripts" / "generar_exports_inventados.py"
 SQL_SINTETICOS = RAIZ / "db" / "pruebas" / "datos_sinteticos.sql"
+SQL_PRUEBAS = RAIZ / "db" / "pruebas" / "pruebas.sql"
+README = CARPETA / "README.md"
 
 CORRECTO = "sintetico_20262_450002_410.xlsx"
 CON_ERROR = "export_inventado_410_con_error.xlsx"
@@ -45,13 +54,34 @@ VACIO = "vacio_410.xlsx"
 SIN_5_2 = "sin_5_2_410.xlsx"
 SIN_CODIGO = "sin_username_ni_student_id_410.xlsx"
 HOJA1 = "hoja1_sin_seccion.xlsx"
+EXPORT_450002_412 = "sintetico_20262_450002_412.xlsx"
+EXPORT_450010_410 = "sintetico_20262_450010_410.xlsx"
+EXPORT_450010_412 = "sintetico_20262_450010_412.xlsx"
+VARIAS = (EXPORT_450002_412, EXPORT_450010_410, EXPORT_450010_412)
 
-VERSIONADOS = (CORRECTO, CON_ERROR, EXPORT_411, DANADO, PROTEGIDO, PDF, VACIO, SIN_5_2, SIN_CODIGO, HOJA1)
-LIBROS = (CORRECTO, CON_ERROR, EXPORT_411, VACIO, SIN_5_2, SIN_CODIGO, HOJA1)
+VERSIONADOS = (CORRECTO, CON_ERROR, EXPORT_411, DANADO, PROTEGIDO, PDF, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS)
+LIBROS = (CORRECTO, CON_ERROR, EXPORT_411, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS)
 NO_ABREN = (DANADO, PROTEGIDO, PDF)
 PI = ("5.1", "5.2", "5.3")
+PLAN_450010 = ("2.1", "2.2", "5.1")
 HOJA_410 = "gc_SINTETICO_20262_450002_410_f"
 HOJA_411 = "gc_SINTETICO_20262_450002_411_f"
+
+# Cifras esperadas del R-17 de cada export de docente.varias@example.invalid, escritas a mano. Por PI del
+# plan, en el orden de sus columnas, van los estudiantes con nivel 3 o 4, su porcentaje con un decimal y
+# los estudiantes con nivel 1, 2, 3 y 4. tests/datos_inventados/README.md y la sección 9 de
+# db/pruebas/pruebas.sql repiten las mismas cifras.
+R17_VARIAS = {
+    EXPORT_450002_412: (("5.1", 9, Decimal("81.8"), (1, 1, 5, 4)),
+                        ("5.2", 6, Decimal("54.5"), (2, 3, 4, 2)),
+                        ("5.3", 10, Decimal("90.9"), (0, 1, 4, 6))),
+    EXPORT_450010_410: (("2.1", 8, Decimal("72.7"), (1, 2, 4, 4)),
+                        ("2.2", 5, Decimal("45.5"), (2, 4, 3, 2)),
+                        ("5.1", 4, Decimal("36.4"), (3, 4, 3, 1))),
+    EXPORT_450010_412: (("2.1", 10, Decimal("90.9"), (0, 1, 5, 5)),
+                        ("2.2", 7, Decimal("63.6"), (1, 3, 5, 2)),
+                        ("5.1", 6, Decimal("54.5"), (2, 3, 3, 3))),
+}
 
 
 # Lectura independiente de los libros
@@ -75,27 +105,34 @@ def _columna(encabezado: list[str], nombre: str) -> int:
     return coincidencias[0]
 
 
-def _niveles(nombre: str) -> list[tuple[int, object, tuple[object, ...]]]:
-    """Fila del libro, Username y valores de 5.1, 5.2 y 5.3 de cada fila de datos."""
+def _niveles(nombre: str, pis: tuple[str, ...] = PI) -> list[tuple[int, object, tuple[object, ...]]]:
+    """Fila del libro, Username y valores de los PI dados (5.1, 5.2 y 5.3 si no se dan) de cada fila de datos."""
     _, encabezado, filas = _libro(nombre)
     usuario = _columna(encabezado, "Username")
-    columnas = [_columna(encabezado, pi) for pi in PI]
+    columnas = [_columna(encabezado, pi) for pi in pis]
     return [(n, fila[usuario], tuple(fila[c] for c in columnas)) for n, fila in enumerate(filas, start=2)]
+
+
+def _plan(nombre: str) -> tuple[str, ...]:
+    """PI del plan de la asignatura que declara el nombre del export, 450010 o, en otro caso, 450002."""
+    return PLAN_450010 if "_450010_" in nombre else PI
 
 
 def _un_decimal(numerador: int, denominador: int) -> Decimal:
     return (Decimal(100 * numerador) / Decimal(denominador)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
 
 
-def _resultado(nombre: str) -> tuple[int, int, int, tuple[Decimal, ...], tuple[Counter, ...]]:
+def _resultado(
+    nombre: str, pis: tuple[str, ...] = PI
+) -> tuple[int, int, int, tuple[Decimal, ...], tuple[Counter, ...]]:
     """Leídas, aceptadas, rechazadas, porcentaje con nivel 3 o 4 y conteo por nivel de cada PI.
 
     Aplica el valor provisional de D-01. Una celda de PI fuera de 1 a 4 rechaza la fila completa.
     """
-    filas = _niveles(nombre)
+    filas = _niveles(nombre, pis)
     aceptadas = [niveles for _, _, niveles in filas if all(v is None or v in (1, 2, 3, 4) for v in niveles)]
     porcentajes, conteos = [], []
-    for posicion in range(len(PI)):
+    for posicion in range(len(pis)):
         calificados = [n[posicion] for n in aceptadas if n[posicion] is not None]
         porcentajes.append(_un_decimal(sum(1 for v in calificados if v >= 3), len(calificados)))
         conteos.append(Counter(calificados))
@@ -319,6 +356,98 @@ def test_el_export_de_la_411_usa_sus_codigos_su_hoja_y_los_mismos_porcentajes() 
     leidas, aceptadas, rechazadas, porcentajes, _ = _resultado(EXPORT_411)
     assert (leidas, aceptadas, rechazadas) == (11, 11, 0)
     assert porcentajes == (Decimal("63.6"), Decimal("63.6"), Decimal("72.7"))
+
+
+# Los exports del profesor con varias secciones (db/datos/varias_secciones_2026_2_inventado.sql)
+
+def _sin_id(encabezado: str) -> str:
+    """Encabezado sin el id de Blackboard que sigue a «|»."""
+    return re.sub(r"\|[0-9]+$", "|", encabezado)
+
+
+def _ids(encabezado: list[str]) -> list[str]:
+    """Ids de Blackboard del encabezado, en el orden de sus columnas."""
+    return [m.group(1) for e in encabezado if (m := re.search(r"\|([0-9]+)$", e))]
+
+
+@pytest.mark.parametrize("nombre", VARIAS)
+def test_cada_export_de_varias_secciones_declara_su_seccion_y_trae_su_plan(nombre: str) -> None:
+    asignatura, seccion = re.fullmatch(r"sintetico_20262_([0-9]{6})_([0-9]{3})\.xlsx", nombre).groups()
+    hoja, encabezado, filas = _libro(nombre)
+    _, encabezado_410, _ = _libro(CORRECTO)
+    assert hoja == f"gc_SINTETICO_20262_{asignatura}_{seccion}_f"
+    assert len(filas) == 11
+    # Identificación, acceso y las 18 actividades del export correcto, con los ids de otro curso de Blackboard.
+    assert [_sin_id(e) for e in encabezado[:-3]] == [_sin_id(e) for e in encabezado_410[:-3]]
+    assert len(set(_ids(encabezado))) == len(encabezado) - 6
+    assert not set(_ids(encabezado)) & set(_ids(encabezado_410))
+    # Al final, solo las columnas del plan de su asignatura, todas con un puntaje posible de 4.
+    assert [_sin_id(e) for e in encabezado[-3:]] == [f"{pi} [Total Pts: 4 Score] |" for pi in _plan(nombre)]
+    assert sum(1 for e in encabezado if re.match(r"[0-9]+\.[0-9]+ \[", e)) == 3
+
+
+def test_los_tres_exports_de_varias_secciones_usan_ids_de_blackboard_distintos() -> None:
+    ids = [i for nombre in VARIAS for i in _ids(_libro(nombre)[1])]
+    assert len(ids) == len(set(ids)) == 3 * 21
+
+
+@pytest.mark.parametrize("nombre", VARIAS)
+def test_las_cifras_esperadas_del_r17_salen_de_cada_export_de_varias_secciones(nombre: str) -> None:
+    leidas, aceptadas, rechazadas, porcentajes, conteos = _resultado(nombre, _plan(nombre))
+    esperadas = R17_VARIAS[nombre]
+    assert (leidas, aceptadas, rechazadas) == (11, 11, 0)
+    assert tuple(pi for pi, _, _, _ in esperadas) == _plan(nombre)
+    assert porcentajes == tuple(porcentaje for _, _, porcentaje, _ in esperadas)
+    assert [tuple(c[n] for n in (1, 2, 3, 4)) for c in conteos] == [por_nivel for _, _, _, por_nivel in esperadas]
+    assert [c[3] + c[4] for c in conteos] == [logran for _, logran, _, _ in esperadas]
+
+
+@pytest.mark.parametrize("nombre", VARIAS)
+def test_el_readme_anota_las_cifras_del_r17_de_cada_export_de_varias_secciones(nombre: str) -> None:
+    filas = [linea for linea in README.read_text(encoding="utf-8").splitlines() if linea.startswith(f"| `{nombre}` |")]
+    assert len(filas) == 1
+    for pi, logran, porcentaje, _ in R17_VARIAS[nombre]:
+        assert f"{str(porcentaje).replace('.', ',')} % ({logran} de 11) en {pi}" in filas[0], pi
+
+
+def test_cada_seccion_tiene_sus_codigos_su_huella_y_sus_porcentajes() -> None:
+    codigos = {nombre: [c for _, c, _ in _niveles(nombre, _plan(nombre))] for nombre in (CORRECTO, EXPORT_411, *VARIAS)}
+    assert codigos[EXPORT_450002_412] == list(range(99000023, 99000034))
+    assert codigos[EXPORT_450010_410] == list(range(99000034, 99000045))
+    assert codigos[EXPORT_450010_412] == list(range(99000045, 99000056))
+    # Ningún estudiante en dos secciones, así que la consulta de control Q08 sigue en 0 filas con todas publicadas.
+    todos = [c for lista in codigos.values() for c in lista]
+    assert len(todos) == len(set(todos)) == 55
+    # Cada archivo tiene su huella, así que el export de una sección nunca pasa por el ya publicado de otra.
+    huellas = {hashlib.sha256((CARPETA / nombre).read_bytes()).hexdigest() for nombre in VERSIONADOS}
+    assert len(huellas) == len(VERSIONADOS)
+    # Un mismo PI da un porcentaje distinto en cada sección que lo mide, y la 410 de 450002 entra en la comparación.
+    por_pi: dict[str, list[Decimal]] = {}
+    for nombre in (CORRECTO, *VARIAS):
+        for pi, porcentaje in zip(_plan(nombre), _resultado(nombre, _plan(nombre))[3], strict=True):
+            por_pi.setdefault(pi, []).append(porcentaje)
+    assert sorted(por_pi) == ["2.1", "2.2", "5.1", "5.2", "5.3"]
+    assert all(len(set(porcentajes)) == len(porcentajes) for porcentajes in por_pi.values()), por_pi
+
+
+def test_la_seccion_9_de_pruebas_sql_carga_las_columnas_y_los_niveles_de_cada_export() -> None:
+    texto = SQL_PRUEBAS.read_text(encoding="utf-8")
+    # Filas con la forma ('sintetico_20262_450010_410.xlsx',  2, '99000034', 3, 2, 2), archivo, fila, código y niveles.
+    niveles: dict[str, list[tuple[int, int, tuple[int, ...]]]] = {}
+    patron = (r"\('(sintetico_20262_[0-9]{6}_[0-9]{3}\.xlsx)',\s*([0-9]+),\s*'(99[0-9]{6})',"
+              r"\s*([0-9]),\s*([0-9]),\s*([0-9])\)")
+    for archivo, fila, codigo, a, b, c in re.findall(patron, texto):
+        niveles.setdefault(archivo, []).append((int(fila), int(codigo), (int(a), int(b), int(c))))
+    # Columnas con la forma ('sintetico_20262_450010_410.xlsx', '2.1', 25, '9002021'), archivo, PI, posición e id.
+    columnas: dict[str, list[tuple[int, str]]] = {}
+    patron = r"\('(sintetico_20262_[0-9]{6}_[0-9]{3}\.xlsx)',\s*'([0-9]\.[0-9])',\s*([0-9]+),\s*'([0-9]+)'\)"
+    for archivo, pi, posicion, id_ in re.findall(patron, texto):
+        columnas.setdefault(archivo, []).append((int(posicion), f"{pi} [Total Pts: 4 Score] |{id_}"))
+    assert sorted(niveles) == sorted(columnas) == sorted(VARIAS)
+    for nombre in VARIAS:
+        assert niveles[nombre] == _niveles(nombre, _plan(nombre)), nombre
+        de_pi = [(n, e) for n, e in enumerate(_libro(nombre)[1], start=1) if re.match(r"[0-9]+\.[0-9]+ \[", e)]
+        assert columnas[nombre] == de_pi, nombre
 
 
 # Regla 2 de la revisión previa
