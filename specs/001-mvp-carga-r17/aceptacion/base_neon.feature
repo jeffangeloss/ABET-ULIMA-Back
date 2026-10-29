@@ -72,7 +72,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-01 @corte1
   Escenario: La CI del Back reproduce la base desde cero sin Redgate
-    Dado el contenido de bd/ trasladado a db/ del Back con su historia de git, después del primer migrate en Neon
+    Dado el contenido de bd/ trasladado a db/ del Back con su historia de git
     Cuando la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 16 desechable
     Entonces la salida del paso termina con "RESULTADO: todo pasó" y el código de salida es 0
     Y ningún archivo de .github/workflows/ del Back nombra una imagen o una acción de Redgate o de Flyway
@@ -162,9 +162,11 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
       | INSERT | plan_medicion     |
       | UPDATE | seccion           |
 
-  # (propuesta) En acceso, abet_app lee usuarios, credenciales y asignaciones, y solo escribe sesiones
-  # en el corte 1 y códigos de acceso en el corte 2 (US-20). El cierre de sesión vence la fila con un
-  # UPDATE porque el rol no borra.
+  # (propuesta) En acceso, abet_app lee usuarios, credenciales, asignaciones, sesiones e intentos
+  # fallidos. En el corte 1 solo inserta sesiones (usuario_id y hash_token) e intentos fallidos
+  # (hash_cuenta), con las fechas que pone la base, y no actualiza credencial. Los códigos de acceso
+  # llegan en el corte 2 (US-20). El cierre de sesión vence la fila con un UPDATE que fija expira_en en
+  # least(expira_en, clock_timestamp()), porque el rol no borra.
   @US-02 @corte1
   Esquema del escenario: abet_app no borra ni da de alta usuarios en acceso
     Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
@@ -249,14 +251,14 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
     Y db/flyway.toml con schemas ["abet", "acceso"] en sus entornos
     Cuando la prueba aplica V1_09__crear_acceso.sql con psql, como correr_pruebas.sh
     Entonces psql termina con código de salida 0
-    Y el esquema acceso tiene las tablas usuario_autorizado, credencial, sesion, docente_seccion y codigo_acceso
+    Y el esquema acceso tiene las tablas usuario_autorizado, credencial, sesion, intento_fallido, docente_seccion y codigo_acceso
     Y abet.carga tiene la columna subida_por, que admite nulo y tiene una FK hacia acceso.usuario_autorizado
     Y ck_rechazo_fila_motivo admite "COLUMNA_CODIGO_AUSENTE", "PI_REPETIDO", "PERIODO_NO_COINCIDE" y "SECCION_SIN_DECLARAR" además de los 10 motivos de V1_07
     Y cada una de las consultas de control Q01 a Q14 sigue en 0 filas
 
   @US-04 @corte1
   Escenario: Las cargas anteriores a V1_09 conservan subida_por nulo
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_08 y la carga PUBLICADA de la sección 410 de bd/pruebas/datos_sinteticos.sql
+    Dado una base PostgreSQL 16 desechable con V1_01 a V1_08 y la carga PUBLICADA de la sección 410 de db/pruebas/datos_sinteticos.sql
     Cuando la prueba aplica V1_09__crear_acceso.sql con psql
     Entonces esa carga sigue en estado "PUBLICADA" con subida_por nulo
     Y cada una de las consultas de control Q01 a Q14 sigue en 0 filas

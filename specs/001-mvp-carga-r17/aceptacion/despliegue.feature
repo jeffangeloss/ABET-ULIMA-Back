@@ -105,6 +105,9 @@ Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
     Cuando se revisa la configuración del equipo "jeffangeloss-projects" en Vercel
     Entonces el uso del contenido del equipo para entrenar modelos de IA está desactivado
 
+  # El registro de la aplicación solo se promete en la forma de T038, que guarda de un rechazo por la
+  # guardia la huella SHA-256 (Secure Hash Algorithm de 256 bits) y la hora. Aquí se lee en los registros
+  # de la función de Vercel.
   @US-17 @corte1
   Escenario: La guardia de datos inventados está encendida en el piloto
     Dado que "docente410@example.invalid" tiene la sesión iniciada en la URL de Production del Front
@@ -114,7 +117,7 @@ Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
     Entonces la API responde 422 con el cuerpo {"detail": "El piloto solo admite códigos inventados, de 99000000 a 99999999. Revise la fila 4. No se guardó nada."}
     Y abet.archivo_origen, abet.carga y abet.estudiante tienen los mismos conteos que antes
     Y pg_constraint de la base del piloto tiene la restricción "ck_estudiante_codigo_inventado" en abet.estudiante
-    Y los registros de la función de esa petición no contienen el código 10000004 ni ningún valor de Last Name o First Name del export
+    Y el registro de la aplicación en Vercel guarda de esa petición solo la huella y la hora del rechazo, sin el código 10000004 ni ningún valor de Last Name o First Name del export
 
   # J-09 decide si la prueba de humo corre en la CI o contra la vista previa. Valor provisional, contra la
   # vista previa de develop antes de pasar a main, sobre su rama de Neon, que se restablece desde la rama

@@ -53,10 +53,10 @@ ABET-ULIMA-Back/
   tests/humo/                              # (nuevo) flujo del profesor con Playwright para Python
   specs/001-mvp-carga-r17/aceptacion/      # los seis .feature en español, único lugar donde viven
   specs/features/{carga-export,r17,acceso,periodo}/   # (nuevo) specs vivas
-  docs/specs/api-contracts.md              # (nuevo) contrato de la API
   pyproject.toml, requirements.txt, .env.example, vercel.json   # (nuevo, propuesta)
 
 ABET-ULIMA-Front/
+  docs/03-api/contrato.md                  # contrato de la API, con su índice docs/specs/api-contracts.md
   src/servicios/api.ts                     # (nuevo) única puerta HTTP, cookie y nunca localStorage
   src/servicios/tipos.ts                   # (nuevo, propuesta) tipos del contrato
   src/pantallas/Ingreso.tsx                # (nuevo, propuesta) P1
@@ -74,7 +74,7 @@ ABET-ULIMA-Front/
 Los días son de trabajo sin interrupciones, con Claude a cargo del código y Jefferson de la revisión. Las fases 3 y 4 se solapan, porque el Front trabaja contra el contrato de la fase 1.
 
 0. **Descubrimiento** (hecho el 2026-10-28). En ABET-ULIMA-Back, lectura de la base, del export inventado y de la plantilla del R-17, 25 historias candidatas con Gherkin, tres auditorías y una crítica de arquitectura que dejan 21 historias. En ABET-ULIMA-Front y en Neon, nada. Artefactos `revision-historias.md`, `spec.md`, este plan, `tasks.md`, la constitución, `specs/README.md` y los seis `.feature` de `specs/001-mvp-carga-r17/aceptacion/`, en revisión por solicitud de integración (pull request, PR) a `develop`. No cierra ninguna historia y prepara EP-01.
-1. **Contrato** (1 día). En el Back, las specs vivas `carga-export`, `r17`, `acceso` y `periodo` con sus reglas `BR-`, `docs/specs/api-contracts.md` con los siete endpoints del corte 1, la versión definitiva de los seis `.feature` de `specs/001-mvp-carga-r17/aceptacion/`, la prueba de 30 minutos de pytest-bdd 9 en español sobre `carga.feature` y los exports inventados de `tests/datos_inventados/`. En el Front, nada de código, solo la lectura del contrato. En Neon, nada, y Jefferson compra el dominio para que su registro se propague antes del corte 2. Artefacto, el contrato aprobado. No cierra historias y habilita US-03 a US-16.
+1. **Contrato** (1 día). En el Back, las specs vivas `carga-export`, `r17`, `acceso` y `periodo` con sus reglas `BR-`, la versión definitiva de los seis `.feature` de `specs/001-mvp-carga-r17/aceptacion/`, la prueba de 30 minutos de pytest-bdd 9 en español sobre `carga.feature` y los exports inventados de `tests/datos_inventados/`. En el Front, nada de código y el contrato de la API en `docs/03-api/contrato.md`, con su índice `docs/specs/api-contracts.md` y los siete endpoints del corte 1. En Neon, nada, y Jefferson compra el dominio para que su registro se propague antes del corte 2. Artefacto, el contrato aprobado. No cierra historias y habilita US-03 a US-16.
 2. **Base** (1 a 1,5 días). En Neon, Jefferson crea el proyecto en aws-sa-east-1 con la rama `develop`, y `flyway migrate` aplica V1_01 a V1_08 con `controles_neon.sql` en cero. En el Back, el traslado de `bd/` a `db/`, `V1_09__crear_acceso.sql`, `crear_rol_app.sql`, `guardia_datos_inventados.sql`, `periodo_2026_2_inventado.sql` y la CI con las pruebas de la base. Después se aplican en Neon, primero en `develop` y luego en la rama principal. En el Front, nada. Artefacto, Neon migrado con los datos inventados de 2026-2. Cierra US-01, US-02, US-03 y US-04.
 3. **Backend** (3 a 4 días). En el Back, `abet_carga` (lector, validación, carga, R-17 y constancia), la plantilla vaciada y la API de sesión, secciones y cargas. En el Front y en Neon, nada. Artefacto, la API local que carga el export con error en `abet_sis_med_dev` con 11 / 10 / 1 y descarga su R-17 con 60,0 %, 60,0 % y 70,0 %. Cierra en la API US-05 a US-16.
 4. **Frontend** (1,5 a 2 días). En el Front, P1 a P4 contra el contrato, con el proxy de Vite hacia el Back local. En el Back y en Neon, nada. Artefacto, el flujo del profesor completo en la Mac. Cierra en pantalla US-05, US-06, US-07 y US-09 a US-16, y deja US-08 con su rótulo en P3.
