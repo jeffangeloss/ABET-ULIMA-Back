@@ -12,12 +12,12 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-10-28
-- **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
+- **Fecha**: 2026-10-29
+- **Rama de trabajo**: `docs/002-capstone` (spec 002, apilada sobre `feat/001-mvp-carga-r17`, solo en local); el corte 1 sigue en `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: specs vivas con 43 reglas BR y los `.feature` definitivos del corte 1 (T011 a T016 y T019, en local), con el contrato en el Front
+- **Último cambio**: spec 002 de Capstone con 25 historias auditadas y 83 escenarios (en local, rama `docs/002-capstone`), pendiente de aprobación
 - **En curso**: la demo de la carga con el R-17 (T031 a T035), detenida a las 20:21 por el incidente de `abet_sis_med_dev` y por reanudar con el clúster desechable
-- **Siguiente paso**: reanudar la demo y escribir los escenarios y los datos del profesor con varias secciones de varios cursos, que Jefferson aprueba en el chat
+- **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-14 a D-29 y J-11 a J-16; sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-29 08:30 (Lima) · docs/002-capstone · Spec 002 de Capstone con historias auditadas (en local)
+
+- **Quién**: Claude Code con un flujo de agentes (wf_3c294f14-761). Tres redactores en Sonnet (profesor, coordinador y evidencia) escriben 46 candidatas de historia. Tres auditores en Sonnet verifican la necesidad, el solapamiento y el tamaño, y la verificabilidad contra la base. Un crítico de arquitectura propone las decisiones. Un redactor en Sonnet escribe la spec del Back y otro los documentos del Front. Dos revisores (constructor; hechos y forma) hallan una falla de severidad alta y cuatro medias. Un corrector las cierra y un reverificador aprueba con tres hallazgos bajos. Quedan 25 historias (US-01 a US-25), FR-001 a FR-029, SC-001 a SC-013, D-14 a D-29 y las decisiones J-11 a J-16 renumeradas. Un intento anterior del flujo se detuvo a los pocos minutos para bajar su costo (modelos y esfuerzo por etapa) y sus agentes no dejaron archivos. Claude Code integra el trabajo en dos commits locales y verifica antes de aceptarlo la renumeración, el Gherkin y la revisión previa.
+- **Qué cambió**: `specs/002-capstone/` (`spec.md`, `plan.md`, `tasks.md`, `revision-historias.md` y cuatro `.feature` en `aceptacion/` con 83 escenarios), una fila y una línea en `specs/README.md` y una línea en `CHANGELOG.md` (Agregado). Las decisiones J de la spec 002 pasan de J-10 a J-15 a J-11 a J-16, porque la spec 001 suma J-10 (respaldo del esquema `acceso`) en otra rama. Las J-01 a J-09 y las D-14 a D-29 no cambian.
+- **Por qué**: pedido de Jefferson de considerar «Plantilla Proyectos - Copy.xlsx» y «Tabla_Maestra_PI - Capstone - Nuevo Formato.xlsx», y su respuesta «Spec 002 aparte» a si Capstone va en una spec propia o en el corte 1. Los dos libros traen datos reales y no entran al repositorio ni se citan, solo su estructura.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` en español sin problemas y cuenta 83 escenarios (12, 50, 15 y 6); `bash scripts/preflight.sh` pasa sin fallas; `grep -rn "J-10" specs/002-capstone specs/README.md` da 0.
+- **Lo que no debe hacer, cómo se probó**: la renumeración corre de J-15 a J-10 en orden descendente para no pisar números, y el recuento de J-11 a J-16 por archivo coincide con el de J-10 a J-15 antes del cambio; el cambio no toca ningún `.feature` del corte 1 ni código.
+- **Correcciones**: la falla alta y las cuatro medias de los revisores se cierran en la vuelta del corrector, y el reverificador deja tres hallazgos bajos sin cerrar. La colisión de J-10 se resuelve en este commit.
+- **Cómo se reporta**: esta entrada, `CHANGELOG.md` y la entrada de la misma fecha en `MEMORIA.md` del Front. El PR de esta rama va apilado sobre el del corte 1.
+- **Pendiente y siguiente paso**: la aprobación de Jefferson, ya sea por la fusión del PR o por su «apruebo» en el chat; sus respuestas a las decisiones D-14 a D-29 de la carrera y a las J-11 a J-16; y los tres hallazgos bajos del reverificador. Nada de Capstone se implementa antes de esa aprobación. Nada se empuja sin permiso de Jefferson.
 
 ### 2026-10-28 20:50 (Lima) · feat/001-mvp-carga-r17 · Specs vivas con reglas BR y .feature definitivos del corte 1 (T011 a T016 y T019, en local)
 

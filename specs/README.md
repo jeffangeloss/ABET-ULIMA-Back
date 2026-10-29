@@ -10,6 +10,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 - Ninguna tabla, columna, restricción ni rol nace sin una spec aprobada. Todo cambio de la base entra como migración nueva en `db/migration/` o como script de plataforma en `db/plataforma/neon/`, y nunca edita una migración aplicada.
 - El proyecto de Neon (PostgreSQL 16, aws-sa-east-1) todavía no existe y lo crea Jefferson. Las pruebas de aceptación corren siempre contra un PostgreSQL 16 desechable. En Neon solo se comprueban los criterios de despliegue que no escriben cargas, que son la migración y los controles de la historia de usuario (user story, US) US-01 en `base_neon.feature` y la región, la reescritura, la cookie, el pooler y la guardia de `despliegue.feature`. Allí corre además la prueba de humo contra Preview (J-09).
 - El backend es Python 3.12 con FastAPI, el valor de J-01 que Jefferson confirma con la aprobación del plan el 2026-10-28. Las decisiones abiertas de la carrera (D-01 a D-13) se aplican con valores provisionales y configurables que las specs nombran con su identificador.
+- La spec `002-capstone` (EP-02, plantilla de proyectos de Capstone, tabla maestra en el formato nuevo y R-17 con la hoja «Cursos Capstone») está en revisión en la rama `docs/002-capstone` desde el 2026-10-29. Sus fases 0 y 1 corren en paralelo al corte 1 de la spec 001, y su código espera la fusión de ese corte en `develop`.
 - El Front (ABET-ULIMA-Front) no habla con la base y consume solo el contrato de la API, que vive en el propio Front, en `docs/03-api/contrato.md`, con su índice corto en `docs/specs/api-contracts.md`.
 
 ## Convenciones
@@ -74,5 +75,6 @@ La épica EP-01 vive en `001-mvp-carga-r17/`, y su fase 1 de contrato ya escribe
 | `r17` | BR-R17-01 a BR-R17-10 | US-15 y US-16 | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
 | `acceso` | BR-ACCESO-01 a BR-ACCESO-09 | US-04, US-05, US-06 y US-20 | `app/sesion.py`, `app/permisos.py`, `app/rutas/sesion.py`, `scripts/asignar_clave.py` y `db/migration/V1_09__crear_acceso.sql` | en revisión |
 | `periodo` | BR-PERIODO-01 a BR-PERIODO-04 | US-03 y el listado de US-06 | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |
+| `proyectos-capstone` (spec 002, por escribir en T010) | BR-PROYECTOS-NN (propuesta) | US-03 a US-18 y US-25 de `002-capstone/`, con bloques nuevos en `r17`, `periodo` y `acceso` para US-06, US-19, US-20 y US-23 | `abet_carga/lector_proyectos.py`, `validacion_proyectos.py`, `carga_proyectos.py` y `app/rutas/proyectos.py` (ejemplo hasta J-11 a J-14) | propuesta, spec 002 en revisión |
 
 US-01, US-02 y US-17 son de plataforma (migración en Neon, rol `abet_app` y despliegue en Vercel), no abren una spec viva y se verifican en `001-mvp-carga-r17/audit.md`.
