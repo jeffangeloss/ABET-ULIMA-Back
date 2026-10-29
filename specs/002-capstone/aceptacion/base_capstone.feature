@@ -22,12 +22,13 @@ Característica: Base de Capstone con el tipo de curso, las tablas de proyecto y
   # US-01: Marcar las asignaturas Capstone en el plan de estudios
 
   @US-01 @corte1
-  Escenario: V1_10 deja todas las asignaturas como de carrera
+  Escenario: V1_10 marca los tres cursos Capstone y deja los otros 50 como de carrera
     Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y las vistas R__
     Cuando se aplica V1_10 con psql
     Entonces abet.plan_estudios tiene la columna tipo_curso NOT NULL con valor por omisión "CARRERA"
     Y abet.plan_estudios sigue con 53 filas en la versión "AMB-2026"
-    Y ninguna fila de abet.plan_estudios tiene tipo_curso distinto de "CARRERA"
+    Y abet.plan_estudios tiene tipo_curso "CAPSTONE" solo en "450025", "450024" y "450026" de "AMB-2026" (D-14)
+    Y las otras 50 filas de "AMB-2026" tienen tipo_curso "CARRERA"
     Y las consultas de control Q01 a Q14 devuelven 0 filas
 
   @US-01 @corte1
@@ -43,13 +44,13 @@ Característica: Base de Capstone con el tipo de curso, las tablas de proyecto y
       | TESIS    | falla por ck_plan_estudios_tipo_curso y no cambia ninguna fila  |
 
   @US-01 @corte1
-  Escenario: La semilla inventada marca 450024 y 450026 como Capstone con valor provisional
+  Escenario: La semilla inventada siembra las secciones sin tocar el tipo de curso
     Dado la base migrada hasta V1_09 y V1_10 sin datos del periodo
     Cuando el administrador técnico ejecuta db/datos/periodo_2026_2_inventado.sql
-    Entonces abet.plan_estudios tiene tipo_curso "CAPSTONE" solo en "450024" y "450026" de "AMB-2026"
+    Entonces abet.plan_estudios conserva tipo_curso "CAPSTONE" solo en "450025", "450024" y "450026" de "AMB-2026"
     Y abet.seccion tiene las secciones 420 y 421 de "450024" en "2026-2"
     Y abet.plan_medicion tiene 3 filas de "450024" en "2026-2" con los PI "1.1", "1.2" y "1.3"
-    Y el script trae el comentario "valor provisional de D-14" junto a la marca
+    Y el script no contiene ninguna sentencia sobre abet.plan_estudios.tipo_curso
 
   @US-01 @corte1
   Escenario: V1_10 amplía el tipo de fuente y crea las tablas de proyecto

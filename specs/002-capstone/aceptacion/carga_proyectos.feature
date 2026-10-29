@@ -43,7 +43,7 @@ Característica: Subida de la plantilla de proyectos de una sección Capstone
   Antecedentes:
     Dado una base PostgreSQL 16 desechable con las migraciones V1_01 a V1_10 y los datos de db/datos/periodo_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2" y GUARDIA_DATOS_INVENTADOS "1"
-    Y la asignatura "450024" con tipo_curso "CAPSTONE" en "AMB-2026" (valor provisional de D-14)
+    Y la asignatura "450024" con tipo_curso "CAPSTONE" en "AMB-2026" (marca de V1_10, D-14)
     Y "docente420@example.invalid" tiene la sesión iniciada con rol "PROFESOR" y acceso.docente_seccion le asigna la sección 420 de "450024" en "2026-2"
 
   # US-03: Subir la plantilla de proyectos de mi sección Capstone

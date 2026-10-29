@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-29
 - **Rama de trabajo**: `docs/002-capstone` (spec 002, apilada sobre `feat/001-mvp-carga-r17`, solo en local); el corte 1 sigue en `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: spec 002 de Capstone con 25 historias auditadas y 83 escenarios (en local, rama `docs/002-capstone`), pendiente de aprobación
+- **Último cambio**: D-14 decidida (2026-10-29) en la spec 002 de Capstone, con los tres cursos 450025, 450024 y 450026 (en local, rama `docs/002-capstone`), pendiente de aprobación
 - **En curso**: la demo de la carga con el R-17 (T031 a T035), detenida a las 20:21 por el incidente de `abet_sis_med_dev` y por reanudar con el clúster desechable
-- **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-14 a D-29 y J-11 a J-16; sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes
+- **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-15 a D-29 y J-11 a J-16 (D-14 ya está decidida); sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-29 08:47 (Lima) · docs/002-capstone · D-14 decidida, los tres cursos Capstone (en local)
+
+- **Quién**: Jefferson decide, en el chat del 2026-10-29 y en nombre de la carrera, después de ver los ciclos de la malla AMB-2026 («Son los cursos que se dictan en los últimos ciclos de la carrera, por lo tanto es / Formulación y Evaluación de Proyectos Sostenibles / Proyecto de Ingeniería Aplicada I / Proyecto de Ingeniería Aplicada II»). Claude Code solo registra la decisión en la spec, sin subagentes.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` pasa D-14 de abierta a «Decisiones tomadas» con la fecha, las palabras de Jefferson y los tres códigos, ajusta el Independent Test, la Base y los escenarios 1 y 3 de US-01, FR-001, FR-024 y D-29; `aceptacion/base_capstone.feature`, `carga_proyectos.feature` y `evidencia_capstone.feature`, `plan.md`, `tasks.md` (T006, T021, T025) y `revision-historias.md` siguen la decisión. V1_10 (propuesta) marca CAPSTONE 450025, 450024 y 450026 en `abet.plan_estudios` y deja las otras 50 de AMB-2026 como CARRERA, y la semilla ya no marca nada. La regla de solo Capstone (409 en otro curso) queda igual. Sin cambios de código ni de la base.
+- **Por qué**: respuesta de Jefferson a D-14. El catálogo de `db/migration/V1_03__cargar_referencia_ambiental.sql` confirma 450025 (ciclo 8, «Trabajo Integrador», SO 2), 450024 (ciclo 9, «Proyecto», SO 1 y 7) y 450026 (ciclo 10, «Proyecto», SO 2, 3 y 6). D-29 sigue abierta y nombra los tres cursos.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` sin problemas y cuenta 83 escenarios (12, 50, 15 y 6), los mismos de antes. `bash scripts/preflight.sh` en este worktree termina con «Revisión previa sin fallas (todo)».
+- **Lo que no debe hacer, cómo se probó**: la numeración de historias, decisiones y escenarios no cambia (83 escenarios antes y después), y `git diff --stat` solo toca `specs/002-capstone/` y `MEMORIA.md`.
+- **Correcciones**: ninguna en esta entrada.
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson aprueba la spec 002 y lleva D-15 a D-29 a la carrera; con la aprobación se escribe V1_10 con la marca de los tres cursos (T021).
 
 ### 2026-10-29 08:30 (Lima) · docs/002-capstone · Spec 002 de Capstone con historias auditadas (en local)
 

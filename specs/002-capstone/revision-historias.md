@@ -39,7 +39,7 @@ Abreviaturas. N es la lente de necesidad, T la de solapamiento y tamaño y V la 
 | C-17 | El R-17 Capstone sale con la hoja «Cursos Capstone» | F | F | F | US-19 | Las tres lentes la unen con C-40. Su 409 sin plantilla se descarta a favor de C-41 |
 | C-18 | La tabla maestra muestra los proyectos en el formato nuevo | F | F | F | US-21 | Las tres lentes la unen con C-28. La pantalla de vista previa sale, porque ningún contrato la pide |
 | C-19 | Ver el estado de proyectos de mis secciones | S | S | C | US-23 | Suma la fila NO_APLICA de la 410 y los campos `estudiantes_con_proyecto` y `estudiantes_en_export` |
-| C-20 | Marcar qué asignaturas del plan son Capstone | C | C | C | US-01 | Necesidad, verificabilidad y la crítica (D-A6) sostienen `plan_estudios.tipo_curso`, y tamaño propone `asignatura.tipo_curso`, que queda como alternativa de J-12. Sin `uq_plan_estudios_tipo`, ninguna asignatura marcada en la migración y el tercer escenario reemplazado por Q18 |
+| C-20 | Marcar qué asignaturas del plan son Capstone | C | C | C | US-01 | Necesidad, verificabilidad y la crítica (D-A6) sostienen `plan_estudios.tipo_curso`, y tamaño propone `asignatura.tipo_curso`, que queda como alternativa de J-12. Sin `uq_plan_estudios_tipo`, ninguna asignatura marcada en la migración (hasta que D-14 se decide el 2026-10-29 y V1_10 marca 450025, 450024 y 450026) y el tercer escenario reemplazado por Q18 |
 | C-21 | Guardar el proyecto de cada grupo en la base | R | R | R | Ninguna | Las tres lentes refutan la tabla por grupo, porque la plantilla trae una fila por estudiante y la tabla maestra repite los datos en cada fila. La crítica (D-A1) pide lo contrario y su alternativa queda en J-11 |
 | C-22 | Ligar a cada estudiante con su grupo | R | R | R | Ninguna | Depende de C-21. La clave primaria (carga_proyecto_id, estudiante_id) ya da un grupo por estudiante |
 | C-23 | Rechazar tipo de organización y RUC inválidos | F | F | F | US-09 y US-10 | Sus escenarios de base pasan a las dos historias sobre `proyecto_estudiante`. Los prefijos 10, 15 y 17 no se aceptan (D-19) |
@@ -105,7 +105,7 @@ Cuentas por lente, tomadas de la tabla.
 | Consultas de control Q16 a Q20 con la prueba de paridad de `controles_neon.sql` ampliada | N, T, V y la crítica (D-A16) | US-24 y FR-021 |
 | `tipo_fuente` de `archivo_origen` ampliada a varchar(20) y clave compuesta (archivo_id, tipo_fuente) | V (C-01) y la crítica (D-A4) | US-01 y FR-002 |
 | Clave foránea compuesta de `carga_proyecto` hacia `uq_carga_seccion` | La crítica (D-A3) | US-03 y FR-003 |
-| Semilla Capstone inventada (secciones 420 y 421 de 450024, PI 1.1 a 1.3, marca provisional de 450024 y 450026) | N, T y V (C-31) | T025 y FR-024 |
+| Semilla Capstone inventada (secciones 420 y 421 de 450024, PI 1.1 a 1.3, sin marca de tipo, que pasa a V1_10 con D-14) | N, T y V (C-31) | T025 y FR-024 |
 | Reemplazo del export de la spec 001 en una sección con plantilla publicada | V (C-51) | J-16 |
 | Mapa de celdas de la hoja «Cursos Capstone» como tarea con su prueba sin fórmulas ni `#REF!` | La crítica (D-A19) | T033 y D-25 |
 
