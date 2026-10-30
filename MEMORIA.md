@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-10-30
-- **Rama de trabajo**: `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
+- **Rama de trabajo**: `feat/001-mvp-carga-r17`, empujada y con su PR #3 a `develop` (sin fusionar, con «Create a merge commit» por el `git subtree`), y `docs/002-capstone` con el PR #4, apilado sobre ella
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la auditoría del corte 1, con `audit.md` y la `Verification` de las cuatro specs vivas (T060 a T069), en local
-- **En curso**: T062, la verificación a mano de Jefferson en el navegador, y las decisiones abiertas que lista `audit.md`
-- **Siguiente paso**: T062 para Jefferson, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, y, con su permiso, Neon y Vercel (fase 7)
-- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
+- **Último cambio**: Jefferson autoriza fusionar los PR #1 y #2 en `develop` y empujar las ramas, y los PR #3 y #4 quedan abiertos, sin fusionar
+- **En curso**: la revisión de los PR #3 y #4, T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
+- **Siguiente paso**: la decisión de Jefferson sobre las cinco vulnerabilidades que SonarQube Cloud marca en el PR #3, T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, y, con su permiso, Neon y Vercel (fase 7)
+- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-30 14:30 (Lima) · feat/001-mvp-carga-r17 · PR #1 y #2 fusionados en develop, ramas empujadas y PR #3 y #4 abiertos
+- Quién: Jefferson autoriza en el chat «Sí, fusiona y empuja», con el pedido de fusionar los PR #1 y #2 en `develop`, empujar `feat/001-mvp-carga-r17` y `docs/002-capstone` en los dos repos y abrir sus PR a `develop` sin fusionarlos. Claude Code, sin subagentes, fusiona, empuja, abre los PR y escribe esta entrada.
+- Qué cambió: `develop` recibe los PR #1 y #2 con rebase, y el #2 se rebasa antes sobre `develop`. Esta rama y `docs/002-capstone` integran `origin/develop` con `git merge -s ours`, porque el `git subtree` de J-06 impide rebasarlas, y suben con sus PR #3 y #4 a `develop`. En el repositorio solo cambia esta memoria.
+- Por qué: el permiso de empujar que esperaba el «Punto actual» desde el 2026-10-28 y el paso 5 («Aprobación») de la skill specs-back-front.
+- Lo que debe hacer, cómo se probó: `git diff --quiet` entre la punta vieja y la nueva de cada rama sale sin diferencias, `git merge-base --is-ancestor origin/develop` confirma que cada rama contiene `develop`, y la CI corre por primera vez sobre esta rama con `pruebas`, `secretos` y GitGuardian aprobados en el PR #3.
+- Lo que no debe hacer, cómo se probó: ningún commit ni PR trae `Co-Authored-By` ni la firma de una herramienta (`git log --format=%B` y el cuerpo de los cuatro PR, con 0 coincidencias), y los PR #3 y #4 siguen abiertos.
+- Correcciones: el PR #2 chocaba con `develop` después de fusionar el #1 con rebase, porque GitHub reescribe los SHA, y se rebasó sobre `develop` antes de fusionarlo, con el mismo árbol.
+- Cómo se reporta: esta entrada y los PR #3 (corte 1, con «Create a merge commit») y #4 (spec 002, apilado sobre el #3), enlazados con los PR #3 y #4 del Front.
+- Pendiente y siguiente paso: SonarQube Cloud falla en el PR #3 con calificación de seguridad E por cinco vulnerabilidades en código nuevo, una secuencia de comandos en sitios cruzados reflejada (reflected cross-site scripting, XSS) en `descargar_r17()` de `app/rutas/cargas.py`, dos llamadas a `uv` sin `--no-build` en `.github/workflows/ci.yml` y dos rutas tomadas de un argumento en `db/herramientas/generar_v1_03.py`. Ese check no es requerido en `develop` y Jefferson decide cómo tratarlas. Siguen T062, las decisiones de `audit.md`, Neon y Vercel.
 
 ### 2026-10-30 13:41 (Lima) · feat/001-mvp-carga-r17 · Auditoría del corte 1, audit.md y Verification de las specs vivas (T060 a T069)
 - Quién: Claude Code como integrador, con tres etapas de agentes. El auditor (Sonnet) escribe `audit.md` y las cuatro secciones `Verification` con un script que lee los `.feature`, la salida de pytest y la de Vitest y se detiene si un conteo no cuadra. El documentador (Sonnet) actualiza la documentación del Front y corrige las menciones de Playwright para Python. El revisor (modelo principal) contrasta una muestra de 10 filas con la corrida, verifica los 133 escenarios y revisa la fuga de secretos, y deja cinco hallazgos bajos. Este commit y sus ajustes los hace Sonnet.
