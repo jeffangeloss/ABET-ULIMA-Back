@@ -12,12 +12,12 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-10-29
+- **Fecha**: 2026-10-30
 - **Rama de trabajo**: `docs/002-capstone` (spec 002, apilada sobre `feat/001-mvp-carga-r17`, solo en local); el corte 1 sigue en `feat/001-mvp-carga-r17`, solo en local y sobre `docs/plan-mvp` (PR #2), hasta que Jefferson fusione los PR #1 y #2 y autorice el empuje
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: spec 002 ajustada con la estructura de ocho R-17 reales de PIA (85 escenarios, en local, rama `docs/002-capstone`), pendiente de aprobación
+- **Último cambio**: D-25 decidida el 2026-10-30, el R-17 Capstone usa la hoja «Cursos Capstone» (en local, rama `docs/002-capstone`), pendiente de aprobación
 - **En curso**: la demo de la carga con el R-17 (T031 a T035), detenida a las 20:21 por el incidente de `abet_sis_med_dev` y por reanudar con el clúster desechable
-- **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-15 a D-29 y J-11 a J-16 (D-14 ya está decidida); sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes
+- **Siguiente paso**: Jefferson revisa y aprueba la spec 002 y responde las decisiones D-15 a D-29 y J-11 a J-16 (D-14 ya está decidida); sin esa aprobación no se implementa nada de Capstone. El corte 1 sigue como antes D-25 queda abierta solo en el instrumento impreso y el mapa de celdas.
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; la fusión de los PR #1 y #2 y el empuje de esta rama esperan el permiso de Jefferson; Jefferson decide el orden del traslado de la base (J-06) y el respaldo del esquema `acceso`; SonarQube Cloud y Snyk esperan que Jefferson importe los repos en sus consolas (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
@@ -36,6 +36,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-30 12:02 (Lima) · docs/002-capstone · D-25 decidida, el R-17 Capstone usa la hoja «Cursos Capstone» (en local)
+
+- **Quién**: Jefferson decide el 2026-10-30, en el chat y a la pregunta «¿Qué formato usa el R-17 de Capstone: la hoja «Cursos Capstone» o el de siempre?», con «Hoja Cursos Capstone». Claude Code solo registra la decisión, sin subagentes.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` pasa D-25 a «Decisiones tomadas» con la fecha y las palabras de Jefferson, deja en «Decisiones abiertas» la parte que la respuesta no cubre (instrumento impreso y mapa de celdas, con su valor provisional) y suma la decisión a la Evidencia; `tasks.md` (T006), `plan.md` y `revision-historias.md` dejan de preguntar si la Oficina de Calidad adopta la hoja. US-19 y sus escenarios ya dicen sin condicional que la sección Capstone sale con la hoja «Cursos Capstone», y los `.feature` no cambian.
+- **Por qué**: respuesta de Jefferson a D-25; queda descartado, para Ambiental, el formato de siempre de los R-17 de PIA de Industrial (solo código y nota).
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` sin problemas y cuenta 85 escenarios (12, 50, 17 y 6). `bash scripts/preflight.sh` termina sin fallas.
+- **Lo que no debe hacer, cómo se probó**: la numeración de historias, decisiones y escenarios no cambia (85 antes y después), y `git diff --stat` solo toca `specs/002-capstone/` y `MEMORIA.md`.
+- **Correcciones**: ninguna en esta entrada.
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson aprueba la spec 002 y responde D-15 a D-24 y D-26 a D-29, más la parte abierta de D-25.
 
 ### 2026-10-29 09:15 (Lima) · docs/002-capstone · Spec 002 ajustada con la estructura de R-17 reales de PIA
 

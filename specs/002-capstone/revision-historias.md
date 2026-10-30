@@ -165,7 +165,7 @@ Jefferson adjunta ocho R-17 reales de 560073 «Proyecto de Ingeniería Aplicada 
 
 | Hecho observado | Efecto en la spec |
 |---|---|
-| Los ocho R-17 usan el formato de siempre y ninguno trae la hoja «Cursos Capstone» | D-25 pregunta si la Oficina de Calidad adopta esa hoja, y el valor provisional la conserva |
+| Los ocho R-17 usan el formato de siempre y ninguno trae la hoja «Cursos Capstone» | D-25 queda decidida el 2026-10-30 con la hoja «Cursos Capstone» para Ambiental, y el formato de siempre queda descartado |
 | Los ocho miden solo el PI 2.3 del SO 2, que el catálogo de Ambiental no tiene, y la hoja «Base de Cursos - SO» coincide con `asignatura_so` de V1_03 | D-29 deja los PI en `plan_medicion` por curso y periodo, sin PI fijo en el código |
 | Cada fila trae solo el CÓDIGO y la nota, sin datos de proyecto ni SO, PI o PROFESOR | D-16 deja como obligatorias solo CÓDIGO DEL ESTUDIANTE y CALIFICACIÓN |
 | El profesor es un dato de la sección, con nombres y firma en origen | D-17 deja vacíos la cabecera y la columna PROFESOR y pregunta a Jefferson, y el escenario nuevo de US-19 lo prueba |
