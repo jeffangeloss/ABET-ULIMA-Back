@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-10-30
 - **Rama de trabajo**: `feat/001-mvp-carga-r17`, empujada y con su PR #3 a `develop` (sin fusionar, con «Create a merge commit» por el `git subtree`), y `docs/002-capstone` con el PR #4, apilado sobre ella
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la descarga del R-17 con `X-Content-Type-Options: nosniff` y la CI con `uv --no-build`, por dos de los cinco hallazgos de SonarQube Cloud del PR #3
+- **Último cambio**: `db/herramientas/` fuera del análisis de SonarQube Cloud, después de la descarga del R-17 con `nosniff` y la CI con `uv --no-build`
 - **En curso**: la revisión de los PR #3 y #4, T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
-- **Siguiente paso**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, que hoy es público, y decide los hallazgos que sigan abiertos (S5131, si el análisis nuevo lo mantiene, y los dos S8707 de `db/herramientas/generar_v1_03.py`); después vienen T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, y, con su permiso, Neon y Vercel (fase 7)
+- **Siguiente paso**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, que hoy es público, y decide qué hacer con pythonsecurity:S5131 en `app/rutas/cargas.py`, que sigue abierto aunque la respuesta ya lleva `nosniff` (marcarlo como seguro en la consola o armar el libro en memoria); después vienen T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, y, con su permiso, Neon y Vercel (fase 7)
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-10-30 15:13 (Lima) · feat/001-mvp-carga-r17 · db/herramientas fuera del análisis de SonarQube Cloud
+- Quién: Jefferson aprueba en el chat («Sí, exclúyelo») sacar `db/herramientas/**` del análisis de SonarQube Cloud. Claude Code, sin subagentes, hace el cambio y escribe esta entrada.
+- Qué cambió: `.sonarcloud.properties` (`db/herramientas/**` en `sonar.exclusions` y el comentario que explica por qué) y `CHANGELOG.md`.
+- Por qué: los dos hallazgos pythonsecurity:S8707 (rutas tomadas de un argumento) de `db/herramientas/generar_v1_03.py`. Esa herramienta regenera V1_03 a mano y en las pruebas de la base, no se despliega y llega de `ABET_ULIMA` por git subtree, de modo que editarla en `db/` complicaría el próximo `git subtree pull`. La exclusión sigue la regla del archivo, que ya deja fuera `scripts/**` porque no se despliega.
+- Lo que debe hacer, cómo se probó: `git ls-files db/herramientas` da solo `generar_v1_03.py`, y `grep -rln herramientas` no lo encuentra en `app/`, `abet_carga/` ni `pyproject.toml`. El análisis de cf609bd ya cierra los dos githubactions:S8541, y el job `pruebas` pasa con `--no-build`.
+- Lo que no debe hacer, cómo se probó: la exclusión no saca código que se despliega, porque `sonar.exclusions` no nombra `app/`, `abet_carga/` ni `db/migration/`, que siguen en el análisis.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `CHANGELOG.md` y el PR #3.
+- Pendiente y siguiente paso: el análisis de cf609bd mantiene abierto pythonsecurity:S5131 en `app/rutas/cargas.py`, línea 144, aunque la respuesta ya es un xlsx adjunto con `nosniff`. Jefferson lo marca como seguro en SonarQube Cloud o pide resolverlo en el código, armando el libro en memoria sin archivo temporal. El proyecto del Back en SonarQube Cloud sigue público y Jefferson lo pasa a privado. El PR #4 conserva el `.sonarcloud.properties` anterior hasta que se actualice con `develop`. Siguen T062, las decisiones de `audit.md`, Neon y Vercel.
 
 ### 2026-10-30 14:52 (Lima) · feat/001-mvp-carga-r17 · Descarga del R-17 con nosniff y CI con uv --no-build por SonarQube Cloud
 - Quién: Jefferson aprueba en el chat («Sí, corrígelos») corregir dos de los cinco hallazgos de SonarQube Cloud del PR #3. Claude Code escribe la prueba primero, la ve fallar, hace el cambio y escribe esta entrada. Un flujo de agentes verifica en paralelo. El verificador (Sonnet) corre la aceptación, la suite completa, Vitest del Front y la revisión previa de los dos repos, y regenera `audit.md` y las secciones `Verification` con `traza.py`. El revisor de seguridad (modelo principal, esfuerzo alto) revisa el cambio, prueba `--no-build` en una copia limpia y predice el resultado de SonarQube Cloud. Cuatro escépticos (Sonnet) intentan refutar sus cuatro hallazgos de severidad media, y los cuatro se sostienen.
