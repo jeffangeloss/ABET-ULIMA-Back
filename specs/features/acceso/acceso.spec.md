@@ -84,7 +84,7 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 ### BR-ACCESO-08: Un solo 403 para lo que no está a cargo del usuario
 - Una ruta de sección, de carga, de constancia o del R-17 fuera del alcance del usuario responde 403 con `{ "detail": "La sección no está a su cargo." }`, sin datos de esa sección ni de su carga y sin escribir en `archivo_origen`, `carga` ni `estudiante`.
 - En el corte 1 solo sube el profesor asignado, así que el coordinador recibe ese 403 al subir un export, aunque recibe 200 en las rutas de lectura (secciones, constancia y R-17) de cualquier sección de la carrera. En el corte 2 el coordinador reemplaza en cualquier sección (BR-CARGA-19).
-- Conocer un identificador ajeno solo produce 403, porque la API comprueba el alcance en cada petición. Si una sección o una carga que no existe responde 404 o 403 sigue abierto (sección 9 de `docs/03-api/contrato.md` del Front).
+- Conocer un identificador ajeno solo produce 403, porque la API comprueba el alcance en cada petición. Una sección o una carga que no existe recibe el mismo 403 (propuesta), y la decisión sigue abierta en la sección 9 de `docs/03-api/contrato.md` del Front.
 - **Fuente**: US-06 (escenarios 4 y 8), US-07 (escenarios 6 y 7), US-15 (escenario 4), US-16 (escenario 6), FR-010, SC-009 y D-11.
 - **Prueba**: «El profesor no alcanza una sección ajena escribiendo la ruta» (`acceso.feature`), «Un profesor no sube a una sección que no tiene asignada» y «El coordinador no sube en el corte 1» (`carga.feature`), «El R-17 de la 410 según quién lo pide» y «La constancia de la 410 según quién la pide» (`r17_constancia.feature`) y «El profesor de varias secciones no alcanza una sección que no dicta» (`varias_secciones.feature`).
 

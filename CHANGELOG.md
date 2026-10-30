@@ -21,6 +21,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Plantilla vaciada del R-17 (`plantillas/R017_ambiental_general.xlsx`) con su logotipo aparte y su excepción en `.gitignore` y en `scripts/preflight.sh`.
 - `app/permisos.py` con las secciones que ve cada rol y la regla única de quién sube y quién lee.
 - Comando `python -m abet_carga` con los subcomandos `cargar` y `r17`, y el guion `scripts/demo_corte1.sh`, que corre la demo del corte 1 en un clúster desechable.
+- API del corte 1 con FastAPI (`app/main.py`, `app/configuracion.py`, `app/sesion.py`, `app/rutas/`) y las cinco rutas del contrato, un solo 403 para lo ajeno y lo inexistente (propuesta), límite de intentos con candado por cuenta, `Cache-Control: no-store`, `scripts/asignar_clave.py`, `scripts/api_local.sh` y 81 pruebas en `tests/test_api_*.py`.
 
 ### Cambiado
 
