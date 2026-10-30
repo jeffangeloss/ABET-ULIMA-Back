@@ -10,7 +10,7 @@ targets:
 
 # Carga del export
 
-> **Estado al 2026-10-28.** Reglas de la fase 1 de contrato (T011), escritas antes del código. Los archivos de `targets` nacen en la fase 3, y la sección Verification se llena en la fase 6 (T061).
+> **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T011), escritas antes del código. Los archivos de `targets` nacen en la fase 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija cómo la interfaz de programación de aplicaciones (application programming interface, API) recibe el export de una sección, que es el archivo de calificaciones que exporta Blackboard, lo valida y lo guarda en el esquema `abet`. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR), criterios de éxito (success criteria, SC) o decisiones abiertas (D). Cada regla nombra también la restricción o la consulta de control de la base que la respalda y el escenario de `specs/001-mvp-carga-r17/aceptacion/carga.feature` que la prueba, citado por su título. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Las reglas del corte 2 llevan esa marca en su título. La forma de cada respuesta está en `docs/03-api/contrato.md` del Front, y los ejemplos usan solo datos inventados.
 
@@ -216,10 +216,38 @@ Esta spec viva fija cómo la interfaz de programación de aplicaciones (applicat
 
 ## Verification
 
-Sin corridas todavía. La fase 6 (T061) agrega aquí una línea por corrida aprobada, la más reciente primero, con la fecha en la forma AAAA-MM-DD, el comando, el archivo de prueba y las reglas que cubre, con esta forma.
+Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
-- AAAA-MM-DD · <comando> · <archivo de prueba> → BR-CARGA-NN a BR-CARGA-NN
+- 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_carga_feature.py, test_varias_secciones_feature.py → BR-CARGA-01 a BR-CARGA-07, BR-CARGA-09 a BR-CARGA-17
+- 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_carga.py, test_comando.py, test_demo_punta_a_punta.py, test_lector.py, test_validacion.py, test_varias_secciones.py → BR-CARGA-01 a BR-CARGA-17
 ```
 
-Las pruebas previstas son los pasos de `tests/aceptacion/pasos/` que leen `carga.feature` (T050), las pruebas unitarias de `abet_carga/lector.py` (T031) y de `app/rutas/cargas.py` (T038) y los casos que no deben pasar de T052. Las reglas del corte 2 reciben su línea con T088.
+Resultado: aceptación, 170 passed, 19 skipped in 62.48s (0:01:02); suite completa, 851 passed, 20 skipped in 169.27s (0:02:49). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
+
+### Resultado por regla
+
+Las columnas de escenarios cuentan los del corte 1 que la regla cita en su **Prueba**. Un escenario omitido o pendiente se nombra en `audit.md`, que lista su razón.
+
+| Regla | Escenarios (aprobados, omitidos, pendientes) | Pruebas unitarias aprobadas | Resultado |
+| --- | --- | --- | --- |
+| BR-CARGA-01 | 3, 0, 0 | 16 | Aprobada |
+| BR-CARGA-02 | 3, 0, 0 | 18 | Aprobada |
+| BR-CARGA-03 | 8, 0, 0 | 19 | Aprobada |
+| BR-CARGA-04 | 1, 0, 0 | 4 | Aprobada |
+| BR-CARGA-05 | 2, 0, 0 | 41 | Aprobada |
+| BR-CARGA-06 | 3, 0, 0 | 2 | Aprobada |
+| BR-CARGA-07 | 4, 0, 1 | 42 | Aprobada en local; 1 pendiente (ver audit.md) |
+| BR-CARGA-08 | 0, 0, 1 | 1 | Parcial, solo prueba unitaria; 1 pendiente (ver audit.md) |
+| BR-CARGA-09 | 5, 0, 0 | 17 | Aprobada |
+| BR-CARGA-10 | 3, 0, 0 | 5 | Aprobada |
+| BR-CARGA-11 | 8, 0, 0 | 56 | Aprobada |
+| BR-CARGA-12 | 1, 0, 0 | 3 | Aprobada |
+| BR-CARGA-13 | 3, 0, 0 | 27 | Aprobada |
+| BR-CARGA-14 | 3, 0, 0 | 31 | Aprobada |
+| BR-CARGA-15 | 6, 0, 0 | 56 | Aprobada |
+| BR-CARGA-16 | 3, 0, 0 | 13 | Aprobada |
+| BR-CARGA-17 | 4, 0, 0 | 18 | Aprobada |
+| BR-CARGA-18 | 0, 0, 0 | 0 | Corte 2, pendiente (T088) |
+| BR-CARGA-19 | 0, 0, 0 | 0 | Corte 2, pendiente (T088) |
+| BR-CARGA-20 | 0, 0, 0 | 0 | Corte 2, pendiente (T088) |

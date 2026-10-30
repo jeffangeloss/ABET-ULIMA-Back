@@ -127,7 +127,7 @@ Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
     Dado un despliegue de Preview de "abet-ulima-back" y de "abet-ulima-front" construido desde develop
     Y que la sección 410 de 450002 en 2026-2 no tiene ninguna carga en la rama de Neon de ese despliegue
     Y que "docente410@example.invalid" tiene asignada una contraseña de prueba en esa base
-    Cuando Playwright para Python ingresa con ese correo en la pantalla P1 de la URL de Preview del Front
+    Cuando Playwright para Node ingresa con ese correo en la pantalla P1 de la URL de Preview del Front
     Y abre la sección 410 en la pantalla P2 «Mis secciones»
     Y sube "tests/datos_inventados/export_inventado_410_con_error.xlsx" en la pantalla P3
     Y descarga el R-17 desde la pantalla P4

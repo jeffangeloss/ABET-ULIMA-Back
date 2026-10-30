@@ -9,7 +9,7 @@ targets:
 
 # Periodo y secciones
 
-> **Estado al 2026-10-28.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llena en la fase 6 (T061).
+> **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones (application programming interface, API) el periodo vigente y el conjunto de reglas de una carga nueva, qué datos del periodo 2026-2 siembra el script de datos y qué devuelve la lista de secciones. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR) o decisiones abiertas (D). Cada regla nombra también la restricción o la consulta de control de la base que la respalda y el escenario que la prueba, citado por su título. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Los ejemplos usan solo datos inventados.
 
@@ -59,10 +59,22 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 
 ## Verification
 
-Sin corridas todavía. La fase 6 (T061) agrega aquí una línea por corrida aprobada, la más reciente primero, con la fecha en la forma AAAA-MM-DD, el comando, el archivo de prueba y las reglas que cubre, con esta forma.
+Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
-- AAAA-MM-DD · <comando> · <archivo de prueba> → BR-PERIODO-NN a BR-PERIODO-NN
+- 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py → BR-PERIODO-01 a BR-PERIODO-04
+- 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py → BR-PERIODO-01, BR-PERIODO-04
 ```
 
-Las pruebas previstas son las de pytest para los criterios escritos de US-03 en `base_neon.feature` y de US-06 en `acceso.feature` contra un PostgreSQL 16 desechable (T051) y, en el Front, las de Vitest para los pasos de la pantalla P2 (T045).
+Resultado: aceptación, 170 passed, 19 skipped in 62.48s (0:01:02); suite completa, 851 passed, 20 skipped in 169.27s (0:02:49). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
+
+### Resultado por regla
+
+Las columnas de escenarios cuentan los del corte 1 que la regla cita en su **Prueba**. Un escenario omitido o pendiente se nombra en `audit.md`, que lista su razón.
+
+| Regla | Escenarios (aprobados, omitidos, pendientes) | Pruebas unitarias aprobadas | Resultado |
+| --- | --- | --- | --- |
+| BR-PERIODO-01 | 1, 0, 0 | 8 | Aprobada |
+| BR-PERIODO-02 | 4, 0, 0 | 0 | Aprobada |
+| BR-PERIODO-03 | 4, 0, 0 | 0 | Aprobada |
+| BR-PERIODO-04 | 5, 0, 1 | 2 | Aprobada en local; 1 pendiente (ver audit.md) |

@@ -22,6 +22,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - `app/permisos.py` con las secciones que ve cada rol y la regla única de quién sube y quién lee.
 - Comando `python -m abet_carga` con los subcomandos `cargar` y `r17`, y el guion `scripts/demo_corte1.sh`, que corre la demo del corte 1 en un clúster desechable.
 - API del corte 1 con FastAPI (`app/main.py`, `app/configuracion.py`, `app/sesion.py`, `app/rutas/`) y las cinco rutas del contrato, un solo 403 para lo ajeno y lo inexistente (propuesta), límite de intentos con candado por cuenta, `Cache-Control: no-store`, `scripts/asignar_clave.py`, `scripts/api_local.sh` y 81 pruebas en `tests/test_api_*.py`.
+- `specs/001-mvp-carga-r17/audit.md` con el cruce de historia, escenario, prueba y resultado (91 aprobados, 15 omitidos y 27 pendientes de 133), la guía de la verificación a mano (T062) y la sección `Verification` fechada del 2026-10-30 en las cuatro specs vivas.
 
 ### Cambiado
 

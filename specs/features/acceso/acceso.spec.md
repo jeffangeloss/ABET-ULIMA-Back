@@ -11,7 +11,7 @@ targets:
 
 # Acceso
 
-> **Estado al 2026-10-28.** Reglas de la fase 1 de contrato (T013), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y los nombres de tablas, columnas y restricciones de `acceso` salen de `V1_09__crear_acceso.sql` (T024) y los permisos de `abet_app`, de `db/plataforma/neon/crear_rol_app.sql` (T025). La sección Verification se llena en la fase 6 (T061).
+> **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T013), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y los nombres de tablas, columnas y restricciones de `acceso` salen de `V1_09__crear_acceso.sql` (T024) y los permisos de `abet_app`, de `db/plataforma/neon/crear_rol_app.sql` (T025). La sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secciones alcanza cada rol en la interfaz de programación de aplicaciones (application programming interface, API). Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR), criterios de éxito (success criteria, SC) o decisiones abiertas (D de la carrera y J de Jefferson). Cada regla nombra también la restricción de la base que la respalda y el escenario que la prueba, citado por su título, casi siempre de `specs/001-mvp-carga-r17/aceptacion/acceso.feature`. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Las reglas del corte 2 llevan esa marca en su título. Todos los correos de los ejemplos son de prueba, con el dominio reservado `example.invalid`.
 
@@ -99,10 +99,27 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 
 ## Verification
 
-Sin corridas todavía. La fase 6 (T061) agrega aquí una línea por corrida aprobada, la más reciente primero, con la fecha en la forma AAAA-MM-DD, el comando, el archivo de prueba y las reglas que cubre, con esta forma.
+Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
-- AAAA-MM-DD · <comando> · <archivo de prueba> → BR-ACCESO-NN a BR-ACCESO-NN
+- 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py, test_varias_secciones_feature.py → BR-ACCESO-01 a BR-ACCESO-08
+- 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py, test_api_sesion.py, test_comando.py, test_permisos.py, test_varias_secciones.py → BR-ACCESO-02 a BR-ACCESO-08
 ```
 
-Las pruebas previstas son las de pytest para los criterios escritos de `acceso.feature` y de US-04 en `base_neon.feature` contra un PostgreSQL 16 desechable (T051), los casos que no deben pasar de T052 y, en el Front, las de Vitest para los pasos de la pantalla P2 (T045). BR-ACCESO-09 recibe su línea con T088.
+Resultado: aceptación, 170 passed, 19 skipped in 62.48s (0:01:02); suite completa, 851 passed, 20 skipped in 169.27s (0:02:49). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
+
+### Resultado por regla
+
+Las columnas de escenarios cuentan los del corte 1 que la regla cita en su **Prueba**. Un escenario omitido o pendiente se nombra en `audit.md`, que lista su razón.
+
+| Regla | Escenarios (aprobados, omitidos, pendientes) | Pruebas unitarias aprobadas | Resultado |
+| --- | --- | --- | --- |
+| BR-ACCESO-01 | 5, 0, 0 | 0 | Aprobada |
+| BR-ACCESO-02 | 1, 0, 0 | 3 | Aprobada |
+| BR-ACCESO-03 | 2, 0, 1 | 3 | Aprobada en local; 1 pendiente (ver audit.md) |
+| BR-ACCESO-04 | 2, 0, 0 | 5 | Aprobada |
+| BR-ACCESO-05 | 1, 0, 0 | 8 | Aprobada |
+| BR-ACCESO-06 | 5, 0, 0 | 10 | Aprobada |
+| BR-ACCESO-07 | 3, 0, 0 | 17 | Aprobada |
+| BR-ACCESO-08 | 6, 0, 0 | 23 | Aprobada |
+| BR-ACCESO-09 | 0, 0, 0 | 0 | Corte 2, pendiente (T088) |

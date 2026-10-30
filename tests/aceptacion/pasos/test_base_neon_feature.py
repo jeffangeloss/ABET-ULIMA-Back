@@ -283,7 +283,7 @@ def _sin_redgate(ctx: Escenario) -> None:
                 assert not re.search(r"redgate|flyway", codigo, re.I), f"{archivo.name}: {linea.strip()}"
 
 
-@then(parsers.re(r'"git log --follow" del archivo V1_07__crear_registro_cargas\.sql en el Back muestra los commits que '
+@then(parsers.re(r'"git log --follow -m" del archivo V1_07__crear_registro_cargas\.sql en el Back muestra los commits que '
                  r'tenía en ABET_ULIMA'))
 def _historia_de_v1_07(ctx: Escenario) -> None:
     # La historia de ABET_ULIMA entra por el segundo padre de la fusión de git subtree. Sin -m, git log no calcula
