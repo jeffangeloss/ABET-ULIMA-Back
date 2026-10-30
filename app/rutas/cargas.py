@@ -136,5 +136,9 @@ def descargar_r17(
         except r17.R17NoDisponible as motivo:
             return error(motivo.codigo_http, motivo.mensaje)
         contenido = ruta.read_bytes()
-    cabeceras = {"Content-Disposition": f'attachment; filename="{ruta.name}"', "Cache-Control": "no-store"}
+    cabeceras = {
+        "Content-Disposition": f'attachment; filename="{ruta.name}"',
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+    }
     return Response(contenido, media_type=XLSX, headers=cabeceras)

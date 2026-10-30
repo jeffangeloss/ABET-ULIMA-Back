@@ -314,6 +314,14 @@ def test_br_r17_06_09_el_r17_se_descarga_con_sus_cabeceras_y_su_hoja_constancia(
     assert libro.properties.creator == "ABET_SIS_MED"
 
 
+def test_br_r17_06_el_r17_no_deja_que_el_navegador_adivine_su_tipo(api: object) -> None:
+    cliente = api.sesion(A.DOCENTE_410)
+    carga_id = A.subir(cliente, api.seccion("410"), A.archivo(A.CON_ERROR), A.CON_ERROR).json()["carga_id"]
+    respuesta = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
+    assert respuesta.status_code == 200
+    assert respuesta.headers.get("x-content-type-options") == "nosniff"
+
+
 def test_br_r17_01_una_carga_rechazada_no_tiene_r17(api: object) -> None:
     cliente = api.sesion(A.DOCENTE_410)
     carga_id = A.subir(cliente, api.seccion("410"), A.archivo("sin_5_2_410.xlsx"), "sin_5_2_410.xlsx").json()["carga_id"]

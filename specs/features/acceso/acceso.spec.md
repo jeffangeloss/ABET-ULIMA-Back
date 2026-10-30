@@ -106,7 +106,7 @@ Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un Postg
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py, test_api_sesion.py, test_comando.py, test_permisos.py, test_varias_secciones.py → BR-ACCESO-02 a BR-ACCESO-08
 ```
 
-Resultado: aceptación, 170 passed, 19 skipped in 62.48s (0:01:02); suite completa, 851 passed, 20 skipped in 169.27s (0:02:49). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
+Resultado: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa, 852 passed, 20 skipped in 241.50s (0:04:01). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
 
 ### Resultado por regla
 

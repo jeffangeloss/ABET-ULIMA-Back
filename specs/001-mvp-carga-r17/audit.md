@@ -4,7 +4,7 @@
 **Spec**: [spec.md](./spec.md)  
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen pytest -q tests/aceptacion -rA` en el Back, `uv run --frozen pytest -q tests -rA` en el Back para las pruebas unitarias y `npm test` en el Front  
-**Resultado**: aceptación, 170 passed, 19 skipped in 62.48s (0:01:02); suite completa del Back, 851 passed, 20 skipped in 169.27s (0:02:49); Vitest del Front, 8 archivos y 76 pruebas aprobadas  
+**Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas  
 **Estado**: Corte 1 verificado en local. Quedan abiertos los escenarios que dependen de Neon y de Vercel, la verificación a mano de T062 y todo el corte 2.
 
 Esta auditoría cruza cada historia de usuario (user story, US) con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado de hoy. Después cruza los requisitos funcionales (functional requirements, FR) y los criterios de éxito (success criteria, SC) de la spec con la evidencia, y lista lo que el corte 1 deja abierto. Las reglas de negocio (business rules, BR) son las de `specs/features/`. El resultado de cada escenario sale de una corrida real, no de una nota a mano, y los tres estados posibles son los siguientes.
@@ -15,7 +15,7 @@ Esta auditoría cruza cada historia de usuario (user story, US) con sus escenari
 
 ## Cómo se armó esta traza
 
-El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de la fase 6) lee los siete `.feature` de `aceptacion/`, arma para cada escenario el nombre de la función de pytest-bdd con la misma regla que `pytest_bdd.scenario.make_python_name` y lo busca entre las pruebas que pytest recolecta. Luego toma el resultado de la salida de `pytest -rA` y el de `npm test`. Se detiene si un escenario no tiene prueba, si una prueba no tiene escenario, si una prueba falla o si los omitidos por razón no suman lo que informa pytest. La corrida de aceptación recolectó 189 pruebas, que son 170 aprobadas y 19 omitidas, y la suite completa suma 681 pruebas unitarias y de plataforma aprobadas además de las de aceptación. Las 12 pruebas de `test_lectura_gherkin_es.py` (T010) comprueban la lectura del Gherkin en español y no pertenecen a ningún escenario.
+El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de la fase 6) lee los siete `.feature` de `aceptacion/`, arma para cada escenario el nombre de la función de pytest-bdd con la misma regla que `pytest_bdd.scenario.make_python_name` y lo busca entre las pruebas que pytest recolecta. Luego toma el resultado de la salida de `pytest -rA` y el de `npm test`. Se detiene si un escenario no tiene prueba, si una prueba no tiene escenario, si una prueba falla o si los omitidos por razón no suman lo que informa pytest. La corrida de aceptación recolectó 189 pruebas, que son 170 aprobadas y 19 omitidas, y la suite completa suma 682 pruebas unitarias y de plataforma aprobadas además de las de aceptación. Las 12 pruebas de `test_lectura_gherkin_es.py` (T010) comprueban la lectura del Gherkin en español y no pertenecen a ningún escenario.
 
 ## Resumen
 
@@ -379,7 +379,7 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-016 | US-07, US-12, US-13; BR-CARGA-11, BR-CARGA-12, BR-CARGA-13 | 11 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (3), `test_carga.py` (28), `test_comando.py` (1), `test_lector.py` (6), `test_validacion.py` (43), `test_varias_secciones.py` (5) | Cubierto |
 | FR-017 | US-07, US-10; BR-CARGA-16 | 3 aprobados, 0 omitidos y 0 pendientes | `test_carga.py` (5), `test_comando.py` (1), `test_lector.py` (3), `test_validacion.py` (4) | Cubierto |
 | FR-018 | US-14, US-15, US-16, US-17; BR-CARGA-08, BR-CARGA-17, BR-R17-07 | 6 aprobados, 0 omitidos y 1 pendiente | `test_api_cargas.py` (1), `test_carga.py` (8), `test_demo_punta_a_punta.py` (1), `test_lector.py` (7), `test_plantilla_r17.py` (10), `test_r17.py` (3), `test_validacion.py` (2) | Parcial |
-| FR-019 | US-10, US-15, US-16; BR-R17-02, BR-R17-03, BR-R17-04, BR-R17-05, BR-R17-06, BR-R17-07, BR-R17-08 | 7 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_plantilla_r17.py` (23), `test_r17.py` (32) | Cubierto |
+| FR-019 | US-10, US-15, US-16; BR-R17-02, BR-R17-03, BR-R17-04, BR-R17-05, BR-R17-06, BR-R17-07, BR-R17-08 | 7 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (2), `test_plantilla_r17.py` (23), `test_r17.py` (32) | Cubierto |
 | FR-020 | US-15, US-16; BR-R17-01, BR-R17-09 | 4 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (1), `test_demo_punta_a_punta.py` (2), `test_r17.py` (9) | Cubierto |
 | FR-021 | US-16; BR-R17-09, BR-R17-10 | 5 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (2), `test_constancia.py` (22), `test_r17.py` (5) | Cubierto |
 | FR-022 | US-05, US-06, US-07; sin regla BR | 25 aprobados, 0 omitidos y 0 pendientes | Vitest, grupos «P1 Ingreso» (7); Vitest, grupos «P2 Mis secciones» (10); Vitest, grupos «P3 Subir export» (17); Vitest, grupos «P4 Resultado de la carga» (13); Vitest, grupos «App» (5) | Cubierto |
@@ -457,7 +457,7 @@ Cada regla de las cuatro specs vivas con sus escenarios y sus pruebas unitarias.
 | BR-R17-03 | 3, 0, 0 | `test_r17.py` (2) | Aprobada |
 | BR-R17-04 | 1, 0, 0 | `test_plantilla_r17.py` (5), `test_r17.py` (6) | Aprobada |
 | BR-R17-05 | 2, 0, 0 | `test_plantilla_r17.py` (2), `test_r17.py` (3) | Aprobada |
-| BR-R17-06 | 3, 0, 0 | `test_api_cargas.py` (1), `test_r17.py` (2) | Aprobada |
+| BR-R17-06 | 3, 0, 0 | `test_api_cargas.py` (2), `test_r17.py` (2) | Aprobada |
 | BR-R17-07 | 2, 0, 0 | `test_plantilla_r17.py` (10), `test_r17.py` (3) | Aprobada |
 | BR-R17-08 | 2, 0, 0 | `test_plantilla_r17.py` (2), `test_r17.py` (6) | Aprobada |
 | BR-R17-09 | 2, 0, 0 | `test_r17.py` (5) | Aprobada |
