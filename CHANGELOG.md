@@ -25,6 +25,8 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- Escenarios del corte 1 ejecutables con pytest-bdd 9 en español contra la API y la base (`tests/aceptacion/pasos/`), con 170 aprobados y 19 omitidos con su razón, y la prueba de humo `e2e/humo.spec.ts` del Front con Playwright para Node como T053.
+
 - Jefferson decide el 2026-10-28 dos puntos abiertos. J-06 adelanta en local el traslado de `bd/` a `db/` con git subtree, antes del primer `flyway migrate` en Neon y de V1_09, y J-10 suma el esquema `acceso` al respaldo diario de Neon sin los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso`.
 
 ### Seguridad
