@@ -12,14 +12,14 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-10-30
-- **Rama de trabajo**: `feat/001-mvp-carga-r17`, empujada y con su PR #3 a `develop` (sin fusionar, con «Create a merge commit» por el `git subtree`), y `docs/002-capstone` con el PR #4, apilado sobre ella
+- **Fecha**: 2026-11-02
+- **Rama de trabajo**: `develop`, que recibe el corte 1 desde el PR #3 con «Create a merge commit» por el `git subtree`, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: `db/herramientas/` fuera del análisis de SonarQube Cloud, después de la descarga del R-17 con `nosniff` y la CI con `uv --no-build`
-- **En curso**: la revisión de los PR #3 y #4, T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
-- **Siguiente paso**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, que hoy es público, y decide qué hacer con pythonsecurity:S5131 en `app/rutas/cargas.py`, que sigue abierto aunque la respuesta ya lleva `nosniff` (marcarlo como seguro en la consola o armar el libro en memoria); después vienen T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, y, con su permiso, Neon y Vercel (fase 7)
+- **Último cambio**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba fusionar el corte 1 en `develop`
+- **En curso**: T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
+- **Siguiente paso**: T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, la aprobación de la spec 002 (PR #4) y, con su permiso, Neon y Vercel (fase 7)
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/` de esta rama)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 15:09 (Lima) · feat/001-mvp-carga-r17 · SonarQube Cloud resuelto y corte 1 aprobado para develop
+- Quién: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba en el chat («Sí, fusiónalo») fusionar el corte 1 en `develop`. Claude Code, sin subagentes, comprueba el resultado y escribe esta entrada.
+- Qué cambió: solo esta memoria. Después de este commit, el PR #3 entra a `develop` con «Create a merge commit».
+- Por qué: cerrar lo que quedaba de SonarQube Cloud y llevar el corte 1 a `develop`.
+- Lo que debe hacer, cómo se probó: el quality gate de SonarQube Cloud del PR #3 pasa, igual que `pruebas`, `secretos` y GitGuardian.
+- Lo que no debe hacer, cómo se probó: sin sesión, la API de SonarQube Cloud responde «Project doesn't exist» para el proyecto del Back y ya no entrega el código del PR #3 (`api/sources/lines`).
+- Correcciones: la entrada del 2026-10-30 decía que S5131 se marca como seguro, pero ese estado es de los security hotspots, y una vulnerabilidad se marca como falso positivo.
+- Cómo se reporta: esta entrada y el PR #3.
+- Pendiente y siguiente paso: actualizar `docs/002-capstone` con el `develop` nuevo, para que el PR #4 deje de heredar los hallazgos ya corregidos. Siguen T062, las decisiones de `audit.md`, la aprobación de la spec 002, Neon y Vercel.
 
 ### 2026-10-30 15:13 (Lima) · feat/001-mvp-carga-r17 · db/herramientas fuera del análisis de SonarQube Cloud
 - Quién: Jefferson aprueba en el chat («Sí, exclúyelo») sacar `db/herramientas/**` del análisis de SonarQube Cloud. Claude Code, sin subagentes, hace el cambio y escribe esta entrada.
