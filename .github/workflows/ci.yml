@@ -18,11 +18,11 @@ permissions:
 jobs:
   pruebas:
     runs-on: ubuntu-latest
-    # PostgreSQL 16 desechable para las pruebas de la base (db/pruebas/), que aplican las
+    # PostgreSQL 18 desechable para las pruebas de la base (db/pruebas/), que aplican las
     # migraciones con psql, sin Flyway ni imágenes de Redgate. Vive solo lo que dura el job.
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_HOST_AUTH_METHOD: trust
         ports:
@@ -51,6 +51,15 @@ jobs:
           else
             bash scripts/preflight.sh
           fi
+      - name: Cliente de PostgreSQL 18, la versión de Neon (J-17)
+        # El runner trae psql y pg_dump 16, y pg_dump no vuelca un servidor de una versión mayor más nueva.
+        # El repositorio oficial de PostgreSQL (PGDG) da el cliente 18, que pasa al frente del PATH.
+        run: |
+          sudo apt-get install -y -q postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -q postgresql-client-18
+          /usr/lib/postgresql/18/bin/pg_dump --version | grep -q " 18\."
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
       - name: Pruebas de la base (migraciones, rechazos de cada restricción y consultas de control Q01 a Q14)
         env:
           PGHOST: localhost
@@ -72,7 +81,7 @@ jobs:
       - name: Pruebas de Python (biblioteca abet_carga, bases desechables, exports inventados y Gherkin en español)
         # --frozen y --no-build también aquí, para que uv run no vuelva a resolver, no toque uv.lock y no
         # construya desde su código fuente ninguna dependencia. Las pruebas con el marcador base crean y
-        # borran bases abet_demo_ en el mismo PostgreSQL 16 del paso de la base, con las mismas variables
+        # borran bases abet_demo_ en el mismo PostgreSQL 18 del paso de la base, con las mismas variables
         # de libpq y sin contraseña.
         env:
           PGHOST: localhost

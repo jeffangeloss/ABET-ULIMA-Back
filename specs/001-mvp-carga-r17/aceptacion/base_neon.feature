@@ -8,10 +8,10 @@
 # aparece en este archivo; las claves viven solo en variables de entorno de la terminal.
 # Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide quien apruebe la spec.
 #
-# Dónde corre cada escenario. Las pruebas de aceptación corren siempre contra un PostgreSQL 16
+# Dónde corre cada escenario. Las pruebas de aceptación corren siempre contra un PostgreSQL 18
 # desechable. Solo los escenarios de US-01 que migran y controlan la base son criterios de despliegue
-# que no escriben cargas, y se comprueban en el proyecto de Neon en la región aws-sa-east-1 con
-# PostgreSQL 16, con NEON_HOST, NEON_DB, NEON_DB_USER y NEON_DB_PASSWORD definidas solo en el entorno de
+# que no escriben cargas, y se comprueban en el proyecto de Neon en la región us-east-1 con
+# PostgreSQL 18, con NEON_HOST, NEON_DB, NEON_DB_USER y NEON_DB_PASSWORD definidas solo en el entorno de
 # la terminal del administrador técnico y NEON_HOST con el host de la conexión directa, sin «-pooler».
 
 Característica: Base del MVP en Neon con el rol de la aplicación y los datos inventados de 2026-2
@@ -73,7 +73,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
   @US-01 @corte1
   Escenario: La CI del Back reproduce la base desde cero sin Redgate
     Dado el contenido de bd/ trasladado a db/ del Back con su historia de git
-    Cuando la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 16 desechable
+    Cuando la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 18 desechable
     Entonces la salida del paso termina con "RESULTADO: todo pasó" y el código de salida es 0
     Y ningún archivo de .github/workflows/ del Back nombra una imagen o una acción de Redgate o de Flyway
     Y "git log --follow -m" del archivo V1_07__crear_registro_cargas.sql en el Back muestra los commits que tenía en ABET_ULIMA
@@ -84,7 +84,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-02 @corte1
   Escenario: El script crea abet_app sin atributos de administración
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09
     Y la variable APP_DB_CLAVE definida solo en el entorno de la terminal
     Cuando el administrador técnico corre db/plataforma/neon/crear_rol_app.sql con psql
     Entonces pg_roles muestra abet_app con rolcanlogin verdadero
@@ -93,7 +93,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-02 @corte1
   Escenario: abet_app publica una carga válida en una sola transacción
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Y la sección 411 de 450002 en 2026-2 sin ninguna carga
     Cuando la aplicación inserta en una sola transacción el archivo_origen, la carga, 3 carga_columna, 11 estudiante con los códigos 99000012 a 99000022, 11 carga_fila y 33 medicion de la sección 411
@@ -103,14 +103,14 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-02 @corte1
   Escenario: abet_app lee las vistas del R-17
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Cuando consulta "SELECT count(*) FROM abet.v_r17_por_pi" y "SELECT count(*) FROM abet.v_tabla_maestra_pi"
     Entonces las dos consultas responden sin error de permisos
 
   @US-02 @corte1
   Esquema del escenario: abet_app no puede borrar ni vaciar tablas de abet
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Y una carga PUBLICADA de la sección 410 con 33 mediciones
     Cuando ejecuta "<orden> abet.<tabla>"
@@ -130,7 +130,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-02 @corte1
   Esquema del escenario: abet_app solo actualiza el estado y los conteos de una carga
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Y una carga PUBLICADA de la sección 410 hecha con "R-2026-BORRADOR"
     Cuando ejecuta un UPDATE de la columna <columna> de esa fila de abet.carga
@@ -147,7 +147,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-02 @corte1
   Esquema del escenario: abet_app no escribe reglas, catálogo ni datos del periodo
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Cuando ejecuta un <orden> sobre abet.<tabla>
     Entonces PostgreSQL responde "permission denied for table <tabla>"
@@ -169,7 +169,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
   # least(expira_en, clock_timestamp()), porque el rol no borra.
   @US-02 @corte1
   Esquema del escenario: abet_app no borra ni da de alta usuarios en acceso
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09, el rol de crear_rol_app.sql y los datos de periodo_2026_2_inventado.sql
     Y una conexión con el usuario abet_app
     Cuando ejecuta <orden> sobre acceso.<tabla>
     Entonces PostgreSQL responde "permission denied for table <tabla>"
@@ -188,7 +188,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
   # psql una migración de prueba y después el callback, como hace Flyway al terminar cada migrate.
   @US-02 @corte1
   Escenario: Los permisos de abet_app sobreviven a una nueva migración
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y abet_app creado con crear_rol_app.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y abet_app creado con crear_rol_app.sql
     Cuando la prueba aplica con psql una migración de prueba y después db/callbacks/afterMigrate__permisos_lectura.sql
     Entonces has_table_privilege('abet_app', 'abet.medicion', 'INSERT') devuelve verdadero
     Y has_table_privilege('abet_app', 'abet.medicion', 'DELETE') devuelve falso
@@ -198,7 +198,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-03 @corte1
   Escenario: Sembrar la vigencia, las secciones 410 y 411 y el plan de 450002
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y sin datos operativos de 2026-2
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y sin datos operativos de 2026-2
     Cuando el administrador técnico ejecuta db/datos/periodo_2026_2_inventado.sql con los valores que entrega el coordinador
     Entonces abet.catalogo_vigencia tiene 1 fila de Ambiental en 2026-2 con la versión "AMB-2026"
     Y abet.seccion tiene las secciones 410 y 411 de 450002 en 2026-2 con curso_blackboard "SINTETICO_20262_450002_410" y "SINTETICO_20262_450002_411"
@@ -209,14 +209,14 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
   # (propuesta) El script se puede repetir sin duplicar nada.
   @US-03 @corte1
   Escenario: Repetir el script de datos no duplica filas
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y periodo_2026_2_inventado.sql ya aplicado
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y periodo_2026_2_inventado.sql ya aplicado
     Cuando el administrador técnico lo ejecuta otra vez
     Entonces abet.catalogo_vigencia, abet.seccion y abet.plan_medicion tienen el mismo número de filas que después de la primera ejecución
     Y acceso.usuario_autorizado y acceso.docente_seccion tienen el mismo número de filas que después de la primera ejecución
 
   @US-03 @corte1
   Escenario: El número de sección no admite ceros a la izquierda
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y los datos de periodo_2026_2_inventado.sql
     Cuando el administrador técnico inserta la sección "0410" de 450002 en 2026-2
     Entonces la base rechaza la fila por la restricción "ck_seccion_numero"
 
@@ -230,7 +230,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
   # un conjunto de reglas como vigente (faltante del periodo vigente en revision-historias.md).
   @US-03 @corte1
   Esquema del escenario: La API no arranca con un periodo o un conjunto de reglas que la base no conoce
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y los datos de periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y los datos de periodo_2026_2_inventado.sql
     Y la API configurada con PERIODO_VIGENTE "<periodo>" y CONJUNTO_REGLAS "<conjunto>"
     Cuando la API arranca contra esa base
     Entonces el arranque se detiene con el mensaje "<mensaje>"
@@ -247,7 +247,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-04 @corte1
   Escenario: V1_09 crea el esquema acceso y los motivos nuevos
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_08
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_08
     Y db/flyway.toml con schemas ["abet", "acceso"] en sus entornos
     Cuando la prueba aplica V1_09__crear_acceso.sql con psql, como correr_pruebas.sh
     Entonces psql termina con código de salida 0
@@ -258,14 +258,14 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-04 @corte1
   Escenario: Las cargas anteriores a V1_09 conservan subida_por nulo
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_08 y la carga PUBLICADA de la sección 410 de db/pruebas/datos_sinteticos.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_08 y la carga PUBLICADA de la sección 410 de db/pruebas/datos_sinteticos.sql
     Cuando la prueba aplica V1_09__crear_acceso.sql con psql
     Entonces esa carga sigue en estado "PUBLICADA" con subida_por nulo
     Y cada una de las consultas de control Q01 a Q14 sigue en 0 filas
 
   @US-04 @corte1
   Escenario: El script de datos registra a los usuarios de prueba y sus secciones
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09
     Cuando el administrador técnico ejecuta db/datos/periodo_2026_2_inventado.sql
     Entonces acceso.usuario_autorizado tiene estos usuarios activos
       | correo                       | rol         |
@@ -278,7 +278,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-04 @corte1
   Esquema del escenario: La base rechaza un registro de acceso inválido
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y los usuarios de prueba registrados por periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y los usuarios de prueba registrados por periodo_2026_2_inventado.sql
     Cuando el administrador técnico <acción>
     Entonces la base rechaza la fila por la restricción "<restricción>"
 
@@ -292,7 +292,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   @US-04 @corte1
   Escenario: Los correos solo viven en acceso.usuario_autorizado
-    Dado una base PostgreSQL 16 desechable con V1_01 a V1_09 y los usuarios de prueba registrados por periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y los usuarios de prueba registrados por periodo_2026_2_inventado.sql
     Cuando el administrador técnico corre la consulta de control Q04
     Y corre la consulta Q15, nueva en pruebas.sql, que aplica el filtro de columnas de Q04 al esquema acceso
     Entonces Q04 devuelve 0 filas

@@ -1,4 +1,4 @@
-# Configuración de Flyway para ABET_SIS_MED (PostgreSQL 16).
+# Configuración de Flyway para ABET_SIS_MED (PostgreSQL 18).
 # Las credenciales nunca van escritas en este archivo ni en ningún otro del repositorio.
 # Se leen de las variables de entorno ABET_DB_USER y ABET_DB_PASSWORD.
 # Los ajustes personales van en flyway.user.toml, que .gitignore excluye.

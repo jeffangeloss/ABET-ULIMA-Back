@@ -1,4 +1,4 @@
-# Clúster de PostgreSQL 16 desechable para los guiones que crean o borran bases. Se carga con
+# Clúster de PostgreSQL 18 desechable para los guiones que crean o borran bases. Se carga con
 #   source db/pruebas/cluster_desechable.sh
 #   iniciar_cluster_desechable
 # y el guion llama a detener_cluster_desechable al salir, pase lo que pase.
@@ -9,14 +9,34 @@
 # iniciar_cluster_desechable corre initdb en una carpeta temporal y pg_ctl arranca el servidor escuchando solo en un
 # socket de Unix de esa carpeta, sin TCP, y deja PGHOST, PGPORT y PGUSER apuntando a ese clúster. Después comprueba
 # con SHOW data_directory que el servidor que responde es ese clúster. En la CI no hace nada, porque el
-# servicio postgres:16 del job ya es desechable. La CI exige GITHUB_ACTIONS=true, RUNNER_TEMP no vacío y un sistema distinto de
-# Darwin, así que exportar solo GITHUB_ACTIONS=true en la Mac no abre el clúster local. tests/cluster_desechable.py hace lo mismo para pytest.
+# servicio postgres:18 del job ya es desechable. La CI exige GITHUB_ACTIONS=true, RUNNER_TEMP no vacío y un sistema distinto de
+# Darwin, así que exportar solo GITHUB_ACTIONS=true en la Mac no abre el clúster local. El clúster es de PostgreSQL 18,
+# la versión de Neon (J-17): usa los binarios de PG_BIN, si está definida, o los de Homebrew (postgresql@18), deja esa
+# carpeta al frente del PATH para el psql y el pg_dump del guion que lo carga, y se detiene si initdb es de otra versión. tests/cluster_desechable.py hace lo mismo para pytest.
 
 CLUSTER_PUERTO=54329
+CLUSTER_MAYOR=18
 
 iniciar_cluster_desechable() {
     if [ "${GITHUB_ACTIONS:-}" = "true" ] && [ -n "${RUNNER_TEMP:-}" ] && [ "$(uname -s)" != "Darwin" ]; then
         return 0
+    fi
+    # PostgreSQL 18, la versión de Neon (J-17): los binarios de PG_BIN, si está definida, o los de Homebrew.
+    if [ -z "${PG_BIN:-}" ]; then
+        local prefijo
+        for prefijo in /opt/homebrew/opt/postgresql@${CLUSTER_MAYOR} /usr/local/opt/postgresql@${CLUSTER_MAYOR}; do
+            if [ -x "$prefijo/bin/initdb" ]; then
+                PG_BIN="$prefijo/bin"
+                break
+            fi
+        done
+    fi
+    if [ -n "${PG_BIN:-}" ]; then
+        export PATH="$PG_BIN:$PATH"
+    fi
+    if ! initdb --version 2>/dev/null | grep -q " ${CLUSTER_MAYOR}\."; then
+        echo "initdb no es de PostgreSQL ${CLUSTER_MAYOR}, la versión de Neon (J-17). Instala postgresql@${CLUSTER_MAYOR} con Homebrew o define PG_BIN con la carpeta de sus binarios." >&2
+        return 1
     fi
     # Un socket de Unix admite rutas de hasta 103 bytes en macOS, así que una carpeta temporal larga cede a /tmp.
     local base="${TMPDIR:-/tmp}"

@@ -1,6 +1,6 @@
 """Pasos de base_neon.feature (US-01 a US-04), ejecutables con pytest-bdd en español (T051).
 
-El .feature manda. Los criterios que se pueden probar en un PostgreSQL 16 desechable corren aquí, cada
+El .feature manda. Los criterios que se pueden probar en un PostgreSQL 18 desechable corren aquí, cada
 «Entonces» contra la base, la salida del comando o el archivo. Los escenarios de US-01 que migran y controlan
 la base en Neon quedan omitidos con la razón «se comprueban en Neon con T021 y T027», como dice el encabezado
 del .feature y T051.
@@ -120,7 +120,7 @@ def _conteos(ctx: Escenario, lista: str) -> dict[str, int]:
 
 # Dado, las bases
 
-@given(parsers.re(r'una base PostgreSQL 16 desechable con V1_01 a V1_(?P<hasta>0[89])(?P<resto>.*)'))
+@given(parsers.re(r'una base PostgreSQL 18 desechable con V1_01 a V1_(?P<hasta>0[89])(?P<resto>.*)'))
 def _base(ctx: Escenario, hasta: str, resto: str) -> None:
     mismos_datos = {
         " y los datos de periodo_2026_2_inventado.sql",
@@ -144,7 +144,7 @@ def _base(ctx: Escenario, hasta: str, resto: str) -> None:
         _propia(ctx, rol_app=False, datos_2026_2=False)
     else:
         raise AssertionError(f"No se reconoce el estado de base {resto!r}.")
-    assert ctx.uno("SHOW server_version_num").startswith("16"), "la base desechable no es PostgreSQL 16"
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
     hay_datos = ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.periodo p USING (periodo_id)"
@@ -258,7 +258,7 @@ def _contenido_trasladado(ctx: Escenario) -> None:
         "el Back no tiene la fusión de git subtree que trajo la base")
 
 
-@when("la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 16 desechable")
+@when("la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 18 desechable")
 def _correr_pruebas(ctx: Escenario) -> None:
     corrida = subprocess.run(["bash", "db/pruebas/correr_pruebas.sh"], cwd=RAIZ, capture_output=True, text=True,
                              check=False, timeout=600)

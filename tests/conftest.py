@@ -18,7 +18,7 @@ GENERADOR = RAIZ / "scripts" / "generar_exports_inventados.py"
 BASE_DESECHABLE = RAIZ / "tests" / "base_desechable.py"
 CLUSTER_DESECHABLE = RAIZ / "tests" / "cluster_desechable.py"
 
-# Toda prueba que pide una de estas fixtures usa una base PostgreSQL 16 desechable y lleva el
+# Toda prueba que pide una de estas fixtures usa una base PostgreSQL 18 desechable y lleva el
 # marcador base, declarado en pyproject.toml, aunque no lo escriba.
 FIXTURES_DE_BASE = frozenset({"cluster_postgres", "base_desechable", "base_demo", "crear_base_demo"})
 
@@ -73,7 +73,7 @@ def generador() -> ModuleType:
 def cluster_postgres() -> Iterator[dict[str, str]]:
     """Clúster de PostgreSQL desechable de la sesión de pruebas, con sus variables de libpq en os.environ.
 
-    En la CI no arranca nada, porque el servicio postgres:16 del job ya es desechable. En la Mac, el
+    En la CI no arranca nada, porque el servicio postgres:18 del job ya es desechable. En la Mac, el
     clúster vive solo lo que dura la sesión de pytest, y ninguna prueba alcanza el de localhost:5432.
     """
     cluster_desechable = cargar_modulo("cluster_desechable", CLUSTER_DESECHABLE)

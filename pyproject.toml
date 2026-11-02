@@ -24,7 +24,7 @@
 [project]
 name = "abet-ulima-back"
 version = "0.0.0"
-description = "Carga del export de Blackboard en PostgreSQL 16 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
+description = "Carga del export de Blackboard en PostgreSQL 18 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi~=0.143.1",
@@ -60,7 +60,7 @@ addopts = ["--import-mode=importlib"]
 # tests/aceptacion/pasos/ leen specs/001-mvp-carga-r17/aceptacion/*.feature sin copiarlos.
 bdd_features_base_dir = "."
 # tests/conftest.py pone el marcador base en toda prueba que pide una base desechable, y
-# pytest -m "not base" las deja fuera en una máquina sin PostgreSQL 16.
+# pytest -m "not base" las deja fuera en una máquina sin PostgreSQL 18.
 markers = [
-    "base: usa una base PostgreSQL 16 desechable con el prefijo abet_demo_ (tests/base_desechable.py)",
+    "base: usa una base PostgreSQL 18 desechable con el prefijo abet_demo_ (tests/base_desechable.py)",
 ]

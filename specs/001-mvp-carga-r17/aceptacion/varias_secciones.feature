@@ -45,7 +45,7 @@
 #   la API o de la base y nunca se suponen.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
 # Los pasos de pantalla, que nombran P2, los comprueban las pruebas de Vitest del Front (T045), y los
-# demás corren con pytest contra un PostgreSQL 16 desechable (propuesta, con los pasos de T050 en
+# demás corren con pytest contra un PostgreSQL 18 desechable (propuesta, con los pasos de T050 en
 # US-07, US-09 y US-13 y con T051 en US-06).
 
 Característica: Profesor con varias secciones de varias asignaturas
@@ -56,7 +56,7 @@ Característica: Profesor con varias secciones de varias asignaturas
   sección del mismo profesor comparta el plan de medición o el número.
 
   Antecedentes:
-    Dado una base PostgreSQL 16 desechable con las migraciones V1_01 a V1_09, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_09, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2", CONJUNTO_REGLAS "R-2026-BORRADOR" y GUARDIA_DATOS_INVENTADOS "1"
     Y abet.seccion registra en "2026-2" la sección 412 de "450002" y las secciones 410 y 412 de "450010" con curso_blackboard "SINTETICO_20262_450002_412", "SINTETICO_20262_450010_410" y "SINTETICO_20262_450010_412"
     Y plan_medicion registra los PI 5.1, 5.2 y 5.3 para la asignatura "450002" en "2026-2" y los PI 2.1, 2.2 y 5.1 para "450010", con el instrumento "Trabajo Integrador" que asignatura_so le asigna en los SO 2 y 5

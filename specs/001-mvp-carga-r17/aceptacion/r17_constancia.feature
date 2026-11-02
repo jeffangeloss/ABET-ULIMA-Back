@@ -23,7 +23,7 @@ Característica: R-17 y constancia de la carga generados desde la base
   con una hoja «Constancia», para tener la evidencia de que mi export está en la base con esos datos.
 
   Antecedentes:
-    Dado una base PostgreSQL 16 desechable con las migraciones V1_01 a V1_09 y los datos de db/datos/periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_09 y los datos de db/datos/periodo_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2", CONJUNTO_REGLAS "R-2026-BORRADOR" y GUARDIA_DATOS_INVENTADOS "1"
     Y el conjunto de reglas "R-2026-BORRADOR" en estado "BORRADOR" con META_LOGRO 0,80 y NIVEL_ESPERADO 3 DEFINIDOS
     Y "docente410@example.invalid" tiene la sesión iniciada con rol "PROFESOR" y acceso.docente_seccion le asigna la sección 410 de "450002" en "2026-2"

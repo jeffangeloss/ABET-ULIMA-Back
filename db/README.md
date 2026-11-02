@@ -1,6 +1,6 @@
 # Base de datos ABET_SIS_MED
 
-Esta carpeta es la semilla del repositorio de la base de datos del sistema de medición ABET de la Carrera de Ingeniería Ambiental. La base se construye como código, con migraciones versionadas de Flyway sobre PostgreSQL 16, en pasos pequeños que dos personas pueden revisar en una sesión. Cada cambio del esquema entra como un archivo nuevo y nunca como una edición manual de la base.
+Esta carpeta es la semilla del repositorio de la base de datos del sistema de medición ABET de la Carrera de Ingeniería Ambiental. La base se construye como código, con migraciones versionadas de Flyway sobre PostgreSQL 18, en pasos pequeños que dos personas pueden revisar en una sesión. Cada cambio del esquema entra como un archivo nuevo y nunca como una edición manual de la base.
 
 ## Contenido de la carpeta
 
@@ -21,7 +21,7 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 | `pruebas/probar_guardia.sql` | La guardia de datos inventados en una base aparte |
 | `pruebas/correr_pruebas.sh` | Corre todas las pruebas sobre bases desechables, sin Flyway |
 | `pruebas/cluster_desechable.sh` | Arranca y apaga el clúster de PostgreSQL desechable donde `correr_pruebas.sh` crea sus bases fuera de la CI |
-| `../.github/workflows/ci.yml` | Job `pruebas` de la integración continua (continuous integration, CI), que corre `pruebas/correr_pruebas.sh` con `psql` sobre un PostgreSQL 16 desechable, sin Flyway ni Redgate |
+| `../.github/workflows/ci.yml` | Job `pruebas` de la integración continua (continuous integration, CI), que corre `pruebas/correr_pruebas.sh` con `psql` sobre un PostgreSQL 18 desechable, sin Flyway ni Redgate |
 
 ## Qué crea la entrega 1
 
@@ -120,12 +120,12 @@ El script regenera primero `V1_03` desde la referencia y la compara con la guard
 | `abet_prueba_neon_<pid>` | El camino de Neon. V1_01 a V1_08 y las vistas, los datos sintéticos, `crear_rol_app.sql` antes de V1_09, que debe rechazar `abet_respaldo` y fallar sin dejar el rol, y después V1_09, que debe dejar el mismo esquema que una base nueva. Luego los scripts del orden de T027, las consultas de control, `pruebas/probar_rol_app.sql`, las R__ otra vez y las consultas de control con una carga REEMPLAZADA sin reemplazo, que deben terminar con error |
 | `abet_prueba_guardia_<pid>` | La guardia, con `pruebas/probar_guardia.sql`, en una base sin cargas que recibe dos veces la guardia y los datos de 2026-2 |
 
-En la Mac, el script arranca su propio clúster de PostgreSQL desechable con `pruebas/cluster_desechable.sh` (initdb en una carpeta temporal y un socket propio, sin TCP), crea ahí todas sus bases y lo borra al terminar, así que nunca toca el clúster de `localhost:5432`, donde vive `abet_sis_med_dev`. El 2026-10-28 una prueba de mutación borró esa base, y desde entonces ninguna prueba crea ni borra bases en ese clúster. Para eso necesita `initdb`, `pg_ctl` y `psql` 15 o posterior en el `PATH`, porque los scripts usan `\getenv`. En la CI usa las variables estándar de libpq del job, con un `PGUSER` que puede crear bases y roles, como `postgres`. El rol de prueba nunca recibe contraseña, aunque la terminal tenga `APP_DB_CLAVE`.
+En la Mac, el script arranca su propio clúster de PostgreSQL desechable con `pruebas/cluster_desechable.sh` (initdb en una carpeta temporal y un socket propio, sin TCP), crea ahí todas sus bases y lo borra al terminar, así que nunca toca el clúster de `localhost:5432`, donde vive `abet_sis_med_dev`. El 2026-10-28 una prueba de mutación borró esa base, y desde entonces ninguna prueba crea ni borra bases en ese clúster. Para eso usa `initdb`, `pg_ctl`, `psql` y `pg_dump` de PostgreSQL 18, la versión de Neon (J-17): los de `PG_BIN`, si está definida, o los de Homebrew (`postgresql@18`), y se detiene si `initdb` es de otra versión. En la CI usa las variables estándar de libpq del job, con un `PGUSER` que puede crear bases y roles, como `postgres`. El rol de prueba nunca recibe contraseña, aunque la terminal tenga `APP_DB_CLAVE`.
 
 ```sh
 export LC_ALL=en_US.UTF-8
-PSQL=/opt/homebrew/opt/postgresql@16/bin/psql \
-PG_DUMP=/opt/homebrew/opt/postgresql@16/bin/pg_dump \
+PSQL=/opt/homebrew/opt/postgresql@18/bin/psql \
+PG_DUMP=/opt/homebrew/opt/postgresql@18/bin/pg_dump \
 ./pruebas/correr_pruebas.sh
 ```
 
@@ -176,13 +176,13 @@ export ABET_DB_USER="$USER" ABET_DB_PASSWORD=""
 flyway info && flyway migrate && flyway validate
 ```
 
-Flyway corre en la Mac, con el orden `info`, `migrate` y `validate`, y en Neon, con el orden de T027. `flyway clean` está deshabilitado en `[flyway]`, pero `dev` es el entorno por defecto y el único definido, y lo permite para reconstruir la base local desde cero. En la práctica, toda ejecución sin `-environment` corre con `clean` permitido, lo que se acepta porque `abet_sis_med_dev` es desechable. Un entorno compartido, como el `neon` que usa T027, entra con su propio bloque `[environments.<nombre>]`, sin ese override, y se llama con `-environment=<nombre>`. La CI no corre Flyway ni usa Redgate. Su job `pruebas`, en `../.github/workflows/ci.yml`, aplica las migraciones con `psql` sobre un PostgreSQL 16 desechable, por medio de `pruebas/correr_pruebas.sh`.
+Flyway corre en la Mac, con el orden `info`, `migrate` y `validate`, y en Neon, con el orden de T027. `flyway clean` está deshabilitado en `[flyway]`, pero `dev` es el entorno por defecto y el único definido, y lo permite para reconstruir la base local desde cero. En la práctica, toda ejecución sin `-environment` corre con `clean` permitido, lo que se acepta porque `abet_sis_med_dev` es desechable. Un entorno compartido, como el `neon` que usa T027, entra con su propio bloque `[environments.<nombre>]`, sin ese override, y se llama con `-environment=<nombre>`. La CI no corre Flyway ni usa Redgate. Su job `pruebas`, en `../.github/workflows/ci.yml`, aplica las migraciones con `psql` sobre un PostgreSQL 18 desechable, por medio de `pruebas/correr_pruebas.sh`.
 
 ## Estado de la base local
 
 La base `abet_sis_med_dev` de la Mac de Jefferson está en la versión 1.08. El 22/10/2026, Flyway OSS 13.10.3 con openjdk 21.0.12 aplica las ocho versionadas y las dos repetibles en 0,25 segundos, `flyway validate` pasa con 11 migraciones y un segundo `flyway migrate` responde que el esquema está al día. El `pg_dump --schema-only` de esa base, sin la tabla `flyway_schema_history`, coincide línea por línea con el de una base armada con `psql` como en las pruebas, y los datos de referencia coinciden tabla por tabla. La base no tiene estudiantes ni mediciones, porque los datos sintéticos solo se cargan en las bases desechables de las pruebas. V1_09 todavía no está aplicada en esa base. El próximo `flyway migrate` crea antes `acceso`, porque el entorno `dev` lo lista en `schemas`, y después aplica V1_09.
 
-En Windows, que usa Stefanny, el camino equivalente es PostgreSQL 16 con el instalador oficial para Windows y la descarga de línea de comandos de Flyway para Windows, que trae su propio JRE. `pruebas/correr_pruebas.sh` necesita una terminal bash, como Git Bash o WSL.
+En Windows, que usa Stefanny, el camino equivalente es PostgreSQL 18 con el instalador oficial para Windows y la descarga de línea de comandos de Flyway para Windows, que trae su propio JRE. `pruebas/correr_pruebas.sh` necesita una terminal bash, como Git Bash o WSL.
 
 ## Cómo agregar una migración
 
@@ -231,7 +231,7 @@ La entrega 1 deja fuera, a propósito, lo que todavía depende de decisiones abi
 
 ## Por qué PostgreSQL
 
-PostgreSQL 16 corre nativo en la Mac con Apple Silicon y ya está instalado, mientras que SQL Server no tiene una imagen de contenedor soportada para arm64 y en la Mac no hay Docker. Azure Database for PostgreSQL ofrece la versión 16, así que el motor de desarrollo coincide con un destino de producción posible (paridad entre desarrollo y producción). Flyway funciona igual con PostgreSQL, SQL Server y Azure SQL; lo que cambia entre ellos es el dialecto de cada archivo.
+PostgreSQL 18 corre nativo en la Mac con Apple Silicon (Homebrew, `postgresql@18`), mientras que SQL Server no tiene una imagen de contenedor soportada para arm64 y en la Mac no hay Docker. Neon corre la misma versión mayor (J-17), así que el motor de desarrollo coincide con el de producción (paridad entre desarrollo y producción). Flyway funciona igual con PostgreSQL, SQL Server y Azure SQL; lo que cambia entre ellos es el dialecto de cada archivo.
 
 Si informática exige SQL Server o Azure SQL, el esquema se traduce a una ubicación propia (`migration/sqlserver`) antes del primer despliegue compartido y ambas secuencias se prueban con los mismos datos sintéticos. Estas son las diferencias que hay que reescribir.
 

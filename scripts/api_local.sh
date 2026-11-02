@@ -4,7 +4,7 @@
 # Uso.
 #   bash scripts/api_local.sh [--sin-https] [--puerto 8000]
 #
-# El guion arma con db/pruebas/cluster_desechable.sh un clúster de PostgreSQL 16 desechable, con su socket
+# El guion arma con db/pruebas/cluster_desechable.sh un clúster de PostgreSQL 18 desechable, con su socket
 # propio y sin TCP, así que nunca toca el clúster de la Mac (localhost:5432) ni abet_sis_med_dev. En ese
 # clúster crea la base abet_local con V1_01 a la última migración versionada y las R__, en el orden de
 # db/pruebas/correr_pruebas.sh, y corre después la guardia de datos inventados, el rol de la aplicación
