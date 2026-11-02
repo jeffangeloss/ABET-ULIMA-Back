@@ -2,11 +2,13 @@
 -- Cubre H21 y C6 (PI como texto), C7 y C8 (SO y ciclo del curso desde el catálogo, no desde el número de sección)
 -- y C9 (solo cargas PUBLICADAS, sin duplicados de cargas reemplazadas).
 -- PROFESOR queda NULL en la entrega 1; docentes, roles y ámbitos entran en la entrega 2.
+-- security_barrier impide que una función escrita por quien consulta se evalúe antes del filtro de la vista
+-- y vea filas que la vista oculta, como las de cargas que no están PUBLICADAS.
 -- Migración repetible: Flyway la vuelve a aplicar cada vez que cambia su contenido.
 
 DROP VIEW IF EXISTS abet.v_tabla_maestra_pi CASCADE;
 
-CREATE VIEW abet.v_tabla_maestra_pi AS
+CREATE VIEW abet.v_tabla_maestra_pi WITH (security_barrier = true) AS
 SELECT pe.anio                       AS "AÑO",
        pe.ciclo                      AS "CICLO",
        a.codigo                      AS "CÓDIGO DEL CURSO",

@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `chore/postgres-18`, con su PR a `develop`, que pasa el Back a PostgreSQL 18 (J-17), y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `chore/db-preparacion-neon`, con su PR a `develop`, que trae `preparacion-neon` de `ABET_ULIMA` a `db/` (T022 y T023), y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: Jefferson decide usar el proyecto ABET-ULIMA de Neon (integración Neon × Vercel, us-east-1, PostgreSQL 18.6), que ya tiene V1_01 a V1_08 desde el 2026-10-27, y pasar la CI y el clúster desechable a PostgreSQL 18 (J-17)
-- **En curso**: el despliegue en Neon (T022 a T028) y T062
-- **Siguiente paso**: fusionar este PR; después, con el permiso de Jefferson, el commit de los cambios pendientes de `bd/` (respaldo con `acceso`) y la fusión de `preparacion-neon` en `main` de `ABET_ULIMA` (T022), el `git subtree pull` a `db/` (T023) con el respaldo en `pg_dump` 18, los roles de lectura y respaldo, y V1_09, `abet_app`, la guardia y los datos de 2026-2, primero en una rama de Neon y después en la principal (T027 y T028)
-- **Bloqueos**: T022 espera el permiso de Jefferson para fusionar `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`)
+- **Último cambio**: `main` de `ABET_ULIMA` avanza a 9af49b6, con el respaldo que suma `acceso` (J-10), y el `git subtree pull` lo trae a `db/` con el callback en `locations`, `abet` y `acceso` en el entorno `neon`, el respaldo en `pg_dump` 18 y su flujo a mano en la raíz
+- **En curso**: el despliegue en Neon (T027 y T028) y T062
+- **Siguiente paso**: fusionar este PR; después, Jefferson archiva `ABET_ULIMA` en solo lectura y crea con un clic una rama de Neon para T027. En esa rama corren los roles de lectura y respaldo, V1_09, `abet_app`, la guardia y los datos de 2026-2, y después en la principal (T027 y T028), con la prueba del volcado y la restauración con `pg_dump` 18
+- **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 16:21 (Lima) · chore/db-preparacion-neon · preparacion-neon de ABET_ULIMA en db/ con git subtree pull (T022 y T023)
+- Quién: Jefferson autoriza en el chat («Sí, llévalo») el commit de lo pendiente en `bd/`, la fusión de `preparacion-neon` en `main` de `ABET_ULIMA` y el `git subtree pull`. Claude Code hace el commit 9af49b6 en `bd/` con el respaldo de `acceso` que dejó la sesión de Neon, lleva `main` de `ABET_ULIMA` a 9af49b6 sin cambiar de rama en `bd/`, trae `main` a `db/`, resuelve los dos choques y escribe esta entrada. Un revisor (Sonnet) revisa la integración, y seis escépticos (Sonnet) confirman cinco hallazgos sobre el README y refutan uno sobre el callback, que igual se acota.
+- Qué cambió: `db/flyway.toml` (`filesystem:callbacks` en `locations` y el entorno `neon` con `abet` y `acceso`), `db/callbacks/afterMigrate__permisos_lectura.sql` (nuevo, que repone también el SELECT de las dos vistas al rol de la API, reconocido porque inserta en `abet.carga` sin ser su dueño ni tener atributos de administración), `db/plataforma/neon/crear_roles_lectura.sql` (nuevo), `db/herramientas/respaldar_neon.sh` (nuevo, con `pg_dump` 18), `.github/workflows/respaldo_neon.yml` (nuevo, a mano y con el cliente 18), las dos R__ con `security_barrier`, `db/.gitignore`, `db/README.md` (Neon al día con J-17 y T027 con los roles al comienzo), el comentario de `crear_rol_app.sql`, `spec.md`, el paso de `base_neon.feature` que no aceptaba cifras en el nombre de una tabla, y T022, T023 y T027 en `tasks.md`.
+- Por qué: T022 y T023 de la spec 001, con J-06 y J-10. Sin este cambio, un `migrate` de T027 desde el Back recrearía las vistas sin `security_barrier`, porque sus R__ eran distintas de las que Neon tiene aplicadas, y `abet_app` perdería su SELECT.
+- Lo que debe hacer, cómo se probó: el escenario «Los permisos de abet_app sobreviven a una nueva migración», que esperaba el callback, ahora corre y pasa. Las dos R__ quedan idénticas a las de `main` de `ABET_ULIMA`, que son las aplicadas en Neon. `bash db/pruebas/correr_pruebas.sh` da «RESULTADO: todo pasó», `uv run --frozen pytest -q -W error` da 855 aprobadas y 19 omitidas, y `bash scripts/preflight.sh` sale sin fallas.
+- Lo que no debe hacer, cómo se probó: el callback no da SELECT a un rol con atributos de administración ni al dueño de `abet.carga`, el flujo de respaldo no corre solo mientras falten sus secretos, ningún contenido de `ABET_ULIMA` ni del Back se pierde en la resolución (revisión contra `main` de `ABET_ULIMA` y `develop`), y en Neon no cambia nada.
+- Correcciones: el `git subtree pull` dejó los dos archivos nuevos en `db/db/` y el flujo en `db/.github/`, y se movieron a `db/callbacks/`, `db/plataforma/neon/` y la raíz. El paso del escenario del callback no aceptaba `abet.v_r17_por_pi` porque su expresión no admitía cifras, y nunca había corrido. El README conservaba hechos de antes del pull (el respaldo solo de `abet`, la versión 16 y las condiciones de T027 en futuro), y la revisión los corrigió.
+- Cómo se reporta: esta entrada, `CHANGELOG.md`, `tasks.md` y el PR.
+- Pendiente y siguiente paso: Jefferson archiva `ABET_ULIMA` en solo lectura. Después siguen T027 en una rama de Neon y luego en la principal, T028, la prueba del volcado y la restauración con `pg_dump` 18, y el horario diario del respaldo cuando estén los cinco secretos. El PR #4 y el Front todavía nombran la 16 y São Paulo.
 
 ### 2026-11-02 16:01 (Lima) · chore/postgres-18 · PostgreSQL 18 en la CI y en el clúster desechable por el proyecto de Neon (J-17)
 - Quién: Jefferson decide en el chat usar el proyecto ABET-ULIMA de Neon que ya había creado («Sí, usar este»), pasar las pruebas a PostgreSQL 18 («Sí, pasar a la 18») e instalar `postgresql@18` en la Mac («Sí, instálalo»). Claude Code se conecta a Neon con la conexión directa de `bd/.env.neon` sin mostrar valores, instala `postgresql@18` con Homebrew sin tocar la 16, escribe primero las pruebas de la guardia de versión, hace el cambio y escribe esta entrada. Un revisor (Sonnet) revisa el diff, y tres escépticos (Sonnet) confirman sus tres hallazgos de severidad media.
