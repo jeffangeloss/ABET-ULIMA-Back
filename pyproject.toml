@@ -1,0 +1,66 @@
+# Proyecto de Python del Back (T030). La biblioteca abet_carga/ lee, valida y carga el export y
+# genera el R-17 sin importar FastAPI, y app/ traduce a esas funciones las peticiones del protocolo
+# de transferencia de hipertexto (Hypertext Transfer Protocol, HTTP), como pide el principio VI de
+# la constitución. La versión sigue al archivo VERSION, y tests/test_esqueleto.py comprueba que
+# coincidan.
+#
+# Las versiones siguen dos criterios. Las que nombra el plan (openpyxl 3.1.5 y defusedxml 0.7.1)
+# van exactas, y las demás llevan un rango compatible, de parches en las versiones 0.x y de la
+# misma versión mayor en las demás. El paquete pytest-bdd admite solo parches (~=9.0.0), porque la
+# prueba de la tarea T010 lee tres objetos internos de pytest-bdd. uv.lock fija cada versión con
+# su hash.
+#
+# La resolución del 2026-10-28 toma solo versiones con al menos 14 días en el índice de paquetes
+# de Python (Python Package Index, PyPI). Corre uv lock --exclude-newer "14 days", que cuenta los
+# 14 días desde la hora de la corrida, y después uv lock, que conserva esas versiones y quita la
+# opción. El corte fijo 2026-10-14T13:00:00Z reproduce desde cero las mismas 43 versiones.
+#
+# Después de cambiar este archivo, uv.lock y requirements.txt se regeneran con
+#   uv lock
+#   uv export --frozen --no-dev --no-emit-project --format requirements-txt -o requirements.txt
+# requirements.txt existe para Snyk, que en el plan gratuito no lee uv.lock (docs/devops.md), y
+# lleva solo las dependencias de la aplicación, sin el grupo dev, como Snyk analiza por omisión.
+
+[project]
+name = "abet-ulima-back"
+version = "0.0.0"
+description = "Carga del export de Blackboard en PostgreSQL 16 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi~=0.143.1",
+    "uvicorn~=0.54.0",
+    "python-multipart~=0.0.32",
+    "psycopg[binary]>=3.3.6,<4",
+    "openpyxl==3.1.5",
+    "defusedxml==0.7.1",
+    "pillow>=12.3.0,<13",
+    "argon2-cffi>=25.1.0,<26",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1,<10",
+    "pytest-bdd~=9.0.0",
+    "httpx~=0.28.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13"]
+build-backend = "uv_build"
+
+# Dos paquetes en la raíz del repositorio, sin carpeta src/.
+[tool.uv.build-backend]
+module-name = ["abet_carga", "app"]
+module-root = ""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib"]
+# scenarios() resuelve las rutas desde la raíz del repositorio, así que los pasos de
+# tests/aceptacion/pasos/ leen specs/001-mvp-carga-r17/aceptacion/*.feature sin copiarlos.
+bdd_features_base_dir = "."
+# tests/conftest.py pone el marcador base en toda prueba que pide una base desechable, y
+# pytest -m "not base" las deja fuera en una máquina sin PostgreSQL 16.
+markers = [
+    "base: usa una base PostgreSQL 16 desechable con el prefijo abet_demo_ (tests/base_desechable.py)",
+]

@@ -2,7 +2,7 @@
 #
 # Escenarios de aceptación de la carga del export (spec 001, historias US-07 a US-14 y US-21).
 # Todos los datos son inventados. Los archivos viven en tests/datos_inventados/ y los correos usan el
-# dominio reservado example.invalid. Las cifras salen de bd/pruebas/datos_sinteticos.sql.
+# dominio reservado example.invalid. Las cifras salen de db/pruebas/datos_sinteticos.sql.
 #
 # Vocabulario de los pasos.
 # - «subir X a la sección N» es POST /api/secciones/{seccion_id de N}/cargas con X en el campo
@@ -111,8 +111,10 @@ Característica: Carga del export de Blackboard en la base
   # US-08: Rechazar exports con códigos que no son inventados
 
   # Con la guardia encendida, todo Username no vacío fuera de 99000000 a 99999999, incluido uno mal
-  # formado como 9900001, detiene el archivo antes de calcular la huella o escribir. Por eso CODIGO_INVALIDO
-  # solo se alcanza con la guardia apagada (escenario de US-10 con la etiqueta @guardia_apagada).
+  # formado como 9900001, detiene el archivo antes de buscar su huella en la base o escribir. Por eso
+  # CODIGO_INVALIDO solo se alcanza con la guardia apagada (escenario de US-10 con la etiqueta
+  # @guardia_apagada). Que el registro de la aplicación guarde de ese rechazo solo la huella y la hora
+  # (BR-CARGA-08, T038) lo comprueba una prueba unitaria de app/rutas/cargas.py, fuera de este archivo.
   @US-08 @corte1
   Esquema del escenario: Un solo código que no es inventado rechaza el archivo entero sin dejar rastro
     Dado una copia de "sintetico_20262_450002_410.xlsx" con el Username <codigo> en la fila 4
@@ -291,11 +293,13 @@ Característica: Carga del export de Blackboard en la base
     Pero abet.carga_columna de esa carga solo tiene los PI 5.1, 5.2 y 5.3
     Y abet.medicion tiene 33 filas de esa carga
 
+  # (propuesta) El texto del mensaje de la carga RECHAZADA.
   @US-10 @corte1
   Escenario: Si todas las filas se rechazan, la carga no se publica
     Dado una copia de "sintetico_20262_450002_410.xlsx" con un 5 en la columna 5.2 de las 11 filas de datos
     Cuando el profesor sube esa copia a la sección 410
     Entonces la respuesta es 201 y su cuerpo trae estado "RECHAZADA", filas_leidas 11, filas_aceptadas 0 y filas_rechazadas 11
+    Y el cuerpo trae el mensaje "Ninguna fila se pudo aceptar. La carga no se publicó."
     Y abet.rechazo_fila tiene 11 filas de esa carga con motivo "NIVEL_FUERA_DE_ESCALA" y efecto "RECHAZA_FILA", de la fila_origen 2 a la 12
     Y abet.carga_fila y abet.medicion no tienen filas de esa carga
     Y abet.v_r17_por_pi no devuelve filas de esa carga
@@ -460,7 +464,7 @@ Característica: Carga del export de Blackboard en la base
     Cuando el profesor sube "export_inventado_410_con_error.xlsx" a la sección 410
     Entonces el cuerpo de la respuesta trae el rechazo con fila 3, PI "5.2", motivo "NIVEL_FUERA_DE_ESCALA" y el mensaje "Fila 3, PI 5.2, nivel fuera de la escala 1 a 4. La fila completa queda fuera, también de 5.1 y 5.3."
     Pero ningún rechazo del cuerpo de la respuesta tiene un campo "valor" ni "valor_leido"
-    Y information_schema.columns da para abet.rechazo_fila solo las columnas rechazo_id, carga_id, fila_origen, carga_columna_id, motivo y efecto
+    Y information_schema.columns da para abet.rechazo_fila solo las columnas rechazo_id, carga_id, fila_origen, carga_columna_id, motivo, efecto y pi_id
 
   @US-14 @corte1
   Escenario: Las columnas que no son PI del plan se descartan

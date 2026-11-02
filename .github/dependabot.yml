@@ -1,6 +1,10 @@
-# Actualizaciones de las acciones de GitHub (docs/devops.md). Dependabot propone cada semana la
-# versión nueva de cada acción con su SHA y su comentario de versión, en un PR a develop.
-# Los ecosistemas pip y npm se suman cuando existan sus manifiestos.
+# Actualizaciones de las acciones de GitHub y de los paquetes de Python (docs/devops.md). Dependabot
+# propone cada semana la versión nueva de cada acción con su SHA y su comentario de versión, y la de
+# cada paquete de uv.lock, en un PR a develop. Una versión espera 14 días desde su publicación antes
+# de proponerse, la misma espera que fija pyproject.toml; las actualizaciones de seguridad no esperan.
+# Un PR que cambia uv.lock sin regenerar requirements.txt falla en el job pruebas
+# (tests/test_esqueleto.py), y requirements.txt se regenera con el comando de pyproject.toml.
+# El ecosistema npm se suma cuando exista su manifiesto.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -11,6 +15,21 @@ updates:
       day: monday
       time: "07:00"
       timezone: America/Lima
+    cooldown:
+      default-days: 14
+    commit-message:
+      prefix: chore
+    open-pull-requests-limit: 5
+  - package-ecosystem: uv
+    directory: /
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Lima
+    cooldown:
+      default-days: 14
     commit-message:
       prefix: chore
     open-pull-requests-limit: 5

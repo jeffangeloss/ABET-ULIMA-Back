@@ -10,6 +10,9 @@
 # corte 2. Ninguna contraseña aparece escrita aquí; cada prueba genera la suya al azar y no la
 # guarda en el repositorio.
 # Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide quien apruebe la spec.
+# Este archivo es criterio escrito. Los pasos de pantalla, que nombran P2, sus filas o sus botones, los
+# comprueban las pruebas de Vitest del Front (T045), y los demás, pytest contra un PostgreSQL 16
+# desechable (T051).
 
 Característica: Acceso al sistema y visibilidad de las secciones
 
@@ -70,8 +73,8 @@ Característica: Acceso al sistema y visibilidad de las secciones
 
   @US-05 @corte1
   Escenario: Cinco intentos fallidos bloquean el correo por 15 minutos
-    Dado que "docente410@example.invalid" tiene asignada una contraseña de prueba
-    Cuando se envía 5 veces POST /api/sesion con ese correo y una contraseña distinta dentro de 15 minutos
+    Dado que "docente410@example.invalid" y "docente411@example.invalid" tienen asignada una contraseña de prueba
+    Cuando se envía 5 veces POST /api/sesion con el correo "docente410@example.invalid" y una contraseña distinta dentro de 15 minutos
     Y se envía una sexta vez con la contraseña correcta
     Entonces la sexta respuesta es 429 con el cuerpo {"detail": "Demasiados intentos. Espere 15 minutos."}
     Y acceso.sesion no gana ninguna fila de ese usuario
@@ -142,20 +145,23 @@ Característica: Acceso al sistema y visibilidad de las secciones
     Entonces la sección 410 trae el estado de carga "PUBLICADA" con filas_leidas 11 y filas_aceptadas 11
     Y la pantalla P2 muestra en la sección 410 "Publicada, 11 de 11 filas aceptadas"
 
+  # La fila del POST manda el mismo export que la 411 tiene publicado, porque una ruta que busca la huella
+  # antes que el alcance responde 200 con la constancia de esa carga. El orden lo fijan las reglas de negocio
+  # (business rules, BR) BR-CARGA-03, en sus pasos 1 y 6, y BR-CARGA-09.
   @US-06 @corte1
   Esquema del escenario: El profesor no alcanza una sección ajena escribiendo la ruta
     Dado que la sección 411 tiene una carga PUBLICADA del export inventado de la 411, con los códigos 99000012 a 99000022
     Y que "docente410@example.invalid" tiene la sesión iniciada
-    Cuando se envía <método> <ruta>
+    Cuando se envía <método> <ruta> <cuerpo>
     Entonces la API responde 403 con el cuerpo {"detail": "La sección no está a su cargo."}
     Y la respuesta no trae ningún dato de la sección 411 ni de su carga
     Y abet.archivo_origen y abet.carga no ganan ninguna fila
 
     Ejemplos:
-      | método | ruta                                       |
-      | POST   | /api/secciones/{sección 411}/cargas        |
-      | GET    | /api/cargas/{carga de la 411}              |
-      | GET    | /api/cargas/{carga de la 411}/r17.xlsx     |
+      | método | ruta                                       | cuerpo                                                          |
+      | POST   | /api/secciones/{sección 411}/cargas        | con "export_inventado_411.xlsx" en el campo multipart «archivo» |
+      | GET    | /api/cargas/{carga de la 411}              | sin cuerpo                                                      |
+      | GET    | /api/cargas/{carga de la 411}/r17.xlsx     | sin cuerpo                                                      |
 
   @US-06 @corte1
   Escenario: Sin sesión no hay lista
@@ -169,8 +175,10 @@ Característica: Acceso al sistema y visibilidad de las secciones
     Dado la sección 410 de la asignatura "450010" en 2026-2, sin curso_blackboard, asignada también a "docente410@example.invalid"
     Y que abet.plan_medicion no tiene filas de 450010 en 2026-2
     Y que "docente410@example.invalid" tiene la sesión iniciada
-    Cuando abre la pantalla P2 «Mis secciones»
-    Entonces la fila de 450010, sección 410, muestra "La carrera aún no registra el plan de medición de esta sección"
+    Cuando se envía GET /api/secciones?periodo=2026-2
+    Y se abre la pantalla P2 «Mis secciones»
+    Entonces la API responde 200 con la sección 410 de 450010 con tiene_plan falso y sin PI, y la sección 410 de 450002 con tiene_plan verdadero
+    Y la fila de 450010, sección 410, muestra "La carrera aún no registra el plan de medición de esta sección"
     Y el botón "Subir export" de esa fila está desactivado
     Pero la fila de 450002, sección 410, conserva el botón "Subir export" activo
 

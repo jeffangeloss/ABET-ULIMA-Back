@@ -2,8 +2,8 @@
 #
 # Escenarios de aceptación del R-17 y de la constancia de la carga (spec 001, historias US-15 y US-16).
 # Todos los datos son inventados. Los archivos viven en tests/datos_inventados/ y los correos usan el
-# dominio reservado example.invalid. Las cifras salen de bd/pruebas/datos_sinteticos.sql y de la
-# sección 3 de bd/pruebas/pruebas.sql.
+# dominio reservado example.invalid. Las cifras salen de db/pruebas/datos_sinteticos.sql y de la
+# sección 3 de db/pruebas/pruebas.sql.
 #
 # Vocabulario de los pasos.
 # - «subir X a la sección N» es POST /api/secciones/{seccion_id de N}/cargas con X en el campo
@@ -66,8 +66,8 @@ Característica: R-17 y constancia de la carga generados desde la base
     Y el título de las propiedades del libro contiene "PROVISIONAL"
 
   # El conjunto R-PRUEBA-APROBADO es inventado y solo existe en la base de pruebas, como el caso A03 de
-  # bd/pruebas/pruebas.sql. En Neon ningún conjunto se aprueba antes de las historias de después del MVP.
-  # La cifra 90,9 % sale de recalcular los niveles de la 410 de bd/pruebas/datos_sinteticos.sql con el
+  # db/pruebas/pruebas.sql. En Neon ningún conjunto se aprueba antes de las historias de después del MVP.
+  # La cifra 90,9 % sale de recalcular los niveles de la 410 de db/pruebas/datos_sinteticos.sql con el
   # NIVEL_ESPERADO 2 de A03. En cada PI, 10 de los 11 estudiantes tienen nivel 2 o más, y como no hay
   # SIN_EVIDENCIA el porcentaje sobre calificados y el que fija SE_EXCLUYE_DEL_DENOMINADOR coinciden.
   @US-15 @corte1 @reglas_aprobadas_de_prueba
@@ -150,13 +150,16 @@ Característica: R-17 y constancia de la carga generados desde la base
     Pero la fila del rechazo no muestra el valor leído de la celda
     Y la hoja "Constancia" no contiene ningún apellido ni nombre de las columnas Last Name y First Name del export
 
-  # La constancia de una carga RECHAZADA se arma de abet.carga, abet.archivo_origen y abet.rechazo_fila.
+  # La constancia de una carga RECHAZADA se arma de abet.carga, abet.archivo_origen y abet.rechazo_fila,
+  # cuya columna pi_id (V1_09) guarda el PI que falta, así que la constancia leída después nombra el
+  # mismo PI que la respuesta 201.
   @US-16 @corte1
   Escenario: Una carga rechazada también tiene constancia
     Dado que una copia de "sintetico_20262_450002_410.xlsx" sin la columna 5.2 está subida a la sección 410 con respuesta 201, estado "RECHAZADA" y su carga_id
     Cuando el profesor pide la constancia de esa carga
     Entonces la respuesta es 200 y su cuerpo trae estado "RECHAZADA", filas_de_datos 11, filas_leidas 0, filas_aceptadas 0 y filas_rechazadas 0
-    Y el cuerpo trae 1 rechazo con motivo "PI_DEL_PLAN_AUSENTE" y efecto "RECHAZA_CARGA"
+    Y el cuerpo trae 1 rechazo con motivo "PI_DEL_PLAN_AUSENTE", efecto "RECHAZA_CARGA" y PI "5.2"
+    Y el cuerpo trae el mensaje "Falta la columna del PI 5.2 que el plan de medición pide para esta sección.", igual al de la respuesta 201 de la subida
     Y el sha256 del cuerpo es igual a archivo_origen.sha256 de esa carga
 
   @US-16 @corte1

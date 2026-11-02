@@ -6,8 +6,11 @@
 #   bash scripts/preflight.sh --pr <rama-base> revisa el repositorio y el diff del PR contra <rama-base>
 #
 # Reglas.
-#   1. Planillas, exports y respaldos solo dentro de tests/datos_inventados/.
-#   2. En esa carpeta, todo número de 8 dígitos empieza con 99 (códigos inventados).
+#   1. Planillas, exports y respaldos solo dentro de tests/datos_inventados/, más la plantilla del
+#      R-17 en su ruta exacta, plantillas/R017_ambiental_general.xlsx.
+#   2. En esa carpeta, todo número de 8 dígitos empieza con 99 (códigos inventados). La plantilla del
+#      R-17 cumple la misma regla en el texto y en los atributos de texto libre (nombres de hoja, de
+#      tabla y de columna, entre otros) de todas sus partes XML y no trae ningún correo.
 #   3. Ningún .env versionado, salvo .env.example.
 #   4. Ningún secreto con valor (cadena de conexión con clave, tokens, llaves privadas).
 #   5. Todo commit y todo PR que cambia archivos actualiza MEMORIA.md.
@@ -29,6 +32,7 @@ esac
 cd "$(git rev-parse --show-toplevel)"
 
 INVENTADOS="tests/datos_inventados/"
+PLANTILLA_R17="plantillas/R017_ambiental_general.xlsx"
 fallas=0
 falla() { echo "::error::$1"; fallas=$((fallas + 1)); }
 
@@ -40,24 +44,54 @@ else
   GREP_ORIGEN=()
 fi
 
-# 1. Planillas, exports y respaldos fuera de la carpeta de datos inventados.
+# 1. Planillas, exports y respaldos fuera de la carpeta de datos inventados. La plantilla del R-17
+#    pasa solo con su ruta exacta, con las mismas mayúsculas.
 while IFS= read -r f; do
   [ -z "$f" ] && continue
   case "$f" in
-    "$INVENTADOS"*) ;;
-    *) falla "$f: planilla, export o respaldo fuera de $INVENTADOS (regla 1)" ;;
+    "$INVENTADOS"* | "$PLANTILLA_R17") ;;
+    *) falla "$f: planilla, export o respaldo fuera de $INVENTADOS y distinto de $PLANTILLA_R17 (regla 1)" ;;
   esac
 done <<EOF
 $(printf '%s\n' "$ARCHIVOS" | grep -Ei '\.(csv|tsv|xls|xlsx|xlsm|ods|dump|gpg|bak)$' || true)
 EOF
 
-# 2. Solo códigos inventados en la carpeta de datos inventados.
+# 2. Solo códigos inventados en la carpeta de datos inventados y en la plantilla del R-17.
 codigos_reales() {
   # Imprime cuántos números de exactamente 8 dígitos no empiezan con 99, sin mostrarlos.
   grep -oE '[0-9]+' | grep -E '^[0-9]{8}$' | grep -vc '^99' || true
 }
+partes_xml() {
+  # Contenido de todas las partes XML del libro, con sus relaciones y dibujos VML.
+  unzip -p "$1" '*.xml' '*.rels' '*.vml' 2>/dev/null || true
+}
+ATRIBUTOS_DE_TEXTO='name|displayName|descr|title|tooltip|display|prompt|promptTitle|error|errorTitle|comment|userName|userId|author|codeName|totalsRowLabel'
+textos_de_la_plantilla() {
+  # Texto de los nodos y valores de los atributos de texto libre, como el nombre de una hoja, de una
+  # tabla, de una columna o de un estilo y el autor de una revisión. Los demás atributos traen anchos,
+  # colores y medidas, como 33.42578125 o 00808080, que no son códigos.
+  partes_xml "$1" | tr '\r\n' '  ' \
+    | { grep -oE ">[^<]+<|[[:space:]](${ATRIBUTOS_DE_TEXTO})=\"[^\"]*\"" || true; }
+}
+revisar_plantilla_r17() {
+  # Los números de 8 dígitos se buscan en los textos de la plantilla, y los correos en el contenido
+  # entero de sus partes.
+  local f="$1" n c
+  n="$(textos_de_la_plantilla "$f" | codigos_reales)"
+  if [ "${n:-0}" -gt 0 ]; then
+    falla "$f: trae $n números de 8 dígitos que no empiezan con 99 (regla 2)"
+  fi
+  c="$(partes_xml "$f" | { grep -aoE '[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+' || true; } | wc -l | tr -d ' ')"
+  if [ "${c:-0}" -gt 0 ]; then
+    falla "$f: trae $c correos (regla 2)"
+  fi
+}
 while IFS= read -r f; do
   [ -z "$f" ] && continue
+  if [ "$f" = "$PLANTILLA_R17" ]; then
+    revisar_plantilla_r17 "$f"
+    continue
+  fi
   case "$f" in
     *.xlsx|*.xlsm)
       n="$( (unzip -p "$f" 'xl/worksheets/*.xml' 'xl/sharedStrings.xml' 2>/dev/null || true) | codigos_reales)" ;;
@@ -70,6 +104,7 @@ while IFS= read -r f; do
   fi
 done <<EOF
 $(printf '%s\n' "$ARCHIVOS" | grep -E "^${INVENTADOS}" || true)
+$(printf '%s\n' "$ARCHIVOS" | grep -xF "$PLANTILLA_R17" || true)
 EOF
 
 # 3. Archivos .env versionados.
