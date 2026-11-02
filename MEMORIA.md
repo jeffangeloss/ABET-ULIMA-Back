@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `develop`, que recibe el corte 1 desde el PR #3 con «Create a merge commit» por el `git subtree`, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `docs/002-capstone`, con el PR #4 a `develop` (spec 002, sin fusionar), que integra el corte 1 de `feat/001-mvp-carga-r17`, el mismo que el PR #3 lleva a `develop` con «Create a merge commit»
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba fusionar el corte 1 en `develop`
-- **En curso**: T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
-- **Siguiente paso**: T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, la aprobación de la spec 002 (PR #4) y, con su permiso, Neon y Vercel (fase 7)
+- **Último cambio**: la rama queda al día con `develop` después de la fusión del PR #3 (aff49c5), así que el PR #4 muestra solo la spec 002
+- **En curso**: la revisión de la spec 002 por Jefferson
+- **Siguiente paso**: Jefferson aprueba la spec 002 y responde D-15 a D-24, D-26 a D-29, la parte abierta de D-25 y J-11 a J-16; sin esa aprobación no se implementa nada de Capstone. Del corte 1 siguen T062, las decisiones de `audit.md`, Neon y Vercel
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`)
 
@@ -36,6 +36,26 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 15:19 (Lima) · docs/002-capstone · La rama queda al día con develop
+- Quién: Jefferson aprueba en el chat («Sí, fusiónalo») poner al día los PR #4. Claude Code, sin subagentes, fusiona `develop` en esta rama y escribe esta entrada.
+- Qué cambió: solo esta memoria. La fusión de aff49c5, el merge commit del PR #3, no trae contenido nuevo, porque la rama ya tenía el corte 1 desde fecc476.
+- Por qué: GitHub seguía mostrando el PR #4 con los 132 archivos del corte 1 después de fusionar el PR #3, y con la rama al día lo compara contra el `develop` nuevo.
+- Lo que debe hacer, cómo se probó: `git merge-base --all origin/develop origin/docs/002-capstone` da solo fecc476, y `git diff origin/develop...origin/docs/002-capstone` muestra 11 archivos, los de `specs/002-capstone/`, `specs/README.md`, `CHANGELOG.md` y `MEMORIA.md`.
+- Lo que no debe hacer, cómo se probó: la fusión no deja conflictos ni cambia ningún archivo fuera de esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR #4.
+- Pendiente y siguiente paso: Jefferson aprueba la spec 002 y responde D-15 a D-24, D-26 a D-29, la parte abierta de D-25 y J-11 a J-16.
+
+### 2026-11-02 15:12 (Lima) · docs/002-capstone · La rama integra el corte 1 para el PR #4
+- Quién: Jefferson aprueba en el chat («Sí, fusiónalo») fusionar el corte 1 y poner al día los PR #4. Claude Code, sin subagentes, fusiona `feat/001-mvp-carga-r17` (fecc476) en esta rama, resuelve los conflictos y escribe esta entrada.
+- Qué cambió: la rama recibe el corte 1 con su historia. En `specs/001-mvp-carga-r17/` (`spec.md`, `plan.md` y `tasks.md`) queda el texto del corte 1, que es el más nuevo, y `specs/README.md` conserva la fila de `proyectos-capstone` de la spec 002. `CHANGELOG.md` y `MEMORIA.md` juntan las entradas de las dos ramas, ordenadas por fecha.
+- Por qué: que el PR #4 muestre solo la spec 002 y herede la CI con `uv --no-build` y la exclusión de `db/herramientas/` en SonarQube Cloud, que el corte 1 ya corrige.
+- Lo que debe hacer, cómo se probó: frente a fecc476, `git diff --stat` solo muestra `specs/002-capstone/`, `specs/README.md`, `CHANGELOG.md` y `MEMORIA.md`, ningún marcador de conflicto queda en el árbol y `bash scripts/preflight.sh` sale sin fallas.
+- Lo que no debe hacer, cómo se probó: la fusión no cambia el código, las pruebas ni la base del corte 1, porque `git diff fecc476 -- app abet_carga tests db .github` sale vacío.
+- Correcciones: la fusión automática borraba el job `secretos` de `.github/workflows/ci.yml`, porque las fusiones `-s ours` del 2026-10-30 dejan dos bases comunes, y el archivo vuelve a ser el de fecc476.
+- Cómo se reporta: esta entrada y el PR #4.
+- Pendiente y siguiente paso: Jefferson aprueba la spec 002 y responde D-15 a D-24, D-26 a D-29, la parte abierta de D-25 y J-11 a J-16.
 
 ### 2026-11-02 15:09 (Lima) · feat/001-mvp-carga-r17 · SonarQube Cloud resuelto y corte 1 aprobado para develop
 - Quién: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba en el chat («Sí, fusiónalo») fusionar el corte 1 en `develop`. Claude Code, sin subagentes, comprueba el resultado y escribe esta entrada.
@@ -107,6 +127,50 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Correcciones: el verificador de seguridad refuta el límite de intentos con peticiones en paralelo (media) y `ingresar()` pasa a una sola transacción con `pg_advisory_xact_lock` atado a la cuenta. El verificador de contrato refuta el 403 frente al 404 (media), y el corrector lo deja como propuesta en `contrato.md` del Front y en `acceso.spec.md`, sin cambiar el comportamiento. Se cierran además la representación con secretos, la caché de las respuestas, los textos que el contrato no registraba y el control nativo «Choose File» de P3. Al verificar, el entorno virtual `.venv` del árbol tenía metadatos de paquetes borrados (pytest fallaba con una versión nula), y el integrador lo reinstala con `uv sync --frozen --reinstall` sin tocar el código ni `uv.lock`.
 - Cómo se reporta: esta entrada y `CHANGELOG.md`. Sin PR, porque nada se empuja sin el permiso de Jefferson.
 - Pendiente y siguiente paso: Hallazgos bajos abiertos tras la reverificación. (1) El candado de la cuenta se mantiene durante la verificación Argon2id y `now()` es la hora de inicio de la transacción, así que un fallo que espera detrás de un ingreso correcto puede quedar fechado antes y no contar para el límite; se corrige con `clock_timestamp()`. (2) Sigue abierta la decisión de Jefferson entre 403 y 404 para una sección o una carga inexistente; con 404, P3 y P4 deben ofrecer volver a P2. (3) La prueba de humo no corre en la CI y exige una API recién arrancada, y la ADR-006 todavía habla de Playwright para Python aunque se usó el de Node. Siguen pendientes las pruebas de aceptación ejecutables (T050 a T053), la auditoría de la fase 6 y el despliegue, que espera el proyecto de Neon, el de Vercel y el permiso de Jefferson. T039 y T049 (auditorías de las fases) quedan abiertas.
+
+### 2026-10-30 12:02 (Lima) · docs/002-capstone · D-25 decidida, el R-17 Capstone usa la hoja «Cursos Capstone» (en local)
+
+- **Quién**: Jefferson decide el 2026-10-30, en el chat y a la pregunta «¿Qué formato usa el R-17 de Capstone: la hoja «Cursos Capstone» o el de siempre?», con «Hoja Cursos Capstone». Claude Code solo registra la decisión, sin subagentes.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` pasa D-25 a «Decisiones tomadas» con la fecha y las palabras de Jefferson, deja en «Decisiones abiertas» la parte que la respuesta no cubre (instrumento impreso y mapa de celdas, con su valor provisional) y suma la decisión a la Evidencia; `tasks.md` (T006), `plan.md` y `revision-historias.md` dejan de preguntar si la Oficina de Calidad adopta la hoja. US-19 y sus escenarios ya dicen sin condicional que la sección Capstone sale con la hoja «Cursos Capstone», y los `.feature` no cambian.
+- **Por qué**: respuesta de Jefferson a D-25; queda descartado, para Ambiental, el formato de siempre de los R-17 de PIA de Industrial (solo código y nota).
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` sin problemas y cuenta 85 escenarios (12, 50, 17 y 6). `bash scripts/preflight.sh` termina sin fallas.
+- **Lo que no debe hacer, cómo se probó**: la numeración de historias, decisiones y escenarios no cambia (85 antes y después), y `git diff --stat` solo toca `specs/002-capstone/` y `MEMORIA.md`.
+- **Correcciones**: ninguna en esta entrada.
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson aprueba la spec 002 y responde D-15 a D-24 y D-26 a D-29, más la parte abierta de D-25.
+
+### 2026-10-29 09:15 (Lima) · docs/002-capstone · Spec 002 ajustada con la estructura de R-17 reales de PIA
+
+- **Quién**: Jefferson adjunta el 2026-10-29 ocho R-17 reales de Capstone con «aquí hay cursos capstone como PIA». Claude Code coordina el flujo y delega así. Un agente en Sonnet extrae la estructura de los ocho archivos sin copiar datos personales. Un agente en Sonnet revisa la privacidad de esa extracción. Un agente de ajuste edita la spec con la skill redaccion-ieee-q1. Un agente en Sonnet revisa el resultado, y esta entrada y el commit los hace Claude Code. De la revisión se verificó que el parser cuenta 85 escenarios, que `preflight.sh` no falla y que el diff no trae nombres ni códigos reales.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` agrega un párrafo de Evidencia y actualiza D-16, D-17, D-25 y D-29 (valores provisionales con su pregunta), US-19, US-21, FR-017, el caso límite de filas y Fuera de alcance. `aceptacion/evidencia_capstone.feature` suma dos escenarios al final (profesor sin nombre y límite de 224 filas con 222 y 225 mediciones). `tasks.md` ajusta T003, T006, T033 y T034, y `plan.md` y `revision-historias.md` pasan el conteo a 85.
+- **Por qué**: los R-17 reales de PIA fijan la forma de la hoja «Cursos Capstone» y del dato del profesor, y la spec debe partir de esa evidencia.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`) lee los cuatro `.feature` y cuenta 85 escenarios (12, 50, 17 y 6). `bash scripts/preflight.sh` termina sin fallas. El catálogo de `V1_03` coincide con lo escrito sobre 450024, 450025 y 450026, y el SO 2 trae solo 2.1 y 2.2.
+- **Lo que no debe hacer, cómo se probó**: ningún dato personal entra al repositorio. La revisión de privacidad no halló nombres de personas ni códigos fuera de 99000000 a 99999999, y el único correo es el inventado `docente420@example.invalid`. Las copias temporales de los R-17 se borraron.
+- **Correcciones**: la revisión solo trajo un hallazgo de severidad baja, el detalle de la celda doble del profesor en Evidencia. Se retiró para dejar «nombres de profesores y firma».
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson responde D-16, D-17, D-25 y D-29 (qué PI mide 450026) y aprueba la spec 002.
+
+### 2026-10-29 08:47 (Lima) · docs/002-capstone · D-14 decidida, los tres cursos Capstone (en local)
+
+- **Quién**: Jefferson decide, en el chat del 2026-10-29 y en nombre de la carrera, después de ver los ciclos de la malla AMB-2026 («Son los cursos que se dictan en los últimos ciclos de la carrera, por lo tanto es / Formulación y Evaluación de Proyectos Sostenibles / Proyecto de Ingeniería Aplicada I / Proyecto de Ingeniería Aplicada II»). Claude Code solo registra la decisión en la spec, sin subagentes.
+- **Qué cambió**: en `specs/002-capstone/`, `spec.md` pasa D-14 de abierta a «Decisiones tomadas» con la fecha, las palabras de Jefferson y los tres códigos, ajusta el Independent Test, la Base y los escenarios 1 y 3 de US-01, FR-001, FR-024 y D-29; `aceptacion/base_capstone.feature`, `carga_proyectos.feature` y `evidencia_capstone.feature`, `plan.md`, `tasks.md` (T006, T021, T025) y `revision-historias.md` siguen la decisión. V1_10 (propuesta) marca CAPSTONE 450025, 450024 y 450026 en `abet.plan_estudios` y deja las otras 50 de AMB-2026 como CARRERA, y la semilla ya no marca nada. La regla de solo Capstone (409 en otro curso) queda igual. Sin cambios de código ni de la base.
+- **Por qué**: respuesta de Jefferson a D-14. El catálogo de `db/migration/V1_03__cargar_referencia_ambiental.sql` confirma 450025 (ciclo 8, «Trabajo Integrador», SO 2), 450024 (ciclo 9, «Proyecto», SO 1 y 7) y 450026 (ciclo 10, «Proyecto», SO 2, 3 y 6). D-29 sigue abierta y nombra los tres cursos.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` sin problemas y cuenta 83 escenarios (12, 50, 15 y 6), los mismos de antes. `bash scripts/preflight.sh` en este worktree termina con «Revisión previa sin fallas (todo)».
+- **Lo que no debe hacer, cómo se probó**: la numeración de historias, decisiones y escenarios no cambia (83 escenarios antes y después), y `git diff --stat` solo toca `specs/002-capstone/` y `MEMORIA.md`.
+- **Correcciones**: ninguna en esta entrada.
+- **Cómo se reporta**: este registro y el PR de `docs/002-capstone`.
+- **Pendiente y siguiente paso**: Jefferson aprueba la spec 002 y lleva D-15 a D-29 a la carrera; con la aprobación se escribe V1_10 con la marca de los tres cursos (T021).
+
+### 2026-10-29 08:30 (Lima) · docs/002-capstone · Spec 002 de Capstone con historias auditadas (en local)
+
+- **Quién**: Claude Code con un flujo de agentes (wf_3c294f14-761). Tres redactores en Sonnet (profesor, coordinador y evidencia) escriben 46 candidatas de historia. Tres auditores en Sonnet verifican la necesidad, el solapamiento y el tamaño, y la verificabilidad contra la base. Un crítico de arquitectura propone las decisiones. Un redactor en Sonnet escribe la spec del Back y otro los documentos del Front. Dos revisores (constructor; hechos y forma) hallan una falla de severidad alta y cuatro medias. Un corrector las cierra y un reverificador aprueba con tres hallazgos bajos. Quedan 25 historias (US-01 a US-25), FR-001 a FR-029, SC-001 a SC-013, D-14 a D-29 y las decisiones J-11 a J-16 renumeradas. Un intento anterior del flujo se detuvo a los pocos minutos para bajar su costo (modelos y esfuerzo por etapa) y sus agentes no dejaron archivos. Claude Code integra el trabajo en dos commits locales y verifica antes de aceptarlo la renumeración, el Gherkin y la revisión previa.
+- **Qué cambió**: `specs/002-capstone/` (`spec.md`, `plan.md`, `tasks.md`, `revision-historias.md` y cuatro `.feature` en `aceptacion/` con 83 escenarios), una fila y una línea en `specs/README.md` y una línea en `CHANGELOG.md` (Agregado). Las decisiones J de la spec 002 pasan de J-10 a J-15 a J-11 a J-16, porque la spec 001 suma J-10 (respaldo del esquema `acceso`) en otra rama. Las J-01 a J-09 y las D-14 a D-29 no cambian.
+- **Por qué**: pedido de Jefferson de considerar «Plantilla Proyectos - Copy.xlsx» y «Tabla_Maestra_PI - Capstone - Nuevo Formato.xlsx», y su respuesta «Spec 002 aparte» a si Capstone va en una spec propia o en el corte 1. Los dos libros traen datos reales y no entran al repositorio ni se citan, solo su estructura.
+- **Lo que debe hacer, cómo se probó**: el parser oficial de Gherkin (`uv run --frozen`, paquete `gherkin`) lee los cuatro `.feature` en español sin problemas y cuenta 83 escenarios (12, 50, 15 y 6); `bash scripts/preflight.sh` pasa sin fallas; `grep -rn "J-10" specs/002-capstone specs/README.md` da 0.
+- **Lo que no debe hacer, cómo se probó**: la renumeración corre de J-15 a J-10 en orden descendente para no pisar números, y el recuento de J-11 a J-16 por archivo coincide con el de J-10 a J-15 antes del cambio; el cambio no toca ningún `.feature` del corte 1 ni código.
+- **Correcciones**: la falla alta y las cuatro medias de los revisores se cierran en la vuelta del corrector, y el reverificador deja tres hallazgos bajos sin cerrar. La colisión de J-10 se resuelve en este commit.
+- **Cómo se reporta**: esta entrada, `CHANGELOG.md` y la entrada de la misma fecha en `MEMORIA.md` del Front. El PR de esta rama va apilado sobre el del corte 1.
+- **Pendiente y siguiente paso**: la aprobación de Jefferson, ya sea por la fusión del PR o por su «apruebo» en el chat; sus respuestas a las decisiones D-14 a D-29 de la carrera y a las J-11 a J-16; y los tres hallazgos bajos del reverificador. Nada de Capstone se implementa antes de esa aprobación. Nada se empuja sin permiso de Jefferson.
 
 ### 2026-10-29 08:25 (Lima) · feat/001-mvp-carga-r17 · Demo del corte 1, lector, validación, carga, R-17 con constancia, permisos y comando (T031 a T035)
 - Quién: Claude Code como integrador, con el flujo wf_541d07ea-5d3. Dos corridas anteriores se detienen. La primera, a las 20:21 del 2026-10-28, porque una mutación de `tests/base_desechable.py` borra la base local `abet_sis_med_dev`, que se repone a las 20:40 con Flyway desde `bd/` y queda registrada en la entrada de las 20:50. La segunda, a las 07:30 del 2026-10-29, por costo y tiempo, cuando el agente del R-17 pasa de 400 turnos. La corrida final reanuda con Sonnet y esfuerzo medio en las etapas mecánicas. El agente implementar:lector-validacion conserva lo anterior, cierra cinco huecos con prueba roja primero y corre 18 mutantes, que mueren los 18. El agente implementar:plantilla verifica la plantilla y su logotipo byte a byte y amplía las listas cerradas de la prueba. El agente implementar:carga escribe `carga.py` en nueve vueltas de prueba roja y verde. El agente implementar:r17-constancia revisa `r17.py` y `constancia.py`, detiene un clúster desechable huérfano de la corrida anterior (`abet_pg_b7hd3m15`, en el socket propio) y corre 56 mutantes, que mueren los 56. El agente implementar:demo escribe `app/permisos.py`, el comando, el guion y las pruebas de varias secciones. Tres verificadores (ejecución, privacidad y spec) aprueban con cinco hallazgos bajos. Un corrector cierra dos, y un reverificador aprueba con cuatro bajos abiertos. Antes de aceptar el trabajo, Claude Code cierra con una prueba roja el hallazgo de la guardia del clúster, repite la suite completa, la demo y las dos revisiones previas, y compara los archivos cambiados con las listas de los informes.
