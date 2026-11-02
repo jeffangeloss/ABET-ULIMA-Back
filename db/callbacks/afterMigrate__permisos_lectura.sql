@@ -1,11 +1,14 @@
 -- Callback de Flyway que corre al final de cada migrate, haya o no migraciones pendientes.
 -- Repone los permisos de los roles de lectura que crea db/plataforma/neon/crear_roles_lectura.sql.
 --   abet_lectura    uso del esquema abet y SELECT solo sobre las dos vistas, que es lo que lee Power BI.
---   abet_respaldo   SELECT sobre todas las tablas y secuencias de abet, que pg_dump necesita para el respaldo.
+--   abet_respaldo   SELECT sobre todas las tablas y secuencias de abet y, desde V1_09, de acceso, que pg_dump
+--                   necesita para el respaldo. pg_dump bloquea cada tabla que vuelca, también las de acceso cuyos
+--                   datos no guarda, así que abet_respaldo puede leer credenciales y sesiones aunque el archivo
+--                   del respaldo no las traiga.
 -- Hace falta repetirlo en cada migrate porque las repetibles R__ borran y recrean las vistas, y con eso
 -- PostgreSQL borra los permisos que tenían, y porque una migración nueva puede crear tablas nuevas.
--- Si un rol no existe, como en la base local o en el CI, su parte no hace nada, así que el mismo callback
--- sirve en todos los entornos.
+-- Si un rol no existe, como en la base local o en el CI, su parte no hace nada, y lo mismo pasa con acceso antes
+-- de V1_09, así que el mismo callback sirve en todos los entornos.
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'abet_lectura') THEN
@@ -18,6 +21,12 @@ BEGIN
         GRANT SELECT ON ALL TABLES IN SCHEMA abet TO abet_respaldo;
         GRANT SELECT ON ALL SEQUENCES IN SCHEMA abet TO abet_respaldo;
         RAISE NOTICE 'Permisos de abet_respaldo repuestos sobre las tablas y secuencias de abet';
+        IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'acceso') THEN
+            GRANT USAGE ON SCHEMA acceso TO abet_respaldo;
+            GRANT SELECT ON ALL TABLES IN SCHEMA acceso TO abet_respaldo;
+            GRANT SELECT ON ALL SEQUENCES IN SCHEMA acceso TO abet_respaldo;
+            RAISE NOTICE 'Permisos de abet_respaldo repuestos sobre las tablas y secuencias de acceso';
+        END IF;
     END IF;
 END
 $$;

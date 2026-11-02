@@ -11,8 +11,9 @@
 --                     vistas. El callback db/callbacks/afterMigrate__permisos_lectura.sql le repone esos permisos
 --                     después de cada migrate.
 --   powerbi_lectura   usuario de Power BI, miembro de abet_lectura, con un máximo de 5 conexiones.
---   abet_respaldo     usuario del respaldo diario, con SELECT sobre todas las tablas y secuencias de abet, que
---                     pg_dump necesita. Así el secreto que guarda GitHub no sirve para cambiar ni borrar la base.
+--   abet_respaldo     usuario del respaldo diario, con SELECT sobre todas las tablas y secuencias de abet y, desde
+--                     V1_09, de acceso, que pg_dump necesita. Así el secreto que guarda GitHub no sirve para
+--                     cambiar ni borrar la base.
 --
 -- El control real son los permisos. Las sesiones de los dos usuarios empiezan además en solo lectura, pero eso
 -- es solo un valor por defecto que el propio usuario puede apagar, así que sirve como defensa adicional.
@@ -66,6 +67,18 @@ GRANT SELECT ON abet.v_tabla_maestra_pi, abet.v_r17_por_pi TO abet_lectura;
 GRANT SELECT ON ALL TABLES IN SCHEMA abet TO abet_respaldo;
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA abet TO abet_respaldo;
 
+-- Desde V1_09, abet_respaldo lee también las tablas y secuencias de acceso, porque pg_dump bloquea cada tabla que
+-- vuelca, aunque de credencial, sesion, intento_fallido y codigo_acceso guarde solo la definición.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'acceso') THEN
+        GRANT USAGE ON SCHEMA acceso TO abet_respaldo;
+        GRANT SELECT ON ALL TABLES IN SCHEMA acceso TO abet_respaldo;
+        GRANT SELECT ON ALL SEQUENCES IN SCHEMA acceso TO abet_respaldo;
+    END IF;
+END
+$$;
+
 -- Comprobación final. Se detiene si algo quedó distinto de lo que este archivo promete.
 DO $$
 DECLARE
@@ -95,6 +108,21 @@ BEGIN
     END IF;
     IF has_table_privilege('powerbi_lectura', 'abet.medicion', 'SELECT') THEN
         RAISE EXCEPTION 'powerbi_lectura puede leer una tabla de base y solo debe leer las vistas';
+    END IF;
+    -- Los IF van anidados porque has_schema_privilege falla si el esquema acceso todavía no existe.
+    IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'acceso') THEN
+        IF has_schema_privilege('powerbi_lectura', 'acceso', 'USAGE') THEN
+            RAISE EXCEPTION 'powerbi_lectura puede entrar al esquema acceso, que guarda los usuarios y sus credenciales';
+        END IF;
+        IF NOT has_schema_privilege('abet_respaldo', 'acceso', 'USAGE') THEN
+            RAISE EXCEPTION 'abet_respaldo no puede entrar al esquema acceso, y el respaldo fallaría';
+        END IF;
+    END IF;
+    IF NOT has_schema_privilege('abet_respaldo', 'abet', 'USAGE')
+       OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+                  WHERE n.nspname IN ('abet', 'acceso') AND c.relkind IN ('r', 'p', 'S')
+                    AND NOT has_table_privilege('abet_respaldo', c.oid, 'SELECT')) THEN
+        RAISE EXCEPTION 'abet_respaldo no puede leer alguna tabla o secuencia de abet o acceso, y el respaldo fallaría';
     END IF;
     IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
                WHERE n.nspname = 'abet' AND c.relname IN ('v_tabla_maestra_pi', 'v_r17_por_pi')

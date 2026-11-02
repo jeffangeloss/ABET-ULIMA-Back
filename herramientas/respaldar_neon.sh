@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Respaldo de la base en Neon con pg_dump. Lo corre cada día .github/workflows/respaldo_neon.yml y también
 # se puede correr a mano desde la Mac.
-#   1. Vuelca el esquema abet (tablas, vistas, datos e historial de Flyway) en formato custom de pg_dump.
-#   2. Comprueba que el archivo se puede leer con pg_restore --list y que trae el historial de Flyway
-#      y los datos de las tablas.
+#   1. Vuelca en formato custom de pg_dump el esquema abet (tablas, vistas, datos e historial de Flyway) y, desde
+#      V1_09, el esquema acceso con los usuarios y sus secciones, sin los datos de credencial, sesion,
+#      intento_fallido ni codigo_acceso.
+#   2. Comprueba que el archivo se puede leer con pg_restore --list, que trae el historial de Flyway y los datos
+#      de las tablas, y que esas cuatro tablas de acceso llegan sin datos.
 #   3. Lo cifra con gpg (AES-256, clave simétrica) y borra la copia sin cifrar, porque la base puede
 #      tener datos personales.
 #   4. Escribe la huella SHA-256 del archivo cifrado para comprobar su integridad al restaurar.
@@ -51,14 +53,37 @@ BASE="$SALIDA/abet_${NEON_DB}_${SELLO}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-echo "== Volcado del esquema abet"
-"$PG_DUMP" --format=custom --compress=9 --schema=abet --no-owner --no-privileges --file="$TMP/respaldo.dump"
+# Desde V1_09, abet.carga.subida_por tiene una clave foránea hacia acceso.usuario_autorizado, así que un volcado
+# solo de abet ya no se restaura en una base vacía. Por eso el respaldo lleva también acceso, aunque de las tablas
+# de credenciales, sesiones, intentos fallidos y códigos guarda solo la definición. Sin --strict-names, pg_dump
+# ignora un --schema que no encuentra mientras otro coincida, así que antes de V1_09 el volcado trae solo abet.
+ACCESO_SIN_DATOS=(credencial sesion intento_fallido codigo_acceso)
+ESQUEMAS=(--schema=abet --schema=acceso)
+for tabla in "${ACCESO_SIN_DATOS[@]}"; do
+    ESQUEMAS+=("--exclude-table-data=acceso.$tabla")
+done
+
+echo "== Volcado del esquema abet y, si existe, del esquema acceso"
+"$PG_DUMP" --format=custom --compress=9 "${ESQUEMAS[@]}" --no-owner --no-privileges --file="$TMP/respaldo.dump"
 
 echo "== Comprobación del archivo"
 "$PG_RESTORE" --list "$TMP/respaldo.dump" > "$TMP/indice.txt"
 grep -q 'TABLE DATA abet flyway_schema_history' "$TMP/indice.txt" || { echo "El respaldo no trae el historial de Flyway" >&2; exit 1; }
 TABLAS="$(grep -c 'TABLE DATA abet ' "$TMP/indice.txt" || true)"
-echo "ok el archivo se lee y trae los datos de ${TABLAS} tablas, incluido el historial de Flyway"
+echo "ok el archivo se lee y trae los datos de ${TABLAS} tablas de abet, incluido el historial de Flyway"
+if grep -q ' SCHEMA - acceso ' "$TMP/indice.txt"; then
+    # Cada tabla de la lista debe llegar con su definición y sin sus datos. Si una cambia de nombre, el patrón de
+    # exclusión deja de coincidir, y el respaldo se detiene antes de cifrar en lugar de guardar sus datos.
+    for tabla in "${ACCESO_SIN_DATOS[@]}"; do
+        grep -q " TABLE acceso $tabla " "$TMP/indice.txt" || { echo "El respaldo no trae la tabla acceso.$tabla; hay que revisar ACCESO_SIN_DATOS" >&2; exit 1; }
+        if grep -q " TABLE DATA acceso $tabla " "$TMP/indice.txt"; then echo "El respaldo trae los datos de acceso.$tabla" >&2; exit 1; fi
+        echo "ok acceso.$tabla llega con su definición y sin datos"
+    done
+    grep -q 'TABLE DATA acceso usuario_autorizado ' "$TMP/indice.txt" || { echo "El respaldo no trae los usuarios de acceso" >&2; exit 1; }
+    echo "ok trae los datos de $(grep -c 'TABLE DATA acceso ' "$TMP/indice.txt" || true) tablas de acceso, entre ellas usuario_autorizado"
+else
+    echo "ok la base no tiene el esquema acceso, así que el respaldo trae solo abet"
+fi
 
 echo "== Cifrado"
 # La frase entra por un descriptor de archivo con printf, que es interno de bash, así que no aparece en la línea
