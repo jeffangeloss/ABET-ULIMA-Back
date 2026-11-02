@@ -26,6 +26,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- `preparacion-neon` de `ABET_ULIMA` llega a `db/` con `git subtree pull` (T022 y T023), con el entorno `neon` de Flyway para `abet` y `acceso`, el callback que repone los permisos de lectura, del respaldo y de las vistas del rol de la API, los roles de lectura de Power BI y del respaldo, el respaldo cifrado con `pg_dump` 18 y su flujo a mano en `.github/workflows/respaldo_neon.yml`.
 - PostgreSQL 18, la versión del proyecto ABET-ULIMA de Neon (J-17), en la CI (servicio `postgres:18` y cliente 18 del repositorio PGDG), en el clúster desechable de la Mac (`postgresql@18` de Homebrew o `PG_BIN`, que se niega a seguir con otra versión) y en los escenarios y pasos de aceptación, que exigen `server_version_num` 18. T020 y T021 quedan hechas.
 - Escenarios del corte 1 ejecutables con pytest-bdd 9 en español contra la API y la base (`tests/aceptacion/pasos/`), con 170 aprobados y 19 omitidos con su razón, y la prueba de humo `e2e/humo.spec.ts` del Front con Playwright para Node como T053.
 
@@ -33,6 +34,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Seguridad
 
+- Las vistas `v_r17_por_pi` y `v_tabla_maestra_pi` llevan `security_barrier`, como las que Neon tiene aplicadas desde el 2026-10-27.
 - Job `secretos` con gitleaks 8.30.1 fijado por suma SHA-256, y `.gitleaks.toml`.
 - Dependabot para las acciones de GitHub, `.sonarcloud.properties` para SonarQube Cloud y `.snyk` con excepciones que vencen.
 - `astral-sh/setup-uv` fijado por SHA en v10.3.0, con más de 14 días publicada, y Dependabot para `uv.lock`, con la misma espera de 14 días en las acciones y en los paquetes.

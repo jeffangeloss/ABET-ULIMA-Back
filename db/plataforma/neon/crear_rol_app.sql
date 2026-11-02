@@ -26,8 +26,8 @@
 -- llega con el corte 2, cuando T083 le suma SELECT, INSERT y el UPDATE de intentos y usado_en.
 --
 -- Las repetibles R__ borran y recrean sus vistas, y con eso el rol pierde el SELECT de v_r17_por_pi y de
--- v_tabla_maestra_pi. Por eso este script se repite después de todo migrate que vuelve a aplicar una R__, hasta que
--- db/callbacks/afterMigrate__permisos_lectura.sql reponga también los permisos de este rol.
+-- v_tabla_maestra_pi. Desde T023, db/callbacks/afterMigrate__permisos_lectura.sql repone esos dos permisos al final
+-- de cada migrate de Flyway. En los caminos con psql, este script se repite después de volver a aplicar una R__.
 --
 -- El rol se crea por SQL y no desde la consola de Neon, porque Neon da a los roles de la consola el rol
 -- neon_superuser, con atributos de administración que la aplicación no necesita, igual que en

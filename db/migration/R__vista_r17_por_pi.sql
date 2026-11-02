@@ -6,11 +6,13 @@
 -- esperado y los porcentajes salen NULL, nunca 0. La columna provisional es verdadera mientras el conjunto
 -- de reglas no esté APROBADO o le falte DEFINIR NIVEL_ESPERADO, META_LOGRO o TRATO_SIN_EVIDENCIA.
 -- pct_logro_segun_regla toma el porcentaje que fija TRATO_SIN_EVIDENCIA y sale NULL mientras esté PENDIENTE.
+-- security_barrier impide que una función escrita por quien consulta se evalúe antes del filtro de la vista
+-- y vea filas que la vista oculta, como las de cargas que no están PUBLICADAS.
 -- Migración repetible: Flyway la vuelve a aplicar cada vez que cambia su contenido.
 
 DROP VIEW IF EXISTS abet.v_r17_por_pi CASCADE;
 
-CREATE VIEW abet.v_r17_por_pi AS
+CREATE VIEW abet.v_r17_por_pi WITH (security_barrier = true) AS
 WITH regla AS (
     SELECT cr.conjunto_reglas_id,
            cr.version,

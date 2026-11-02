@@ -489,17 +489,16 @@ def _valor_conservado(ctx: Escenario, columna: str) -> None:
 @when("la prueba aplica con psql una migración de prueba y después db/callbacks/afterMigrate__permisos_lectura.sql")
 def _migracion_y_callback(ctx: Escenario) -> None:
     # La migración de prueba vuelve a crear las vistas, como una repetible R__, y con ello el rol pierde su SELECT.
-    # El callback llega con el git subtree pull de preparacion-neon, que espera la fusión de T022, y T027 suma
-    # filesystem:callbacks a db/flyway.toml. Mientras el archivo no exista el escenario se omite con esa razón, y
-    # en cuanto exista corre entero, sin ningún cambio en estos pasos.
+    # El callback llega con el git subtree pull de preparacion-neon (T023), y db/flyway.toml lo lee desde
+    # filesystem:callbacks. El skip queda como guarda por si el archivo falta.
     if not CALLBACK.is_file():
-        pytest.skip("db/callbacks/afterMigrate__permisos_lectura.sql llega con el git subtree pull de "
-                    "preparacion-neon (T022 y T027)")
+        pytest.skip("falta db/callbacks/afterMigrate__permisos_lectura.sql, que llega con el git subtree pull de "
+                    "preparacion-neon (T023)")
     _repetibles(ctx)
     _psql_ok(ctx, "-v", f"rol_app={ctx.api.base.rol_app}", "-f", str(CALLBACK))
 
 
-@then(parsers.re(r"has_table_privilege\('abet_app', '(?P<tabla>[a-z_.]+)', '(?P<privilegio>[A-Z]+)'\) devuelve "
+@then(parsers.re(r"has_table_privilege\('abet_app', '(?P<tabla>[a-z0-9_.]+)', '(?P<privilegio>[A-Z]+)'\) devuelve "
                  r"(?P<valor>verdadero|falso)"))
 def _privilegio(ctx: Escenario, tabla: str, privilegio: str, valor: str) -> None:
     tiene = ctx.uno("SELECT has_table_privilege(%s, %s, %s)", ctx.api.base.rol_app, tabla, privilegio)
