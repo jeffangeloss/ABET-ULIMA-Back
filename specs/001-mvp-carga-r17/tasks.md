@@ -81,7 +81,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre. `[Back]` es
 ## Phase 7: Despliegue
 
 - [ ] T070 [Jefferson] Crear en el equipo `jeffangeloss-projects` los proyectos de Vercel Hobby `abet-ulima-back` y `abet-ulima-front`, enlazados a sus repositorios con Production desde `main` y Preview desde `develop`, desactivar el entrenamiento de inteligencia artificial (IA) del equipo y enviar la consulta a soporte por la cláusula de uso no comercial (J-07) [US-17]
-- [ ] T071 [Back] Escribir `vercel.json` del Back con `regions: ["gru1"]` y la función de FastAPI, y confirmar `prepare_threshold=None` en la conexión con pooler [US-17]
+- [x] T071 [Back] Escribir `vercel.json` del Back con `regions: ["iad1"]` y la función de FastAPI, y confirmar `prepare_threshold=None` en la conexión con pooler [US-17] · Hecha el 2026-11-02 con `iad1` por J-17. `vercel.json` deja fuera del paquete las pruebas, las specs, la documentación, `db/` y los guiones, y `[tool.vercel]` de `pyproject.toml` apunta a `app.main:app`. `tests/test_vercel.py` lo comprueba, y `app/configuracion.py` y `abet_carga/carga.py` ya conectan con `prepare_threshold=None`
 - [ ] T072 [Front] Escribir `vercel.json` del Front con la reescritura de `/api/:path*` hacia la URL del Back que corresponde a Production y a Preview [US-17]
 - [ ] T073 [Jefferson] Pegar en Vercel las variables del Back, separadas por Production y Preview (`DATABASE_URL` con pooler y usuario `abet_app` de la rama principal o de `develop`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS=1`) [US-17]
 - [ ] T074 [Jefferson] Asignar con `scripts/asignar_clave.py` las contraseñas de los tres usuarios de prueba en cada rama de Neon, sin pasarlas por un agente [US-05] [US-17]

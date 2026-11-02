@@ -11,7 +11,7 @@
 
 Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
 
-  El Back y el Front viven en dos proyectos de Vercel Hobby en la región gru1, el Front reescribe
+  El Back y el Front viven en dos proyectos de Vercel Hobby en la región iad1, junto a Neon (J-17), el Front reescribe
   /api hacia el Back para que el navegador vea un solo origen, la API se conecta a Neon por el pooler con
   el rol abet_app, y una prueba de humo recorre en la nube el camino del profesor desde el ingreso
   hasta el R-17.
@@ -23,10 +23,10 @@ Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
   # US-17: Desplegar el piloto en Vercel con Neon y probarlo de punta a punta
 
   @US-17 @corte1
-  Esquema del escenario: Cada proyecto fija la región gru1
+  Esquema del escenario: Cada proyecto fija la región iad1
     Cuando se lee el vercel.json de la rama main de <repositorio>
-    Entonces su clave "regions" vale ["gru1"]
-    Y "vercel inspect" del último despliegue de Production de <proyecto> muestra sus funciones en gru1
+    Entonces su clave "regions" vale ["iad1"]
+    Y "vercel inspect" del último despliegue de Production de <proyecto> muestra sus funciones en iad1
 
     Ejemplos:
       | repositorio      | proyecto         |

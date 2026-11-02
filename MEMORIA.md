@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `docs/t027-neon`, con su PR a `develop`, que registra T027, T028 y T029, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y la región iad1), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: T027 y T028 en Neon. Las ramas `develop` y principal del proyecto ABET-ULIMA quedan en la versión 1.09, con `acceso`, los roles de lectura y respaldo, `abet_app`, la guardia y los datos de 2026-2, y con las consultas de control en cero
-- **En curso**: T062 (la verificación a mano de Jefferson) y la preparación del despliegue en Vercel (fase 7)
-- **Siguiente paso**: Jefferson copia las cuatro claves nuevas del `.env` local de Neon a su gestor y archiva `ABET_ULIMA`; después vienen la fase 7 en Vercel, con la región de las funciones por decidir (iad1, junto a Neon en us-east-1), la prueba del volcado y la restauración con `pg_dump` 18 y el horario diario del respaldo con sus cinco secretos
+- **Último cambio**: `vercel.json` del Back con la región iad1, junto a Neon en us-east-1 (J-17), y la función de FastAPI, con su prueba
+- **En curso**: la fase 7 en Vercel (T070 a T079) y T062
+- **Siguiente paso**: Jefferson crea los dos proyectos de Vercel sin conectar la base de Neon de la integración, apaga la protección de las vistas previas del Back y pega las variables (T070 y T073); después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 17:36 (Lima) · feat/001-despliegue-vercel · vercel.json del Back en iad1 con la función de FastAPI (T071)
+- Quién: Jefferson aprueba en el chat seguir con el despliegue en Vercel («Sí, sigamos»), con la región de las funciones en iad1 junto a Neon. Claude Code escribe primero las pruebas, hace el cambio y escribe esta entrada.
+- Qué cambió: `vercel.json` (región iad1 y `excludeFiles` de la función `app/main.py`), `pyproject.toml` (`[tool.vercel]` con `entrypoint = "app.main:app"`), `tests/test_vercel.py` (nuevo), la región iad1 en la constitución (1.0.2), `spec.md` (J-17, FR-024, la Base y el escenario 3 de US-17), `plan.md`, `despliegue.feature` y T071 en `tasks.md`.
+- Por qué: T071 de la spec 001 y J-17. Con Neon en us-east-1, la función de la API va en iad1 para que cada consulta a la base no cruce de São Paulo a Virginia.
+- Lo que debe hacer, cómo se probó: las tres pruebas de `tests/test_vercel.py` fallan sin `vercel.json` y pasan con él. Comprueban la región iad1, la función `app.main:app` y que el paquete deje fuera las pruebas, las specs, la documentación, `db/` y los guiones. `app/configuracion.py` y `abet_carga/carga.py` ya conectan con `prepare_threshold=None`, que el pooler de Neon necesita.
+- Lo que no debe hacer, cómo se probó: el paquete no deja fuera `app/`, `abet_carga/` ni `plantillas/`, que el R-17 necesita (la misma prueba), y `uv lock --check` sigue sin cambios en `uv.lock`.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `CHANGELOG.md`, `tasks.md` y el PR.
+- Pendiente y siguiente paso: T072 en el Front y T070 y T073 de Jefferson. Los pasos de `despliegue.feature` se escriben con la prueba de humo de T075, contra la vista previa.
 
 ### 2026-11-02 17:18 (Lima) · docs/t027-neon · T027 y T028 en Neon y auditoría de la fase de la base (T029)
 - Quién: Jefferson aprueba en el chat seguir con T027 en una rama de Neon («Sí, sigamos») y después aplicarlo en la principal («Sí, aplícalo»), y crea en la consola la rama hija `develop` de `main`. Claude Code genera las cuatro claves nuevas dentro del `.env` local de Neon sin mostrarlas, corre T027 en las dos ramas con la conexión directa y salidas sin hosts ni claves, comprueba los accesos y escribe esta entrada. No participan subagentes.

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["iad1"],
+  "functions": {
+    "app/main.py": {
+      "excludeFiles": "{tests/**,specs/**,docs/**,db/**,scripts/**,e2e/**,.specify/**,.claude/**,.github/**}"
+    }
+  }
+}
