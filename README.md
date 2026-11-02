@@ -1,6 +1,6 @@
 # ABET-ULIMA-Back
 
-Backend del sistema de medición ABET de la Carrera de Ingeniería Ambiental de la Universidad de Lima. Recibe el export de Blackboard de una sección, lo valida, guarda sus datos en PostgreSQL 16 (Neon, São Paulo) en una sola transacción y genera el Excel del R-17 con la constancia de la carga, que el profesor conserva como evidencia.
+Backend del sistema de medición ABET de la Carrera de Ingeniería Ambiental de la Universidad de Lima. Recibe el export de Blackboard de una sección, lo valida, guarda sus datos en PostgreSQL 18 (Neon, us-east-1) en una sola transacción y genera el Excel del R-17 con la constancia de la carga, que el profesor conserva como evidencia.
 
 **Estado al 28/10/2026.** Jefferson aprueba el plan del MVP (spec 001) y el corte 1 avanza en la rama `feat/001-mvp-carga-r17`, todavía en local. La base de datos ya está en `db/`, traída con su historia desde el repositorio privado `jeffangeloss/ABET_ULIMA`, y el esqueleto de Python corre sus pruebas con uv. La carga del export y el R-17 todavía no existen.
 
@@ -19,7 +19,7 @@ Backend del sistema de medición ABET de la Carrera de Ingeniería Ambiental de 
 
 ## Demo del corte 1
 
-La demo corre en la Mac, sin Neon, con PostgreSQL 16 y uv instalados.
+La demo corre en la Mac, sin Neon, con PostgreSQL 18 y uv instalados.
 
 ```bash
 bash scripts/demo_corte1.sh                      # salida en ${TMPDIR:-/tmp}/abet_demo_corte1

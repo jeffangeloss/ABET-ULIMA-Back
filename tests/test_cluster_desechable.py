@@ -31,7 +31,7 @@ def _modulo() -> ModuleType:
     return sys.modules[nombre]
 
 
-@pytest.mark.skipif(os.environ.get("GITHUB_ACTIONS") == "true", reason="la CI usa el servicio postgres:16 del job")
+@pytest.mark.skipif(os.environ.get("GITHUB_ACTIONS") == "true", reason="la CI usa el servicio postgres:18 del job")
 def test_la_sesion_corre_en_el_cluster_desechable(cluster_postgres: dict[str, str]) -> None:
     datos = cluster_postgres[_modulo().VARIABLE]
     respuesta = subprocess.run(
@@ -82,14 +82,18 @@ def test_exigir_rechaza_github_actions_sin_la_ci_real(variables: dict[str, str],
 
 
 def _iniciar_con_initdb_falso(tmp_path: Path, variables: dict[str, str]) -> bool:
-    """Corre iniciar_cluster_desechable con un initdb falso y dice si llegó a llamarlo."""
+    """Corre iniciar_cluster_desechable con un initdb falso de la 18 y dice si llegó a crear el clúster."""
     falsos = tmp_path / "bin"
     falsos.mkdir()
     marca = tmp_path / "initdb_llamado"
     initdb = falsos / "initdb"
-    initdb.write_text(f"#!/bin/sh\ntouch '{marca}'\nexit 1\n", encoding="utf-8")
+    initdb.write_text(
+        '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "initdb (PostgreSQL) 18.0"; exit 0; fi\n'
+        f"touch '{marca}'\nexit 1\n",
+        encoding="utf-8",
+    )
     initdb.chmod(0o755)
-    entorno = {"PATH": f"{falsos}:{os.environ['PATH']}", "TMPDIR": str(tmp_path), **variables}
+    entorno = {"PATH": f"{falsos}:{os.environ['PATH']}", "TMPDIR": str(tmp_path), "PG_BIN": str(falsos), **variables}
     subprocess.run(
         ["bash", "-c", 'source "$0"; iniciar_cluster_desechable', str(RAIZ / "db" / "pruebas" / "cluster_desechable.sh")],
         env=entorno, capture_output=True, text=True, check=False,
@@ -133,3 +137,40 @@ def test_base_desechable_no_corre_nada_contra_el_cluster_de_la_mac(
         base_desechable.borrar(ajena)
     with pytest.raises(_modulo().ClusterAjeno):
         base_desechable.restos()
+
+
+def _initdb_de_otra_version(tmp_path: Path) -> tuple[Path, Path]:
+    """initdb falso que dice ser de PostgreSQL 16 y deja una marca si intenta crear un clúster."""
+    falsos = tmp_path / "bin16"
+    falsos.mkdir()
+    marca = tmp_path / "cluster_creado"
+    initdb = falsos / "initdb"
+    initdb.write_text(
+        '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "initdb (PostgreSQL) 16.14"; exit 0; fi\n'
+        f"touch '{marca}'\nexit 1\n",
+        encoding="utf-8",
+    )
+    initdb.chmod(0o755)
+    return falsos, marca
+
+
+def test_el_guion_rechaza_un_initdb_que_no_es_de_la_version_de_neon(tmp_path: Path) -> None:
+    falsos, marca = _initdb_de_otra_version(tmp_path)
+    corrida = subprocess.run(
+        ["bash", "-c", 'source "$0"; iniciar_cluster_desechable', str(RAIZ / "db" / "pruebas" / "cluster_desechable.sh")],
+        # Sin binarios reales en el PATH, una guardia rota no llega a arrancar un servidor de verdad.
+        env={"PATH": f"{falsos}:/usr/bin:/bin", "TMPDIR": str(tmp_path), "PG_BIN": str(falsos)},
+        capture_output=True, text=True, check=False,
+    )
+    assert corrida.returncode != 0
+    assert "PostgreSQL 18" in corrida.stderr
+    assert not marca.exists()
+
+
+def test_iniciar_rechaza_un_initdb_que_no_es_de_la_version_de_neon(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    falsos, marca = _initdb_de_otra_version(tmp_path)
+    monkeypatch.setenv("PG_BIN", str(falsos))
+    monkeypatch.setenv("PATH", f"{falsos}:/usr/bin:/bin")
+    with pytest.raises(RuntimeError, match="PostgreSQL 18"):
+        _modulo().iniciar()
+    assert not marca.exists()

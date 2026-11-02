@@ -4,7 +4,7 @@
 # Uso.
 #   bash scripts/demo_corte1.sh [--conservar] [carpeta_de_salida]
 #
-# El guion arma con db/pruebas/cluster_desechable.sh un clúster de PostgreSQL 16 desechable, con su
+# El guion arma con db/pruebas/cluster_desechable.sh un clúster de PostgreSQL 18 desechable, con su
 # socket propio y sin TCP, así que nunca toca el clúster de la Mac ni abet_sis_med_dev. En ese
 # clúster crea la base abet_demo_corte1_<pid> con V1_01 a la última migración versionada y las R__,
 # en el orden de db/pruebas/correr_pruebas.sh, el rol de la aplicación abet_demo_app_corte1_<pid>

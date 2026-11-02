@@ -408,12 +408,12 @@ def armar_archivo(ctx: Escenario, texto: str) -> tuple[bytes, str]:
 
 # Antecedentes
 
-@given(parsers.re(r'una base PostgreSQL 16 desechable con las migraciones V1_01 a V1_09(?P<resto>.*)'))
+@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_09(?P<resto>.*)'))
 def _base_desechable(ctx: Escenario, resto: str) -> None:
     con_varias = "varias_secciones_2026_2_inventado.sql" in resto
     guardia = ctx.request.node.get_closest_marker("guardia_en_base") is not None
     ctx.crear_base("varias" if con_varias else "guardia" if guardia else "periodo")
-    assert ctx.uno("SHOW server_version_num").startswith("16"), "la base desechable no es PostgreSQL 16"
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"

@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `develop`, que recibe el corte 1 desde el PR #3 con «Create a merge commit» por el `git subtree`, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `chore/postgres-18`, con su PR a `develop`, que pasa el Back a PostgreSQL 18 (J-17), y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba fusionar el corte 1 en `develop`
-- **En curso**: T062 (la verificación a mano de Jefferson en el navegador) y las decisiones abiertas que lista `audit.md`
-- **Siguiente paso**: T062, las decisiones sobre el 403 frente al 404 y los dos escenarios ambiguos, la aprobación de la spec 002 (PR #4) y, con su permiso, Neon y Vercel (fase 7)
-- **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #3 y #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`)
+- **Último cambio**: Jefferson decide usar el proyecto ABET-ULIMA de Neon (integración Neon × Vercel, us-east-1, PostgreSQL 18.6), que ya tiene V1_01 a V1_08 desde el 2026-10-27, y pasar la CI y el clúster desechable a PostgreSQL 18 (J-17)
+- **En curso**: el despliegue en Neon (T022 a T028) y T062
+- **Siguiente paso**: fusionar este PR; después, con el permiso de Jefferson, el commit de los cambios pendientes de `bd/` (respaldo con `acceso`) y la fusión de `preparacion-neon` en `main` de `ABET_ULIMA` (T022), el `git subtree pull` a `db/` (T023) con el respaldo en `pg_dump` 18, los roles de lectura y respaldo, y V1_09, `abet_app`, la guardia y los datos de 2026-2, primero en una rama de Neon y después en la principal (T027 y T028)
+- **Bloqueos**: T022 espera el permiso de Jefferson para fusionar `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 16:01 (Lima) · chore/postgres-18 · PostgreSQL 18 en la CI y en el clúster desechable por el proyecto de Neon (J-17)
+- Quién: Jefferson decide en el chat usar el proyecto ABET-ULIMA de Neon que ya había creado («Sí, usar este»), pasar las pruebas a PostgreSQL 18 («Sí, pasar a la 18») e instalar `postgresql@18` en la Mac («Sí, instálalo»). Claude Code se conecta a Neon con la conexión directa de `bd/.env.neon` sin mostrar valores, instala `postgresql@18` con Homebrew sin tocar la 16, escribe primero las pruebas de la guardia de versión, hace el cambio y escribe esta entrada. Un revisor (Sonnet) revisa el diff, y tres escépticos (Sonnet) confirman sus tres hallazgos de severidad media.
+- Qué cambió: `.github/workflows/ci.yml` (servicio `postgres:18` y un paso que instala el cliente 18 desde el repositorio PGDG), `db/pruebas/cluster_desechable.sh` y `tests/cluster_desechable.py` (binarios de `PG_BIN` o de Homebrew `postgresql@18` y una guardia que se niega a seguir si `initdb` es de otra versión), los pasos de aceptación (exigen `server_version_num` 18), los cinco `.feature`, `spec.md` (J-17), `plan.md`, `tasks.md` (T020 y T021 hechas), la constitución (1.0.1), los README, `docs/devops.md`, `pyproject.toml` y los comentarios.
+- Por qué: Neon es el proyecto ABET-ULIMA, en us-east-1 y con PostgreSQL 18.6, y las pruebas deben correr en la misma versión mayor, porque `pg_dump` 16 no vuelca un servidor 18 y dos pasos de aceptación exigían la 16.
+- Lo que debe hacer, cómo se probó: las dos pruebas nuevas de la guardia fallan antes de implementarla y pasan después. Contra PostgreSQL 18.6, `bash db/pruebas/correr_pruebas.sh` da «RESULTADO: todo pasó», `uv run --frozen pytest -q -W error` da 854 aprobadas y 20 omitidas y `bash scripts/preflight.sh` sale sin fallas. En Neon, `flyway info -environment=neon` desde `bd/` da la versión 1.08 sin pendientes, la semilla coincide (7 SO, 17 PI, 102 descriptores, 53 asignaturas, 61 pares y 7 instrumentos) y las dos vistas tienen `security_barrier`.
+- Lo que no debe hacer, cómo se probó: un `initdb` que no es de la 18 no crea ningún clúster (las dos pruebas nuevas, con un PATH sin binarios reales), ninguna corrida deja un servidor encendido, la 16 de Homebrew y `localhost:5432` no se tocan, y en Neon solo hay lecturas.
+- Correcciones: la primera versión de las pruebas nuevas, todavía sin la guardia, arrancó dos servidores desechables con la 16, que se detuvieron y borraron, y desde entonces corren con un PATH sin binarios reales. El reemplazo de 16 por 18 volvía falsa la comparación de T020 y de J-17 y la frase de `db/README.md` sobre Azure, y la revisión corrigió las tres.
+- Cómo se reporta: esta entrada, `CHANGELOG.md`, J-17 en `spec.md` y el PR.
+- Pendiente y siguiente paso: los pasos de T022 a T028 del «Punto actual». El PR #4 y el Front todavía nombran la 16 y São Paulo (ADR-001, ADR-002, `entornos-y-despliegue.md` y `contrato.md` con `gru1`), y se ponen al día después de fusionar este cambio. La región de las funciones de Vercel se decide en la fase 7.
 
 ### 2026-11-02 15:09 (Lima) · feat/001-mvp-carga-r17 · SonarQube Cloud resuelto y corte 1 aprobado para develop
 - Quién: Jefferson pasa a privado el proyecto del Back en SonarQube Cloud, marca pythonsecurity:S5131 como falso positivo y aprueba en el chat («Sí, fusiónalo») fusionar el corte 1 en `develop`. Claude Code, sin subagentes, comprueba el resultado y escribe esta entrada.

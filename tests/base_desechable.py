@@ -1,4 +1,4 @@
-"""Bases PostgreSQL 16 desechables para las pruebas que escriben en la base (T033 a T035, T050 y T052).
+"""Bases PostgreSQL 18 desechables para las pruebas que escriben en la base (T033 a T035, T050 y T052).
 
 crear() arma una base abet_demo_<sufijo> como db/pruebas/correr_pruebas.sh arma las suyas. Crea la
 base desde template0 con la codificación UTF8 y los esquemas abet y acceso, aplica cada migración
@@ -11,7 +11,7 @@ desde la que corre pytest.
 
 La conexión sale de las variables de libpq (PGHOST, PGPORT y PGUSER) que deja la fixture
 cluster_postgres de tests/conftest.py. Fuera de la integración continua (continuous integration, CI)
-apuntan al clúster desechable de tests/cluster_desechable.py, y en ella, al servicio postgres:16 del
+apuntan al clúster desechable de tests/cluster_desechable.py, y en ella, al servicio postgres:18 del
 job. Sin esas variables,
 _entorno() se niega a seguir, así que ninguna base se crea ni se borra en el clúster de la Mac. El rol de la
 aplicación nunca recibe contraseña, porque crear_rol_app.sql corre sin APP_DB_CLAVE, y ninguna cadena

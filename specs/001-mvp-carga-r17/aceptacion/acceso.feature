@@ -11,7 +11,7 @@
 # guarda en el repositorio.
 # Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide quien apruebe la spec.
 # Este archivo es criterio escrito. Los pasos de pantalla, que nombran P2, sus filas o sus botones, los
-# comprueban las pruebas de Vitest del Front (T045), y los demás, pytest contra un PostgreSQL 16
+# comprueban las pruebas de Vitest del Front (T045), y los demás, pytest contra un PostgreSQL 18
 # desechable (T051).
 
 Característica: Acceso al sistema y visibilidad de las secciones

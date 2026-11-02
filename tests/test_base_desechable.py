@@ -2,7 +2,7 @@
 
 crear() y borrar() corren de verdad solo en el clúster desechable que arma la fixture cluster_postgres
 de tests/conftest.py, nunca en el clúster de la Mac (localhost:5432), y en la integración continua
-(continuous integration, CI) en el servicio postgres:16 del job, con las variables PGHOST, PGPORT y
+(continuous integration, CI) en el servicio postgres:18 del job, con las variables PGHOST, PGPORT y
 PGUSER de libpq y sin contraseñas. Cada base y cada rol de esas pruebas llevan el prefijo abet_demo_.
 Las guardias de nombres de borrar() y de crear() se prueban sin servidor, con una ejecución falsa de
 subprocess.run y las variables de libpq apuntando a una carpeta vacía, así que ni un mutante sin la
