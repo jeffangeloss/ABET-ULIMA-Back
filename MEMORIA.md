@@ -15,7 +15,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-02
 - **Rama de trabajo**: `docs/002-capstone`, con el PR #4 a `develop` (spec 002, sin fusionar), que integra el corte 1 de `feat/001-mvp-carga-r17`, el mismo que el PR #3 lleva a `develop` con «Create a merge commit»
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la rama integra el corte 1 con su historia, para que el PR #4 muestre solo la spec 002 y herede la CI y el análisis de SonarQube Cloud ya corregidos
+- **Último cambio**: la rama queda al día con `develop` después de la fusión del PR #3 (aff49c5), así que el PR #4 muestra solo la spec 002
 - **En curso**: la revisión de la spec 002 por Jefferson
 - **Siguiente paso**: Jefferson aprueba la spec 002 y responde D-15 a D-24, D-26 a D-29, la parte abierta de D-25 y J-11 a J-16; sin esa aprobación no se implementa nada de Capstone. Del corte 1 siguen T062, las decisiones de `audit.md`, Neon y Vercel
 - **Bloqueos**: el proyecto de Neon (aws-sa-east-1) todavía no existe; T022 espera que Jefferson fusione `preparacion-neon` en `main` de `ABET_ULIMA`; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 15:19 (Lima) · docs/002-capstone · La rama queda al día con develop
+- Quién: Jefferson aprueba en el chat («Sí, fusiónalo») poner al día los PR #4. Claude Code, sin subagentes, fusiona `develop` en esta rama y escribe esta entrada.
+- Qué cambió: solo esta memoria. La fusión de aff49c5, el merge commit del PR #3, no trae contenido nuevo, porque la rama ya tenía el corte 1 desde fecc476.
+- Por qué: GitHub seguía mostrando el PR #4 con los 132 archivos del corte 1 después de fusionar el PR #3, y con la rama al día lo compara contra el `develop` nuevo.
+- Lo que debe hacer, cómo se probó: `git merge-base --all origin/develop origin/docs/002-capstone` da solo fecc476, y `git diff origin/develop...origin/docs/002-capstone` muestra 11 archivos, los de `specs/002-capstone/`, `specs/README.md`, `CHANGELOG.md` y `MEMORIA.md`.
+- Lo que no debe hacer, cómo se probó: la fusión no deja conflictos ni cambia ningún archivo fuera de esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR #4.
+- Pendiente y siguiente paso: Jefferson aprueba la spec 002 y responde D-15 a D-24, D-26 a D-29, la parte abierta de D-25 y J-11 a J-16.
 
 ### 2026-11-02 15:12 (Lima) · docs/002-capstone · La rama integra el corte 1 para el PR #4
 - Quién: Jefferson aprueba en el chat («Sí, fusiónalo») fusionar el corte 1 y poner al día los PR #4. Claude Code, sin subagentes, fusiona `feat/001-mvp-carga-r17` (fecc476) en esta rama, resuelve los conflictos y escribe esta entrada.
