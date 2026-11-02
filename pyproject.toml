@@ -33,7 +33,7 @@ dependencies = [
     "psycopg[binary]>=3.3.6,<4",
     "openpyxl==3.1.5",
     "defusedxml==0.7.1",
-    "pillow>=12.3.0,<13",
+    "pillow>=12.3.0,<14",
     "argon2-cffi>=25.1.0,<26",
 ]
 
