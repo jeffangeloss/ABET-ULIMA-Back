@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `chore/db-preparacion-neon`, con su PR a `develop`, que trae `preparacion-neon` de `ABET_ULIMA` a `db/` (T022 y T023), y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `docs/t027-neon`, con su PR a `develop`, que registra T027, T028 y T029, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: `main` de `ABET_ULIMA` avanza a 9af49b6, con el respaldo que suma `acceso` (J-10), y el `git subtree pull` lo trae a `db/` con el callback en `locations`, `abet` y `acceso` en el entorno `neon`, el respaldo en `pg_dump` 18 y su flujo a mano en la raíz
-- **En curso**: el despliegue en Neon (T027 y T028) y T062
-- **Siguiente paso**: fusionar este PR; después, Jefferson archiva `ABET_ULIMA` en solo lectura y crea con un clic una rama de Neon para T027. En esa rama corren los roles de lectura y respaldo, V1_09, `abet_app`, la guardia y los datos de 2026-2, y después en la principal (T027 y T028), con la prueba del volcado y la restauración con `pg_dump` 18
+- **Último cambio**: T027 y T028 en Neon. Las ramas `develop` y principal del proyecto ABET-ULIMA quedan en la versión 1.09, con `acceso`, los roles de lectura y respaldo, `abet_app`, la guardia y los datos de 2026-2, y con las consultas de control en cero
+- **En curso**: T062 (la verificación a mano de Jefferson) y la preparación del despliegue en Vercel (fase 7)
+- **Siguiente paso**: Jefferson copia las cuatro claves nuevas del `.env` local de Neon a su gestor y archiva `ABET_ULIMA`; después vienen la fase 7 en Vercel, con la región de las funciones por decidir (iad1, junto a Neon en us-east-1), la prueba del volcado y la restauración con `pg_dump` 18 y el horario diario del respaldo con sus cinco secretos
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 17:18 (Lima) · docs/t027-neon · T027 y T028 en Neon y auditoría de la fase de la base (T029)
+- Quién: Jefferson aprueba en el chat seguir con T027 en una rama de Neon («Sí, sigamos») y después aplicarlo en la principal («Sí, aplícalo»), y crea en la consola la rama hija `develop` de `main`. Claude Code genera las cuatro claves nuevas dentro del `.env` local de Neon sin mostrarlas, corre T027 en las dos ramas con la conexión directa y salidas sin hosts ni claves, comprueba los accesos y escribe esta entrada. No participan subagentes.
+- Qué cambió: en Neon, las ramas `develop` y principal del proyecto ABET-ULIMA pasan de la versión 1.08 a la 1.09, con el esquema `acceso`, los roles `abet_lectura`, `powerbi_lectura`, `abet_respaldo` y `abet_app`, la guardia `ck_estudiante_codigo_inventado` y los datos de 2026-2 (vigencia AMB-2026, secciones 410 y 411 de 450002, plan 5.1 a 5.3 y 3 usuarios `@example.invalid`). En el repositorio solo cambian `tasks.md` (T027, T028 y T029 hechas) y esta memoria.
+- Por qué: T027 y T028 de la spec 001, en el orden de `db/README.md` («Orden en Neon»), y T029, que cierra la fase de la base.
+- Lo que debe hacer, cómo se probó: en las dos ramas, `flyway migrate` aplica V1_09 y `flyway validate` aprueba 13 migraciones, `controles_neon.sql` con `abet_respaldo` da «RESULTADO: Q01 a Q14 devuelven 0 filas» y ninguna vista queda sin `security_barrier`. `abet_app` y `powerbi_lectura` entran con sus claves y leen las vistas.
+- Lo que no debe hacer, cómo se probó: `abet_app` recibe «permission denied for table carga» al intentar un DELETE, y `powerbi_lectura` recibe «permission denied» en `abet.estudiante` y en el esquema `acceso`. Un segundo `migrate` sin pendientes repone con el callback solo las vistas de `abet_lectura` y `abet_app` y la lectura de `abet_respaldo`, sin tocar los roles de Neon. Ninguna clave ni host aparece en las salidas, y la base no tiene cargas ni estudiantes.
+- Correcciones: ninguna; los seis pasos corren igual en las dos ramas.
+- Cómo se reporta: esta entrada, `tasks.md` y el PR.
+- Pendiente y siguiente paso: Jefferson copia `POWERBI_CLAVE`, `RESPALDO_DB_CLAVE`, `RESPALDO_CLAVE` y `APP_DB_CLAVE` a su gestor de claves y archiva `ABET_ULIMA`. Faltan la prueba del volcado y la restauración con `pg_dump` 18, el horario diario del respaldo con sus cinco secretos en GitHub y la fase 7 en Vercel, donde la región de las funciones pasa a decidirse con Neon en us-east-1 (J-17).
 
 ### 2026-11-02 16:21 (Lima) · chore/db-preparacion-neon · preparacion-neon de ABET_ULIMA en db/ con git subtree pull (T022 y T023)
 - Quién: Jefferson autoriza en el chat («Sí, llévalo») el commit de lo pendiente en `bd/`, la fusión de `preparacion-neon` en `main` de `ABET_ULIMA` y el `git subtree pull`. Claude Code hace el commit 9af49b6 en `bd/` con el respaldo de `acceso` que dejó la sesión de Neon, lleva `main` de `ABET_ULIMA` a 9af49b6 sin cambiar de rama en `bd/`, trae `main` a `db/`, resuelve los dos choques y escribe esta entrada. Un revisor (Sonnet) revisa la integración, y seis escépticos (Sonnet) confirman cinco hallazgos sobre el README y refutan uno sobre el callback, que igual se acota.
