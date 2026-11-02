@@ -76,7 +76,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
     Cuando la CI del Back corre correr_pruebas.sh con psql contra un PostgreSQL 16 desechable
     Entonces la salida del paso termina con "RESULTADO: todo pasó" y el código de salida es 0
     Y ningún archivo de .github/workflows/ del Back nombra una imagen o una acción de Redgate o de Flyway
-    Y "git log --follow" del archivo V1_07__crear_registro_cargas.sql en el Back muestra los commits que tenía en ABET_ULIMA
+    Y "git log --follow -m" del archivo V1_07__crear_registro_cargas.sql en el Back muestra los commits que tenía en ABET_ULIMA
 
   # US-02: Crear el rol de la aplicación con privilegio mínimo
   # (propuesta) La clave de abet_app se lee de la variable APP_DB_CLAVE, como POWERBI_CLAVE en

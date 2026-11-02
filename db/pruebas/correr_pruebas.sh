@@ -4,8 +4,12 @@
 #   2. Crea dos bases nuevas, crea los esquemas abet y acceso (lo que Flyway hace con createSchemas = true en una
 #      base vacía), aplica las V en orden de versión, cada una en su transacción, y luego las R en orden alfabético.
 #   3. Compara pg_dump --schema-only de las dos bases; deben ser idénticos. En la segunda base, el script de datos
-#      de 2026-2 debe detenerse y deshacer todo cuando un usuario de prueba ya existe con otro rol.
-#   4. Carga en la primera base los datos sintéticos y dos veces los datos de 2026-2, y corre pruebas/pruebas.sql.
+#      de 2026-2 debe detenerse y deshacer todo cuando un usuario de prueba ya existe con otro rol. El script de
+#      varias secciones debe detenerse antes de los datos de 2026-2, sin la asignación de la 410 de 450010 (en una
+#      copia del archivo), con la 412 de 450010 ya registrada sin curso de Blackboard, con una asignación de más y
+#      con un segundo profesor de prueba en la 410 de 450010, y después pasa dos veces sin duplicar.
+#   4. Carga en la primera base los datos sintéticos, dos veces los datos de 2026-2 y dos veces los de varias
+#      secciones, y corre pruebas/pruebas.sql.
 #   5. Ensaya en una tercera base el camino de Neon (T021 y T027). Aplica V1_01 a V1_08 y las R y carga los datos
 #      sintéticos. Antes de V1_09, crear_rol_app.sql debe rechazar abet_respaldo y fallar sin dejar el rol de prueba.
 #      Aplica después las V que siguen, con V1_09 creando acceso, compara su esquema con el de la segunda base y
@@ -13,7 +17,7 @@
 #      pruebas/probar_rol_app.sql con un rol de prueba de nombre único. Al final vuelve a aplicar las R, que quitan
 #      al rol el SELECT de las vistas hasta que crear_rol_app.sql corre otra vez, y corre las consultas de control
 #      sin -v ON_ERROR_STOP=1, como el paso 5 de T027, con una carga REEMPLAZADA sin reemplazo, que deben terminar
-#      con la salida 3.
+#      con la salida 3. El script de varias secciones no entra en T027, así que esta base no lo recibe.
 #   6. Prueba la guardia de datos inventados en una cuarta base con pruebas/probar_guardia.sql.
 #   7. Borra las bases y el rol de prueba al terminar, pase lo que pase, y apaga el clúster desechable.
 #
@@ -168,11 +172,93 @@ if [ "$QUEDAN" != "0/0/0/0/docente410@example.invalid=COORDINADOR" ]; then
 fi
 echo "ok el script de datos no deja vigencias, secciones, planes ni asignaciones, y el usuario sigue como estaba"
 
-paso "Datos sintéticos y datos de 2026-2 (dos veces) en ${BD_A}"
+paso "Script de varias secciones en ${BD_B}, que debe detenerse y deshacer todo cuando algo no queda como dice su cabecera"
+VARIAS="$RAIZ/datos/varias_secciones_2026_2_inventado.sql"
+debe_fallar "varias_secciones_2026_2_inventado.sql antes de periodo_2026_2_inventado.sql" \
+    "Faltan los datos de db/datos/periodo_2026_2_inventado.sql" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" -f "$VARIAS"
+QUEDAN="$(valor "$BD_B" "SELECT (SELECT count(*) FROM abet.catalogo_vigencia) || '/' || (SELECT count(*) FROM abet.seccion)
+                         || '/' || (SELECT count(*) FROM abet.plan_medicion) || '/' || (SELECT count(*) FROM acceso.docente_seccion)
+                         || '/' || (SELECT string_agg(correo || '=' || rol, ',') FROM acceso.usuario_autorizado)")"
+if [ "$QUEDAN" != "0/0/0/0/docente410@example.invalid=COORDINADOR" ]; then
+    echo "FALLA el script de varias secciones dejó filas aunque falló (vigencias/secciones/planes/asignaciones/usuarios = ${QUEDAN})"
+    exit 1
+fi
+echo "ok el script de varias secciones no deja filas sin los datos de 2026-2"
+# Con docente410 otra vez PROFESOR, los datos de 2026-2 pasan, y los casos que siguen parten de ellos.
+"$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" \
+    -c "UPDATE acceso.usuario_autorizado SET rol = 'PROFESOR' WHERE correo = 'docente410@example.invalid'"
+correr "$BD_B" datos/periodo_2026_2_inventado.sql
+# Copia del archivo sin la asignación de la 410 de 450010, una línea propia del VALUES de acceso.docente_seccion.
+LINEA_ASIGNACION="             ('450010', '410'),"
+grep -vxF -- "$LINEA_ASIGNACION" "$VARIAS" > "$TMP/varias_sin_asignacion.sql" || true
+if [ "$(( $(wc -l < "$VARIAS") - $(wc -l < "$TMP/varias_sin_asignacion.sql") ))" -ne 1 ]; then
+    echo "FALLA la copia sin la asignación de la 410 de 450010 debía quitar exactamente una línea de ${VARIAS}"
+    exit 1
+fi
+debe_fallar "varias_secciones_2026_2_inventado.sql sin la asignación de la 410 de 450010" \
+    "no dicta exactamente la 412 de 450002 y la 410 y la 412 de 450010 en 2026-2 (450002-412,450010-412)" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" -f "$TMP/varias_sin_asignacion.sql"
+QUEDAN="$(valor "$BD_B" "SELECT (SELECT count(*) FROM abet.plan_medicion pm JOIN abet.asignatura a
+                                   ON a.asignatura_id = pm.asignatura_id AND a.codigo = '450010')
+                         || '/' || (SELECT count(*) FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id
+                                     WHERE (a.codigo, s.numero) IN (('450002', '412'), ('450010', '410'), ('450010', '412')))
+                         || '/' || (SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = 'docente.varias@example.invalid')
+                         || '/' || (SELECT count(*) FROM acceso.docente_seccion)")"
+if [ "$QUEDAN" != "0/0/0/2" ]; then
+    echo "FALLA el script de varias secciones dejó filas aunque falló (planes de 450010/secciones nuevas/usuario nuevo/asignaciones = ${QUEDAN})"
+    exit 1
+fi
+echo "ok el script de varias secciones deshace todo, sin plan de 450010, secciones nuevas ni docente.varias@example.invalid"
+# Los tres casos que siguen arman la condición en una transacción que no se confirma, así que la base queda igual.
+debe_fallar "varias_secciones_2026_2_inventado.sql con la 412 de 450010 ya registrada sin curso de Blackboard" \
+    "450010-412=sin curso" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" -c "BEGIN" \
+    -c "INSERT INTO abet.seccion (periodo_id, asignatura_id, numero)
+        SELECT pe.periodo_id, a.asignatura_id, '412' FROM abet.periodo pe, abet.asignatura a
+        WHERE pe.codigo = '2026-2' AND a.codigo = '450010'" \
+    -f "$VARIAS"
+debe_fallar "varias_secciones_2026_2_inventado.sql con docente.varias@example.invalid asignado también a la 410 de 450002" \
+    "en 2026-2 (450002-410,450002-412,450010-410,450010-412)" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" -c "BEGIN" \
+    -c "INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('docente.varias@example.invalid', 'PROFESOR')" \
+    -c "INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
+        SELECT u.usuario_id, s.seccion_id FROM acceso.usuario_autorizado u, abet.seccion s
+        JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
+        WHERE u.correo = 'docente.varias@example.invalid' AND s.numero = '410'" \
+    -f "$VARIAS"
+# docente.varias@example.invalid dicta exactamente sus tres secciones, así que solo el bloque que exige un único
+# profesor de prueba por sección detiene este caso.
+debe_fallar "varias_secciones_2026_2_inventado.sql con docente410@example.invalid asignado también a la 410 de 450010" \
+    "no tienen solo su profesor de prueba (450002-410=docente410@example.invalid,450002-411=docente411@example.invalid,450002-412=docente.varias@example.invalid,450010-410=docente.varias@example.invalid,450010-410=docente410@example.invalid,450010-412=docente.varias@example.invalid)" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -d "$BD_B" -c "BEGIN" \
+    -c "INSERT INTO abet.seccion (periodo_id, asignatura_id, numero, curso_blackboard)
+        SELECT pe.periodo_id, a.asignatura_id, '410', 'SINTETICO_20262_450010_410' FROM abet.periodo pe, abet.asignatura a
+        WHERE pe.codigo = '2026-2' AND a.codigo = '450010'" \
+    -c "INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
+        SELECT u.usuario_id, s.seccion_id FROM acceso.usuario_autorizado u, abet.seccion s
+        JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450010'
+        WHERE u.correo = 'docente410@example.invalid' AND s.numero = '410'" \
+    -f "$VARIAS"
+# En una base sin los datos sintéticos, dos corridas dejan cada fila una sola vez.
+correr "$BD_B" datos/varias_secciones_2026_2_inventado.sql
+correr "$BD_B" datos/varias_secciones_2026_2_inventado.sql
+QUEDAN="$(valor "$BD_B" "SELECT (SELECT count(*) FROM abet.plan_medicion) || '/' || (SELECT count(*) FROM abet.seccion)
+                         || '/' || (SELECT count(*) FROM acceso.usuario_autorizado) || '/' || (SELECT count(*) FROM acceso.docente_seccion)")"
+if [ "$QUEDAN" != "6/5/4/5" ]; then
+    echo "FALLA dos corridas de los scripts de datos debían dejar 6 planes, 5 secciones, 4 usuarios y 5 asignaciones (${QUEDAN})"
+    exit 1
+fi
+echo "ok dos corridas del script de varias secciones dejan 6 filas de plan, 5 secciones, 4 usuarios y 5 asignaciones"
+controles "$BD_B"
+
+paso "Datos sintéticos, datos de 2026-2 (dos veces) y datos de varias secciones (dos veces) en ${BD_A}"
 "$PSQL" -X -q -1 -v ON_ERROR_STOP=1 -d "$BD_A" -f "$RAIZ/pruebas/datos_sinteticos.sql" >/dev/null
 echo "ok datos sintéticos cargados"
 correr "$BD_A" datos/periodo_2026_2_inventado.sql
 correr "$BD_A" datos/periodo_2026_2_inventado.sql
+correr "$BD_A" datos/varias_secciones_2026_2_inventado.sql
+correr "$BD_A" datos/varias_secciones_2026_2_inventado.sql
 
 paso "Aserciones (pruebas/pruebas.sql)"
 "$PSQL" -X -q -v ON_ERROR_STOP=1 -v controles_neon="$RAIZ/plataforma/neon/controles_neon.sql" -d "$BD_A" \

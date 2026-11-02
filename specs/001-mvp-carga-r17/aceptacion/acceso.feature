@@ -145,20 +145,23 @@ Característica: Acceso al sistema y visibilidad de las secciones
     Entonces la sección 410 trae el estado de carga "PUBLICADA" con filas_leidas 11 y filas_aceptadas 11
     Y la pantalla P2 muestra en la sección 410 "Publicada, 11 de 11 filas aceptadas"
 
+  # La fila del POST manda el mismo export que la 411 tiene publicado, porque una ruta que busca la huella
+  # antes que el alcance responde 200 con la constancia de esa carga. El orden lo fijan las reglas de negocio
+  # (business rules, BR) BR-CARGA-03, en sus pasos 1 y 6, y BR-CARGA-09.
   @US-06 @corte1
   Esquema del escenario: El profesor no alcanza una sección ajena escribiendo la ruta
     Dado que la sección 411 tiene una carga PUBLICADA del export inventado de la 411, con los códigos 99000012 a 99000022
     Y que "docente410@example.invalid" tiene la sesión iniciada
-    Cuando se envía <método> <ruta>
+    Cuando se envía <método> <ruta> <cuerpo>
     Entonces la API responde 403 con el cuerpo {"detail": "La sección no está a su cargo."}
     Y la respuesta no trae ningún dato de la sección 411 ni de su carga
     Y abet.archivo_origen y abet.carga no ganan ninguna fila
 
     Ejemplos:
-      | método | ruta                                       |
-      | POST   | /api/secciones/{sección 411}/cargas        |
-      | GET    | /api/cargas/{carga de la 411}              |
-      | GET    | /api/cargas/{carga de la 411}/r17.xlsx     |
+      | método | ruta                                       | cuerpo                                                          |
+      | POST   | /api/secciones/{sección 411}/cargas        | con "export_inventado_411.xlsx" en el campo multipart «archivo» |
+      | GET    | /api/cargas/{carga de la 411}              | sin cuerpo                                                      |
+      | GET    | /api/cargas/{carga de la 411}/r17.xlsx     | sin cuerpo                                                      |
 
   @US-06 @corte1
   Escenario: Sin sesión no hay lista

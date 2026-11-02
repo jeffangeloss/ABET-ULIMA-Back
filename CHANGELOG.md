@@ -16,7 +16,20 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Generador determinista de los exports inventados de `tests/datos_inventados/` (`scripts/generar_exports_inventados.py`).
 - Specs vivas de carga, R-17, acceso y periodo con 43 reglas BR (`specs/features/`), y los seis `.feature` del corte 1 definitivos, con 127 escenarios.
 - V1_09 con el esquema `acceso` (usuarios autorizados, credenciales, sesiones, intentos fallidos, docentes por sección y códigos de acceso), el autor de cada carga, cuatro motivos nuevos de rechazo y el PI de los rechazos por PI; el rol de la aplicación con privilegio mínimo, las consultas de control de Neon, la guardia de datos inventados y los datos inventados de 2026-2, con sus pruebas.
+- Escenarios del profesor con varias secciones de varias asignaturas (`varias_secciones.feature`, con 133 escenarios en siete archivos), sus datos inventados (`db/datos/varias_secciones_2026_2_inventado.sql`, solo en las bases desechables de las pruebas) y tres exports nuevos con su generador.
+- Biblioteca `abet_carga` con el lector del export de Blackboard (revisión del zip, macros y vínculos externos), la validación de la estructura, la sección, el periodo y las filas, la carga en una sola transacción con su huella SHA-256, el R-17 desde `v_r17_por_pi` y la constancia de la carga.
+- Plantilla vaciada del R-17 (`plantillas/R017_ambiental_general.xlsx`) con su logotipo aparte y su excepción en `.gitignore` y en `scripts/preflight.sh`.
+- `app/permisos.py` con las secciones que ve cada rol y la regla única de quién sube y quién lee.
+- Comando `python -m abet_carga` con los subcomandos `cargar` y `r17`, y el guion `scripts/demo_corte1.sh`, que corre la demo del corte 1 en un clúster desechable.
+- API del corte 1 con FastAPI (`app/main.py`, `app/configuracion.py`, `app/sesion.py`, `app/rutas/`) y las cinco rutas del contrato, un solo 403 para lo ajeno y lo inexistente (propuesta), límite de intentos con candado por cuenta, `Cache-Control: no-store`, `scripts/asignar_clave.py`, `scripts/api_local.sh` y 81 pruebas en `tests/test_api_*.py`.
+- `specs/001-mvp-carga-r17/audit.md` con el cruce de historia, escenario, prueba y resultado (91 aprobados, 15 omitidos y 27 pendientes de 133), la guía de la verificación a mano (T062) y la sección `Verification` fechada del 2026-10-30 en las cuatro specs vivas.
 - Spec 002 de Capstone «plantilla de proyectos, tabla maestra en el formato nuevo y R-17 con la hoja Cursos Capstone»: 25 historias auditadas con 83 escenarios en Gherkin en español, FR-001 a FR-029, SC-001 a SC-013, decisiones D-14 a D-29 y J-11 a J-16, pendiente de aprobación de Jefferson (`specs/002-capstone/`).
+
+### Cambiado
+
+- Escenarios del corte 1 ejecutables con pytest-bdd 9 en español contra la API y la base (`tests/aceptacion/pasos/`), con 170 aprobados y 19 omitidos con su razón, y la prueba de humo `e2e/humo.spec.ts` del Front con Playwright para Node como T053.
+
+- Jefferson decide el 2026-10-28 dos puntos abiertos. J-06 adelanta en local el traslado de `bd/` a `db/` con git subtree, antes del primer `flyway migrate` en Neon y de V1_09, y J-10 suma el esquema `acceso` al respaldo diario de Neon sin los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso`.
 
 ### Seguridad
 
@@ -24,3 +37,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Dependabot para las acciones de GitHub, `.sonarcloud.properties` para SonarQube Cloud y `.snyk` con excepciones que vencen.
 - `astral-sh/setup-uv` fijado por SHA en v10.3.0, con más de 14 días publicada, y Dependabot para `uv.lock`, con la misma espera de 14 días en las acciones y en los paquetes.
 - Las pruebas de la base corren en un clúster de PostgreSQL desechable propio (`db/pruebas/cluster_desechable.sh`) y nunca en el de la Mac, después de que una prueba de mutación borrara la base local `abet_sis_med_dev` el 2026-10-28.
+- La guardia del clúster desechable (`tests/cluster_desechable.py` y `db/pruebas/cluster_desechable.sh`) reconoce la integración continua solo con `GITHUB_ACTIONS=true`, `RUNNER_TEMP` no vacío y un sistema distinto de macOS, así que exportar esa variable en la Mac no deja crear ni borrar bases en el clúster local. Las pruebas de Python también crean sus bases en ese clúster.
+- La descarga del R-17 lleva `X-Content-Type-Options: nosniff`, para que el navegador no lea el libro como otro tipo, por el hallazgo pythonsecurity:S5131 de SonarQube Cloud.
+- La CI instala y corre las pruebas con `uv sync --frozen --no-build` y `uv run --frozen --no-build`, así que ninguna dependencia de terceros se construye desde su código fuente, por el hallazgo githubactions:S8541 de SonarQube Cloud.
+- `.sonarcloud.properties` deja fuera del análisis `db/herramientas/`, donde `generar_v1_03.py` llega de `ABET_ULIMA` por git subtree y no se despliega, por los dos hallazgos pythonsecurity:S8707 de SonarQube Cloud.
