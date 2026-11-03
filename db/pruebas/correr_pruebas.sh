@@ -49,6 +49,8 @@ BD_N="${PREFIJO_BD}_neon_$$"
 BD_G="${PREFIJO_BD}_guardia_$$"
 # Los roles son del clúster y no de una base, así que el de prueba lleva el número del proceso en su nombre.
 ROL_APP="${PREFIJO_BD}_app_$$"
+# Dueño de la base de la guardia sin superusuario, como el dueño de la base en Neon, para la marca de T077.
+DUENO="${PREFIJO_BD}_dueno_$$"
 TMP="$(mktemp -d)"
 
 limpiar() {
@@ -59,6 +61,7 @@ limpiar() {
     if ! "$PSQL" -X -q -v ON_ERROR_STOP=1 -d postgres -c "DROP ROLE IF EXISTS ${ROL_APP}" >/dev/null 2>&1; then
         echo "Aviso: no se pudo borrar el rol de prueba ${ROL_APP}; hay que borrarlo a mano con DROP ROLE." >&2
     fi
+    "$PSQL" -X -q -d postgres -c "DROP ROLE IF EXISTS ${DUENO}" >/dev/null 2>&1 || true
     rm -rf "$TMP"
     detener_cluster_desechable
 }
@@ -339,6 +342,44 @@ correr "$BD_G" datos/periodo_2026_2_inventado.sql
 correr "$BD_G" datos/periodo_2026_2_inventado.sql
 correr "$BD_G" pruebas/probar_guardia.sql -v rol_app="$ROL_APP"
 controles "$BD_G"
+
+paso "Marca de entorno de Vercel en ${BD_G}, con un dueño sin superusuario como en Neon (T077)"
+"$PSQL" -X -q -v ON_ERROR_STOP=1 -d postgres -c "CREATE ROLE ${DUENO} NOLOGIN" \
+    -c "ALTER DATABASE ${BD_G} OWNER TO ${DUENO}"
+# SET ROLE corre el script con los permisos del dueño, igual que probar_rol_app.sql con los del rol de la aplicación.
+marcar() { "$PSQL" -X -q -v ON_ERROR_STOP=1 "$@" -d "$BD_G" -c "SET ROLE ${DUENO}" \
+               -f "$RAIZ/plataforma/neon/marcar_entorno.sql" 2>&1 | sin_prefijo; }
+# La API lee la marca con el rol de la aplicación, que no es dueño de la base.
+marca() { "$PSQL" -X -q -At -v ON_ERROR_STOP=1 -d "$BD_G" -c "SET ROLE ${ROL_APP}" \
+              -c "SELECT coalesce(shobj_description(oid, 'pg_database'), '') FROM pg_database WHERE datname = current_database()"; }
+marcar -v entorno=preview
+if [ "$(marca)" != abet.entorno=preview ]; then
+    echo "FALLA marcar_entorno.sql debía dejar el comentario abet.entorno=preview ($(marca))"
+    exit 1
+fi
+echo "ok el dueño sin superusuario marca la base con preview, y el rol de la aplicación lee la marca"
+marcar -v entorno=production
+if [ "$(marca)" != abet.entorno=production ]; then
+    echo "FALLA una segunda corrida de marcar_entorno.sql debía cambiar la marca a production ($(marca))"
+    exit 1
+fi
+echo "ok una segunda corrida de marcar_entorno.sql cambia la marca a production"
+debe_fallar "marcar_entorno.sql rechaza un entorno que no es production ni preview" "production o preview" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -v entorno=development -d "$BD_G" -c "SET ROLE ${DUENO}" \
+    -f "$RAIZ/plataforma/neon/marcar_entorno.sql"
+# VERBOSITY=sqlstate deja solo el código del error, 42601 para el :'entorno' que psql no reemplaza.
+debe_fallar "marcar_entorno.sql sin -v entorno" "42601" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -d "$BD_G" -c "SET ROLE ${DUENO}" \
+    -f "$RAIZ/plataforma/neon/marcar_entorno.sql"
+# 42501 es insufficient_privilege. El archivo de -f hace que psql termine con la salida 3, como el resto de los casos.
+debe_fallar "el rol de la aplicación no cambia la marca" "42501" \
+    "$PSQL" -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -d "$BD_G" -c "SET ROLE ${ROL_APP}" \
+    -f <(printf "COMMENT ON DATABASE %s IS 'abet.entorno=preview';\n" "$BD_G")
+if [ "$(marca)" != abet.entorno=production ]; then
+    echo "FALLA un intento rechazado cambió la marca ($(marca))"
+    exit 1
+fi
+echo "ok los intentos rechazados no cambian la marca"
 
 echo
 echo "RESULTADO: todo pasó"

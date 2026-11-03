@@ -16,9 +16,13 @@ Configuración, siempre del despliegue y nunca de la petición.
 - ABET_COOKIE_SIN_SECURE=1 deja la cookie sin el atributo Secure para el servidor local por http
   de scripts/api_local.sh. Solo se admite con una base local, por socket de Unix, localhost o
   127.0.0.1, y fuera de Vercel, que define VERCEL en sus funciones (propuesta).
+- VERCEL_ENV, que Vercel define en sus funciones con production, preview o development. En Vercel es
+  obligatoria, y con production o preview la base de DATABASE_URL debe tener esa misma marca de
+  db/plataforma/neon/marcar_entorno.sql (T077).
 
-Al arrancar, la API comprueba que el periodo y el conjunto de reglas existen y que DATABASE_URL no
-entra con un rol de administración (superusuario, creación de roles o de bases, o sin seguridad por
+Al arrancar, la API comprueba que el periodo y el conjunto de reglas existen, que en Production y
+Preview de Vercel la base está marcada para ese entorno y que DATABASE_URL no entra con un rol de
+administración (superusuario, creación de roles o de bases, o sin seguridad por
 filas), porque la aplicación trabaja solo con el privilegio mínimo del rol de
 db/plataforma/neon/crear_rol_app.sql (propuesta). Si algo falla, se detiene con su mensaje.
 

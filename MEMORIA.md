@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `docs/t027-neon`, con su PR a `develop`, que registra T027, T028 y T029, y `docs/002-capstone` con el PR #4, que espera la aprobación de la spec 002
+- **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y el registro de T070 y T073), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: T027 y T028 en Neon. Las ramas `develop` y principal del proyecto ABET-ULIMA quedan en la versión 1.09, con `acceso`, los roles de lectura y respaldo, `abet_app`, la guardia y los datos de 2026-2, y con las consultas de control en cero
-- **En curso**: T062 (la verificación a mano de Jefferson) y la preparación del despliegue en Vercel (fase 7)
-- **Siguiente paso**: Jefferson copia las cuatro claves nuevas del `.env` local de Neon a su gestor y archiva `ABET_ULIMA`; después vienen la fase 7 en Vercel, con la región de las funciones por decidir (iad1, junto a Neon en us-east-1), la prueba del volcado y la restauración con `pg_dump` 18 y el horario diario del respaldo con sus cinco secretos
+- **Último cambio**: la marca de entorno de cada rama de Neon (`marcar_entorno.sql`) y su comprobación en `comprobar_base` frente a `VERCEL_ENV` (T077), con sus pruebas
+- **En curso**: la fase 7 en Vercel (T070 a T079) y T062
+- **Siguiente paso**: fusionar los PR #12 del Back y #7 del Front y comprobar la vista previa de `develop`; después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,56 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 19:51 (Lima) · feat/001-despliegue-vercel · Ramas de Neon marcadas con su entorno (T077)
+- Quién: Jefferson aprueba la marca («Sí, agrégala»). Claude Code corre `marcar_entorno.sql` en Neon desde el Windows, por Tailscale, como pide la regla global de las bases, y escribe esta entrada.
+- Qué cambió: el comentario de la base de la rama `develop` de Neon (`abet.entorno=preview`) y el de la rama principal (`abet.entorno=production`), `tasks.md` (T077 hecha) y esta memoria.
+- Por qué: la API de este PR no arranca en Preview ni en Production sin la marca de su entorno.
+- Lo que debe hacer, cómo se probó: el guion termina con su NOTICE en cada rama, y `abet_app`, por el pooler, lee `abet.entorno=preview` en `develop` y `abet.entorno=production` en la principal.
+- Lo que no debe hacer, cómo se probó: la clave del dueño viaja al Windows solo por la entrada estándar de SSH, y la salida oculta el nombre de la base. Ninguna otra tabla ni permiso cambia.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `tasks.md` y el PR #12.
+- Pendiente y siguiente paso: fusionar los dos PR, comprobar la vista previa de `develop` y T074.
+
+### 2026-11-02 19:36 (Lima) · feat/001-despliegue-vercel · Marca de entorno de Vercel en cada rama de Neon (T077)
+- Quién: Jefferson aprueba en el chat agregar la marca antes de fusionar («Sí, agrégala»). Claude Code escribe primero las pruebas, implementa la marca y escribe esta entrada. Una revisión con dos revisores (seguridad con el modelo de la sesión y esfuerzo alto; corrección y documentos con Sonnet y esfuerzo medio) y un refutador confirma un hallazgo de severidad alta, que cambia el diseño antes de tocar Neon.
+- Qué cambió: `db/plataforma/neon/marcar_entorno.sql` (nuevo), `app/configuracion.py` (`entorno_vercel` en `Ajustes` y la comprobación de la marca en `comprobar_base`), el docstring de `app/main.py`, `tests/test_api_sesion.py` (once pruebas nuevas), `db/pruebas/correr_pruebas.sh` (el paso de la marca), `db/README.md`, la spec (FR-024 y la Base de US-17), `despliegue.feature` (un esquema nuevo), `tasks.md` (T077), `CHANGELOG.md` y esta memoria.
+- Por qué: la revisión de los PR muestra que nada impide que la `DATABASE_URL` de Preview apunte a la rama principal, porque las dos ramas tienen el mismo esquema, el mismo rol y los mismos datos, y `comprobar_base` pasa igual con las dos.
+- Lo que debe hacer, cómo se probó: con `VERCEL_ENV` production o preview, la API arranca solo si la base tiene esa misma marca. En Vercel, `VERCEL_ENV` es obligatoria. Sin Vercel, o con development, no se exige marca. Las pruebas fallan antes del cambio y pasan después. `correr_pruebas.sh` marca una base con preview y después con production como un dueño sin superusuario, igual que en Neon, y el rol de la aplicación lee la marca.
+- Lo que no debe hacer, cómo se probó: la API no arranca con la marca de otro entorno, sin marca, con un comentario cualquiera ni con un espacio de más (seis casos). `marcar_entorno.sql` rechaza un entorno que no es production ni preview y la falta de `-v entorno`, el rol de la aplicación no puede cambiar la marca (42501), y ningún intento rechazado la cambia.
+- Correcciones: la primera versión guardaba la marca con `ALTER DATABASE ... SET abet.entorno`. La revisión reproduce en PostgreSQL 18.6 que un dueño sin superusuario no puede guardar así un parámetro personalizado («permission denied to set parameter»), y en Neon nadie es superusuario. Las pruebas no lo veían porque marcaban como superusuario. La marca pasa al comentario de la base (`COMMENT ON DATABASE`), que el dueño sí puede cambiar, y la prueba de la base corre como un dueño sin superusuario.
+- Cómo se reporta: esta entrada, `tasks.md`, `CHANGELOG.md` y el PR #12.
+- Pendiente y siguiente paso: marcar la rama `develop` con preview y la principal con production desde el Windows, por Tailscale, y después fusionar los dos PR. Después de crear o restablecer `develop` desde la principal (T075), el script se vuelve a correr con preview antes de cualquier despliegue, porque esa rama nace con la marca production.
+
+### 2026-11-02 19:21 (Lima) · feat/001-despliegue-vercel · Vistas previas del Back solo desde develop y Preview comprobada contra Neon develop
+- Quién: Jefferson aprueba empujar las dos ramas («Sí, al terminar») y cambia de red. Claude Code lanza una revisión de los PR #12 y #7 del Front con tres revisores (seguridad con el modelo de la sesión y esfuerzo alto; configuración y documentos con Sonnet y esfuerzo medio) y un refutador por hallazgo de severidad media o alta, que confirman cinco hallazgos y no refutan ninguno. Después corrige los del Back, comprueba la vista previa desde el Windows y escribe esta entrada.
+- Qué cambió: `vercel.json` (`ignoreCommand`), `tests/test_vercel.py` (una prueba nueva), `tasks.md` (la casilla de T073, el avance de T070 y la comprobación de Preview), `CHANGELOG.md` y esta memoria.
+- Por qué: con Vercel Authentication apagada, toda vista previa del Back queda pública y escribe en la rama `develop` de Neon con `abet_app`, también la de una rama de trabajo o de Dependabot, cuyo alias se adivina porque los repositorios son públicos. FR-024 ya pide Preview desde `develop`.
+- Lo que debe hacer, cómo se probó: la prueba nueva corre `ignoreCommand` con `sh -c` y pasa con Production desde `main` y Preview desde `develop`. Falla sin la clave en `vercel.json`. Una petición con una cookie inventada a la vista previa de esta rama da 401 y deja una sesión de `abet_app` con actividad nueva en la rama `develop` de Neon, y ninguna en la principal (`pg_stat_activity`). La consulta corre en el Windows por SSH, porque desde la Mac Neon corta la negociación TLS en dos redes distintas y desde el Windows se completa con TLSv1.3.
+- Lo que no debe hacer, cómo se probó: la prueba nueva comprueba que no se construyan las ramas `feat/001-despliegue-vercel`, `dependabot/pip/fastapi-1.0` ni `develop-copia`, ni un despliegue sin rama. La clave de Neon viaja al Windows solo por la entrada estándar de SSH y no queda en ningún archivo ni argumento.
+- Correcciones: la casilla de T073 decía «[x ]» y pasa a «[x]». El avance de T070 decía que apagar la protección abre solo la API de `develop`.
+- Cómo se reporta: esta entrada, `tasks.md`, `CHANGELOG.md` y el PR #12.
+- Pendiente y siguiente paso: Jefferson decide la marca de entorno en cada rama de Neon, que la revisión propone para que la API no arranque si la `DATABASE_URL` de Preview apunta a la rama principal. La vista previa de esta rama sigue publicada y se puede borrar desde Vercel.
+
+### 2026-11-02 19:00 (Lima) · feat/001-despliegue-vercel · Proyectos de Vercel creados y variables del Back cargadas (T070 y T073)
+- Quién: Jefferson crea los dos proyectos de Vercel, pega las variables del Back, vuelve a crear la `DATABASE_URL` de Preview y apaga Vercel Authentication en el Back. Claude Code, sin subagentes, revisa el resultado con la CLI y la API de Vercel y escribe esta entrada.
+- Qué cambió: `tasks.md` (T070 con su avance y T073 hecha) y esta memoria.
+- Por qué: T070 y T073 de la spec 001, registradas antes de empujar la rama con lo que muestra Vercel.
+- Lo que debe hacer, cómo se probó: `vercel env ls` lista `DATABASE_URL`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS` en Production y en Preview. La API de Vercel da `main` como rama de Production de los dos proyectos y `ssoProtection` vacío en el Back. Los comandos que arman cada `DATABASE_URL` dan la misma cadena, comparada por su huella SHA-256, que pasa `comprobar_base` en las dos ramas de Neon.
+- Lo que no debe hacer, cómo se probó: ningún valor aparece en el repositorio, en un registro ni en el chat, porque los comandos copian al portapapeles y la CLI muestra «Hidden». Preview tiene una sola `DATABASE_URL`, creada de nuevo después de una duplicada cuyo valor no se puede comprobar, y Development no tiene variables. El proyecto del Front no tiene variables.
+- Correcciones: Vercel da al Back el dominio `abet-ulima-back-gray.vercel.app`, y el `vercel.json` del Front apunta ahí (df187a7 del Front).
+- Cómo se reporta: esta entrada, `tasks.md` y el PR.
+- Pendiente y siguiente paso: Jefferson confirma el entrenamiento de IA apagado y envía la consulta J-07. Siguen la vista previa de esta rama contra Neon `develop`, los dos PR, T074 y T075.
+
+### 2026-11-02 17:36 (Lima) · feat/001-despliegue-vercel · vercel.json del Back en iad1 con la función de FastAPI (T071)
+- Quién: Jefferson aprueba en el chat seguir con el despliegue en Vercel («Sí, sigamos»), con la región de las funciones en iad1 junto a Neon. Claude Code escribe primero las pruebas, hace el cambio y escribe esta entrada.
+- Qué cambió: `vercel.json` (región iad1 y `excludeFiles` de la función `app/main.py`), `pyproject.toml` (`[tool.vercel]` con `entrypoint = "app.main:app"`), `tests/test_vercel.py` (nuevo), la región iad1 en la constitución (1.0.2), `spec.md` (J-17, FR-024, la Base y el escenario 3 de US-17), `plan.md`, `despliegue.feature` y T071 en `tasks.md`.
+- Por qué: T071 de la spec 001 y J-17. Con Neon en us-east-1, la función de la API va en iad1 para que cada consulta a la base no cruce de São Paulo a Virginia.
+- Lo que debe hacer, cómo se probó: las tres pruebas de `tests/test_vercel.py` fallan sin `vercel.json` y pasan con él. Comprueban la región iad1, la función `app.main:app` y que el paquete deje fuera las pruebas, las specs, la documentación, `db/` y los guiones. `app/configuracion.py` y `abet_carga/carga.py` ya conectan con `prepare_threshold=None`, que el pooler de Neon necesita.
+- Lo que no debe hacer, cómo se probó: el paquete no deja fuera `app/`, `abet_carga/` ni `plantillas/`, que el R-17 necesita (la misma prueba), y `uv lock --check` sigue sin cambios en `uv.lock`.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `CHANGELOG.md`, `tasks.md` y el PR.
+- Pendiente y siguiente paso: T072 en el Front y T070 y T073 de Jefferson. Los pasos de `despliegue.feature` se escriben con la prueba de humo de T075, contra la vista previa.
 
 ### 2026-11-02 17:18 (Lima) · docs/t027-neon · T027 y T028 en Neon y auditoría de la fase de la base (T029)
 - Quién: Jefferson aprueba en el chat seguir con T027 en una rama de Neon («Sí, sigamos») y después aplicarlo en la principal («Sí, aplícalo»), y crea en la consola la rama hija `develop` de `main`. Claude Code genera las cuatro claves nuevas dentro del `.env` local de Neon sin mostrarlas, corre T027 en las dos ramas con la conexión directa y salidas sin hosts ni claves, comprueba los accesos y escribe esta entrada. No participan subagentes.

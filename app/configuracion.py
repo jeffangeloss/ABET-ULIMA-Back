@@ -34,6 +34,12 @@ _ROL = """
 SELECT rolsuper OR rolcreaterole OR rolcreatedb OR rolbypassrls OR rolreplication
 FROM pg_roles WHERE rolname = current_user
 """
+_ENTORNOS_DE_VERCEL = frozenset({"production", "preview", "development"})
+_ENTORNOS_CON_MARCA = frozenset({"production", "preview"})
+# La marca de db/plataforma/neon/marcar_entorno.sql es el comentario de la base, que solo su dueño puede cambiar y que
+# el rol de la aplicación lee del catálogo.
+_MARCA = "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname = current_database()"
+_PREFIJO_DE_LA_MARCA = "abet.entorno="
 
 
 class ConfiguracionDeLaApi(RuntimeError):
@@ -53,6 +59,7 @@ class Ajustes:
     periodo_vigente: str
     carga: Configuracion
     cookie_segura: bool = True
+    entorno_vercel: str | None = None
 
     @classmethod
     def desde_entorno(cls, entorno: Mapping[str, str] | None = None) -> Ajustes:
@@ -74,12 +81,18 @@ class Ajustes:
         sin_secure = entorno.get("ABET_COOKIE_SIN_SECURE", "").strip() == "1"
         if sin_secure and (entorno.get("VERCEL") or not _base_local(valores["DATABASE_URL"])):
             raise ConfiguracionDeLaApi("ABET_COOKIE_SIN_SECURE solo se admite con una base local y fuera de Vercel.")
+        entorno_vercel = entorno.get("VERCEL_ENV", "").strip() or None
+        if entorno_vercel is not None and entorno_vercel not in _ENTORNOS_DE_VERCEL:
+            raise ConfiguracionDeLaApi(f"VERCEL_ENV {entorno_vercel} no es production, preview ni development.")
+        if entorno.get("VERCEL") and entorno_vercel is None:
+            raise ConfiguracionDeLaApi("En Vercel falta VERCEL_ENV, que dice si el despliegue es de production o de preview.")
         return cls(
             database_url=valores["DATABASE_URL"],
             sesion_secreto=valores["SESION_SECRETO"],
             periodo_vigente=valores["PERIODO_VIGENTE"],
             carga=carga,
             cookie_segura=not sin_secure,
+            entorno_vercel=entorno_vercel,
         )
 
 
@@ -98,7 +111,7 @@ def conectar(ajustes: Ajustes) -> psycopg.Connection[Any]:
 
 
 def comprobar_base(ajustes: Ajustes) -> None:
-    """Comprueba el periodo, el conjunto de reglas y el rol de la conexión, o detiene el arranque."""
+    """Comprueba el rol de la conexión, la marca de entorno en Vercel, el periodo y las reglas, o detiene el arranque."""
     try:
         conexion = conectar(ajustes)
     except psycopg.OperationalError:
@@ -109,6 +122,16 @@ def comprobar_base(ajustes: Ajustes) -> None:
         if administra is None or administra[0]:
             raise ConfiguracionDeLaApi(
                 "DATABASE_URL entra con un rol de administración, y la API necesita el rol de la aplicación.")
+        if ajustes.entorno_vercel in _ENTORNOS_CON_MARCA:
+            fila = conexion.execute(_MARCA).fetchone()
+            comentario = fila[0] if fila else None
+            marca = (comentario.removeprefix(_PREFIJO_DE_LA_MARCA)
+                     if comentario and comentario.startswith(_PREFIJO_DE_LA_MARCA) else None)
+            if marca != ajustes.entorno_vercel:
+                raise ConfiguracionDeLaApi(
+                    f"La base de DATABASE_URL está marcada para {marca or 'ningún entorno'} y el despliegue es de "
+                    f"{ajustes.entorno_vercel}. Revise DATABASE_URL o marque la rama con "
+                    "db/plataforma/neon/marcar_entorno.sql.")
         if conexion.execute(_PERIODO_EXISTE, (ajustes.periodo_vigente,)).fetchone() is None:
             raise ConfiguracionDeLaApi(f"PERIODO_VIGENTE {ajustes.periodo_vigente} no existe en abet.periodo")
         if conexion.execute(_REGLAS_EXISTEN, (ajustes.carga.conjunto_reglas,)).fetchone() is None:

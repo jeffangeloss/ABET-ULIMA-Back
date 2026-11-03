@@ -64,3 +64,8 @@ bdd_features_base_dir = "."
 markers = [
     "base: usa una base PostgreSQL 18 desechable con el prefijo abet_demo_ (tests/base_desechable.py)",
 ]
+
+# Vercel carga la app de FastAPI desde este módulo (T071). vercel.json fija la región iad1, junto a Neon en
+# us-east-1 (J-17), y deja fuera del paquete lo que no corre en la función.
+[tool.vercel]
+entrypoint = "app.main:app"

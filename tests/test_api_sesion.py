@@ -22,6 +22,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from psycopg import sql
 
 from app import sesion as modulo_sesion
 from app.main import Ajustes, ConfiguracionDeLaApi, crear_app
@@ -318,6 +319,42 @@ def test_la_api_se_detiene_si_la_base_no_tiene_el_periodo_o_las_reglas(api: obje
 def test_la_api_no_arranca_con_un_rol_de_administracion(api: object) -> None:
     ajustes = replace(api.ajustes, database_url=api.base.conexion)
     with pytest.raises(ConfiguracionDeLaApi, match="rol de la aplicación"), TestClient(crear_app(ajustes)):
+        pass
+
+
+def test_vercel_env_dice_de_que_entorno_es_el_despliegue() -> None:
+    assert Ajustes.desde_entorno(_entorno()).entorno_vercel is None
+    assert Ajustes.desde_entorno(_entorno(VERCEL="1", VERCEL_ENV="preview")).entorno_vercel == "preview"
+    with pytest.raises(ConfiguracionDeLaApi, match="VERCEL_ENV"):
+        Ajustes.desde_entorno(_entorno(VERCEL="1"))
+    with pytest.raises(ConfiguracionDeLaApi, match="VERCEL_ENV"):
+        Ajustes.desde_entorno(_entorno(VERCEL_ENV="staging"))
+
+
+def _comentar(api: object, comentario: str | None) -> None:
+    """Deja el comentario de la base de la prueba, donde db/plataforma/neon/marcar_entorno.sql guarda la marca."""
+    valor = sql.NULL if comentario is None else sql.Literal(comentario)
+    api.dueno.execute(sql.SQL("COMMENT ON DATABASE {} IS {}").format(sql.Identifier(api.dueno.info.dbname), valor))
+
+
+@pytest.mark.parametrize(("comentario", "entorno"), [
+    ("abet.entorno=preview", "preview"), ("abet.entorno=production", "production"), (None, "development"),
+    (None, None)])
+def test_la_api_arranca_si_la_base_esta_marcada_para_su_entorno_de_vercel(
+        api: object, comentario: str | None, entorno: str | None) -> None:
+    _comentar(api, comentario)
+    with TestClient(crear_app(replace(api.ajustes, entorno_vercel=entorno))) as cliente:
+        assert cliente.get("/api/sesion").status_code == 401
+
+
+@pytest.mark.parametrize(("comentario", "entorno"), [
+    ("abet.entorno=production", "preview"), ("abet.entorno=preview", "production"), (None, "preview"),
+    (None, "production"), ("Base del piloto", "production"), ("abet.entorno=preview ", "preview")])
+def test_la_api_no_arranca_contra_la_base_de_otro_entorno_de_vercel(
+        api: object, comentario: str | None, entorno: str) -> None:
+    _comentar(api, comentario)
+    with pytest.raises(ConfiguracionDeLaApi, match=f"el despliegue es de {entorno}"), \
+            TestClient(crear_app(replace(api.ajustes, entorno_vercel=entorno))):
         pass
 
 
