@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y el registro de T070 y T073), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
+- **Rama de trabajo**: `feat/001-humo-preview`, con el registro de T075, y la rama del mismo nombre en el Front con la prueba de humo contra la vista previa; `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la marca de entorno de cada rama de Neon (`marcar_entorno.sql`) y su comprobación en `comprobar_base` frente a `VERCEL_ENV` (T077), con sus pruebas
-- **En curso**: la fase 7 en Vercel (T070 a T079) y T062
-- **Siguiente paso**: fusionar los PR #12 del Back y #7 del Front y comprobar la vista previa de `develop`; después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
+- **Último cambio**: la prueba de humo pasa contra la vista previa de `develop` (T075), después de la prueba a mano de Jefferson en la misma vista previa
+- **En curso**: la fase 7 en Vercel (T074, T076 y T079) y T062
+- **Siguiente paso**: las contraseñas de la rama principal (T074), la versión 0.1.0 de `develop` a `main` en el Back y después en el Front (T076) y la auditoría de la fase (T079)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-humo-preview`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 21:30 (Lima) · feat/001-humo-preview · Prueba de humo contra la vista previa de develop (T075)
+- Quién: Jefferson prueba a mano la vista previa de `develop` («esta bueno»), restablece la rama `develop` de Neon, crea la clave de omisión del Front, asigna las contraseñas y corre la prueba de humo. Claude Code adapta la prueba, prepara los comandos, marca la rama, revisa Neon desde el Windows y escribe esta entrada. Una revisión con dos revisores y un refutador por hallazgo confirma cuatro hallazgos sobre la prueba, corregidos antes de correrla.
+- Qué cambió: `tasks.md` (T075 hecha y el avance de T074) y esta memoria. La rama `develop` de Neon queda restablecida, marcada con preview y con la carga de la prueba.
+- Por qué: T075 de la spec 001 y el escenario @humo de `despliegue.feature`, valor provisional de J-09.
+- Lo que debe hacer, cómo se probó: en la prueba a mano, la 410 queda con 11, 10 y 1 y 60,0, 60,0 y 70,0 %, y la 411 con 11, 11 y 0 y 63,6, 63,6 y 72,7 %. Después del restablecimiento, Playwright da 2 passed contra la vista previa, la 410 queda PUBLICADA con 11, 10 y 1, `v_r17_por_pi` da 6, 6 y 7 de 10 y Q01 a Q14 dan 0 en `develop`.
+- Lo que no debe hacer, cómo se probó: la rama principal sigue con 0 cargas, 0 sesiones y 0 credenciales. Las contraseñas no pasan por el agente, la clave de omisión no se imprime ni se guarda, y los resultados de Playwright, que copian la página con la contraseña escrita cuando falla, van a una carpeta temporal que se borra al terminar.
+- Correcciones: la primera corrida se detiene antes de pedir contraseñas, porque psql en el Windows termina sus líneas con «\r\n». El ayudante del Windows normaliza los finales de línea.
+- Cómo se reporta: esta entrada, `tasks.md` y el PR.
+- Pendiente y siguiente paso: la prueba no abre el R-17 descargado, así que su contenido queda para T079. Siguen las contraseñas de la rama principal, la versión 0.1.0 (T076) y T079.
 
 ### 2026-11-02 19:51 (Lima) · feat/001-despliegue-vercel · Ramas de Neon marcadas con su entorno (T077)
 - Quién: Jefferson aprueba la marca («Sí, agrégala»). Claude Code corre `marcar_entorno.sql` en Neon desde el Windows, por Tailscale, como pide la regla global de las bases, y escribe esta entrada.
