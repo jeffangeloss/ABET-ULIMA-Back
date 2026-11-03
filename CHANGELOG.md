@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Agregado
 
+- Marca de entorno de Vercel en cada rama de Neon (`db/plataforma/neon/marcar_entorno.sql`), que `comprobar_base` compara con `VERCEL_ENV`, así que la API no arranca en Production ni en Preview contra la rama de otro entorno (T077).
 - `ignoreCommand` en `vercel.json`, que solo construye Production y la rama `develop`, porque el Back no tiene la protección de Vercel y la vista previa de cualquier otra rama quedaría pública con la base de `develop`.
 - `vercel.json` con la región iad1, junto a Neon en us-east-1 (J-17), y la función de FastAPI `app.main:app` de `[tool.vercel]`, que deja fuera del paquete las pruebas, las specs, la documentación, `db/` y los guiones (T071).
 - Ramas `main` y `develop` con la configuración de IQBF: `develop` por defecto, PR obligatorio, checks `pruebas` y `flujo`, sin empujes forzados ni borrado (`docs/devops.md`).

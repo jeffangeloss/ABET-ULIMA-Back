@@ -94,6 +94,20 @@ Característica: Piloto desplegado en Vercel con Neon y probado de punta a punta
     Y abet.carga de la rama de Production no gana ninguna fila
     Pero abet.carga de la rama de Preview gana 1 fila
 
+  # T077. La marca es el comentario de la base de cada rama, que solo su dueño cambia, y la API la lee al arrancar.
+  @US-17 @corte1
+  Esquema del escenario: La API no arranca contra la rama de Neon de otro entorno
+    Dado la base de una rama de Neon con la marca de entorno <marca> de marcar_entorno.sql
+    Cuando la API arranca en Vercel con VERCEL_ENV "<entorno>" y la DATABASE_URL de esa rama
+    Entonces el arranque se detiene con un mensaje que dice que el despliegue es de <entorno>
+    Y la base no recibe ninguna conexión de abet_app después de esa comprobación
+
+    Ejemplos:
+      | marca        | entorno    |
+      | "production" | preview    |
+      | "preview"    | production |
+      | vacía        | preview    |
+
   @US-17 @corte1
   Escenario: Production sale solo de main
     Cuando se revisa la configuración de Git de los dos proyectos de Vercel
