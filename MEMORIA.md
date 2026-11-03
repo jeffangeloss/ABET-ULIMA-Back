@@ -17,7 +17,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
 - **Último cambio**: la marca de entorno de cada rama de Neon (`marcar_entorno.sql`) y su comprobación en `comprobar_base` frente a `VERCEL_ENV` (T077), con sus pruebas
 - **En curso**: la fase 7 en Vercel (T070 a T079) y T062
-- **Siguiente paso**: marcar las dos ramas de Neon desde el Windows, fusionar los PR #12 del Back y #7 del Front y comprobar la vista previa de `develop`; después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
+- **Siguiente paso**: fusionar los PR #12 del Back y #7 del Front y comprobar la vista previa de `develop`; después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 19:51 (Lima) · feat/001-despliegue-vercel · Ramas de Neon marcadas con su entorno (T077)
+- Quién: Jefferson aprueba la marca («Sí, agrégala»). Claude Code corre `marcar_entorno.sql` en Neon desde el Windows, por Tailscale, como pide la regla global de las bases, y escribe esta entrada.
+- Qué cambió: el comentario de la base de la rama `develop` de Neon (`abet.entorno=preview`) y el de la rama principal (`abet.entorno=production`), `tasks.md` (T077 hecha) y esta memoria.
+- Por qué: la API de este PR no arranca en Preview ni en Production sin la marca de su entorno.
+- Lo que debe hacer, cómo se probó: el guion termina con su NOTICE en cada rama, y `abet_app`, por el pooler, lee `abet.entorno=preview` en `develop` y `abet.entorno=production` en la principal.
+- Lo que no debe hacer, cómo se probó: la clave del dueño viaja al Windows solo por la entrada estándar de SSH, y la salida oculta el nombre de la base. Ninguna otra tabla ni permiso cambia.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `tasks.md` y el PR #12.
+- Pendiente y siguiente paso: fusionar los dos PR, comprobar la vista previa de `develop` y T074.
 
 ### 2026-11-02 19:36 (Lima) · feat/001-despliegue-vercel · Marca de entorno de Vercel en cada rama de Neon (T077)
 - Quién: Jefferson aprueba en el chat agregar la marca antes de fusionar («Sí, agrégala»). Claude Code escribe primero las pruebas, implementa la marca y escribe esta entrada. Una revisión con dos revisores (seguridad con el modelo de la sesión y esfuerzo alto; corrección y documentos con Sonnet y esfuerzo medio) y un refutador confirma un hallazgo de severidad alta, que cambia el diseño antes de tocar Neon.
