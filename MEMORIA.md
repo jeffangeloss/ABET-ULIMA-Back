@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-02
-- **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y la región iad1), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
+- **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y el registro de T070 y T073), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: `vercel.json` del Back con la región iad1, junto a Neon en us-east-1 (J-17), y la función de FastAPI, con su prueba
+- **Último cambio**: los dos proyectos de Vercel existen, con `main` como rama de Production, las cinco variables del Back en Production y Preview y Vercel Authentication apagada en el Back (T070 casi completa y T073 hecha)
 - **En curso**: la fase 7 en Vercel (T070 a T079) y T062
-- **Siguiente paso**: Jefferson crea los dos proyectos de Vercel sin conectar la base de Neon de la integración, apaga la protección de las vistas previas del Back y pega las variables (T070 y T073); después, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
+- **Siguiente paso**: la vista previa de esta rama contra la rama `develop` de Neon, la fusión de los PR del Back y del Front, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 19:00 (Lima) · feat/001-despliegue-vercel · Proyectos de Vercel creados y variables del Back cargadas (T070 y T073)
+- Quién: Jefferson crea los dos proyectos de Vercel, pega las variables del Back, vuelve a crear la `DATABASE_URL` de Preview y apaga Vercel Authentication en el Back. Claude Code, sin subagentes, revisa el resultado con la CLI y la API de Vercel y escribe esta entrada.
+- Qué cambió: `tasks.md` (T070 con su avance y T073 hecha) y esta memoria.
+- Por qué: T070 y T073 de la spec 001, registradas antes de empujar la rama con lo que muestra Vercel.
+- Lo que debe hacer, cómo se probó: `vercel env ls` lista `DATABASE_URL`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS` en Production y en Preview. La API de Vercel da `main` como rama de Production de los dos proyectos y `ssoProtection` vacío en el Back. Los comandos que arman cada `DATABASE_URL` dan la misma cadena, comparada por su huella SHA-256, que pasa `comprobar_base` en las dos ramas de Neon.
+- Lo que no debe hacer, cómo se probó: ningún valor aparece en el repositorio, en un registro ni en el chat, porque los comandos copian al portapapeles y la CLI muestra «Hidden». Preview tiene una sola `DATABASE_URL`, creada de nuevo después de una duplicada cuyo valor no se puede comprobar, y Development no tiene variables. El proyecto del Front no tiene variables.
+- Correcciones: Vercel da al Back el dominio `abet-ulima-back-gray.vercel.app`, y el `vercel.json` del Front apunta ahí (df187a7 del Front).
+- Cómo se reporta: esta entrada, `tasks.md` y el PR.
+- Pendiente y siguiente paso: Jefferson confirma el entrenamiento de IA apagado y envía la consulta J-07. Siguen la vista previa de esta rama contra Neon `develop`, los dos PR, T074 y T075.
 
 ### 2026-11-02 17:36 (Lima) · feat/001-despliegue-vercel · vercel.json del Back en iad1 con la función de FastAPI (T071)
 - Quién: Jefferson aprueba en el chat seguir con el despliegue en Vercel («Sí, sigamos»), con la región de las funciones en iad1 junto a Neon. Claude Code escribe primero las pruebas, hace el cambio y escribe esta entrada.
