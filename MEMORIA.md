@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-02
 - **Rama de trabajo**: `feat/001-despliegue-vercel`, con su PR a `develop` (T071 y el registro de T070 y T073), y la rama del mismo nombre en el Front (T072); `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: los dos proyectos de Vercel existen, con `main` como rama de Production, las cinco variables del Back en Production y Preview y Vercel Authentication apagada en el Back (T070 casi completa y T073 hecha)
+- **Último cambio**: `vercel.json` del Back solo construye Production y `develop` (`ignoreCommand`), porque Vercel Authentication está apagada en el Back, y la vista previa de esta rama consulta la rama `develop` de Neon
 - **En curso**: la fase 7 en Vercel (T070 a T079) y T062
-- **Siguiente paso**: la vista previa de esta rama contra la rama `develop` de Neon, la fusión de los PR del Back y del Front, T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
+- **Siguiente paso**: la fusión de los PR #12 del Back y #7 del Front, la marca de entorno en cada rama de Neon (propuesta de la revisión), T074, la prueba de humo contra Preview (T075) y la versión 0.1.0 (T076)
 - **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-despliegue-vercel`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-02 19:21 (Lima) · feat/001-despliegue-vercel · Vistas previas del Back solo desde develop y Preview comprobada contra Neon develop
+- Quién: Jefferson aprueba empujar las dos ramas («Sí, al terminar») y cambia de red. Claude Code lanza una revisión de los PR #12 y #7 del Front con tres revisores (seguridad con el modelo de la sesión y esfuerzo alto; configuración y documentos con Sonnet y esfuerzo medio) y un refutador por hallazgo de severidad media o alta, que confirman cinco hallazgos y no refutan ninguno. Después corrige los del Back, comprueba la vista previa desde el Windows y escribe esta entrada.
+- Qué cambió: `vercel.json` (`ignoreCommand`), `tests/test_vercel.py` (una prueba nueva), `tasks.md` (la casilla de T073, el avance de T070 y la comprobación de Preview), `CHANGELOG.md` y esta memoria.
+- Por qué: con Vercel Authentication apagada, toda vista previa del Back queda pública y escribe en la rama `develop` de Neon con `abet_app`, también la de una rama de trabajo o de Dependabot, cuyo alias se adivina porque los repositorios son públicos. FR-024 ya pide Preview desde `develop`.
+- Lo que debe hacer, cómo se probó: la prueba nueva corre `ignoreCommand` con `sh -c` y pasa con Production desde `main` y Preview desde `develop`. Falla sin la clave en `vercel.json`. Una petición con una cookie inventada a la vista previa de esta rama da 401 y deja una sesión de `abet_app` con actividad nueva en la rama `develop` de Neon, y ninguna en la principal (`pg_stat_activity`). La consulta corre en el Windows por SSH, porque desde la Mac Neon corta la negociación TLS en dos redes distintas y desde el Windows se completa con TLSv1.3.
+- Lo que no debe hacer, cómo se probó: la prueba nueva comprueba que no se construyan las ramas `feat/001-despliegue-vercel`, `dependabot/pip/fastapi-1.0` ni `develop-copia`, ni un despliegue sin rama. La clave de Neon viaja al Windows solo por la entrada estándar de SSH y no queda en ningún archivo ni argumento.
+- Correcciones: la casilla de T073 decía «[x ]» y pasa a «[x]». El avance de T070 decía que apagar la protección abre solo la API de `develop`.
+- Cómo se reporta: esta entrada, `tasks.md`, `CHANGELOG.md` y el PR #12.
+- Pendiente y siguiente paso: Jefferson decide la marca de entorno en cada rama de Neon, que la revisión propone para que la API no arranque si la `DATABASE_URL` de Preview apunta a la rama principal. La vista previa de esta rama sigue publicada y se puede borrar desde Vercel.
 
 ### 2026-11-02 19:00 (Lima) · feat/001-despliegue-vercel · Proyectos de Vercel creados y variables del Back cargadas (T070 y T073)
 - Quién: Jefferson crea los dos proyectos de Vercel, pega las variables del Back, vuelve a crear la `DATABASE_URL` de Preview y apaga Vercel Authentication en el Back. Claude Code, sin subagentes, revisa el resultado con la CLI y la API de Vercel y escribe esta entrada.

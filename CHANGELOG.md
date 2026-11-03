@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Agregado
 
+- `ignoreCommand` en `vercel.json`, que solo construye Production y la rama `develop`, porque el Back no tiene la protección de Vercel y la vista previa de cualquier otra rama quedaría pública con la base de `develop`.
 - `vercel.json` con la región iad1, junto a Neon en us-east-1 (J-17), y la función de FastAPI `app.main:app` de `[tool.vercel]`, que deja fuera del paquete las pruebas, las specs, la documentación, `db/` y los guiones (T071).
 - Ramas `main` y `develop` con la configuración de IQBF: `develop` por defecto, PR obligatorio, checks `pruebas` y `flujo`, sin empujes forzados ni borrado (`docs/devops.md`).
 - CI con la revisión previa `scripts/preflight.sh` (datos inventados, secretos y memoria) y `release.yml`, que crea el tag y el Release desde este archivo.
