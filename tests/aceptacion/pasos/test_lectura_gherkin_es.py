@@ -33,6 +33,7 @@ from pytest_bdd.scenario import scenario_wrapper_template_registry
 RAIZ = Path(__file__).resolve().parents[3]
 CARGA = "specs/001-mvp-carga-r17/aceptacion/carga.feature"
 R17 = "specs/001-mvp-carga-r17/aceptacion/r17_constancia.feature"
+EXPORTS = "specs/003-exports-blackboard/aceptacion/exports_blackboard.feature"
 
 
 class _EscenariosDeCarga:
@@ -47,8 +48,14 @@ class _EscenariosDeR17:
     scenarios(R17)
 
 
-_ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17}
-_POR_ARCHIVO = pytest.mark.parametrize("ruta", [CARGA, R17], ids=["carga", "r17_constancia"])
+class _EscenariosDeExports:
+    """Funciones que scenarios() arma para exports_blackboard.feature (spec 003) con la ruta relativa a la raíz."""
+
+    scenarios(EXPORTS)
+
+
+_ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports}
+_POR_ARCHIVO = pytest.mark.parametrize("ruta", [CARGA, R17, EXPORTS], ids=["carga", "r17_constancia", "exports_blackboard"])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero

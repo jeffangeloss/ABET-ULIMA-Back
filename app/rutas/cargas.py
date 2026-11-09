@@ -14,7 +14,9 @@ POST /api/secciones/{seccion_id}/cargas sigue el orden fijo de BR-CARGA-03.
    en detail si no.
 
 El registro de la aplicación (logger abet.api) guarda de un archivo detenido por tamaño o por ser
-ilegible la huella, la hora y el motivo, de uno detenido por la guardia solo la huella y la hora, y
+ilegible la huella, la hora, el motivo y el detalle de la lista cerrada de la spec 003, con «-» si
+no tiene, en la forma evento=archivo_detenido hora=… sha256=… motivo=… detalle=…, de uno detenido
+por la guardia solo la huella y la hora, y
 de una falla de la base solo el SQLSTATE y el nombre de la restricción (BR-CARGA-08). Nunca guarda
 el nombre del archivo, de la hoja, un código, un valor leído, el DETAIL de PostgreSQL ni la cookie.
 
@@ -97,7 +99,8 @@ def _registrar(resultado: ResultadoCarga) -> None:
     """Registro de BR-CARGA-08, sin nombres, códigos, valores leídos ni el DETAIL de PostgreSQL."""
     hora = datetime.now(HORA_DE_LIMA).isoformat()
     if resultado.resultado is Resultado.ILEGIBLE:
-        REGISTRO.warning(f"evento=archivo_detenido hora={hora} sha256={resultado.sha256} motivo={resultado.motivo}")
+        REGISTRO.warning(f"evento=archivo_detenido hora={hora} sha256={resultado.sha256} motivo={resultado.motivo}"
+                         f" detalle={resultado.detalle or '-'}")
     elif resultado.resultado is Resultado.GUARDIA:
         REGISTRO.warning(f"evento=guardia_datos_inventados hora={hora} sha256={resultado.sha256}")
     elif resultado.resultado is Resultado.FALLA:

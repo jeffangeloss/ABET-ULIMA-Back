@@ -6,6 +6,14 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Agregado
 
+- Carga del export real de Blackboard en sus tres formatos, `.xlsx`, `.csv` (UTF-8 con BOM, comas y comillas) y `.xls` de texto (UTF-16 LE con BOM y tabuladores), con el lector elegido por el contenido (spec 003, US-27, US-28 y J-18).
+- Reconocimiento de las columnas de PI con sus encabezados reales, como «ABET SO5.1 [Total Pts: 100 Score]» y «ABET SO 5.3 […]», en el lector y en la base, con `V1_10__encabezado_pi_con_prefijo.sql` (spec 003, US-26 y J-19).
+- El nivel «3.00», «3,00» o «4.0» que Blackboard escribe en el texto vale el entero (US-29, D-03).
+- Un export sin ningún nivel en los PI del plan queda RECHAZADO con SIN_CALIFICACIONES y deja libre la sección (US-36, D-31).
+- Topes de 5 000 filas de datos (J-20) y de 1 000 000 de celdas recorridas por archivo, y un detalle de lista cerrada en el registro de cada archivo detenido (US-31 y US-32).
+- Cuatro exports inventados con la forma del export real y `db/plataforma/neon/revisar_antes_de_v1_10.sql`, que revisa en solo lectura una rama de Neon antes de migrarla.
+
+
 - Marca de entorno de Vercel en cada rama de Neon (`db/plataforma/neon/marcar_entorno.sql`), que `comprobar_base` compara con `VERCEL_ENV`, así que la API no arranca en Production ni en Preview contra la rama de otro entorno (T077).
 - `ignoreCommand` en `vercel.json`, que solo construye Production y la rama `develop`, porque el Back no tiene la protección de Vercel y la vista previa de cualquier otra rama quedaría pública con la base de `develop`.
 - `vercel.json` con la región iad1, junto a Neon en us-east-1 (J-17), y la función de FastAPI `app.main:app` de `[tool.vercel]`, que deja fuera del paquete las pruebas, las specs, la documentación, `db/` y los guiones (T071).
@@ -29,6 +37,8 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- La regla 2 de `scripts/preflight.sh` revisa por contenido cada archivo de `tests/datos_inventados/`, también un texto UTF-16 o en Windows-1252, falla con un contenedor OLE que no está en su lista fija y ve los nombres con caracteres que no son ASCII (US-35).
+- Los textos de TIPO_NO_ADMITIDO, CONTENIDO_NO_ES_LIBRO y de la sección sin declarar nombran los tres formatos, y la constancia, P4 y el R-17 muestran «Sin hoja (export de texto)» para un export de texto (US-30, US-31 y US-34).
 - `preparacion-neon` de `ABET_ULIMA` llega a `db/` con `git subtree pull` (T022 y T023), con el entorno `neon` de Flyway para `abet` y `acceso`, el callback que repone los permisos de lectura, del respaldo y de las vistas del rol de la API, los roles de lectura de Power BI y del respaldo, el respaldo cifrado con `pg_dump` 18 y su flujo a mano en `.github/workflows/respaldo_neon.yml`.
 - PostgreSQL 18, la versión del proyecto ABET-ULIMA de Neon (J-17), en la CI (servicio `postgres:18` y cliente 18 del repositorio PGDG), en el clúster desechable de la Mac (`postgresql@18` de Homebrew o `PG_BIN`, que se niega a seguir con otra versión) y en los escenarios y pasos de aceptación, que exigen `server_version_num` 18. T020 y T021 quedan hechas.
 - Escenarios del corte 1 ejecutables con pytest-bdd 9 en español contra la API y la base (`tests/aceptacion/pasos/`), con 170 aprobados y 19 omitidos con su razón, y la prueba de humo `e2e/humo.spec.ts` del Front con Playwright para Node como T053.
@@ -37,6 +47,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Seguridad
 
+- Un nivel de miles de cifras, un `[Content_Types].xml` dañado y un nombre de archivo con un carácter de control ya no dejan la carga en 500, y la excepción original de un archivo ilegible no queda encadenada al error que se registra (revisión de seguridad de la spec 003).
 - Las vistas `v_r17_por_pi` y `v_tabla_maestra_pi` llevan `security_barrier`, como las que Neon tiene aplicadas desde el 2026-10-27.
 - Job `secretos` con gitleaks 8.30.1 fijado por suma SHA-256, y `.gitleaks.toml`.
 - Dependabot para las acciones de GitHub, `.sonarcloud.properties` para SonarQube Cloud y `.snyk` con excepciones que vencen.

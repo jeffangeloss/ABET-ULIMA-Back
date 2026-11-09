@@ -76,6 +76,15 @@ def test_crea_la_base_con_migraciones_rol_y_datos_y_la_borra_al_salir(base_desec
                 "AND (table_name, column_name) IN (('rechazo_fila', 'pi_id'), ('carga', 'subida_por'))"
             )
             assert _uno(conexion, nuevas) == 2
+            # V1_10 aplicada, con el encabezado de PI que admite el prefijo ABET y SO o PI, y el motivo SIN_CALIFICACIONES.
+            consulta_v1_10 = (
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                "WHERE conname = '{}' AND conrelid = '{}'::regclass"
+            )
+            encabezado = _uno(conexion, consulta_v1_10.format("ck_carga_columna_encabezado", "abet.carga_columna"))
+            assert isinstance(encabezado, str) and "[Aa][Bb][Ee][Tt]" in encabezado
+            motivo = _uno(conexion, consulta_v1_10.format("ck_rechazo_fila_motivo", "abet.rechazo_fila"))
+            assert isinstance(motivo, str) and "SIN_CALIFICACIONES" in motivo
             # Las repetibles R__ aplicadas, con la vista del R-17 vacía.
             assert _uno(conexion, "SELECT count(*) FROM abet.v_r17_por_pi") == 0
             secciones = conexion.execute(

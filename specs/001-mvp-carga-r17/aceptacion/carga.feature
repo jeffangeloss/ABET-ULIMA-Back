@@ -338,14 +338,14 @@ Característica: Carga del export de Blackboard en la base
     Y ninguna carga queda en estado "EN_CURSO"
 
     Ejemplos:
-      | archivo                                                                        | mensaje                                                                             |
-      | una copia de "sintetico_20262_450002_410.xlsx" cortada a la mitad de sus bytes | No se pudo abrir el archivo. Descárguelo otra vez desde Blackboard.                 |
-      | una copia de "sintetico_20262_450002_410.xlsx" protegida con contraseña        | El archivo está protegido con contraseña. Guárdelo sin contraseña y súbalo.         |
-      | un PDF inventado de una página con el nombre "export_410.pdf"                  | Solo se admiten exports de Blackboard en formato .xlsx.                             |
-      | el mismo PDF con el nombre "export_410.xlsx"                                   | El contenido del archivo no es un libro de Excel aunque su nombre termine en .xlsx. |
-      | una copia de "sintetico_20262_450002_410.xlsx" con la parte xl/vbaProject.bin  | El archivo trae macros o vínculos externos y no se admite.                          |
-      | una copia de "sintetico_20262_450002_410.xlsx" con una parte xl/externalLinks/ | El archivo trae macros o vínculos externos y no se admite.                          |
-      | un .xlsx inventado de 1,2 MB con códigos 99000001 a 99000011                   | El archivo supera el máximo de 1 MB.                                                |
+      | archivo                                                                        | mensaje                                                                                                |
+      | una copia de "sintetico_20262_450002_410.xlsx" cortada a la mitad de sus bytes | No se pudo abrir el archivo. Descárguelo otra vez desde Blackboard.                                    |
+      | una copia de "sintetico_20262_450002_410.xlsx" protegida con contraseña        | El archivo está protegido con contraseña. Guárdelo sin contraseña y súbalo.                            |
+      | un PDF inventado de una página con el nombre "export_410.pdf"                  | Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls.                                   |
+      | el mismo PDF con el nombre "export_410.xlsx"                                   | El contenido del archivo no es un export de Blackboard aunque su nombre termine en .xlsx, .csv o .xls. |
+      | una copia de "sintetico_20262_450002_410.xlsx" con la parte xl/vbaProject.bin  | El archivo trae macros o vínculos externos y no se admite.                                             |
+      | una copia de "sintetico_20262_450002_410.xlsx" con una parte xl/externalLinks/ | El archivo trae macros o vínculos externos y no se admite.                                             |
+      | un .xlsx inventado de 1,2 MB con códigos 99000001 a 99000011                   | El archivo supera el máximo de 1 MB.                                                                   |
 
   # (propuesta) El límite de 20 MB descomprimidos que fija lector.py y el texto del 422. La revisión del zip
   # lo detiene antes de abrir el libro. Que el lector no arranque sin defusedxml y que el registro no
@@ -446,7 +446,7 @@ Característica: Carga del export de Blackboard en la base
   Escenario: Un export que no declara su sección se detiene sin dejar rastro
     Dado una copia de "sintetico_20262_450002_410.xlsx" con la hoja renombrada "Hoja1" y el nombre "notas.xlsx"
     Cuando el profesor sube esa copia a la sección 410
-    Entonces la respuesta es 422 con detail "El archivo no indica su sección. Sube el export de Blackboard sin cambiar el nombre de su hoja."
+    Entonces la respuesta es 422 con detail "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
     Y abet.archivo_origen, abet.carga, abet.rechazo_fila y abet.estudiante no ganan ninguna fila
     Y ninguna carga queda en estado "EN_CURSO"
 

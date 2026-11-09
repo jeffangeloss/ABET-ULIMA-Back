@@ -9,6 +9,7 @@ set -u
 SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
 PREFLIGHT="$SCRIPTS/preflight.sh"
 PLANTILLA_REAL="$SCRIPTS/../plantillas/R017_ambiental_general.xlsx"
+PROTEGIDO_410="$SCRIPTS/../tests/datos_inventados/protegido_410.xlsx"
 GITIGNORE="$SCRIPTS/../.gitignore"
 T="$(mktemp -d)"
 trap 'rm -rf "$T"' EXIT
@@ -73,7 +74,8 @@ caso() { # nombre, esperado (0 pasa, 1 falla), comando
   salida="$("$@" 2>&1)"
   rc=$?
   real=$([ "$rc" -eq 0 ] && echo 0 || echo 1)
-  if [ "$real" = "$esperado" ] && ! printf '%s' "$salida" | grep -q 'secretoFalso'; then
+  # Ninguna salida muestra el secreto falso ni el código ajeno 20231234 de los casos (regla 2, spec 003, US-35).
+  if [ "$real" = "$esperado" ] && ! printf '%s' "$salida" | grep -q -e 'secretoFalso' -e '20231234'; then
     bien=$((bien + 1)); echo "bien  $nombre"
   else
     mal=$((mal + 1)); echo "MAL   $nombre (salida $rc)"; printf '%s\n' "$salida" | sed 's/^/      /'
@@ -85,7 +87,7 @@ caso_por() { # nombre, regla que debe nombrar la salida (por ejemplo «regla 2»
   shift 2
   salida="$("$@" 2>&1)"
   rc=$?
-  if [ "$rc" -ne 0 ] && printf '%s' "$salida" | grep -qF "($regla)" && ! printf '%s' "$salida" | grep -q 'secretoFalso'; then
+  if [ "$rc" -ne 0 ] && printf '%s' "$salida" | grep -qF "($regla)" && ! printf '%s' "$salida" | grep -q -e 'secretoFalso' -e '20231234'; then
     bien=$((bien + 1)); echo "bien  $nombre"
   else
     mal=$((mal + 1)); echo "MAL   $nombre (salida $rc, se esperaba una falla por la $regla)"; printf '%s\n' "$salida" | sed 's/^/      /'
@@ -112,6 +114,42 @@ caso "hook de memoria: repositorio limpio no bloquea" 0 bash -c 'printf "{}" | C
 caso "hook de memoria: cambio sin MEMORIA.md bloquea" 1 bash -c 'echo y >> README.md; printf "{}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
 caso "hook de memoria: cambio con MEMORIA.md no bloquea" 0 bash -c 'echo y >> README.md; echo e >> MEMORIA.md; printf "{}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
 caso "hook de memoria: no bloquea dos veces seguidas" 0 bash -c 'echo y >> README.md; printf "{\"stop_hook_active\": true}" | CLAUDE_PROJECT_DIR="$PWD" bash scripts/recordar_memoria.sh'
+
+# Regla 2 por contenido (spec 003, US-35): UTF-16, BOM, Windows-1252, otras extensiones y contenedores OLE.
+texto() { # ruta, codificación (utf-16 con BOM LE, utf-8-sig o cp1252), contenido
+  python3 - "$1" "$2" "$3" <<'PY'
+import sys
+ruta, codificacion, contenido = sys.argv[1:4]
+contenido = contenido.replace("\\n", "\n").replace("\\t", "\t")
+if codificacion == "utf-16":
+    datos = b"\xff\xfe" + contenido.encode("utf-16-le")
+else:
+    datos = contenido.encode(codificacion)
+open(ruta, "wb").write(datos)
+PY
+}
+ole() { # ruta: contenedor OLE inventado de 1024 bytes, con la firma y sin ninguna celda
+  python3 - "$1" <<'PY'
+import sys
+open(sys.argv[1], "wb").write(bytes.fromhex("D0CF11E0A1B11AE1") + bytes(1016))
+PY
+}
+CON_TEXTO="$(declare -f texto ole)"
+RT='echo e >> MEMORIA.md; git add -f -A; bash scripts/preflight.sh --staged'
+caso ".xls UTF-16 con BOM y 99000001,99000002 pasa" 0 bash -c "$CON_TEXTO; texto tests/datos_inventados/a.xls utf-16 'codigo\\n99000001\\t99000002\\n'; $RT"
+caso_por ".xls UTF-16 con 20231234 falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.xls utf-16 'codigo\\n99000001\\t20231234\\n'; $RT"
+caso_por ".csv UTF-16 con 20231234 falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.csv utf-16 'codigo,20231234\\n'; $RT"
+caso_por ".csv UTF-8 con BOM y 20231234 falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.csv utf-8-sig 'codigo,20231234\\n'; $RT"
+caso_por "texto Windows-1252 con 20231234 falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.csv cp1252 'Bitácora,20231234,señor\\n'; $RT"
+caso "texto Windows-1252 con 99000001 pasa" 0 bash -c "$CON_TEXTO; texto tests/datos_inventados/a.csv cp1252 'Bitácora,99000001,señor\\n'; $RT"
+caso_por ".txt con 20231234 en la carpeta falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.txt utf-8-sig 'codigo 20231234\\n'; $RT"
+caso_por "archivo .dat con 20231234 en la carpeta falla" "regla 2" bash -c "$CON_TEXTO; texto tests/datos_inventados/a.dat utf-8-sig 'codigo 20231234\\n'; $RT"
+caso_por "csv con tilde en el nombre y 20231234 falla" "regla 2" bash -c "$CON_TEXTO; texto 'tests/datos_inventados/sección.csv' utf-8-sig 'codigo,20231234\\n'; $RT"
+caso_por "xlsx con tilde en el nombre fuera de datos_inventados falla" "regla 1" bash -c "$(declare -f xlsx); xlsx 'notas de sección.xlsx' 99000001; echo e >> MEMORIA.md; git add -f -A; bash scripts/preflight.sh --staged"
+caso_por ".xls OLE inventado falla" "regla 2" bash -c "$CON_TEXTO; ole tests/datos_inventados/a.xls; $RT"
+caso_por ".xlsx OLE no revisado falla" "regla 2" bash -c "$CON_TEXTO; ole tests/datos_inventados/a.xlsx; $RT"
+caso "la copia de protegido_410.xlsx pasa" 0 bash -c "cp '$PROTEGIDO_410' tests/datos_inventados/; $RT"
+caso "el mensaje de un OLE no revisado nombra el archivo y la regla" 0 bash -c "$CON_TEXTO; ole tests/datos_inventados/a.xls; echo e >> MEMORIA.md; git add -f -A; bash scripts/preflight.sh --staged | grep -q 'es un contenedor OLE y sus celdas no se pueden revisar (regla 2)'"
 
 # Plantilla del R-17 (T034). Es la única planilla admitida fuera de tests/datos_inventados/, solo en su
 # ruta exacta, y la regla 2 revisa el texto de todas sus partes y sus correos.

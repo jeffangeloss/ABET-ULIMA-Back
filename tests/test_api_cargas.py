@@ -14,6 +14,7 @@ import hashlib
 import importlib.util
 import io
 import logging
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -176,11 +177,40 @@ def test_br_carga_04_08_un_archivo_de_mas_de_1_mb_se_detiene_con_la_huella_de_to
     [linea] = [r.getMessage() for r in caplog.records if r.name == "abet.api" and "sha256=" in r.getMessage()]
     assert f"sha256={hashlib.sha256(contenido).hexdigest()}" in linea
     assert "motivo=ARCHIVO_DEMASIADO_GRANDE" in linea and "hora=" in linea
+    # Sin detalle, el registro lo dice con un guion (spec 003, BR-CARGA-08).
+    assert re.fullmatch(r"evento=archivo_detenido hora=\S+ sha256=[0-9a-f]{64} motivo=ARCHIVO_DEMASIADO_GRANDE detalle=-",
+                        linea)
+
+
+@pytest.mark.parametrize(("contenido", "nombre", "detalle"), [
+    (b'\xef\xbb\xbf"Username","5.1 [Total Pts: 4 Score]\r\n"99000001",4\r\n',
+     "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.csv", "COMILLAS"),
+    (b"\xef\xbb\xbfUsername,5.1 [Total Pts: 4 Score]\r\n99000001,4\x00\r\n",
+     "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.csv", "CARACTER_NULO"),
+    (b"\xfe\xff\x00U", "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.xls", "CODIFICACION"),
+])
+def test_br_carga_08_spec003_un_texto_danado_se_registra_con_su_detalle_y_sin_nombres(
+    api: object, caplog: pytest.LogCaptureFixture, contenido: bytes, nombre: str, detalle: str
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), contenido, nombre)
+    assert respuesta.status_code == 422
+    assert respuesta.json() == {"detail": "No se pudo abrir el archivo. Descárguelo otra vez desde Blackboard."}
+    assert api.conteos() == antes
+    [linea] = [r.getMessage() for r in caplog.records if r.name == "abet.api" and "sha256=" in r.getMessage()]
+    assert linea == (f"evento=archivo_detenido hora={linea.split()[1].removeprefix('hora=')} "
+                     f"sha256={hashlib.sha256(contenido).hexdigest()} motivo=NO_SE_PUDO_ABRIR detalle={detalle}")
+    # Lo que no debe pasar: ni el nombre del archivo, ni un código, ni el detalle en la respuesta.
+    assert nombre not in caplog.text and "SINTETICO" not in caplog.text and "99000001" not in caplog.text
+    assert detalle not in respuesta.text
 
 
 @pytest.mark.parametrize(("nombre", "subido", "mensaje"), [
     ("danado_410.xlsx", "danado_410.xlsx", "No se pudo abrir el archivo. Descárguelo otra vez desde Blackboard."),
-    ("pdf_renombrado.xlsx", "export_410.pdf", "Solo se admiten exports de Blackboard en formato .xlsx."),
+    ("pdf_renombrado.xlsx", "export_410.pdf", "Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls."),
+    ("pdf_renombrado.xlsx", "export_410.xlsx",
+     "El contenido del archivo no es un export de Blackboard aunque su nombre termine en .xlsx, .csv o .xls."),
     ("protegido_410.xlsx", "protegido_410.xlsx",
      "El archivo está protegido con contraseña. Guárdelo sin contraseña y súbalo."),
 ])

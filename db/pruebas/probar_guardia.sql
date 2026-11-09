@@ -1,5 +1,5 @@
 -- Pruebas de la guardia de datos inventados (US-08, FR-005 y SC-007) y de los datos de 2026-2 en una base sin cargas
--- (US-03 y US-04). db/pruebas/correr_pruebas.sh las corre en una base desechable aparte, con V1_01 a V1_09, las
+-- (US-03 y US-04). db/pruebas/correr_pruebas.sh las corre en una base desechable aparte, con V1_01 a V1_10, las
 -- vistas, crear_rol_app.sql, guardia_datos_inventados.sql y periodo_2026_2_inventado.sql (los dos últimos dos
 -- veces), y con -v rol_app=<rol de prueba de nombre único>. La base de pruebas.sql no lleva la guardia, igual que
 -- abet_sis_med_dev, porque la guardia vale solo en Neon.

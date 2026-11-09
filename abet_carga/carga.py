@@ -18,8 +18,11 @@ Orden de cargar(), el de BR-CARGA-03.
 2. La huella SHA-256 (Secure Hash Algorithm de 256 bits) de los bytes recibidos, que el resultado
    lleva desde este paso para el registro de la aplicación (BR-CARGA-08).
 3. El tope de 1 MB (BR-CARGA-04), la primera revisión de lector.leer().
-4. La extensión, los primeros bytes, el zip y la apertura del libro (BR-CARGA-05). leer() lanza
-   ArchivoIlegible con su motivo, y cargar() responde 422 sin rastro.
+4. La extensión, el formato por el contenido y su lectura, que es la revisión del zip y la apertura
+   del libro o la decodificación y la lectura del texto, con el tope de 5 000 filas de datos
+   (BR-CARGA-05 y spec 003). leer() lanza ArchivoIlegible con su motivo y su detalle, y cargar()
+   responde 422 sin rastro. Un export de texto no tiene hoja, así que archivo_origen.hoja queda nula
+   y su sección sale solo del nombre (BR-CARGA-11).
 5. La guardia de códigos inventados, encendida salvo con GUARDIA_DATOS_INVENTADOS=0 (BR-CARGA-07). Un
    código fuera de 99000000 a 99999999 da 422 sin rastro, antes de buscar la huella en la base.
 6. Ya en la transacción de la carga, la huella en abet.archivo_origen. PUBLICADA en la sección da 200
@@ -31,8 +34,9 @@ Orden de cargar(), el de BR-CARGA-03.
 
 Las escrituras del paso 9 empiezan por archivo_origen, salvo que la huella ya esté registrada, y por
 carga en EN_CURSO con subida_por, conjunto_reglas_id y programa_version. Siguen el rechazo de una
-carga RECHAZADA entera, con el pi_id del indicador de desempeño (performance indicator, PI) que falta
-o que se repite, o bien las columnas del plan, los rechazos de fila, los avisos, los estudiantes,
+carga RECHAZADA entera, también la de SIN_CALIFICACIONES, que no acepta ningún nivel (spec 003,
+D-31), con el pi_id del indicador de desempeño (performance indicator, PI) que falta o que se repite,
+o bien las columnas del plan, los rechazos de fila, los avisos, los estudiantes,
 carga_fila y medicion. Un UPDATE cierra la carga con su estado, sus tres cuentas y
 terminada_en = clock_timestamp(), y la publica solo si acepta al menos una fila (BR-CARGA-16). Una
 huella que solo tiene cargas RECHAZADA o REEMPLAZADA presta su archivo_id a la carga nueva, que se
@@ -55,9 +59,9 @@ UPDATE de estado, cuentas y terminada_en.
 
 Ajustes a la interfaz que propone el plan de la demo. cargar() suma configuracion, que sale de
 Configuracion.desde_entorno() si no llega, porque el conjunto de reglas y la guardia son del
-despliegue y nunca de la petición (BR-CARGA-01 y BR-CARGA-07). ResultadoCarga suma sha256 y motivo,
-para el registro de un archivo detenido, y sqlstate y restriccion, para el de una falla, y ninguno de
-los cuatro va al cuerpo de la respuesta. mensaje_de_carga_rechazada() arma el mensaje de una carga
+despliegue y nunca de la petición (BR-CARGA-01 y BR-CARGA-07). ResultadoCarga suma sha256, motivo y
+detalle, para el registro de un archivo detenido, y sqlstate y restriccion, para el de una falla, y
+ninguno de los cinco va al cuerpo de la respuesta. mensaje_de_carga_rechazada() arma el mensaje de una carga
 RECHAZADA, y la constancia puede usarlo con lo que lee de la base.
 
 Casos que la carga no resuelve. Una carga es de una sola carrera (V1_07), así que un plan con PI de
@@ -236,6 +240,9 @@ _MENSAJES_DE_ESTRUCTURA = {
     Motivo.COLUMNA_CODIGO_AUSENTE: "El archivo no tiene la columna Username ni Student ID.",
     Motivo.PI_DEL_PLAN_AUSENTE: "Falta la columna del PI {pi} que el plan de medición pide para esta sección.",
     Motivo.PI_REPETIDO: "El PI {pi} aparece en dos columnas del archivo.",
+    Motivo.SIN_CALIFICACIONES: (
+        "El archivo no trae ningún nivel en las columnas de los PI del plan. La carga no se publicó."
+    ),
 }
 _OTRA_ASIGNATURA = "El archivo corresponde a la asignatura {declarada} y usted eligió la {elegida}. No se publicó."
 _OTRA_SECCION = "El archivo corresponde a la sección {declarada} y usted eligió la {elegida}. No se publicó."
@@ -247,9 +254,10 @@ class ResultadoCarga:
     """Resultado de cargar(), con el mensaje del contrato y el carga_id cuando la carga existe.
 
     mensaje es el detail de un error o el mensaje de una carga RECHAZADA, y queda en None en una carga
-    PUBLICADA o YA_PUBLICADA. sha256 y motivo, el nombre del MotivoIlegible, van al registro de un
-    archivo detenido, y sqlstate y restriccion al de una falla (BR-CARGA-08). Ninguno de esos cuatro
-    va al cuerpo de la respuesta, y ninguno trae el DETAIL de PostgreSQL ni un valor leído.
+    PUBLICADA o YA_PUBLICADA. sha256, motivo, el nombre del MotivoIlegible, y detalle, el nombre del
+    DetalleIlegible o None (spec 003), van al registro de un archivo detenido, y sqlstate y restriccion
+    al de una falla (BR-CARGA-08). Ninguno de esos cinco va al cuerpo de la respuesta, y ninguno trae el
+    DETAIL de PostgreSQL ni un valor leído.
     """
 
     resultado: Resultado
@@ -257,6 +265,7 @@ class ResultadoCarga:
     carga_id: int | None = None
     sha256: str | None = None
     motivo: str | None = None
+    detalle: str | None = None
     sqlstate: str | None = None
     restriccion: str | None = None
 
@@ -346,7 +355,10 @@ def _cargar(
         if configuracion.guardia_datos_inventados:
             guardia(libro)
     except ArchivoIlegible as error:
-        return ResultadoCarga(Resultado.ILEGIBLE, error.mensaje, sha256=sha256, motivo=error.motivo.name)
+        detalle = error.detalle.name if error.detalle is not None else None
+        return ResultadoCarga(
+            Resultado.ILEGIBLE, error.mensaje, sha256=sha256, motivo=error.motivo.name, detalle=detalle
+        )
     except CodigoNoInventado as error:
         return ResultadoCarga(Resultado.GUARDIA, error.mensaje, sha256=sha256)
     # La validación coteja el mismo nombre que se guarda, así que la constancia dice lo mismo después.

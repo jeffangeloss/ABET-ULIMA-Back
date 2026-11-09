@@ -31,10 +31,15 @@ Lo que fija esta función, con lo que la spec viva o el contrato marcan como (pr
    ARCHIVO_SIN_FILAS, COLUMNA_CODIGO_AUSENTE, SECCION_NO_COINCIDE y NIVEL_FUERA_DE_ESCALA son los
    de los escenarios, y los demás son (propuesta). SECCION_NO_COINCIDE y PERIODO_NO_COINCIDE nombran
    lo que declara archivo_origen.hoja o, si la hoja no lo declara, archivo_origen.nombre_archivo,
-   con la lectura de validacion.seccion_declarada().
+   con la lectura de validacion.seccion_declarada(). SIN_CALIFICACIONES, el rechazo de una carga
+   cuyas filas aceptadas no traen ningún nivel, tiene el mensaje de la spec 003 (US-36 y D-31), con
+   fila y pi nulos.
 5. mensaje resume el motivo de una carga RECHAZADA, que es el de su RECHAZA_CARGA o, si la carga
    rechaza todas sus filas, «Ninguna fila se pudo aceptar. La carga no se publicó.». En los demás
    estados es nulo.
+6. hoja es archivo_origen.hoja tal como está, nula en un export de texto (spec 003, US-34). La
+   constancia no la reemplaza por ningún texto, y es el R-17 el que muestra «Sin hoja (export de
+   texto)» en su hoja «Constancia».
 
 Ningún elemento trae un campo valor ni valor_leido, porque la base no guarda el valor leído de una
 celda (BR-CARGA-17).
@@ -122,6 +127,8 @@ _FIJOS = {
     "COLUMNA_PI_FUERA_DEL_PLAN": "El archivo trae la columna de un PI que no está en el plan de medición de esta "
                                  "sección. Se ignoró.",
     "SECCION_SIN_DECLARAR": "El archivo no indica su sección. Quien lo subió confirmó la sección elegida.",
+    "SIN_CALIFICACIONES": "El archivo no trae ningún nivel en las columnas de los PI del plan. "
+                          "La carga no se publicó.",
 }
 
 
@@ -221,7 +228,7 @@ def _aviso_de_puntaje(pi: str | None, puntaje: Decimal | None) -> str:
 
 
 def _otra_seccion(carga: dict[str, Any]) -> str:
-    declarada = seccion_declarada(carga["hoja"] or "", carga["nombre_archivo"])
+    declarada = seccion_declarada(carga["hoja"], carga["nombre_archivo"])
     if declarada is None:
         return "El archivo corresponde a otra sección. No se publicó."
     if declarada.curso_codigo != carga["asignatura"]:
@@ -232,7 +239,7 @@ def _otra_seccion(carga: dict[str, Any]) -> str:
 
 
 def _otro_periodo(carga: dict[str, Any]) -> str:
-    declarada = seccion_declarada(carga["hoja"] or "", carga["nombre_archivo"])
+    declarada = seccion_declarada(carga["hoja"], carga["nombre_archivo"])
     periodo = f"al periodo {declarada.periodo}" if declarada is not None else "a otro periodo"
     return f"El archivo corresponde {periodo} y la sección elegida es de {carga['periodo']}. No se publicó."
 

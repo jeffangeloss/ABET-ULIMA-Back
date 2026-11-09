@@ -12,7 +12,7 @@
 #      secciones, y corre pruebas/pruebas.sql.
 #   5. Ensaya en una tercera base el camino de Neon (T021 y T027). Aplica V1_01 a V1_08 y las R y carga los datos
 #      sintéticos. Antes de V1_09, crear_rol_app.sql debe rechazar abet_respaldo y fallar sin dejar el rol de prueba.
-#      Aplica después las V que siguen, con V1_09 creando acceso, compara su esquema con el de la segunda base y
+#      Aplica después las V que siguen, con V1_09 creando acceso y V1_10 cambiando dos restricciones, compara su esquema con el de la segunda base y
 #      corre los scripts de plataforma y de datos en el orden de T027, las consultas de control y
 #      pruebas/probar_rol_app.sql con un rol de prueba de nombre único. Al final vuelve a aplicar las R, que quitan
 #      al rol el SELECT de las vistas hasta que crear_rol_app.sql corre otra vez, y corre las consultas de control
@@ -267,7 +267,7 @@ paso "Aserciones (pruebas/pruebas.sql)"
 "$PSQL" -X -q -v ON_ERROR_STOP=1 -v controles_neon="$RAIZ/plataforma/neon/controles_neon.sql" -d "$BD_A" \
     -f "$RAIZ/pruebas/pruebas.sql" 2>&1 | sin_prefijo
 
-paso "Ensayo de Neon en ${BD_N}, con V1_01 a V1_08, datos sintéticos y después V1_09 (T021 y T027)"
+paso "Ensayo de Neon en ${BD_N}, con V1_01 a V1_08, datos sintéticos y después V1_09 y V1_10 (T021 y T027)"
 crear_base "$BD_N" abet
 aplicar "$BD_N" $EN_NEON $REPETIBLES
 "$PSQL" -X -q -1 -v ON_ERROR_STOP=1 -d "$BD_N" -f "$RAIZ/pruebas/datos_sinteticos.sql" >/dev/null

@@ -738,12 +738,17 @@ def _mayor_de_un_mega() -> bytes:
             "PROTEGIDO_CON_CONTRASENA",
             "El archivo está protegido con contraseña. Guárdelo sin contraseña y súbalo.",
         ),
-        ("pdf_renombrado.xlsx", "export_410.pdf", "TIPO_NO_ADMITIDO", "Solo se admiten exports de Blackboard en formato .xlsx."),
+        (
+            "pdf_renombrado.xlsx",
+            "export_410.pdf",
+            "TIPO_NO_ADMITIDO",
+            "Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls.",
+        ),
         (
             "pdf_renombrado.xlsx",
             "export_410.xlsx",
             "CONTENIDO_NO_ES_LIBRO",
-            "El contenido del archivo no es un libro de Excel aunque su nombre termine en .xlsx.",
+            "El contenido del archivo no es un export de Blackboard aunque su nombre termine en .xlsx, .csv o .xls.",
         ),
         (_mayor_de_un_mega, "export_410.xlsx", "ARCHIVO_DEMASIADO_GRANDE", "El archivo supera el máximo de 1 MB."),
     ],
@@ -770,9 +775,84 @@ def test_br_carga_11_un_export_que_no_declara_su_seccion_se_detiene_sin_rastro(
     assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == (
         "SECCION_SIN_DECLARAR",
         422,
-        "El archivo no indica su sección. Sube el export de Blackboard sin cambiar el nombre de su hoja.",
+        "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja.",
     )
     _sin_rastro(revision, antes)
+
+
+# Spec 003. Exports de texto, detalle del archivo ilegible y carga sin calificaciones
+
+CSV_410 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-10-00-00.csv"
+
+
+def _csv_410(*niveles: tuple[str, str, str]) -> bytes:
+    """.csv inventado de la 410, en UTF-8 con BOM, con una fila por cada terna de niveles de 5.1, 5.2 y 5.3."""
+    encabezado = ("Last Name", "First Name", "Username", "ABET SO5.1 [Total Pts: 4 Score] |9000051",
+                  "ABET SO 5.2 [Total Pts: 4 Score] |9000052", "ABET SO 5.3 [Total Pts: 4 Score] |9000053")
+    filas = [encabezado, *(("Inventado", "Estudiante", f"990000{i:02d}", *terna) for i, terna in enumerate(niveles, 1))]
+    texto = "".join(",".join(f'"{campo}"' for campo in fila) + "\r\n" for fila in filas)
+    return b"\xef\xbb\xbf" + texto.encode("utf-8")
+
+
+def test_br_carga_11_spec003_un_csv_se_publica_con_la_hoja_nula_y_la_seccion_del_nombre(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    resultado = _subir(conexion, revision, _csv_410(("4", "3", "2"), ("3", "", "4")), CSV_410)
+
+    assert (resultado.resultado, resultado.codigo_http) == ("PUBLICADA", 201)
+    assert _valores(revision, "SELECT nombre_archivo, hoja, filas_de_datos FROM abet.archivo_origen") == [
+        (CSV_410, None, 2)
+    ]
+    # Los encabezados con prefijo pasan ck_carga_columna_encabezado de V1_10 tal como los reconoce el lector.
+    assert _valores(revision, "SELECT pi_codigo, encabezado FROM abet.carga_columna ORDER BY posicion") == [
+        ("5.1", "ABET SO5.1 [Total Pts: 4 Score] |9000051"),
+        ("5.2", "ABET SO 5.2 [Total Pts: 4 Score] |9000052"),
+        ("5.3", "ABET SO 5.3 [Total Pts: 4 Score] |9000053"),
+    ]
+    assert _cuentas(revision, resultado.carga_id) == ("PUBLICADA", 2, 2, 0, 2, 6)
+
+
+def test_br_carga_11_spec003_un_csv_sin_seccion_en_el_nombre_se_detiene_sin_rastro(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    antes = _conteos(revision)
+    resultado = _subir(conexion, revision, _csv_410(("4", "3", "2")), "notas.csv")
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == (
+        "SECCION_SIN_DECLARAR",
+        422,
+        "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja.",
+    )
+    _sin_rastro(revision, antes)
+
+
+def test_br_carga_08_spec003_el_resultado_lleva_el_detalle_del_archivo_ilegible(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    antes = _conteos(revision)
+    contenido = b"\xef\xbb\xbf" + "Username,5.1 [\r\n99000001,\"4\r\n".encode("utf-8")
+    resultado = _subir(conexion, revision, contenido, CSV_410)
+
+    assert (resultado.resultado, resultado.motivo, resultado.detalle) == ("ILEGIBLE", "NO_SE_PUDO_ABRIR", "COMILLAS")
+    assert resultado.sha256 == hashlib.sha256(contenido).hexdigest()
+    _sin_rastro(revision, antes)
+    # Lo que no debe pasar: un motivo sin detalle no inventa uno.
+    tipo = _subir(conexion, revision, contenido, "export_410.pdf")
+    assert (tipo.motivo, tipo.detalle) == ("TIPO_NO_ADMITIDO", None)
+
+
+def test_br_carga_16_spec003_un_export_sin_ningun_nivel_queda_rechazado_con_sin_calificaciones(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    resultado = _subir(conexion, revision, _csv_410(("", "", ""), (" ", "", "")), CSV_410)
+
+    assert resultado.mensaje == (
+        "El archivo no trae ningún nivel en las columnas de los PI del plan. La carga no se publicó."
+    )
+    assert _rechazada_entera(revision, resultado) == [("SIN_CALIFICACIONES", "RECHAZA_CARGA", None, None, None)]
+    # La sección queda libre, así que el export con niveles se publica después.
+    publicada = _subir(conexion, revision, _csv_410(("", "3", "")), CSV_410.replace("10-00-00", "11-00-00"))
+    assert (publicada.resultado, publicada.codigo_http) == ("PUBLICADA", 201)
 
 
 def test_br_carga_01_03_una_seccion_sin_plan_responde_422_antes_de_leer_el_archivo(
@@ -1288,3 +1368,16 @@ def test_br_carga_11_12_sin_la_seccion_declarada_no_hay_mensaje_de_otra_seccion_
 ) -> None:
     with pytest.raises(ValueError, match="sección que declara el archivo"):
         modulo_carga.mensaje_de_carga_rechazada(Rechazo(motivo, Efecto.RECHAZA_CARGA), CONTEXTO_410, None)
+
+
+def test_br_carga_05_spec003_un_nombre_con_un_caracter_de_control_responde_422_sin_rastro(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    # S-09. Con U+0000 en el nombre, el INSERT de archivo_origen lanzaba DataError y la subida daba 500.
+    antes = _conteos(revision)
+    nombre = "gc_SINTETICO_20262_450002_410_fullgc_\x00.csv"
+    resultado = _subir(conexion, revision, _csv_410(("4", "3", "2")), nombre)
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.motivo) == ("ILEGIBLE", 422, "TIPO_NO_ADMITIDO")
+    assert resultado.mensaje == "Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls."
+    _sin_rastro(revision, antes)
