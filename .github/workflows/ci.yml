@@ -68,7 +68,7 @@ jobs:
       - name: uv 0.12.8 con Python 3.12
         # v10.3.0 (2026-10-09) y no una más nueva: una versión con menos de 14 días publicada espera,
         # igual que los paquetes de PyPI de uv.lock (pyproject.toml) y la espera de Dependabot.
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           version: "0.12.8"
           python-version: "3.12"
