@@ -5,7 +5,7 @@
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen --no-build pytest -q` en el Back, `bash db/pruebas/correr_pruebas.sh` sobre el clúster desechable de `db/pruebas/cluster_desechable.sh`, `bash scripts/probar_preflight.sh` y `bash scripts/preflight.sh` en el Back, y `npm test` y `npm run build` en el Front  
 **Resultado**: suite completa del Back, 1180 passed y 19 skipped in 124.87s (0:02:04), con los 104 casos de `exports_blackboard.feature` aprobados; pruebas de la base, «ok 65/65 casos de rechazo» y «RESULTADO: todo pasó»; revisión previa, 46 casos bien y 0 mal; Vitest del Front, 9 archivos y 85 pruebas aprobadas, y la compilación sin errores  
-**Estado**: Spec 003 verificada en local, sin empujar. Falta la fase 7, que es el PR, V1_10 en la rama `develop` de Neon y la prueba en la vista previa (T070 a T076), y V1_10 en la rama principal antes de la versión (T077).
+**Estado**: Spec 003 fusionada en `develop` (Back e56fb8a, Front c2f3523) y probada en la vista previa de `develop` contra la rama `develop` de Neon, en V1_10. Falta V1_10 en la rama principal antes de la versión hacia `main` (T077).
 
 Esta auditoría cruza cada historia de usuario (user story, US) de la spec 003 con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado del 2026-11-09. Las 19 pruebas omitidas de la suite son los escenarios del corte 2 de la spec 001 y no tocan esta spec. Los escenarios de US-33 los comprueban las pruebas de Vitest del Front (`tests/pantallas/SubirExport.test.tsx`), y el de US-35, los casos de `scripts/probar_preflight.sh`, que la integración continua corre antes de pytest. Los pasos de esos escenarios dejan la propiedad «delegado_a_vitest» o «delegado_a_preflight» con el nombre de la prueba que los cubre, y el resumen de pytest los lista.
 
@@ -89,7 +89,7 @@ Los escenarios viven en `specs/003-exports-blackboard/aceptacion/exports_blackbo
 | FR-011 | Cumplido | `tests/test_generador_exports.py` |
 | FR-012 | Cumplido | bloques fechados de `carga-export.spec.md` y `r17.spec.md` y el contrato del Front (9467f29) |
 | FR-013 | Cumplido | `carga.feature` con los textos nuevos; la suite completa en verde |
-| FR-014 | Pendiente | fase 7 (T073, T074 y T077) |
+| FR-014 | Cumplido en `develop` | T073 y T074; la rama principal queda para T077 |
 | FR-015 | Cumplido | `MEMORIA.md` y `CHANGELOG.md` en cada commit; la revisión previa sin fallas |
 
 ## Criterios de éxito
@@ -99,7 +99,7 @@ Los escenarios viven en `specs/003-exports-blackboard/aceptacion/exports_blackbo
 | SC-001 | Cumplido en local | US-26, escenario 1; US-27, escenario 1; US-28, escenario 1 |
 | SC-002 | Cumplido en local | 104 de 104 casos de la spec 003 y la suite completa sin fallas |
 | SC-003 | Cumplido en local | US-31 y US-32 y los casos de la revisión de seguridad en `tests/test_lector.py` |
-| SC-004 | Pendiente | T076, en la vista previa de `develop` |
+| SC-004 | Cumplido | T076: Playwright da 2 passed, y Neon `develop` tiene la 410 (.csv) y la 411 (.xls) PUBLICADA con 11 de 11 y 63,6 / 63,6 / 72,7 %, con Q01 a Q14 en 0 |
 | SC-005 | Cumplido en local | `tests/test_generador_exports.py` y la regla 2 de la revisión previa |
 
 ## Revisión de seguridad

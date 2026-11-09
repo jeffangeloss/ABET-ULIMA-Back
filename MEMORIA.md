@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-09
-- **Rama de trabajo**: `feat/003-exports-blackboard`, con la spec 003 implementada y verificada en local (exports de Blackboard en `.xlsx`, `.csv` y `.xls`, encabezados «ABET SO5.1 [», V1_10 y SIN_CALIFICACIONES), y la rama del mismo nombre en el Front (9467f29); nada empujado
+- **Rama de trabajo**: `develop`, con la spec 003 fusionada (PR #17, e56fb8a) y su registro de la prueba en la vista previa en `docs/003-vista-previa`
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la implementación de la spec 003 pasa la suite completa (1180 aprobadas y 19 omitidas), los 104 casos de su `.feature`, las pruebas de la base con V1_10 y la revisión previa
-- **En curso**: la fase 7 de la spec 003, con los PR jeffangeloss/ABET-ULIMA-Back#17 y jeffangeloss/ABET-ULIMA-Front#10 y la rama `develop` de Neon nueva, ya en V1_10
-- **Siguiente paso**: fusionar los dos PR, asignar las contraseñas de docente410 y docente411 en la rama `develop` y probar el `.csv` y el `.xls` en la vista previa con `ABET_SIS_MED/herramientas_neon/humo_preview.sh` (T075 y T076)
+- **Último cambio**: la vista previa de `develop` carga el `.csv` inventado en la 410 y el `.xls` inventado en la 411 contra la rama `develop` de Neon, en V1_10 (T075 y T076 de la spec 003)
+- **En curso**: nada de la spec 003; queda T077
+- **Siguiente paso**: V1_10 en la rama principal de Neon con `ABET_SIS_MED/herramientas_neon/migrar_neon.sh principal <ref> --confirmo-principal` antes de llevar la versión a `main` (T077 de la spec 003, junto con T074 y T076 de la spec 001)
 - **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (P3, P4, el contrato y `e2e/humo_csv.spec.ts` en la rama `feat/003-exports-blackboard`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (spec 003 fusionada en `develop`, c2f3523) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-09 11:48 (Lima) · docs/003-vista-previa · Prueba de los exports de texto en la vista previa de develop (T075 y T076)
+- Quién: Jefferson autoriza fusionar los PR, pega en Vercel la DATABASE_URL de Preview con el host de la rama `develop` nueva y corre `ABET_SIS_MED/herramientas_neon/humo_preview.sh`, que pide las contraseñas en su terminal. Claude Code fusiona los PR, vuelve a desplegar la vista previa del Back con la variable nueva, comprueba Neon desde el Windows en solo lectura y escribe esta entrada.
+- Qué cambió: en Neon, la rama `develop` gana las credenciales de docente410 y docente411 y las dos cargas de la prueba; en este repositorio, `tasks.md` (T072, T075 y T076), `audit.md` (SC-004 y FR-014) y esta memoria.
+- Por qué: T076 y SC-004 de la spec 003, la prueba de cierre en la vista previa antes de la versión.
+- Lo que debe hacer, cómo se probó: la vista previa de `develop` del Back responde 401 en JSON; Playwright (`e2e/humo_csv.spec.ts` del Front) da 2 passed; en la rama `develop` de Neon, la 410 con el `.csv` y la 411 con el `.xls` quedan PUBLICADA con 11 / 11 / 0, hoja nula, 33 mediciones y 5 avisos cada una, `v_r17_por_pi` da 63,6, 63,6 y 72,7 en 5.1, 5.2 y 5.3 de las dos secciones y Q01 a Q14 devuelven 0 filas. Las capturas de P1, P3 y P4 quedan fuera del repositorio, en `ABET_SIS_MED/demo_spec003/capturas/`.
+- Lo que no debe hacer, cómo se probó: la rama principal de Neon sigue en 1.09, con 0 cargas y 0 credenciales; las contraseñas viajan al Windows solo como hash Argon2id y Claude Code no las ve; la DATABASE_URL la arma un guion que corre Jefferson y la deja en su portapapeles sin mostrarla.
+- Correcciones: la primera vista previa respondía 500 porque la DATABASE_URL de Preview, de tipo sensitive, no se había guardado; Jefferson la pega entera con `herramientas_neon/copiar_database_url.sh`, y el redespliegue conecta.
+- Cómo se reporta: esta entrada, `audit.md` y el PR de esta rama.
+- Pendiente y siguiente paso: T077 (V1_10 en la rama principal antes de la versión) y D-30.
 
 ### 2026-11-09 11:35 (Lima) · feat/003-exports-blackboard · Rama develop de Neon nueva, en V1_10 (T073 y T074)
 - Quién: Jefferson autoriza en el chat empujar, crear la rama y aplicar V1_10 («Sí, créala desde la principal», «Sí, desde el Windows»), y cambia él el host de la DATABASE_URL de Preview (develop) en Vercel. Claude Code empuja las ramas, abre los PR, crea la rama con la CLI de Neon, actualiza el host de `bd/.env.neon` y corre la migración desde el Windows.
