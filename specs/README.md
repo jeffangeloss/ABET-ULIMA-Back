@@ -4,6 +4,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 
 ## Contexto actual
 
+- Estado al 2026-11-09. La spec `003-exports-blackboard` (EP-03, US-26 a US-36) amplía la carga a los tres formatos del export real de Blackboard, `.xlsx`, `.csv` y `.xls` de texto, y a los encabezados «ABET SO5.1 [», con la migración nueva V1_10. Jefferson la aprueba en el chat el mismo día, y su implementación avanza en la rama `feat/003-exports-blackboard` del Back y del Front.
 - Estado al 2026-10-28. `develop` no tiene código de producto. Jefferson aprueba la spec `001-mvp-carga-r17` en el chat el mismo día, y `MEMORIA.md` registra la aprobación. La aprobación formal que pide el Principio V de la constitución es la fusión (merge) en `develop` del PR de la spec desde la rama `docs/plan-mvp` (T004), que espera el permiso de Jefferson. Mientras tanto, el corte 1 avanza en local en la rama `feat/001-mvp-carga-r17`.
 - Solo datos inventados (códigos de estudiante de 99000000 a 99999999) en este repositorio, en Neon y en Vercel, hasta que la universidad autorice los reales (D-10). Ningún nombre de estudiante se guarda ni se muestra, y ningún rechazo guarda el valor leído de una celda.
 - La base vive todavía en el repositorio privado `jeffangeloss/ABET_ULIMA` (carpeta local `bd/`). Pasa a `db/` de este repositorio con su historia, y Jefferson aprueba el 2026-10-28 adelantar ese traslado en local, antes del primer `flyway migrate` en Neon y de `V1_09__crear_acceso.sql` (J-06). Los commits de `preparacion-neon` entran después con `git subtree pull --prefix=db`, y `ABET_ULIMA` se archiva cuando termina T022.
@@ -59,6 +60,7 @@ ABET-ULIMA-Back/
   specs/
     README.md
     001-mvp-carga-r17/              revision-historias, spec, plan, tasks y audit
+    003-exports-blackboard/         export real en .xlsx, .csv y .xls, encabezados ABET SO y V1_10 (spec 003)
       aceptacion/                   base_neon, acceso, carga, r17_constancia, despliegue, reemplazo_y_cargas y varias_secciones (.feature)
     features/<feature>/<feature>.spec.md
   docs/
@@ -71,7 +73,7 @@ La épica EP-01 vive en `001-mvp-carga-r17/`, y su fase 1 de contrato ya escribe
 
 | Feature | Reglas | Historias | Archivos de `targets` | Estado |
 | --- | --- | --- | --- | --- |
-| `carga-export` | BR-CARGA-01 a BR-CARGA-20 | US-07 a US-14, US-18, US-19 y US-21 | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
+| `carga-export` | BR-CARGA-01 a BR-CARGA-20, con los bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17 | US-07 a US-14, US-18, US-19, US-21 y US-26 a US-36 | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
 | `r17` | BR-R17-01 a BR-R17-10 | US-15 y US-16 | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
 | `acceso` | BR-ACCESO-01 a BR-ACCESO-09 | US-04, US-05, US-06 y US-20 | `app/sesion.py`, `app/permisos.py`, `app/rutas/sesion.py`, `scripts/asignar_clave.py` y `db/migration/V1_09__crear_acceso.sql` | en revisión |
 | `periodo` | BR-PERIODO-01 a BR-PERIODO-04 | US-03 y el listado de US-06 | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |

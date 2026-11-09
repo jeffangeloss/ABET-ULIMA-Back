@@ -12,14 +12,14 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-11-02
-- **Rama de trabajo**: `feat/001-humo-preview`, con el registro de T075, y la rama del mismo nombre en el Front con la prueba de humo contra la vista previa; `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
+- **Fecha**: 2026-11-09
+- **Rama de trabajo**: `feat/003-exports-blackboard`, con la spec 003 aprobada (exports de Blackboard en `.xlsx`, `.csv` y `.xls`, encabezados «ABET SO5.1 [» y V1_10), y la rama del mismo nombre en el Front; `docs/002-capstone` con el PR #4 espera la aprobación de la spec 002
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la prueba de humo pasa contra la vista previa de `develop` (T075), después de la prueba a mano de Jefferson en la misma vista previa
-- **En curso**: la fase 7 en Vercel (T074, T076 y T079) y T062
-- **Siguiente paso**: las contraseñas de la rama principal (T074), la versión 0.1.0 de `develop` a `main` en el Back y después en el Front (T076) y la auditoría de la fase (T079)
-- **Bloqueos**: Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (pantallas, PR #4 y la rama `feat/001-humo-preview`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Último cambio**: Jefferson aprueba en el chat la spec 003 con 11 historias auditadas (US-26 a US-36) y sus decisiones (J-18, J-19, J-20, D-02, D-03 y D-31), y las specs vivas de la carga y del R-17 reciben su bloque fechado
+- **En curso**: la implementación de la spec 003 con pruebas primero (fases 1 a 6 de `specs/003-exports-blackboard/tasks.md`)
+- **Siguiente paso**: V1_10, el lector de texto, la validación, el generador de los cuatro exports inventados nuevos, la revisión previa por contenido y P3 y P4 en el Front; después, los PR con el permiso de Jefferson y la prueba en la vista previa de `develop`
+- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (P3, P4 y el contrato en la rama `feat/003-exports-blackboard`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-09 10:27 (Lima) · feat/003-exports-blackboard · Spec 003 aprobada, exports de Blackboard en tres formatos
+- Quién: Jefferson responde en el chat las decisiones de la auditoría y aprueba la spec («Apruebo»). Claude Code escribe las 15 candidatas, la spec, el plan, las tareas, el `.feature` y los bloques de las specs vivas. Tres subagentes con Sonnet y esfuerzo medio auditan las candidatas con las lentes de necesidad, solapamiento y verificabilidad, y uno con el modelo de la sesión y esfuerzo alto critica las doce decisiones técnicas. Claude Code revisa cada informe contra el código antes de aceptarlo y recalcula las cifras.
+- Qué cambió: `specs/003-exports-blackboard/` (spec, revisión de historias, plan, tareas y `aceptacion/exports_blackboard.feature`, con 39 escenarios y 104 casos), los bloques fechados de BR-CARGA-03, 05 a 08, 11 y 14 a 17 en `specs/features/carga-export/carga-export.spec.md`, el de BR-R17-10 en `specs/features/r17/r17.spec.md`, `specs/README.md` y esta memoria. Ningún código cambia en este commit.
+- Por qué: el export real de Blackboard llega en `.csv` (UTF-8 con BOM), en `.xls` de texto (UTF-16 LE con tabuladores) o en `.xlsx`, con columnas «ABET SO5.1 [Total Pts: 100 Score]», y hoy no se carga en ninguno de los tres. La auditoría encuentra además que `ck_carga_columna_encabezado` de V1_07 rechazaría ese encabezado con 500 y que el export real, que hoy trae las columnas ABET vacías, dejaría la sección bloqueada en el corte 1.
+- Lo que debe hacer, cómo se probó: el `.feature` pasa el parser oficial de Gherkin (39 escenarios y 104 casos, con `@US-26` a `@US-36`), y las cifras de los escenarios (11 / 11 / 0, 33 mediciones, 63,6 / 63,6 / 72,7 %, 11 / 10 / 1 y 60,0 / 60,0 / 70,0 %, 12 / 11 / 1 con la línea vacía) se recalculan contra `db/pruebas/datos_sinteticos.sql`. La línea base de la rama pasa (870 aprobadas y 19 omitidas en el Back, 82 en el Front).
+- Lo que no debe hacer, cómo se probó: nadie abre los exports reales de `~/Downloads`; la forma del export sale de la nota de análisis y de copias inventadas, y los números de columna de Blackboard reales se cambian por números inventados que empiezan con 9.
+- Correcciones: la lente de verificabilidad corrige «ABET SO 5.10 [», que es el PI 5.10 y no «no es PI», y la regla del nivel con decimales, que con `0+` leería «1,000» como 1. El crítico cambia el patrón del encabezado a clases de letras explícitas con `re.ASCII` y hasta tres espacios, porque `re.IGNORECASE` acepta «ſ» y los espacios ilimitados podían dejar el código del PI después del carácter 200 que guarda la base.
+- Cómo se reporta: esta entrada, `specs/003-exports-blackboard/revision-historias.md` y el PR de la rama.
+- Pendiente y siguiente paso: la implementación con pruebas primero (fases 1 a 6) y, con el permiso de Jefferson, los PR, V1_10 en la rama `develop` de Neon y la prueba en la vista previa. D-30 queda con su valor provisional.
 
 ### 2026-11-02 21:30 (Lima) · feat/001-humo-preview · Prueba de humo contra la vista previa de develop (T075)
 - Quién: Jefferson prueba a mano la vista previa de `develop` («esta bueno»), restablece la rama `develop` de Neon, crea la clave de omisión del Front, asigna las contraseñas y corre la prueba de humo. Claude Code adapta la prueba, prepara los comandos, marca la rama, revisa Neon desde el Windows y escribe esta entrada. Una revisión con dos revisores y un refutador por hallazgo confirma cuatro hallazgos sobre la prueba, corregidos antes de correrla.
