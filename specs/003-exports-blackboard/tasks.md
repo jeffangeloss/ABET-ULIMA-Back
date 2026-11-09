@@ -52,11 +52,11 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en la 
 
 ## Phase 7: Despliegue
 
-- [ ] T070 [Jefferson] Dar permiso para empujar `feat/003-exports-blackboard` en los dos repositorios y abrir sus PR [US-26..US-36]
-- [ ] T071 [Back] [Front] Abrir los PR a `develop` y dejar la integración continua en verde [US-26..US-36]
+- [x] T070 [Jefferson] Dar permiso para empujar `feat/003-exports-blackboard` en los dos repositorios y abrir sus PR [US-26..US-36] · Hecha el 2026-11-09 («Sí, empuja y abre los PR»)
+- [x] T071 [Back] [Front] Abrir los PR a `develop` y dejar la integración continua en verde [US-26..US-36] · PR jeffangeloss/ABET-ULIMA-Back#17 y jeffangeloss/ABET-ULIMA-Front#10 con la CI requerida en verde
 - [ ] T072 [Jefferson] Fusionar los PR en `develop` [US-26..US-36]
-- [ ] T073 [Neon] [Jefferson] Restablecer la rama `develop` de Neon desde la principal [US-26..US-36]
-- [ ] T074 [Neon] Contar antes de migrar, con una consulta de solo lectura, las filas de `carga_columna` que no cumplirían la restricción nueva (debe dar 0), aplicar V1_10 con `flyway migrate` y volver a marcar la rama con preview (`db/plataforma/neon/marcar_entorno.sql`) [US-26] [US-36]
+- [x] T073 [Neon] [Jefferson] Restablecer la rama `develop` de Neon desde la principal [US-26..US-36] · Hecha el 2026-11-09 de otro modo: la rama `develop` se había borrado el 2026-11-05, y Claude Code crea con la CLI de Neon una rama `develop` nueva desde la principal (br-dark-block-b7avl02u), con el permiso de Jefferson; Jefferson cambia el host de la DATABASE_URL de Preview (develop) en Vercel
+- [x] T074 [Neon] Contar antes de migrar, con una consulta de solo lectura, las filas de `carga_columna` que no cumplirían la restricción nueva (debe dar 0), aplicar V1_10 con `flyway migrate` y volver a marcar la rama con preview (`db/plataforma/neon/marcar_entorno.sql`) [US-26] [US-36] · Hecha el 2026-11-09 desde el Windows con `ABET_SIS_MED/herramientas_neon/migrar_neon.sh`: 0 filas por revisar, Flyway en 1.10, marca preview y Q01 a Q14 en 0; la rama principal sigue en 1.09
 - [ ] T075 [Jefferson] Asignar las contraseñas de docente410 y docente411 en la rama `develop` con `ABET_SIS_MED/herramientas_neon/asignar_claves.py` [US-27] [US-28]
 - [ ] T076 [Front] Probar en la vista previa de `develop` el `.csv` inventado en la 410 y el `.xls` inventado en la 411, con R-17 de 63,6 / 63,6 / 72,7 %, Q01 a Q14 en 0 y la rama principal de Neon sin cambios [US-27] [US-28]
 - [ ] T077 [Neon] [Jefferson] Aplicar V1_10 en la rama principal de Neon antes de llevar la versión a `main` (T076 de la spec 001) [US-26] [US-36]

@@ -16,9 +16,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Rama de trabajo**: `feat/003-exports-blackboard`, con la spec 003 implementada y verificada en local (exports de Blackboard en `.xlsx`, `.csv` y `.xls`, encabezados «ABET SO5.1 [», V1_10 y SIN_CALIFICACIONES), y la rama del mismo nombre en el Front (9467f29); nada empujado
 - **Versión publicada**: ninguna (`VERSION` = 0.0.0)
 - **Último cambio**: la implementación de la spec 003 pasa la suite completa (1180 aprobadas y 19 omitidas), los 104 casos de su `.feature`, las pruebas de la base con V1_10 y la revisión previa
-- **En curso**: la fase 7 de la spec 003, que espera el permiso de Jefferson para empujar las dos ramas y abrir sus PR
-- **Siguiente paso**: los PR del Back y del Front con la CI en verde; después de la fusión, restablecer la rama `develop` de Neon, aplicar V1_10 desde el Windows con `ABET_SIS_MED/herramientas_neon/migrar_neon.sh`, marcarla con preview, asignar las contraseñas y probar el `.csv` y el `.xls` en la vista previa (T073 a T076)
-- **Bloqueos**: el permiso de Jefferson para empujar; D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
+- **En curso**: la fase 7 de la spec 003, con los PR jeffangeloss/ABET-ULIMA-Back#17 y jeffangeloss/ABET-ULIMA-Front#10 y la rama `develop` de Neon nueva, ya en V1_10
+- **Siguiente paso**: fusionar los dos PR, asignar las contraseñas de docente410 y docente411 en la rama `develop` y probar el `.csv` y el `.xls` en la vista previa con `ABET_SIS_MED/herramientas_neon/humo_preview.sh` (T075 y T076)
+- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (P3, P4, el contrato y `e2e/humo_csv.spec.ts` en la rama `feat/003-exports-blackboard`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-09 11:35 (Lima) · feat/003-exports-blackboard · Rama develop de Neon nueva, en V1_10 (T073 y T074)
+- Quién: Jefferson autoriza en el chat empujar, crear la rama y aplicar V1_10 («Sí, créala desde la principal», «Sí, desde el Windows»), y cambia él el host de la DATABASE_URL de Preview (develop) en Vercel. Claude Code empuja las ramas, abre los PR, crea la rama con la CLI de Neon, actualiza el host de `bd/.env.neon` y corre la migración desde el Windows.
+- Qué cambió: en Neon, la rama `develop` nueva (br-dark-block-b7avl02u, hija de la principal, endpoint ep-wispy-feather-b783acdw) con V1_10 y el comentario `abet.entorno=preview`; en este repositorio, `tasks.md` (T070, T071, T073 y T074) y esta memoria. La rama principal no cambia.
+- Por qué: la rama `develop` anterior (br-crimson-pine-b7zerhyi) aparece borrada el 2026-11-05 a las 19:00 UTC en el registro de operaciones de Neon, y la vista previa de `develop` del Back respondía 500 (FUNCTION_INVOCATION_FAILED) porque su base ya no existía. Restablecerla no era posible, así que se crea otra con el mismo nombre.
+- Lo que debe hacer, cómo se probó: `migrar_neon.sh develop origin/feat/003-exports-blackboard` da 0 filas de `carga_columna` por revisar, `flyway migrate` y `validate` sin error, la marca preview y «RESULTADO: Q01 a Q14 devuelven 0 filas». Una consulta de solo lectura desde el Windows da en la rama nueva la versión 1.10, la marca preview, la regla de J-19 en `ck_carga_columna_encabezado` (acepta «ABET SO5.1 [») y SIN_CALIFICACIONES en `ck_rechazo_fila_motivo`, con 0 cargas y 0 credenciales.
+- Lo que no debe hacer, cómo se probó: la misma consulta da en la rama principal la versión 1.09, la marca production y 0 cargas. Las claves viajaron al Windows solo por la entrada de SSH, y la salida de la CLI de Neon se filtró para no imprimir sus cadenas de conexión.
+- Correcciones: T073 pasa de «restablecer» a «crear de nuevo», con el permiso de Jefferson.
+- Cómo se reporta: esta entrada, `tasks.md` y los PR.
+- Pendiente y siguiente paso: fusionar los PR, asignar las contraseñas y la prueba en la vista previa (T075 y T076); V1_10 en la rama principal antes de la versión hacia `main` (T077).
 
 ### 2026-11-09 11:09 (Lima) · feat/003-exports-blackboard · Exports de Blackboard en .xlsx, .csv y .xls (spec 003)
 - Quién: Claude Code reparte el trabajo, escribe V1_10, revisa cada diff y corre la verificación final. Cinco subagentes participan. El primero, con el modelo de la sesión y esfuerzo medio, hace el lector, la validación, los modelos, la carga, la constancia, el R-17, el registro de la ruta y sus pruebas, con los textos nuevos de `carga.feature`, y después aplica cinco correcciones. El segundo, con Sonnet y esfuerzo medio, suma R63 a R65, A09 y A10 a `pruebas.sql`, escribe `db/plataforma/neon/revisar_antes_de_v1_10.sql` y corre `correr_pruebas.sh`. El tercero, con Sonnet y esfuerzo medio, arma los cuatro exports inventados, su README, sus pruebas y la regla 2 por contenido. El cuarto, con el modelo de la sesión y esfuerzo medio, escribe los pasos de `exports_blackboard.feature`. El quinto, con el modelo de la sesión y esfuerzo alto, hace la revisión de seguridad. Claude Code vuelve a correr las pruebas de cada uno antes de aceptarlo, revisa a mano la regla 2 y corrige lo que se anota abajo.
