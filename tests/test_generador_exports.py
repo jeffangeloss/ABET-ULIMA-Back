@@ -17,6 +17,7 @@ su asignatura).
 from __future__ import annotations
 
 import base64
+import csv
 import fnmatch
 import hashlib
 import io
@@ -59,8 +60,18 @@ EXPORT_450010_410 = "sintetico_20262_450010_410.xlsx"
 EXPORT_450010_412 = "sintetico_20262_450010_412.xlsx"
 VARIAS = (EXPORT_450002_412, EXPORT_450010_410, EXPORT_450010_412)
 
-VERSIONADOS = (CORRECTO, CON_ERROR, EXPORT_411, DANADO, PROTEGIDO, PDF, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS)
-LIBROS = (CORRECTO, CON_ERROR, EXPORT_411, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS)
+# Los cuatro exports con la forma real de Blackboard de la spec 003.
+REAL_CSV = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-59.csv"
+REAL_XLS = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-54.xls"
+REAL_XLSX = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx"
+REAL_XLS_411 = "gc_SINTETICO_20262_450002_411_fullgc_2026-11-04-14-40-10.xls"
+REALES_DE_TEXTO = (REAL_CSV, REAL_XLS, REAL_XLS_411)
+REALES = (*REALES_DE_TEXTO, REAL_XLSX)
+
+VERSIONADOS = (
+    CORRECTO, CON_ERROR, EXPORT_411, DANADO, PROTEGIDO, PDF, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS, *REALES
+)
+LIBROS = (CORRECTO, CON_ERROR, EXPORT_411, VACIO, SIN_5_2, SIN_CODIGO, HOJA1, *VARIAS, REAL_XLSX)
 NO_ABREN = (DANADO, PROTEGIDO, PDF)
 PI = ("5.1", "5.2", "5.3")
 PLAN_450010 = ("2.1", "2.2", "5.1")
@@ -276,7 +287,9 @@ def test_dos_corridas_escriben_los_mismos_bytes(generado: Path, tmp_path: Path) 
 def test_la_carpeta_versionada_es_la_salida_del_generador(generado: Path) -> None:
     # deflate puede dar otros bytes con otra versión de zlib, así que los .xlsx se comparan parte por
     # parte, con su contenido y sus metadatos, y los demás archivos byte a byte.
-    assert sorted(p.name for p in CARPETA.glob("*.xlsx")) == sorted(VERSIONADOS)
+    assert sorted(p.name for p in CARPETA.glob("*.xlsx")) == sorted(n for n in VERSIONADOS if n.endswith(".xlsx"))
+    for nombre in REALES_DE_TEXTO:
+        assert (CARPETA / nombre).read_bytes() == (generado / nombre).read_bytes(), nombre
     for nombre in LIBROS:
         assert _partes((CARPETA / nombre).read_bytes()) == _partes((generado / nombre).read_bytes()), nombre
     for nombre in (PROTEGIDO, PDF):
@@ -448,6 +461,222 @@ def test_la_seccion_9_de_pruebas_sql_carga_las_columnas_y_los_niveles_de_cada_ex
         assert niveles[nombre] == _niveles(nombre, _plan(nombre)), nombre
         de_pi = [(n, e) for n, e in enumerate(_libro(nombre)[1], start=1) if re.match(r"[0-9]+\.[0-9]+ \[", e)]
         assert columnas[nombre] == de_pi, nombre
+
+
+# Exports con la forma real de Blackboard (spec 003)
+
+TITULOS_REALES = (
+    "Last Name", "First Name", "Username", "Student ID", "Last Access", "Availability",
+    "Semana 01: Selección del producto a rediseñar [Total Pts: 20 Complete/Incomplete]",
+    "Semana 02: Plan de trabajo [Total Pts: 20 Complete/Incomplete]",
+    "Semana 03: Dilemas / Bitácoras grupal e individuales [Total Pts: 20 Complete/Incomplete]",
+    "Ejercicio colaborativo 1: Planteamiento del problema de sostenibilidad a resolver [Total Pts: 20 Score]",
+    "Semana 04: Gestión del Riesgo [Total Pts: 20 Complete/Incomplete]",
+    "Semana 05: Visión ecosistémica y PINS [Total Pts: 20 Complete/Incomplete]",
+    "Semana 06: Análisis de Ciclo de Vida (LCA) [Total Pts: 20 Complete/Incomplete]",
+    "Semana 07: Métricas en OpenLCA [Total Pts: 20 Complete/Incomplete]",
+    "Ejercicio colaborativo 2: Reporte LCA diagnóstico y propuesta técnica para la mejora [Total Pts: 20 Score]",
+    "Ejercicio colaborativo 3: Reporte LCA de la mejora e interpretación de las métricas de sostenibilidad"
+    " [Total Pts: 20 Score]",
+    "Proyecto: Proyecto de Ingeniería Sostenible [Total Pts: 20 Score]",
+    "Registro de uso de Normas y Estándares de Diseño de Ingeniería (NEDI) [Total Pts: 20 Score]",
+    "Reporte Turnitin (Proyecto Capstone) [Total Pts: 20 Score]",
+    "Reporte Turnitin (Paper para publicación) [Total Pts: 20 Score]",
+    "2. Ejercicio en clase: 12 principios y ODS [Total Pts: 20 Complete/Incomplete]",
+    "4. Ejercicio en clase: Diseño de un proceso de limpieza [Total Pts: 20 Complete/Incomplete]",
+    "5. Ejercicio en clase: Análisis de ecosistemas [Total Pts: 20 Complete/Incomplete]",
+    "7. Ejercicio en clase: Conceptos y Métricas LCA (10 ejercicios) [Total Pts: 20 Score]",
+    "ABET SO5.1 [Total Pts: 100 Score]",
+    "9. Casos de Circularidad [Total Pts: 100 Score]",
+    "11. Innovación y Tecnología [Total Pts: 20 Complete/Incomplete]",
+    "ABET SO5.2 [Total Pts: 100 Score]",
+    "ABET SO 5.3 [Total Pts: 100 Score]",
+    "ABET SO 4.1 [Total Pts: 100 Score]",
+    "ABET SO4.2 [Total Pts: 100 Score]",
+)
+# Columnas (desde 1) de los PI 5.1, 5.2, 5.3, 4.1 y 4.2, y su id de Blackboard inventado.
+COLUMNAS_PI_REALES = {25: 9000051, 28: 9000052, 29: 9000053, 30: 9000041, 31: 9000042}
+
+
+def _texto_real(nombre: str) -> tuple[list[str], list[list[str]], bytes]:
+    """Encabezado y filas de un export de texto, leídos con csv y codecs sin el lector del generador."""
+    datos = (CARPETA / nombre).read_bytes()
+    if nombre.endswith(".csv"):
+        assert datos.startswith(b"\xef\xbb\xbf")
+        texto, delimitador = datos[3:].decode("utf-8"), ","
+    else:
+        assert datos.startswith(b"\xff\xfe")
+        texto, delimitador = datos[2:].decode("utf-16-le"), "\t"
+    assert "\r" not in texto and texto.endswith("\n") and not texto.endswith("\n\n")
+    filas = list(csv.reader(io.StringIO(texto, newline=""), delimiter=delimitador))
+    return filas[0], filas[1:], datos
+
+
+def _nombre_real(encabezado: list[str]) -> list[str]:
+    """Encabezado sin el número de columna de Blackboard, tras comprobar que tiene 7 cifras y empieza con 9."""
+    sin_id = []
+    for columna in encabezado:
+        m = re.search(r" \|(\d+)$", columna)
+        if m is None:
+            sin_id.append(columna)
+            continue
+        assert re.fullmatch(r"9\d{6}", m.group(1)), columna
+        sin_id.append(columna[: m.start()])
+    return sin_id
+
+
+def _niveles_de_filas(filas: list[list[object]], columnas: dict[str, int]) -> dict[str, list[float]]:
+    return {pi: [float(f[c - 1]) for f in filas] for pi, c in columnas.items()}
+
+
+@pytest.mark.parametrize("nombre", REALES)
+def test_cada_export_real_tiene_las_31_columnas_y_los_pi_en_su_sitio(nombre: str) -> None:
+    if nombre == REAL_XLSX:
+        hoja, encabezado, filas = _libro(nombre)
+        assert hoja == HOJA_410
+    else:
+        encabezado, filas, _ = _texto_real(nombre)
+    assert len(encabezado) == 31
+    assert all(len(f) == 31 for f in filas) and len(filas) == 11
+    assert _nombre_real(encabezado) == [t for t in TITULOS_REALES]
+    for columna, id_pi in COLUMNAS_PI_REALES.items():
+        assert encabezado[columna - 1].endswith(f"|{id_pi}")
+    # Cada número de columna es de 7 cifras, empieza con 9 y no se repite.
+    ids = [int(c.rsplit("|", 1)[1]) for c in encabezado[6:]]
+    assert len(set(ids)) == 25 and all(9000000 <= i <= 9999999 for i in ids)
+
+
+@pytest.mark.parametrize("nombre", REALES)
+def test_cada_export_real_da_63_6_63_6_y_72_7(nombre: str) -> None:
+    if nombre == REAL_XLSX:
+        _, _, filas = _libro(nombre)
+    else:
+        _, filas, _ = _texto_real(nombre)
+    columnas = {"5.1": 25, "5.2": 28, "5.3": 29}
+    niveles = _niveles_de_filas(filas, columnas)
+    assert [_un_decimal(sum(v >= 3 for v in niveles[pi]), len(niveles[pi])) for pi in columnas] == [
+        Decimal("63.6"), Decimal("63.6"), Decimal("72.7")
+    ]
+    # Student ID y las columnas del SO 4 van vacías.
+    assert all(f[3] in ("", None) and f[29] in ("", None) and f[30] in ("", None) for f in filas)
+    assert all(f[1] == "Estudiante" and f[5] == "Yes" for f in filas)
+    assert [str(f[0]) for f in filas] == [f"Inventado {int(str(f[2])[-2:]):02d}" for f in filas]
+
+
+_NIVELES_410 = [
+    (2, 99000001, (3, 4, 3)), (3, 99000002, (4, 3, 4)), (4, 99000003, (2, 3, 3)), (5, 99000004, (3, 2, 3)),
+    (6, 99000005, (1, 2, 2)), (7, 99000006, (4, 3, 4)), (8, 99000007, (3, 4, 3)), (9, 99000008, (2, 1, 1)),
+    (10, 99000009, (4, 3, 4)), (11, 99000010, (3, 4, 3)), (12, 99000011, (2, 2, 2)),
+]
+
+
+@pytest.mark.parametrize("nombre", REALES_DE_TEXTO)
+def test_los_exports_de_texto_traen_codigos_y_niveles_de_su_seccion(nombre: str) -> None:
+    _, filas, _ = _texto_real(nombre)
+    desplazamiento = 11 if nombre == REAL_XLS_411 else 0
+    assert [int(f[2]) for f in filas] == [c + desplazamiento for _, c, _ in _NIVELES_410]
+    esperado = [n for _, _, n in (reversed(_NIVELES_410) if desplazamiento else _NIVELES_410)]
+    assert [(float(f[24]), float(f[27]), float(f[28])) for f in filas] == [tuple(float(x) for x in n) for n in esperado]
+    assert all(re.fullmatch(r"[1-4]\.00", f[c]) for f in filas for c in (24, 27, 28))
+    assert all(f[4] == "2026-10-21 21:43" for f in filas)
+    # Los cuatro valores de las actividades aparecen, repartidos de forma fija.
+    assert {v for f in filas for v in f[6:24]} >= {"Complete", "Incomplete", "Needs Grading", "19.00"}
+
+
+def test_el_csv_va_en_utf8_con_bom_con_todas_las_comillas_y_lf() -> None:
+    datos = (CARPETA / REAL_CSV).read_bytes()
+    lineas = datos[3:].decode("utf-8").split("\n")
+    assert lineas[-1] == "" and len(lineas) == 13  # encabezado, 11 filas y el salto final
+    assert all(len(next(csv.reader([l]))) == 31 and l.startswith('"') and l.endswith('"') for l in lineas[:-1])
+    assert b"\r" not in datos and b"\t" not in datos
+
+
+def test_el_xls_es_utf16_le_con_bom_tabuladores_comillas_y_lf_igual_al_csv() -> None:
+    datos = (CARPETA / REAL_XLS).read_bytes()
+    assert datos[:2] == b"\xff\xfe" and not datos.startswith(b"\xd0\xcf\x11\xe0")
+    texto = datos[2:].decode("utf-16-le")
+    assert texto == (CARPETA / REAL_CSV).read_bytes()[3:].decode("utf-8").replace('","', '"\t"')
+
+
+def test_los_numeros_de_8_cifras_de_los_exports_reales_empiezan_con_99_tambien_en_utf16() -> None:
+    for nombre in REALES_DE_TEXTO:
+        datos = (CARPETA / nombre).read_bytes()
+        texto = datos[2:].decode("utf-16-le") if datos[:2] == b"\xff\xfe" else datos[3:].decode("utf-8")
+        ocho = [n for n in re.findall(r"\d+", texto) if len(n) == 8]
+        assert len(ocho) >= 11 and all(n.startswith("99") for n in ocho), nombre
+        assert _ocho_digitos_ajenos(datos.replace(b"\x00", b"")) == 0
+        # Ningún número de columna de Blackboard real (16xxxxx) ni de otro origen.
+        assert all(n.startswith("9") for n in re.findall(r"\|(\d+)\"", texto)), nombre
+
+
+def test_el_xlsx_real_trae_numeros_y_fechas_como_en_la_plantilla() -> None:
+    _, _, filas = _libro(REAL_XLSX)
+    assert all(isinstance(f[2], int) and f[3] is None for f in filas)
+    assert all(isinstance(f[c], int) for f in filas for c in (24, 27, 28))
+    assert {f[4].strftime("%Y-%m-%d %H:%M") for f in filas} == {"2026-10-21 21:43"}
+
+
+def test_las_funciones_de_texto_van_y_vuelven_con_cualquier_parametro(generador: ModuleType, tmp_path: Path) -> None:
+    original = generador.leer_export_texto_versionado(REAL_CSV)
+    assert original.indice("5.2") == 27 and original.indice("5.3") == 28 and original.indice("5.1") == 24
+    for separador in (",", "\t"):
+        for codificacion in ("utf-8", "utf-8-sig", "utf-16"):
+            for salto in ("\n", "\r\n"):
+                for comillas in (True, False):
+                    datos = generador.a_texto(
+                        original, separador=separador, codificacion=codificacion, salto=salto, comillas=comillas
+                    )
+                    assert generador.leer_export_texto(datos) == original
+    assert generador.leer_export_texto(generador.a_texto(original, comillas=True)) == original
+    # Las comillas mínimas no ponen comillas donde no hacen falta, y escribir_texto guarda los mismos bytes.
+    assert generador.a_texto(original, comillas=False).count(b'"') == 0
+    destino = generador.escribir_texto(original, tmp_path / "copia.csv", separador="\t")
+    assert destino.read_bytes() == generador.a_texto(original, separador="\t")
+    assert (CARPETA / REAL_CSV).read_bytes() == generador.a_texto(original)
+    with pytest.raises(ValueError):
+        generador.a_texto(original, codificacion="latin-1")
+
+
+def test_a_texto_con_comillas_minimas_cita_el_salto_dentro_de_un_campo(generador: ModuleType) -> None:
+    original = generador.leer_export_texto_versionado(REAL_CSV)
+    copia = generador.con_celda(original, 3, "Last Name", "Inventado\n02")
+    datos = generador.a_texto(copia, comillas=False)
+    assert b'"Inventado\n02"' in datos
+    assert generador.leer_export_texto(datos).filas[1][0] == "Inventado\n02"
+
+
+@pytest.mark.parametrize(
+    ("encabezado", "columna", "esperado"),
+    [
+        ("5.2 [Total Pts: 4 Score] |9000052", "5.2", True),
+        ("ABET SO5.2 [Total Pts: 100 Score] |9000052", "5.2", True),
+        ("ABET SO 5.3 [Total Pts: 100 Score] |9000053", "5.3", True),
+        ("abet so 5.2 [x]", "5.2", True),
+        ("PI 5.1 [x]", "5.1", True),
+        ("ABET SO 5.10 [x]", "5.1", False),
+        ("Actividad 5.1 [x]", "5.1", False),
+        ("ABET SO5 [x]", "5.1", False),
+    ],
+)
+def test_indice_reconoce_los_pi_con_la_regla_j19(
+    generador: ModuleType, encabezado: str, columna: str, esperado: bool
+) -> None:
+    export = generador.Export("h", ("Username", encabezado), ())
+    if esperado:
+        assert export.indice(columna) == 1
+    else:
+        with pytest.raises(KeyError):
+            export.indice(columna)
+    assert export.indice("Username") == 0
+
+
+def test_los_cuatro_exports_nuevos_se_leen_con_el_lector_del_generador(generador: ModuleType) -> None:
+    for nombre in REALES_DE_TEXTO:
+        export = generador.leer_export_texto_versionado(nombre)
+        assert len(export.encabezado) == 31 and len(export.filas) == 11
+        assert export.indice("4.1") == 29 and export.indice("4.2") == 30
+    libro = generador.leer_export((CARPETA / REAL_XLSX).read_bytes())
+    assert libro.hoja == HOJA_410 and libro.indice("5.2") == 27
 
 
 # Regla 2 de la revisión previa

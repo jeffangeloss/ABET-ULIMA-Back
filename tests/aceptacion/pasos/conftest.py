@@ -79,7 +79,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
 # Resumen de los pasos que no comprueban todo en el Back
 
-PROPIEDADES_A_LA_VISTA = ("criterio_relajado", "delegado_a_vitest", "sin_casos", "valor_buscado")
+PROPIEDADES_A_LA_VISTA = ("criterio_relajado", "delegado_a_preflight", "delegado_a_vitest", "sin_casos", "valor_buscado")
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:
@@ -302,13 +302,54 @@ def _valor_de_celda(texto: str) -> object:
     return int(texto) if re.fullmatch(r"-?[0-9]+", texto) else texto
 
 
+def es_de_texto(nombre: str) -> bool:
+    """Indica si el archivo base es un export de texto (.csv o .xls de Blackboard) por su extensión."""
+    return nombre.lower().endswith((".csv", ".xls"))
+
+
+def formato_de_texto(ctx: Escenario, nombre: str) -> dict[str, Any]:
+    """Opciones de a_texto() del generador que reproducen byte a byte el export de texto base.
+
+    La codificación sale del BOM, el separador y el salto de la primera línea y las comillas del primer
+    carácter. La función comprueba la ida y la vuelta, así que una copia «con ...» cambia solo lo que dice
+    la frase y conserva el formato de su archivo base.
+    """
+    datos = ctx.de_inventados(nombre)
+    g = ctx.generador
+    if datos.startswith(g.BOM_UTF16_LE):
+        codificacion, texto = "utf-16", datos[2:].decode("utf-16-le")
+    elif datos.startswith(g.BOM_UTF8):
+        codificacion, texto = "utf-8-sig", datos[3:].decode("utf-8")
+    else:
+        codificacion, texto = "utf-8", datos.decode("utf-8")
+    primera = re.split(r"\r\n|\n", texto, maxsplit=1)[0]
+    formato = {
+        "separador": "\t" if "\t" in primera else ",",
+        "codificacion": codificacion,
+        "salto": "\r\n" if texto[len(primera):].startswith("\r\n") else "\n",
+        "comillas": texto.startswith('"'),
+    }
+    assert g.a_texto(g.leer_export_texto(datos), **formato) == datos, f"{nombre} no se reproduce con {formato}"
+    return formato
+
+
 def _export(ctx: Escenario, nombre: str) -> Any:
+    if es_de_texto(nombre):
+        return ctx.generador.leer_export_texto(ctx.de_inventados(nombre))
     return ctx.generador.leer_export(ctx.de_inventados(nombre))
+
+
+def _a_bytes(ctx: Escenario, nombre: str, export: Any, **cambios: Any) -> bytes:
+    """Bytes de la copia en el formato del archivo base, con los cambios de formato que pida la frase."""
+    if es_de_texto(nombre):
+        return bytes(ctx.generador.a_texto(export, **{**formato_de_texto(ctx, nombre), **cambios}))
+    assert not cambios, f"{nombre} es un libro y no admite cambios de formato de texto {cambios}"
+    return bytes(ctx.generador.a_bytes(export))
 
 
 def _con_celda(ctx: Escenario, nombre: str, fila: str, columna: str, valor: object) -> bytes:
     export = ctx.generador.con_celda(_export(ctx, nombre), int(fila), columna, valor)
-    return bytes(ctx.generador.a_bytes(export))
+    return _a_bytes(ctx, nombre, export)
 
 
 # Cada regla es (expresión del cambio, función). La función recibe el escenario, el nombre del archivo base y
@@ -327,7 +368,7 @@ def _pi_vacio(ctx: Escenario, nombre: str, pi: str, f: str) -> tuple[bytes, str]
 
 def _columna_mas(ctx: Escenario, nombre: str, enc: str) -> tuple[bytes, str]:
     export = _export(ctx, nombre)
-    return bytes(ctx.generador.a_bytes(ctx.generador.con_columna(export, enc, [3] * len(export.filas)))), nombre
+    return _a_bytes(ctx, nombre, ctx.generador.con_columna(export, enc, [3] * len(export.filas))), nombre
 
 
 def _nivel_en_todas(ctx: Escenario, nombre: str, v: str, pi: str, n: str) -> tuple[bytes, str]:
@@ -335,29 +376,263 @@ def _nivel_en_todas(ctx: Escenario, nombre: str, v: str, pi: str, n: str) -> tup
     assert len(export.filas) == int(n), f"el export trae {len(export.filas)} filas de datos y no {n}"
     for fila in range(2, len(export.filas) + 2):
         export = ctx.generador.con_celda(export, fila, pi, _valor_de_celda(v))
-    return bytes(ctx.generador.a_bytes(export)), nombre
+    return _a_bytes(ctx, nombre, export), nombre
 
 
 def _hoja(ctx: Escenario, nombre: str, hoja: str, otro: str | None) -> tuple[bytes, str]:
     export = ctx.generador.con_hoja(_export(ctx, nombre), hoja)
-    return bytes(ctx.generador.a_bytes(export)), otro or nombre
+    return _a_bytes(ctx, nombre, export), otro or nombre
 
 
 def _sin_filas(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
-    return bytes(ctx.generador.a_bytes(ctx.generador.sin_filas(_export(ctx, nombre)))), nombre
+    return _a_bytes(ctx, nombre, ctx.generador.sin_filas(_export(ctx, nombre))), nombre
 
 
 def _sin_pi(ctx: Escenario, nombre: str, pi: str) -> tuple[bytes, str]:
-    return bytes(ctx.generador.a_bytes(ctx.generador.sin_columnas(_export(ctx, nombre), pi))), nombre
+    return _a_bytes(ctx, nombre, ctx.generador.sin_columnas(_export(ctx, nombre), pi)), nombre
 
 
 def _sin_codigos(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
     export = ctx.generador.sin_columnas(_export(ctx, nombre), "Username", "Student ID")
-    return bytes(ctx.generador.a_bytes(export)), nombre
+    return _a_bytes(ctx, nombre, export), nombre
 
 
 def _pi_repetido(ctx: Escenario, nombre: str, enc: str) -> tuple[bytes, str]:
     return _columna_mas(ctx, nombre, enc)
+
+
+# Copias de un export de texto (spec 003). Cada una parte del .csv o del .xls versionado, lo lee con
+# leer_export_texto() del generador y lo vuelve a escribir con a_texto() en su mismo formato, salvo lo que
+# cambia la frase. Las que dañan el texto trabajan sobre el texto decodificado o sobre los bytes.
+
+def _texto_base(ctx: Escenario, nombre: str) -> tuple[str, dict[str, Any]]:
+    """Texto del export base sin su BOM y su formato, para las copias que cambian el texto mismo."""
+    assert es_de_texto(nombre), f"{nombre} no es un export de texto"
+    formato = formato_de_texto(ctx, nombre)
+    datos = ctx.de_inventados(nombre)
+    if formato["codificacion"] == "utf-16":
+        return datos[2:].decode("utf-16-le"), formato
+    if formato["codificacion"] == "utf-8-sig":
+        return datos[3:].decode("utf-8"), formato
+    return datos.decode("utf-8"), formato
+
+
+def _codificar(texto: str, formato: dict[str, Any]) -> bytes:
+    """Bytes del texto con la codificación y el BOM del formato del archivo base."""
+    if formato["codificacion"] == "utf-16":
+        return b"\xff\xfe" + texto.encode("utf-16-le")
+    if formato["codificacion"] == "utf-8-sig":
+        return b"\xef\xbb\xbf" + texto.encode("utf-8")
+    return texto.encode("utf-8")
+
+
+def _con_formato(ctx: Escenario, nombre: str, **cambios: Any) -> tuple[bytes, str]:
+    assert es_de_texto(nombre), f"{nombre} no es un export de texto"
+    return _a_bytes(ctx, nombre, _export(ctx, nombre), **cambios), nombre
+
+
+def _crlf(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    assert formato_de_texto(ctx, nombre)["salto"] == "\n"
+    return _con_formato(ctx, nombre, salto="\r\n")
+
+
+def _sin_bom(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    assert formato_de_texto(ctx, nombre)["codificacion"] == "utf-8-sig"
+    copia, _ = _con_formato(ctx, nombre, codificacion="utf-8")
+    assert copia == ctx.de_inventados(nombre)[3:]
+    return copia, nombre
+
+
+def _sin_comillas(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    copia, _ = _con_formato(ctx, nombre, comillas=False)
+    assert b'"' not in copia, "algún campo necesita comillas aunque se pidan sin comillas"
+    return copia, nombre
+
+
+def _otro_separador(ctx: Escenario, nombre: str, nuevo: str) -> tuple[bytes, str]:
+    separador = "\t" if nuevo == "tabuladores" else ","
+    assert formato_de_texto(ctx, nombre)["separador"] != separador
+    return _con_formato(ctx, nombre, separador=separador)
+
+
+def _lineas_vacias_al_final(ctx: Escenario, nombre: str, n: str) -> tuple[bytes, str]:
+    texto, formato = _texto_base(ctx, nombre)
+    assert texto.endswith(formato["salto"])
+    return _codificar(texto + formato["salto"] * {"dos": 2, "una": 1}[n], formato), nombre
+
+
+def _username_primero(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    export = _export(ctx, nombre)
+    i = export.indice("Username")
+    assert i != 0
+    orden = [i, *(j for j in range(len(export.encabezado)) if j != i)]
+    movido = type(export)(export.hoja, tuple(export.encabezado[j] for j in orden),
+                          tuple(tuple(fila[j] for j in orden) for fila in export.filas))
+    return _a_bytes(ctx, nombre, movido), nombre
+
+
+def _con_nombre(ctx: Escenario, nombre: str, otro: str) -> tuple[bytes, str]:
+    """Los mismos bytes del archivo base, subidos con otro nombre."""
+    return ctx.de_inventados(nombre), otro
+
+
+def _linea_vacia_despues(ctx: Escenario, nombre: str, n: str) -> tuple[bytes, str]:
+    texto, formato = _texto_base(ctx, nombre)
+    lineas = texto.split(formato["salto"])
+    assert len(lineas) > int(n)
+    lineas.insert(int(n), "")
+    return _codificar(formato["salto"].join(lineas), formato), nombre
+
+
+def _salto_en_last_name(ctx: Escenario, nombre: str, f: str, v: str, pi: str, g: str) -> tuple[bytes, str]:
+    export = _export(ctx, nombre)
+    apellido = str(export.valor(int(f), "Last Name"))
+    assert " " in apellido
+    export = ctx.generador.con_celda(export, int(f), "Last Name", apellido.replace(" ", "\n", 1))
+    export = ctx.generador.con_celda(export, int(g), pi, v)
+    copia = _a_bytes(ctx, nombre, export)
+    assert formato_de_texto(ctx, nombre)["comillas"], "el salto de línea solo cabe dentro de comillas"
+    return copia, nombre
+
+
+def _nivel_de_texto(ctx: Escenario, nombre: str, pi: str, v: str, f: str, comillas: str | None = None) -> tuple[bytes, str]:
+    """La celda del PI con el texto v tal cual, como cadena, en un export de texto o en un libro."""
+    copia = _con_celda(ctx, nombre, f, pi, v)
+    if comillas:
+        assert es_de_texto(nombre) and formato_de_texto(ctx, nombre)["comillas"]
+    return copia, nombre
+
+
+def _nivel_de_cifras(ctx: Escenario, nombre: str, pi: str, n: str, f: str) -> tuple[bytes, str]:
+    return _con_celda(ctx, nombre, f, pi, "1" * int(n)), nombre
+
+
+def _dos_celdas(ctx: Escenario, nombre: str, a: str, ca: str, b: str, cb: str, f: str) -> tuple[bytes, str]:
+    export = ctx.generador.con_celda(_export(ctx, nombre), int(f), ca, a)
+    export = ctx.generador.con_celda(export, int(f), cb, b)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
+def _pi_vacios(ctx: Escenario, nombre: str, n: str, v: str | None, pi: str | None, f: str | None) -> tuple[bytes, str]:
+    export = _export(ctx, nombre)
+    assert len(export.filas) == int(n), f"el export trae {len(export.filas)} filas de datos y no {n}"
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in range(2, len(export.filas) + 2):
+        for columna in ("5.1", "5.2", "5.3"):
+            export = ctx.generador.con_celda(export, fila, columna, vacio)
+    if v is not None:
+        export = ctx.generador.con_celda(export, int(f), pi, v)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
+def _en_codificacion(ctx: Escenario, nombre: str, cual: str) -> tuple[bytes, str]:
+    texto, _ = _texto_base(ctx, nombre)
+    if cual == "Windows-1252":
+        copia = texto.encode("cp1252")
+        assert copia != texto.encode("utf-8"), "el texto no trae ningún carácter fuera de ASCII"
+        return copia, nombre
+    if cual == "UTF-16 BE con BOM":
+        return b"\xfe\xff" + texto.encode("utf-16-be"), nombre
+    assert cual == "UTF-16 LE sin BOM"
+    return texto.encode("utf-16-le"), nombre
+
+
+def _dos_bom(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    datos = ctx.de_inventados(nombre)
+    assert datos.startswith(b"\xef\xbb\xbf")
+    return b"\xef\xbb\xbf" + datos, nombre
+
+
+def _solo_bom(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    texto, formato = _texto_base(ctx, nombre)
+    return _codificar("", formato), nombre
+
+
+def _caracter_nulo(ctx: Escenario, nombre: str, f: str) -> tuple[bytes, str]:
+    export = _export(ctx, nombre)
+    apellido = str(export.valor(int(f), "Last Name"))
+    return _a_bytes(ctx, nombre, ctx.generador.con_celda(export, int(f), "Last Name", apellido + "\x00")), nombre
+
+
+def _primera_linea_sin_separador(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    texto, formato = _texto_base(ctx, nombre)
+    primera, resto = texto.split(formato["salto"], 1)
+    assert all("," not in e and "\t" not in e for e in _export(ctx, nombre).encabezado)
+    return _codificar(primera.replace(",", "").replace("\t", "") + formato["salto"] + resto, formato), nombre
+
+
+def _punto_y_coma(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    import csv
+
+    export = _export(ctx, nombre)
+    formato = formato_de_texto(ctx, nombre)
+    salida = io.StringIO(newline="")
+    escritor = csv.writer(salida, delimiter=";", quotechar='"', lineterminator=formato["salto"],
+                          quoting=csv.QUOTE_ALL if formato["comillas"] else csv.QUOTE_MINIMAL)
+    escritor.writerow(export.encabezado)
+    escritor.writerows(export.filas)
+    return _codificar(salida.getvalue(), formato), nombre
+
+
+def sin_la_ultima_comilla(ctx: Escenario, nombre: str, datos: bytes) -> bytes:
+    """Los bytes de la copia sin la última comilla doble de su texto, en la codificación del archivo base."""
+    formato = formato_de_texto(ctx, nombre)
+    if formato["codificacion"] == "utf-16":
+        assert datos.startswith(b"\xff\xfe")
+        texto = datos[2:].decode("utf-16-le")
+    else:
+        texto = datos.decode("utf-8-sig" if formato["codificacion"] == "utf-8-sig" else "utf-8")
+    posicion = texto.rindex('"')
+    return _codificar(texto[:posicion] + texto[posicion + 1:], formato)
+
+
+def _y_sin_la_ultima_comilla(ctx: Escenario, nombre: str, antes: str) -> tuple[bytes, str]:
+    datos, otro = _aplicar(ctx, nombre, antes)
+    return sin_la_ultima_comilla(ctx, nombre, datos), otro
+
+
+def _campo_largo(ctx: Escenario, nombre: str, n: str, f: str) -> tuple[bytes, str]:
+    return _con_celda(ctx, nombre, f, "Last Name", "x" * int(n)), nombre
+
+
+def _fila_1_ancha(ctx: Escenario, nombre: str, n: str) -> tuple[bytes, str]:
+    export = _export(ctx, nombre)
+    extra = int(n) - len(export.encabezado)
+    assert extra > 0
+    ancha = type(export)(export.hoja, (*export.encabezado, *([""] * extra)), export.filas)
+    return _a_bytes(ctx, nombre, ancha), nombre
+
+
+def _muchas_filas(ctx: Escenario, nombre: str, n: str) -> tuple[bytes, str]:
+    """El export con sus 11 filas tal cual y, a continuación, filas con un código inventado y sus tres niveles.
+
+    Las filas que se suman dejan vacías las demás columnas, porque 5 001 filas completas pasan de 1 MB y el
+    tope de tamaño de BR-CARGA-04 detendría el archivo antes que el de filas.
+    """
+    export = _export(ctx, nombre)
+    ancho = len(export.encabezado)
+    codigo, niveles = export.indice("Username"), [export.indice(pi) for pi in ("5.1", "5.2", "5.3")]
+    filas = list(export.filas)
+    while len(filas) < int(n):
+        fila = [""] * ancho
+        fila[codigo] = str(99000001 + len(filas))
+        for posicion in niveles:
+            fila[posicion] = "3.00"
+        filas.append(tuple(fila))
+    copia = _a_bytes(ctx, nombre, type(export)(export.hoja, export.encabezado, tuple(filas)))
+    assert len(copia) < 1_048_576, f"la copia de {n} filas pesa {len(copia)} bytes"
+    return copia, nombre
+
+
+def _de_1_2_mb(ctx: Escenario, nombre: str) -> tuple[bytes, str]:
+    """El export con sus filas de datos repetidas hasta pasar de 1,2 MB (1 200 000 bytes)."""
+    export = _export(ctx, nombre)
+    encabezado = len(_a_bytes(ctx, nombre, ctx.generador.sin_filas(export)))
+    por_tanda = len(_a_bytes(ctx, nombre, export)) - encabezado
+    tandas = -(-(1_200_000 - encabezado) // por_tanda)
+    copia = _a_bytes(ctx, nombre, type(export)(export.hoja, export.encabezado, export.filas * tandas))
+    assert 1_200_000 <= len(copia) < 1_300_000, len(copia)
+    return copia, nombre
 
 
 REGLAS_DE_COPIA: list[tuple[str, Any]] = [
@@ -382,6 +657,39 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
                                      [("xl/externalLinks/externalLink1.xml", b"<externalLink/>", 8)]), nombre)),
     (r'abierta y guardada otra vez, con las mismas celdas y otros bytes',
      lambda ctx, nombre: (abierto_y_guardado_otra_vez(ctx.de_inventados(nombre)), nombre)),
+    # Spec 003, copias de un export de texto o del .xlsx con los encabezados reales.
+    (r'(?P<antes>.+) y sin la última comilla del archivo', _y_sin_la_ultima_comilla),
+    (r'de 1,2 MB sin la última comilla del archivo',
+     lambda ctx, nombre: (sin_la_ultima_comilla(ctx, nombre, _de_1_2_mb(ctx, nombre)[0]), nombre)),
+    (r'sin la última comilla del archivo',
+     lambda ctx, nombre: (sin_la_ultima_comilla(ctx, nombre, ctx.de_inventados(nombre)), nombre)),
+    (r'con saltos de línea CRLF', _crlf),
+    (r'sin BOM', _sin_bom),
+    (r'con (?P<n>dos|una) líneas? vacías? al final', _lineas_vacias_al_final),
+    (r'sin comillas en ningún campo', _sin_comillas),
+    (r'con (?P<nuevo>tabuladores|comas) en lugar de (?:comas|tabuladores)', _otro_separador),
+    (r'con la columna Username primero', _username_primero),
+    (r'con el nombre "(?P<otro>[^"]+)"', _con_nombre),
+    (r'con una línea vacía después de la línea (?P<n>[0-9]+) del archivo', _linea_vacia_despues),
+    (r'con un salto de línea dentro de las comillas de Last Name en la fila (?P<f>[0-9]+) y "(?P<v>[^"]*)" en la '
+     r'columna (?P<pi>[0-9]\.[0-9]) de la fila (?P<g>[0-9]+)', _salto_en_last_name),
+    (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" (?P<comillas>entre comillas) en la fila (?P<f>[0-9]+)',
+     _nivel_de_texto),
+    (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae el texto "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _nivel_de_texto),
+    (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae un texto de (?P<n>[0-9]+) cifras en la fila (?P<f>[0-9]+)', _nivel_de_cifras),
+    (r'con "(?P<a>[^"]*)" en la columna "(?P<ca>[^"]+)" y "(?P<b>[^"]*)" en la columna "(?P<cb>[^"]+)" de la fila '
+     r'(?P<f>[0-9]+)', _dos_celdas),
+    (r'con las columnas 5\.1, 5\.2 y 5\.3 vacías en sus (?P<n>[0-9]+) filas'
+     r'(?: salvo "(?P<v>[^"]*)" en la columna (?P<pi>[0-9]\.[0-9]) de la fila (?P<f>[0-9]+))?', _pi_vacios),
+    (r'en (?P<cual>Windows-1252|UTF-16 BE con BOM|UTF-16 LE sin BOM)', _en_codificacion),
+    (r'con dos BOM al comienzo', _dos_bom),
+    (r'con solo el BOM', _solo_bom),
+    (r'con un carácter U\+0000 en el Last Name de la fila (?P<f>[0-9]+)', _caracter_nulo),
+    (r'con una primera línea sin coma ni tabulador', _primera_linea_sin_separador),
+    (r'separada por punto y coma', _punto_y_coma),
+    (r'con un campo de (?P<n>[0-9]+) caracteres en la fila (?P<f>[0-9]+)', _campo_largo),
+    (r'con una fila 1 de (?P<n>[0-9]+) columnas', _fila_1_ancha),
+    (r'con (?P<n>[0-9]+) filas de datos', _muchas_filas),
 ]
 
 
@@ -397,25 +705,64 @@ def armar_archivo(ctx: Escenario, texto: str) -> tuple[bytes, str]:
                                [("xl/media/inflado.bin", contenido_que_se_infla(22), 8)])
         assert len(contenido) < 1_048_576
         return contenido, "inflado.xlsx"
+    if (otro := re.fullmatch(r'un contenedor OLE inventado sin cifrado con el nombre "([^"]+)"', texto)):
+        return contenedor_ole_sin_cifrado(ctx.generador), otro.group(1)
+    if (otro := re.fullmatch(r'un zip inventado que no es un libro con el nombre "([^"]+)"', texto)):
+        return _zip([("inventado.txt", b"Contenido inventado, sin ninguna hoja.", 8)]), otro.group(1)
+    if (otro := re.fullmatch(r'un archivo vacío con el nombre "([^"]+)"', texto)):
+        return b"", otro.group(1)
     copia = re.fullmatch(r'una copia de "(?P<base>[^"]+)" (?P<cambio>.+)', texto)
     assert copia is not None, f"No se reconoce la descripción del archivo {texto!r}."
+    return _aplicar(ctx, copia["base"], copia["cambio"])
+
+
+def _aplicar(ctx: Escenario, base: str, cambio: str) -> tuple[bytes, str]:
+    """Bytes y nombre de la copia de base con el cambio, por la primera regla de REGLAS_DE_COPIA que lo describe."""
     for expresion, funcion in REGLAS_DE_COPIA:
-        coincide = re.fullmatch(expresion, copia["cambio"])
+        coincide = re.fullmatch(expresion, cambio)
         if coincide:
-            return funcion(ctx, copia["base"], **coincide.groupdict())
-    raise AssertionError(f"No se reconoce el cambio {copia['cambio']!r} de la copia.")
+            return funcion(ctx, base, **{k: v for k, v in coincide.groupdict().items()})
+    raise AssertionError(f"No se reconoce el cambio {cambio!r} de la copia.")
+
+
+def contenedor_ole_sin_cifrado(generador: ModuleType) -> bytes:
+    """Contenedor OLE mínimo e inventado, con la firma D0 CF 11 E0 A1 B1 1A E1 y sin ningún flujo.
+
+    Lo arma como el generador arma contenedor_ole_cifrado(), con la cabecera de la versión 3, un sector de
+    FAT y un sector de directorio con solo la entrada raíz, así que no trae EncryptionInfo ni EncryptedPackage
+    ni ningún libro. Pesa 1 536 bytes y no se versiona.
+    """
+    import struct
+
+    fin, fat_propia, libre = 0xFFFFFFFE, 0xFFFFFFFD, 0xFFFFFFFF
+    cabecera = struct.pack(
+        "<8s16sHHHHH6sIIIIIIIII", bytes.fromhex("D0CF11E0A1B11AE1"), b"\0" * 16, 0x003E, 0x0003, 0xFFFE, 9, 6,
+        b"\0" * 6, 0, 1, 1, 0, 4096, fin, 0, fin, 0,
+    ) + struct.pack("<109I", 0, *([libre] * 108))
+    fat = [fat_propia, fin] + [libre] * 126
+    directorio = generador._entrada_ole("Root Entry", tipo=5, color=1, sector=fin, tamano=0)
+    directorio += generador._entrada_ole("", tipo=0, color=0, sector=0, tamano=0) * 3
+    contenido = cabecera + struct.pack("<128I", *fat) + directorio
+    assert len(contenido) == 1536 and b"E\0n\0c\0r\0y\0p\0t\0" not in contenido
+    return contenido
 
 
 # Antecedentes
 
-@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_09(?P<resto>.*)'))
-def _base_desechable(ctx: Escenario, resto: str) -> None:
+@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10)(?P<resto>.*)'))
+def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
     con_varias = "varias_secciones_2026_2_inventado.sql" in resto
     guardia = ctx.request.node.get_closest_marker("guardia_en_base") is not None
     ctx.crear_base("varias" if con_varias else "guardia" if guardia else "periodo")
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
+    if ultima == "10":
+        # V1_10 reemplaza ck_carga_columna_encabezado por la regla J-19 y suma SIN_CALIFICACIONES a los motivos.
+        definiciones = dict(ctx.filas("SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname IN"
+                                      " ('ck_carga_columna_encabezado', 'ck_rechazo_fila_motivo')"))
+        assert "[Aa][Bb][Ee][Tt]" in definiciones.get("ck_carga_columna_encabezado", ""), "falta la migración V1_10"
+        assert "SIN_CALIFICACIONES" in definiciones.get("ck_rechazo_fila_motivo", ""), "falta la migración V1_10"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"
     if con_varias:
         assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s", A.VARIAS_CORREO) == 1
@@ -465,7 +812,9 @@ def _seccion_sin_carga(ctx: Escenario, numero: str) -> None:
 # Archivos y subidas previas
 
 @given(parsers.re(r'(?P<que>una copia de "[^"]+" .+|un PDF inventado de una página con el nombre "[^"]+"'
-                  r'|el mismo PDF con el nombre "[^"]+"|un \.xlsx inventado de .+)'))
+                  r'|el mismo PDF con el nombre "[^"]+"|un \.xlsx inventado de .+'
+                  r'|un contenedor OLE inventado sin cifrado con el nombre "[^"]+"'
+                  r'|un zip inventado que no es un libro con el nombre "[^"]+"|un archivo vacío con el nombre "[^"]+")'))
 def _archivo_descrito(ctx: Escenario, que: str) -> None:
     ctx.archivo = ctx.copia_de(que)
 
@@ -562,6 +911,33 @@ def _cuerpo_mensaje(ctx: Escenario, mensaje: str) -> None:
 @then(parsers.re(r'el cuerpo de la respuesta no contiene el texto "(?P<texto>[^"]*)"'))
 def _cuerpo_sin_texto(ctx: Escenario, texto: str) -> None:
     assert texto not in ctx.respuesta.text
+
+
+@then(parsers.re(r'el cuerpo de la respuesta trae el rechazo con fila (?P<fila>[0-9]+), PI "(?P<pi>[0-9.]*)", motivo '
+                 r'"(?P<motivo>[A-Z_]+)"(?: y el mensaje "(?P<mensaje>[^"]+)")?'))
+def _cuerpo_trae_el_rechazo(ctx: Escenario, fila: str, pi: str, motivo: str, mensaje: str | None) -> None:
+    """Un rechazo del cuerpo con esa fila, ese PI y ese motivo. PI "" es un rechazo sin PI, que el cuerpo trae nulo."""
+    rechazos = ctx.cuerpo()["rechazos"]
+    assert any(r["fila"] == int(fila) and r["pi"] == (pi or None) and r["motivo"] == motivo
+               and (mensaje is None or r["mensaje"] == mensaje) for r in rechazos), rechazos
+
+
+_COLUMNAS_DE_ARCHIVO = r'(?:nombre_archivo|hoja|filas_de_datos|tipo_fuente)'
+_VALOR_DE_ARCHIVO = r'(?:"[^"]*"|[0-9]+|nula)'
+
+
+@then(parsers.re(rf'abet\.archivo_origen tiene (?P<n>[0-9]+) filas? con (?P<pares>{_COLUMNAS_DE_ARCHIVO} {_VALOR_DE_ARCHIVO}'
+                 rf'(?:(?:, | y ){_COLUMNAS_DE_ARCHIVO} {_VALOR_DE_ARCHIVO})*)'))
+def _archivo_origen_con(ctx: Escenario, n: str, pares: str) -> None:
+    """Filas de abet.archivo_origen con esos valores. «hoja nula» es la hoja de un export de texto (spec 003, US-34)."""
+    donde, valores = [], []
+    for columna, valor in re.findall(rf'({_COLUMNAS_DE_ARCHIVO}) ({_VALOR_DE_ARCHIVO})', pares):
+        if valor == "nula":
+            donde.append(f"{columna} IS NULL")
+        else:
+            donde.append(f"{columna} = %s")
+            valores.append(int(valor) if columna == "filas_de_datos" else valor.strip('"'))
+    assert ctx.cuenta("archivo_origen", " AND ".join(donde), *valores) == int(n)
 
 
 # Entonces, lo que gana o no gana la base

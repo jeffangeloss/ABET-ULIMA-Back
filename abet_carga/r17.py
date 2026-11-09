@@ -38,6 +38,8 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    de BR-R17-09 al cierre. Las líneas de avisos y rechazos tienen la forma «PUNTAJE_MAXIMO_DISTINTO
    en el PI 5.3» y «Fila 3, PI 5.2, NIVEL_FUERA_DE_ESCALA, RECHAZA_FILA», con el mensaje al lado y
    sin el valor leído. La hoja se imprime en una página de ancho, con los rótulos junto a sus valores.
+   La fila «Hoja» de un export de texto, cuya hoja es nula, muestra «Sin hoja (export de texto)»,
+   un texto de presentación que no se guarda en la base (spec 003, US-34).
 
 El conteo por nivel, la cifra entre paréntesis y el porcentaje sobre el total van en K28:Q31, la
 zona libre que propone plantillas/README.md, y M24 a M26 repiten los conteos de la hoja original.
@@ -72,6 +74,8 @@ FILAS_DE_FRECUENCIAS = (29, 30, 31)
 PRIMERA_FILA_DE_LA_TABLA = 43
 TOPE_DE_MEDICIONES = 142
 TOPE_DE_PI = len(FILAS_DEL_BLOQUE_I)
+# Lo que la fila «Hoja» de la hoja «Constancia» muestra para un export de texto, que no tiene hoja (spec 003, US-34).
+SIN_HOJA = "Sin hoja (export de texto)"
 FRASE_FINAL = ("Los números de este R-17 los calcula el sistema desde la carga registrada en la base, "
                "no desde fórmulas.")
 # Los dos textos fijos que la fórmula de H24 a H26 de la hoja original elige (plantillas/README.md).
@@ -350,7 +354,7 @@ def _datos(cuerpo: dict[str, Any], provisional: bool) -> list[tuple[object, obje
         ("Carga", cuerpo["carga_id"]),
         ("Sección", f"{seccion['numero']} de {seccion['asignatura']} en {seccion['periodo']}"),
         ("Archivo", cuerpo["nombre_archivo"]),
-        ("Hoja", cuerpo["hoja"]),
+        ("Hoja", cuerpo["hoja"] if cuerpo["hoja"] is not None else SIN_HOJA),
         ("Filas de datos / leídas / aceptadas / rechazadas", cuentas),
         ("Huella SHA-256", cuerpo["sha256"]),
         ("Estado", cuerpo["estado"]),

@@ -139,6 +139,9 @@ def _cargas_de_la_410(conexion: psycopg.Connection) -> dict[str, int]:
     # Una carga anterior a la lectura de la hoja deja archivo_origen.hoja nulo, y la sección sale del nombre.
     ids["412_sin_hoja"] = rechazar(conexion, motivo="SECCION_NO_COINCIDE", hoja=None,
                                    nombre_archivo="gc_SINTETICO_20262_450002_412_fullgc_2026-10-21.xlsx")
+    # Spec 003. Un .csv sin hoja cuyas filas aceptadas no traen ningún nivel (US-34, US-36 y D-31).
+    ids["sin_calificaciones"] = rechazar(conexion, motivo="SIN_CALIFICACIONES", hoja=None,
+                                         nombre_archivo="gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.csv")
     return ids
 
 
@@ -273,6 +276,23 @@ def test_br_r17_10_cada_rechazo_de_carga_trae_su_pi_y_el_mensaje_de_la_respuesta
     assert cuerpo["mensaje"] == mensaje
     assert [(r["fila"], r["pi"], r["efecto"], r["mensaje"]) for r in cuerpo["rechazos"]] == [
         (None, pi, "RECHAZA_CARGA", mensaje)]
+
+
+def test_br_r17_10_spec003_una_carga_sin_calificaciones_trae_su_mensaje_y_la_hoja_nula(
+    base_410: tuple[Any, dict[str, int]],
+) -> None:
+    base, ids = base_410
+    cuerpo = _armar(base, ids["sin_calificaciones"])
+    mensaje = "El archivo no trae ningún nivel en las columnas de los PI del plan. La carga no se publicó."
+    assert set(cuerpo) == CAMPOS
+    assert (cuerpo["estado"], cuerpo["mensaje"]) == ("RECHAZADA", mensaje)
+    assert cuerpo["rechazos"] == [
+        {"fila": None, "pi": None, "motivo": "SIN_CALIFICACIONES", "efecto": "RECHAZA_CARGA", "mensaje": mensaje}]
+    # Lo que no debe pasar: la constancia no inventa una hoja para el export de texto.
+    assert cuerpo["hoja"] is None
+    assert cuerpo["nombre_archivo"] == "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.csv"
+    assert (cuerpo["columnas"], cuerpo["avisos"]) == ([], [])
+    assert [cuerpo[clave] for clave in ("filas_leidas", "filas_aceptadas", "filas_rechazadas")] == [0, 0, 0]
 
 
 def test_br_r17_10_una_carga_sin_filas_aceptadas_resume_su_motivo_y_lista_cada_fila(

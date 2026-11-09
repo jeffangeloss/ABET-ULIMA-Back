@@ -51,7 +51,7 @@ MENSAJE_GUARDIA_FILA_4 = (
     "El piloto solo admite códigos inventados, de 99000000 a 99999999. Revise la fila 4. No se guardó nada."
 )
 MENSAJE_SIN_SECCION = (
-    "El archivo no indica su sección. Sube el export de Blackboard sin cambiar el nombre de su hoja."
+    "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
 )
 
 AVISO_5_3 = Rechazo(Motivo.PUNTAJE_MAXIMO_DISTINTO, Efecto.AVISO, None, "5.3")
@@ -739,3 +739,170 @@ def test_br_carga_17_la_validacion_no_muestra_codigos_ni_nombres() -> None:
     assert not any(texto in representacion for texto in ("Inventado", "Estudiante", "99000001"))
     assert isinstance(validacion.filas_aceptadas[0], FilaAceptada)
     assert repr(validacion.filas_aceptadas[0]) == "FilaAceptada(fila_origen=2)"
+
+
+# Spec 003. Exports de texto, niveles escritos como texto y carga sin calificaciones
+
+CSV_410 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-10-00-00.csv"
+ENCABEZADO_CSV = (
+    "Last Name",
+    "First Name",
+    "Username",
+    "ABET SO5.1 [Total Pts: 4 Score] |9000051",
+    "ABET SO 5.2 [Total Pts: 4 Score] |9000052",
+    "ABET SO 5.3 [Total Pts: 4 Score] |9000053",
+)
+
+
+def _csv(filas: tuple[tuple[str, ...], ...], nombre: str = CSV_410) -> LibroLeido:
+    """Export de texto inventado con la fila 2 en adelante, leído por el lector como un .csv con BOM."""
+    lineas = [ENCABEZADO_CSV, *filas]
+    texto = "".join(",".join(f'"{campo}"' for campo in fila) + "\r\n" for fila in lineas)
+    return leer(b"\xef\xbb\xbf" + texto.encode("utf-8"), nombre_archivo=nombre)
+
+
+def _fila(codigo: str, *niveles: str) -> tuple[str, ...]:
+    return ("Inventado", "Estudiante", codigo, *niveles)
+
+
+FILAS_CSV = tuple(_fila(f"990000{i:02d}", "4", "3", "2") for i in range(1, 4))
+
+
+@pytest.mark.parametrize(
+    ("valor", "nivel", "motivo"),
+    [
+        ("3.00", 3, None),
+        ("3,00", 3, None),
+        ("4.0", 4, None),
+        (" 2,0 ", 2, None),
+        ("+1.00", 1, None),
+        ("0003", 3, None),
+        ("5.00", None, Motivo.NIVEL_FUERA_DE_ESCALA),
+        ("-0", None, Motivo.NIVEL_FUERA_DE_ESCALA),
+        ("1,000", None, Motivo.NIVEL_NO_NUMERICO),
+        ("3.000", None, Motivo.NIVEL_NO_NUMERICO),
+        ("3.50", None, Motivo.NIVEL_NO_NUMERICO),
+        ("3.", None, Motivo.NIVEL_NO_NUMERICO),
+        ("3.0.0", None, Motivo.NIVEL_NO_NUMERICO),
+        (".0", None, Motivo.NIVEL_NO_NUMERICO),
+        ("Needs Grading", None, Motivo.NIVEL_NO_NUMERICO),
+    ],
+)
+def test_br_carga_15_spec003_el_texto_de_un_nivel_con_decimales_nulos(
+    generador: ModuleType, tmp_path: Path, valor: str, nivel: int | None, motivo: Motivo | None
+) -> None:
+    # La misma regla vale en un export de texto y en una celda de texto de un .xlsx (D-03).
+    de_texto = _validar(_csv((FILAS_CSV[0], _fila("99000002", "4", valor, "2"), FILAS_CSV[2])))
+    de_libro = _validar(_libro(generador, generador.con_celda(_export(generador), 3, "5.2", valor), tmp_path))
+    for validacion in (de_texto, de_libro):
+        if motivo is None:
+            assert validacion.rechazos_de_fila == ()
+            assert validacion.filas_aceptadas[1].mediciones[1].nivel == nivel
+        else:
+            assert validacion.rechazos_de_fila == (Rechazo(motivo, Efecto.RECHAZA_FILA, 3, "5.2"),)
+
+
+@pytest.mark.parametrize(
+    "valor",
+    ["1" * 5_000, "1" * 4_300 + ".00", "-" + "9" * 5_000, "1" * 5, "0" * 4_996 + "10000"],
+    ids=["5000_cifras", "4300_cifras_con_decimales", "negativo_de_5000_cifras", "5_cifras", "ceros_y_5_cifras"],
+)
+def test_br_carga_15_spec003_un_nivel_con_miles_de_cifras_queda_fuera_de_escala(
+    generador: ModuleType, tmp_path: Path, valor: str
+) -> None:
+    # int() lanza ValueError desde las 4 300 cifras, y eso dejaba la carga en 500 también con un .xlsx.
+    de_texto = _validar(_csv((FILAS_CSV[0], _fila("99000002", "4", valor, "2"), FILAS_CSV[2])))
+    de_libro = _validar(_libro(generador, generador.con_celda(_export(generador), 3, "5.2", valor), tmp_path))
+    for validacion in (de_texto, de_libro):
+        assert validacion.rechazos_de_fila == (Rechazo(Motivo.NIVEL_FUERA_DE_ESCALA, Efecto.RECHAZA_FILA, 3, "5.2"),)
+
+
+def test_br_carga_15_spec003_los_ceros_a_la_izquierda_no_cuentan_como_cifras() -> None:
+    validacion = _validar(_csv((_fila("99000001", "0" * 5_000 + "4", "00", "0002"),)))
+    assert validacion.rechazos_de_fila == (Rechazo(Motivo.NIVEL_FUERA_DE_ESCALA, Efecto.RECHAZA_FILA, 2, "5.2"),)
+    validacion = _validar(_csv((_fila("99000001", "0" * 5_000 + "4", "1", "0002"),)))
+    assert [m.nivel for m in validacion.filas_aceptadas[0].mediciones] == [4, 1, 2]
+
+
+@pytest.mark.parametrize(
+    "nombre",
+    [
+        CSV_410,
+        "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-10-00-00.xls",
+        "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.CSV",
+        "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04.XLS",
+    ],
+)
+def test_br_carga_11_spec003_la_seccion_sale_del_nombre_del_archivo_de_texto(nombre: str) -> None:
+    libro = _csv(FILAS_CSV, nombre)
+    assert libro.hoja is None
+    validacion = _validar(libro)
+    assert validacion.rechazo_de_carga is None
+    assert _cuentas(validacion) == (3, 3, 0)
+
+
+def test_br_carga_11_spec003_el_nombre_de_otra_seccion_rechaza_el_export_de_texto() -> None:
+    validacion = _validar(_csv(FILAS_CSV, "gc_SINTETICO_20262_450002_411_fullgc_2026-11-04.csv"))
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.SECCION_NO_COINCIDE)
+
+
+@pytest.mark.parametrize(
+    "nombre", ["notas.csv", "export.xls", "gc_SINTETICO_20262_450002_410.csv", "GC_SINTETICO_20262_450002_410_FULLGC_1.CSV"]
+)
+def test_br_carga_11_spec003_un_texto_sin_seccion_en_el_nombre_se_detiene_con_el_texto_nuevo(nombre: str) -> None:
+    with pytest.raises(SeccionSinDeclarar) as error:
+        _validar(_csv(FILAS_CSV, nombre))
+    assert error.value.mensaje == MENSAJE_SIN_SECCION
+
+
+def test_br_carga_11_spec003_seccion_declarada_admite_la_hoja_nula() -> None:
+    assert seccion_declarada(None, CSV_410) == SeccionDeclarada("2026-2", "450002", "410")
+    assert seccion_declarada(None, "gc_SINTETICO_20262_450002_410_fullgc_2026.xls") == SeccionDeclarada(
+        "2026-2", "450002", "410"
+    )
+    # Lo que no debe pasar: una hoja nula con un nombre que no declara nada no lanza AttributeError.
+    assert seccion_declarada(None, "notas.csv") is None
+    assert seccion_declarada(None, "gc_SINTETICO_20262_450002_410_fullgc_2026.pdf") is None
+
+
+def test_br_carga_16_spec003_filas_aceptadas_sin_ningun_nivel_rechazan_la_carga() -> None:
+    filas = (_fila("99000001", "", "", ""), _fila("99000002", " ", "", ""), _fila("99000003", "", "", ""))
+    validacion = _validar(_csv(filas))
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.SIN_CALIFICACIONES)
+    assert validacion.filas_de_datos == 3
+    assert _cuentas(validacion) == (0, 0, 0)
+    assert _sin_nada_mas(validacion)
+    assert not validacion.publicable
+
+
+def test_br_carga_16_spec003_sin_calificaciones_tambien_con_filas_rechazadas() -> None:
+    # La fila 3 se rechaza por su nivel, y las aceptadas no traen ningún nivel en los PI del plan.
+    filas = (_fila("99000001", "", "", ""), _fila("99000002", "5", "", ""), _fila("99000003", "", "", ""))
+    validacion = _validar(_csv(filas))
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.SIN_CALIFICACIONES)
+    assert _sin_nada_mas(validacion)
+
+
+def test_br_carga_16_spec003_un_solo_nivel_basta_para_publicar() -> None:
+    filas = (_fila("99000001", "", "", ""), _fila("99000002", "", "3", ""), _fila("99000003", "", "", ""))
+    validacion = _validar(_csv(filas))
+    assert validacion.rechazo_de_carga is None
+    assert _cuentas(validacion) == (3, 3, 0)
+    assert validacion.publicable
+
+
+def test_br_carga_16_spec003_si_ninguna_fila_se_acepta_sigue_el_rechazo_de_siempre() -> None:
+    # Sin filas aceptadas manda «Ninguna fila se pudo aceptar», no SIN_CALIFICACIONES.
+    filas = (_fila("", "", "", ""), _fila("99000002", "5", "", ""), _fila("99000002", "", "", ""))
+    validacion = _validar(_csv(filas))
+    assert validacion.rechazo_de_carga is None
+    assert _cuentas(validacion) == (3, 0, 3)
+    assert not validacion.publicable
+
+
+def test_br_carga_16_spec003_un_nivel_fuera_del_plan_no_cuenta_como_calificacion() -> None:
+    contexto = ContextoSeccion(periodo="2026-2", curso_codigo="450002", seccion_codigo="410",
+                               plan=(PiDelPlan(51, "5.1"), PiDelPlan(52, "5.2")))
+    filas = (_fila("99000001", "", "", "4"), _fila("99000002", "", "", "3"))
+    validacion = validar(_csv(filas), contexto)
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.SIN_CALIFICACIONES)

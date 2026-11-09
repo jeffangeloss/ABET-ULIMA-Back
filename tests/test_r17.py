@@ -193,6 +193,12 @@ def _cargas_de_la_410(conexion: psycopg.Connection) -> dict[str, int]:
         conexion, asignatura="450002", numero="411", pis=list(PIS_410), nombre_archivo="=1+1\x01.xlsx",
         hoja="gc_SINTETICO_20262_450002_411_f", filas=[fila(2, "99000901", (3, 3, 3))],
     )
+    # Spec 003. Un .csv no tiene hoja, así que archivo_origen.hoja queda nula (US-34).
+    ids["texto"] = publicar(
+        conexion, asignatura="450020", numero="307", pis=["1.1"], hoja=None,
+        nombre_archivo="gc_SINTETICO_20262_450020_307_fullgc_2026-11-04.csv",
+        filas=[fila(2, "99000461", (3,)), fila(3, "99000462", (4,))],
+    )
     return ids
 
 
@@ -703,6 +709,18 @@ def test_br_r17_09_la_hoja_constancia_muestra_la_carga_el_archivo_y_sus_cifras(
     inicio, fin = (datetime.fromisoformat(pares[r]) for r in ("Inicio (hora de Lima)", "Fin (hora de Lima)"))
     assert (inicio, fin) == (iniciada, terminada) and fin > inicio
     assert pares["Inicio (hora de Lima)"].endswith("-05:00")
+
+
+def test_br_r17_09_spec003_la_constancia_de_un_export_de_texto_dice_sin_hoja(
+    base_410: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_410
+    pares = _pares(_libro(_generar(base, ids["texto"], tmp_path))["Constancia"])
+    assert pares["Hoja"] == "Sin hoja (export de texto)"
+    assert pares["Archivo"] == "gc_SINTETICO_20262_450020_307_fullgc_2026-11-04.csv"
+    # Lo que no debe pasar: el texto de presentación no se guarda en la base.
+    assert _consulta(base, "SELECT ao.hoja FROM abet.archivo_origen ao JOIN abet.carga c USING (archivo_id) "
+                           "WHERE c.carga_id = %s", (ids["texto"],)) == [(None,)]
 
 
 def test_br_r17_09_con_el_export_con_error_la_constancia_trae_el_rechazo_de_la_fila_3(r17_con_error: Path) -> None:

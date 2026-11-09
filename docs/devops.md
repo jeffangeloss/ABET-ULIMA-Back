@@ -36,6 +36,10 @@ Un arreglo urgente sale de `main` en `hotfix/*`, sube la versión de parche y vu
 | Snyk | Integración de Snyk con GitHub, con la política `.snyk` | Vulnerabilidades de las dependencias, con excepciones que vencen |
 | Dependabot | `.github/dependabot.yml`, cada lunes | PR a `develop` con la versión nueva de cada acción de GitHub y su SHA |
 
+Riesgo residual de la revisión previa. La regla 2 lee por contenido todo archivo de `tests/datos_inventados/`, sea cual sea su extensión, incluidos los textos en UTF-16 o Windows-1252, y falla con un contenedor OLE (por ejemplo un `.xls` binario) cuyo SHA-256 no esté en la lista fija `OLE_REVISADOS` de `scripts/preflight.sh`. La regla 1, en cambio, no incluye `.txt`, porque rompería `requirements.txt`. Un export real renombrado `.txt` y guardado fuera de `tests/datos_inventados/` no lo detiene ninguna de las dos reglas. Lo cubren la revisión humana del PR y gitleaks solo si el archivo trae un secreto, así que quien suba datos de prueba debe guardarlos en esa carpeta.
+
+La revisión de seguridad de la spec 003 (2026-11-09) deja además cuatro límites de la revisión previa, que no cambian en ese PR. Con `--staged`, la regla 2 lee el archivo de la carpeta de trabajo y no la versión preparada para el commit, aunque la CI lo vuelve a revisar sobre el árbol del PR. Con `--pr`, la revisión mira el árbol final, así que un código real que un commit agrega y otro quita queda en la historia. De un zip lee solo las hojas y las cadenas compartidas, y no los comentarios, las cachés de tablas dinámicas ni un `.ods` o un `.xlsb`. Tampoco ve un contenido que no puede leer como texto, como un archivo comprimido con gzip o un número partido por separadores de miles.
+
 ## SonarQube Cloud, Snyk y secretos
 
 Los tres controles siguen el modelo de IQBF y se refuerzan con gitleaks y Dependabot.

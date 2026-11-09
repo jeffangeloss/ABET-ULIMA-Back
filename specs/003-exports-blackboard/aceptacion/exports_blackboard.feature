@@ -147,7 +147,7 @@ Característica: El export real de Blackboard en .xlsx, .csv y .xls
       | sin comillas en ningún campo                      |
       | con tabuladores en lugar de comas                 |
       | con la columna Username primero                   |
-      | con el nombre "GC_SINTETICO_20262_450002_410_FULLGC_2026-11-04-14-35-59.CSV" |
+      | con el nombre "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-59.CSV" |
 
   @US-27 @corte1 @spec003
   Escenario: Una línea vacía entre filas con datos cuenta como fila

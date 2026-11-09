@@ -12,8 +12,10 @@ pide el paso 5 de BR-CARGA-03, así que validar() no la repite.
 validar(libro, contexto) sigue los pasos 8 y 9 de BR-CARGA-03.
 1. La sección declarada. La hoja de Blackboard tiene la forma gc_<curso_blackboard>_f, con el sufijo
    que Blackboard puede cortar a 31 caracteres, y el nombre del archivo la forma
-   gc_<curso_blackboard>_fullgc_<fecha>.xlsx. Los tres últimos segmentos numéricos del curso dan el
-   periodo (20262 es 2026-2), la asignatura y la sección (propuesta, la regla de lectura). Manda la
+   gc_<curso_blackboard>_fullgc_<fecha>.xlsx, .csv o .xls, sin distinguir mayúsculas en la extensión
+   (spec 003, US-30). Un export de texto no tiene hoja, así que su sección sale solo del nombre. Los
+   tres últimos segmentos numéricos del curso dan el periodo (20262 es 2026-2), la asignatura y la
+   sección (propuesta, la regla de lectura). Manda la
    hoja, y el nombre solo cuenta si la hoja no declara nada. Si ninguno declara la sección,
    validar() lanza SeccionSinDeclarar, el 422 sin rastro del corte 1 (valor provisional de D-02).
 2. La carga entera queda rechazada por el primer defecto en este orden, sección o asignatura
@@ -36,7 +38,14 @@ validar(libro, contexto) sigue los pasos 8 y 9 de BR-CARGA-03.
    primera quede rechazada por un nivel (propuesta). Un nivel entero fuera de 1 a 4, como -1, 0 o 5,
    da NIVEL_FUERA_DE_ESCALA (valor provisional de D-06), y un valor que no es un entero escrito con
    cifras del 0 al 9, como «3,5», «Needs Grading», «-» o «NP», da NIVEL_NO_NUMERICO (valor provisional
-   de D-03). Una celda de PI vacía no rechaza la fila y se guarda SIN_EVIDENCIA.
+   de D-03). Un texto vale el entero con uno o dos ceros decimales tras «.» o «,», como «3.00», «3,00»
+   o «4.0», mientras «3.50», «1,000» y «3.000» siguen sin ser niveles (spec 003, US-29). Un texto con
+   más de cuatro cifras significativas queda fuera de la escala sin convertirse a entero, porque
+   int() lanza ValueError desde las 4 300 cifras. Una celda de PI vacía no rechaza la fila y se
+   guarda SIN_EVIDENCIA.
+5. Si hay filas aceptadas y ninguna trae un nivel en las columnas de los PI del plan, la carga entera
+   queda rechazada con SIN_CALIFICACIONES y RECHAZA_CARGA, con la forma del paso 2 (spec 003, US-36 y
+   D-31). Si ninguna fila se acepta, la carga sigue sin ser publicable, con sus rechazos de fila.
 
 Ningún Rechazo lleva el valor leído, y las filas aceptadas ocultan su código y sus niveles en la
 representación (BR-CARGA-17).
@@ -71,9 +80,14 @@ PUNTAJE_ESPERADO = 4
 
 _CODIGO = re.compile(r"[0-9]{8}")
 _CODIGO_INVENTADO = re.compile(r"99[0-9]{6}")
-_ENTERO = re.compile(r"[+-]?[0-9]+")
+# Un nivel escrito como texto, con decimales nulos opcionales como «3.00», «3,00» o «4.0» (spec 003, D-03).
+_ENTERO = re.compile(r"[+-]?(?P<cifras>[0-9]+)(?:[.,]0{1,2})?")
+# Más cifras significativas que estas quedan fuera de la escala sin convertirse a entero, porque int()
+# lanza ValueError desde las 4 300 cifras.
+_CIFRAS_SIGNIFICATIVAS = 4
+_FUERA_DE_ESCALA = 10_000
 _CURSO = re.compile(r"(?:^|_)(?P<periodo>[0-9]{4}[0-2])_(?P<asignatura>[0-9]{6}|[0-9]{4})_(?P<seccion>[0-9]{1,5})$")
-_NOMBRE_DE_BLACKBOARD = re.compile(r"gc_(?P<curso>.+)_fullgc_[^/\\]*\.(?i:xlsx)")
+_NOMBRE_DE_BLACKBOARD = re.compile(r"gc_(?P<curso>.+)_fullgc_[^/\\]*\.(?i:xlsx|csv|xls)")
 
 
 def normalizar_codigo(valor: object) -> str | None:
@@ -97,10 +111,11 @@ def guardia(libro: LibroLeido) -> None:
             raise CodigoNoInventado(fila.fila_origen)
 
 
-def seccion_declarada(hoja: str, nombre_archivo: str) -> SeccionDeclarada | None:
+def seccion_declarada(hoja: str | None, nombre_archivo: str) -> SeccionDeclarada | None:
     """Periodo, asignatura y sección que declara la hoja o, si la hoja no los declara, el nombre del archivo.
 
-    La constancia la usa también para nombrar la sección o el periodo del archivo en el mensaje de
+    hoja es None en un export de texto, que no tiene hoja, y entonces solo cuenta el nombre. La
+    constancia la usa también para nombrar la sección o el periodo del archivo en el mensaje de
     una carga rechazada, desde archivo_origen.hoja y archivo_origen.nombre_archivo.
     """
     return _declarada_por(_curso_de_la_hoja(hoja)) or _declarada_por(_curso_del_nombre(nombre_archivo))
@@ -116,6 +131,8 @@ def validar(libro: LibroLeido, contexto: ContextoSeccion) -> Validacion:
         return Validacion(filas_de_datos=libro.filas_de_datos, rechazo_de_carga=rechazo)
     columnas, avisos = _columnas(libro, contexto)
     aceptadas, rechazos = _filas(libro, columnas)
+    if aceptadas and not any(medicion.nivel is not None for fila in aceptadas for medicion in fila.mediciones):
+        return Validacion(filas_de_datos=libro.filas_de_datos, rechazo_de_carga=_de_carga(Motivo.SIN_CALIFICACIONES))
     return Validacion(
         filas_de_datos=libro.filas_de_datos,
         columnas=columnas,
@@ -125,8 +142,8 @@ def validar(libro: LibroLeido, contexto: ContextoSeccion) -> Validacion:
     )
 
 
-def _curso_de_la_hoja(hoja: str) -> str | None:
-    if not hoja.startswith("gc_"):
+def _curso_de_la_hoja(hoja: str | None) -> str | None:
+    if hoja is None or not hoja.startswith("gc_"):
         return None
     curso = hoja.removeprefix("gc_")
     for sufijo in ("_f", "_"):
@@ -259,9 +276,15 @@ def _entero(valor: object) -> int | None:
         return valor
     if isinstance(valor, float):
         return int(valor) if valor.is_integer() else None
-    if isinstance(valor, str) and _ENTERO.fullmatch(valor.strip()):
-        return int(valor.strip())
-    return None
+    if not isinstance(valor, str):
+        return None
+    coincidencia = _ENTERO.fullmatch(valor.strip())
+    if coincidencia is None:
+        return None
+    cifras = coincidencia["cifras"].lstrip("0") or "0"
+    if len(cifras) > _CIFRAS_SIGNIFICATIVAS:
+        return _FUERA_DE_ESCALA
+    return -int(cifras) if valor.strip().startswith("-") else int(cifras)
 
 
 def _de_carga(motivo: Motivo, pi_codigo: str | None = None) -> Rechazo:

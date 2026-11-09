@@ -2,7 +2,7 @@
 
 Esta carpeta guarda los exports de Blackboard inventados que prueban la carga y el R-17 de la spec 001 (`specs/001-mvp-carga-r17/`). Todo es inventado. Los códigos de estudiante van de 99000001 a 99000011 en la sección 410 de 450002, de 99000012 a 99000022 en la 411 y de 99000023 a 99000055 en las tres secciones del profesor con varias secciones, los nombres son genéricos («Inventado 01» y «Estudiante») y ningún archivo sale de un export real.
 
-La regla 2 de `scripts/preflight.sh` busca en esta carpeta números de exactamente 8 dígitos que no empiezan con 99. En cada .xlsx que abre como zip lee solo las hojas (`xl/worksheets/*.xml`) y las cadenas compartidas (`xl/sharedStrings.xml`), que son las partes donde van los códigos, y en un .csv, .tsv o .txt lee el texto entero. Los tres .xlsx que no abren como zip y este archivo quedan fuera de esa lectura.
+La regla 2 de `scripts/preflight.sh` busca en esta carpeta números de exactamente 8 dígitos que no empiezan con 99 y lee cada archivo por su contenido, sin mirar la extensión. En cada zip lee solo las hojas (`xl/worksheets/*.xml`) y las cadenas compartidas (`xl/sharedStrings.xml`), que son las partes donde van los códigos, y si `unzip` no puede abrirlo lo lee por sus bytes. Todo lo demás, también los textos UTF-16 y Windows-1252, pasa por `LC_ALL=C tr -d '\000'` antes de contar, y este README se revisa igual. Un contenedor OLE falla la regla, porque sus celdas no se pueden revisar, salvo que su SHA-256 esté en la lista `OLE_REVISADOS` del script, que hoy solo trae `protegido_410.xlsx`.
 
 Las demás partes de cada libro que escribe openpyxl, también las de la copia byte a byte del export de ejemplo, traen 27 números de 8 dígitos que no empiezan con 99 y que no son códigos. Son 25 colores de la paleta `indexedColors` de `xl/styles.xml` cuyas 8 cifras hexadecimales no traen letras, y el ángulo de 270 grados de los dos degradados de `xl/theme/theme1.xml`, que el formato escribe multiplicado por 60 000. `tests/test_generador_exports.py` revisa también lo que la regla no lee. Descomprime todas las partes de cada libro, incluso las que conserva el zip cortado, y lee tal como están los bytes de `pdf_renombrado.xlsx` y de `protegido_410.xlsx`. En todo ese contenido exige que cada número de 8 dígitos empiece con 99, salvo en los atributos `rgb` de `xl/styles.xml` y `ang` de `xl/theme/theme1.xml`.
 
@@ -27,6 +27,10 @@ La tabla nombra, junto a cada archivo, las historias de usuario (user stories, U
 | `sintetico_20262_450002_412.xlsx` | Export correcto de la 412 de 450002, con la hoja `gc_SINTETICO_20262_450002_412_f`, 11 filas (99000023 a 99000033) y las columnas 5.1, 5.2 y 5.3 de 4 puntos. Su R-17 da 81,8 % (9 de 11) en 5.1, 54,5 % (6 de 11) en 5.2 y 90,9 % (10 de 11) en 5.3 de estudiantes con nivel 3 o 4. | US-07 «Cada export del profesor de varias secciones se publica solo en su sección», US-06 «El profesor de varias secciones no alcanza una sección que no dicta», que lo sube a la 410 de 450002, y US-09 «Un archivo publicado en una sección del profesor se detiene en otra de sus secciones», que lo sube después en la 410 de 450010, todos de `varias_secciones.feature` |
 | `sintetico_20262_450010_410.xlsx` | Export correcto de la 410 de 450010, con la hoja `gc_SINTETICO_20262_450010_410_f`, 11 filas (99000034 a 99000044) y las columnas 2.1, 2.2 y 5.1 de 4 puntos. Su R-17 da 72,7 % (8 de 11) en 2.1, 45,5 % (5 de 11) en 2.2 y 36,4 % (4 de 11) en 5.1 de estudiantes con nivel 3 o 4. | US-07 «Cada export del profesor de varias secciones se publica solo en su sección» y US-13 «El export de una sección del profesor no entra en otra de sus secciones de la misma asignatura», que lo sube en la 412 de 450010, de `varias_secciones.feature` |
 | `sintetico_20262_450010_412.xlsx` | Export correcto de la 412 de 450010, con la hoja `gc_SINTETICO_20262_450010_412_f`, 11 filas (99000045 a 99000055) y las columnas 2.1, 2.2 y 5.1 de 4 puntos. Su R-17 da 90,9 % (10 de 11) en 2.1, 63,6 % (7 de 11) en 2.2 y 54,5 % (6 de 11) en 5.1 de estudiantes con nivel 3 o 4. | US-07 «Cada export del profesor de varias secciones se publica solo en su sección» y US-13 «El mismo número de sección en otra asignatura no basta para cargar el export», que lo sube en la 412 de 450002, de `varias_secciones.feature` |
+| `gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-59.csv` | Export de la 410 con la forma real de Blackboard (spec 003), con 31 columnas, 11 filas (99000001 a 99000011) y Student ID vacío. Va en UTF-8 con BOM, separado por comas, con comillas dobles en todos los campos (`csv.QUOTE_ALL`), saltos LF y salto final. Los niveles de 5.1, 5.2 y 5.3 de `NIVELES_410` van escritos «3.00». Da 63,6 %, 63,6 % y 72,7 % de estudiantes con nivel 3 o 4 (7, 7 y 8 de 11), 33 mediciones y 5 avisos (PUNTAJE_MAXIMO_DISTINTO en 5.1, 5.2 y 5.3 de 100 puntos y COLUMNA_PI_FUERA_DEL_PLAN en 4.1 y 4.2). | US-26 a US-36 de `specs/003-exports-blackboard/aceptacion/exports_blackboard.feature`, que lo sube y arma copias suyas, sobre todo US-27 |
+| `gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-54.xls` | El mismo contenido en UTF-16 LE con BOM `FF FE`, separado por tabuladores, con comillas dobles y saltos LF. No es un libro de Excel. Mismas cifras. | US-28 y los escenarios que lo comparan con el .csv (mismas notas, otro archivo) |
+| `gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx` | Libro con la hoja `gc_SINTETICO_20262_450002_410_f`, Username como entero, Student ID vacío, la fecha de acceso como fecha y los niveles como números. Mismas cifras. | US-26 «El .xlsx con los encabezados reales queda publicado» y los escenarios de US-29 y US-30 que lo suben |
+| `gc_SINTETICO_20262_450002_411_fullgc_2026-11-04-14-40-10.xls` | Como el .xls de la 410, con los códigos 99000012 a 99000022, «Inventado 12» a «Inventado 22» y los niveles de la 410 en orden inverso, como `export_411`. Mismas cifras. | US-30, el cotejo de la sección con el nombre del export de texto, y US-28 |
 
 ## El profesor con varias secciones
 
@@ -62,6 +66,30 @@ Los seis escenarios de `specs/001-mvp-carga-r17/aceptacion/varias_secciones.feat
 ## El export de la guardia
 
 El escenario «Un solo código que no es inventado rechaza el archivo entero sin dejar rastro» (US-08) y la tarea T052 usan el export correcto con un código fuera del rango inventado en la fila 4. Ese archivo nunca entra a esta carpeta, porque la regla 2 lo rechaza. `escribir_export_guardia(ruta)` lo arma en la ruta que elige la prueba, dentro de `tmp_path`, y falla si la ruta cae en esta carpeta, también cuando llega por `..` o con otras mayúsculas, que en la Mac nombran la misma carpeta.
+
+## Exports con la forma real de Blackboard
+
+Los cuatro archivos de la spec 003 los escribe el mismo generador, sin la plantilla de la spec 001. Las 31 columnas siguen este orden. «Last Name», «First Name», «Username», «Student ID», «Last Access» y «Availability», y luego las actividades con sus títulos reales, que no traen datos de personas. Las columnas 25, 28, 29, 30 y 31 son «ABET SO5.1», «ABET SO5.2», «ABET SO 5.3», «ABET SO 4.1» y «ABET SO4.2», con 100 puntos y los ids 9000051, 9000052, 9000053, 9000041 y 9000042. Los números de columna de Blackboard son inventados, de 7 cifras y empiezan con 9 (9000101 a 9000120 en las demás), y nunca los reales, que empiezan con 16.
+
+Cada fila lleva «Inventado NN», «Estudiante», el Username, Student ID vacío, el último acceso fijo (`2026-10-21 21:43`), Availability «Yes», las actividades con «Complete», «Incomplete», «Needs Grading» y «19.00» repartidos de forma fija y, en 5.1, 5.2 y 5.3, los niveles de `NIVELES_410`. «ABET SO 4.1» y «ABET SO4.2» van vacías. Los saltos de línea son LF en todos los archivos, y las copias con CRLF las arman las pruebas en `tmp_path`.
+
+Los pasos de aceptación arman sus copias con estas funciones públicas del generador.
+
+| Función | Qué hace |
+| --- | --- |
+| `leer_export_texto(datos, hoja="", separador=None)` | Lee bytes de un .csv o .xls de texto a un `Export` de celdas de texto. Detecta UTF-16 LE, UTF-8 con BOM y UTF-8 sin BOM, y la coma o el tabulador por el encabezado. `hoja` no se usa para el texto y solo se copia. |
+| `leer_export_texto_versionado(nombre, carpeta=...)` | Lo mismo con un archivo versionado de esta carpeta, por su nombre. |
+| `a_texto(export, separador=",", codificacion="utf-8-sig", salto="\n", comillas=True)` | Bytes del export como texto. `separador` es coma o tabulador, `codificacion` es `utf-8`, `utf-8-sig` (con BOM) o `utf-16` (UTF-16 LE con BOM), `salto` es LF o CRLF y `comillas=True` cita todos los campos, mientras `False` los cita solo donde hace falta. Escribe siempre el salto final. |
+| `escribir_texto(export, destino, **opciones)` | Escribe `a_texto` en `destino` y devuelve la ruta. |
+| `export_real_410(texto=True)` y `export_real_411()` | Arman los `Export` de los archivos de esta tabla. `texto=False` da el contenido del libro. |
+| `encabezado_real()` | Las 31 columnas con sus ids inventados. |
+| `Export.indice("5.2")` | Encuentra también «ABET SO5.2 […]» y «ABET SO 5.3 […]» con la regla J-19, `(?:[Aa][Bb][Ee][Tt] {0,3})?(?:(?:[Ss][Oo]|[Pp][Ii]) {0,3})?5\.2 {0,3}\[` al comienzo del encabezado, y sigue encontrando «5.2 [». |
+
+```python
+export = generador.leer_export_texto_versionado("gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-59.csv")
+copia = generador.con_celda(export, 3, "5.2", "NP")
+generador.escribir_texto(copia, tmp_path / "copia.csv", salto="\r\n", comillas=False)
+```
 
 ## Copias que arman las pruebas
 

@@ -48,12 +48,15 @@ class MotivoIlegible(Enum):
 
     El valor de cada motivo es el mensaje del contrato. CONTENIDO_INFLADO cubre el tamaño
     descomprimido, la proporción de compresión y el número de partes del zip, y su límite y su texto
-    son (propuesta) en la spec viva.
+    son (propuesta) en la spec viva. Los textos de TIPO_NO_ADMITIDO y CONTENIDO_NO_ES_LIBRO son los
+    de la spec 003, que admite el .xlsx, el .csv y el .xls de Blackboard (BR-CARGA-05).
     """
 
     ARCHIVO_DEMASIADO_GRANDE = "El archivo supera el máximo de 1 MB."
-    TIPO_NO_ADMITIDO = "Solo se admiten exports de Blackboard en formato .xlsx."
-    CONTENIDO_NO_ES_LIBRO = "El contenido del archivo no es un libro de Excel aunque su nombre termine en .xlsx."
+    TIPO_NO_ADMITIDO = "Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls."
+    CONTENIDO_NO_ES_LIBRO = (
+        "El contenido del archivo no es un export de Blackboard aunque su nombre termine en .xlsx, .csv o .xls."
+    )
     PROTEGIDO_CON_CONTRASENA = "El archivo está protegido con contraseña. Guárdelo sin contraseña y súbalo."
     MACROS_O_VINCULOS = "El archivo trae macros o vínculos externos y no se admite."
     CONTENIDO_INFLADO = "El contenido del archivo supera el tamaño admitido al descomprimirse."
@@ -62,6 +65,29 @@ class MotivoIlegible(Enum):
     @property
     def mensaje(self) -> str:
         return self.value
+
+
+class DetalleIlegible(StrEnum):
+    """Lista cerrada del detalle de un archivo ilegible, que va solo al registro de la aplicación.
+
+    Lo fija BR-CARGA-05 en su cambio de la spec 003 (J-18 y J-20). El profesor recibe siempre el
+    mensaje del motivo, y el detalle dice al registro de BR-CARGA-08 por qué el lector se detuvo, sin
+    citar nada del archivo. VACIO es un archivo o un texto sin contenido, CODIFICACION un texto que no
+    se decodifica, que conserva un BOM después de quitar el suyo o que llega en UTF-16 BE,
+    CARACTER_NULO un texto con U+0000, SEPARADOR una primera línea sin tabulador ni coma o con «;» y
+    sin Username ni Student ID, COMILLAS un registro con comillas mal cerradas, CAMPO_LARGO un campo
+    de más de 131 072 caracteres, COLUMNAS una fila de más de 16 384 columnas y FILAS un archivo con
+    más de 5 000 filas de datos.
+    """
+
+    VACIO = "VACIO"
+    CODIFICACION = "CODIFICACION"
+    CARACTER_NULO = "CARACTER_NULO"
+    SEPARADOR = "SEPARADOR"
+    COMILLAS = "COMILLAS"
+    CAMPO_LARGO = "CAMPO_LARGO"
+    COLUMNAS = "COLUMNAS"
+    FILAS = "FILAS"
 
 
 class ArchivoNoAdmitido(Exception):
@@ -73,11 +99,16 @@ class ArchivoNoAdmitido(Exception):
 
 
 class ArchivoIlegible(ArchivoNoAdmitido):
-    """Archivo que no se puede leer, con su motivo de MotivoIlegible (BR-CARGA-04 y BR-CARGA-05)."""
+    """Archivo que no se puede leer, con su motivo de MotivoIlegible (BR-CARGA-04 y BR-CARGA-05).
 
-    def __init__(self, motivo: MotivoIlegible) -> None:
+    detalle es un DetalleIlegible o None, y va solo al registro de la aplicación (BR-CARGA-08). El
+    mensaje y los argumentos de la excepción son siempre el texto del motivo.
+    """
+
+    def __init__(self, motivo: MotivoIlegible, detalle: DetalleIlegible | None = None) -> None:
         super().__init__(motivo.mensaje)
         self.motivo = motivo
+        self.detalle = detalle
 
 
 @dataclass(frozen=True)
@@ -118,12 +149,14 @@ class FilaLeida:
 class LibroLeido:
     """Export leído, con el nombre del archivo sin ruta, la hoja, las columnas y las filas de datos.
 
-    No trae los valores de Last Name, First Name, Last Access, Availability ni de las actividades,
+    hoja es None en un export de texto, el .csv o el .xls de Blackboard, que no tiene hoja, y así
+    archivo_origen.hoja queda nula (spec 003, US-30). En un libro es el nombre de su primera hoja. No
+    trae los valores de Last Name, First Name, Last Access, Availability ni de las actividades,
     que el lector descarta al leer cada fila (BR-CARGA-17).
     """
 
     nombre_archivo: str
-    hoja: str
+    hoja: str | None
     columnas: tuple[ColumnaLeida, ...]
     filas: tuple[FilaLeida, ...]
 
@@ -144,11 +177,12 @@ class LibroLeido:
 
 
 class Motivo(StrEnum):
-    """Motivo de un rechazo o de un aviso, de la lista cerrada de ck_rechazo_fila_motivo en la versión de V1_09.
+    """Motivo de un rechazo o de un aviso, de la lista cerrada de ck_rechazo_fila_motivo en la versión de V1_10.
 
     La validación usa RECHAZA_FILA con CODIGO_VACIO, CODIGO_INVALIDO, CODIGO_DUPLICADO,
     NIVEL_FUERA_DE_ESCALA y NIVEL_NO_NUMERICO. Usa RECHAZA_CARGA con SECCION_NO_COINCIDE,
-    PERIODO_NO_COINCIDE, ARCHIVO_SIN_FILAS, COLUMNA_CODIGO_AUSENTE, PI_DEL_PLAN_AUSENTE y PI_REPETIDO,
+    PERIODO_NO_COINCIDE, ARCHIVO_SIN_FILAS, COLUMNA_CODIGO_AUSENTE, PI_DEL_PLAN_AUSENTE, PI_REPETIDO y
+    SIN_CALIFICACIONES, que agrega V1_10 para las filas aceptadas sin ningún nivel (spec 003, D-31),
     y AVISO con COLUMNA_PI_FUERA_DEL_PLAN y PUNTAJE_MAXIMO_DISTINTO. SECCION_SIN_DECLARAR es el aviso
     del corte 2 (BR-CARGA-18), que la validación del corte 1 no produce.
     """
@@ -167,6 +201,7 @@ class Motivo(StrEnum):
     PI_REPETIDO = "PI_REPETIDO"
     PERIODO_NO_COINCIDE = "PERIODO_NO_COINCIDE"
     SECCION_SIN_DECLARAR = "SECCION_SIN_DECLARAR"
+    SIN_CALIFICACIONES = "SIN_CALIFICACIONES"
 
 
 class Efecto(StrEnum):
@@ -192,11 +227,15 @@ class CodigoNoInventado(ArchivoNoAdmitido):
 
 
 class SeccionSinDeclarar(ArchivoNoAdmitido):
-    """Export cuya hoja y cuyo nombre no declaran la sección, que el corte 1 detiene (BR-CARGA-11 y D-02)."""
+    """Export cuya hoja y cuyo nombre no declaran la sección, que el corte 1 detiene (BR-CARGA-11 y D-02).
+
+    El texto es el de la spec 003, el mismo para el .xlsx, el .csv y el .xls.
+    """
 
     def __init__(self) -> None:
         super().__init__(
-            "El archivo no indica su sección. Sube el export de Blackboard sin cambiar el nombre de su hoja."
+            "El archivo no indica su sección. "
+            "Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
         )
 
 

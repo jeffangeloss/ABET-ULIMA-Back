@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import csv
 import hashlib
 import io
 import os
@@ -172,9 +173,17 @@ class Export:
     filas: tuple[tuple[object, ...], ...]
 
     def indice(self, columna: str) -> int:
-        """Posición de la columna, por su encabezado exacto o, en un PI como «5.2», por «5.2 [»."""
+        """Posición de la columna, por su encabezado exacto o, en un PI como «5.2», por su prefijo.
+
+        Un PI se reconoce con la regla J-19 de la spec 003, al comienzo del encabezado y antes de «[»,
+        con «ABET» y «SO» o «PI» opcionales y hasta tres espacios entre las partes. Así «5.2 [»,
+        «ABET SO5.2 [» y «ABET SO 5.3 [» encuentran su PI, y «5.1» no encuentra «5.10 [».
+        """
+        regla = re.compile(
+            r"(?:[Aa][Bb][Ee][Tt] {0,3})?(?:(?:[Ss][Oo]|[Pp][Ii]) {0,3})?" + re.escape(columna) + r" {0,3}\["
+        )
         for posicion, encabezado in enumerate(self.encabezado):
-            if encabezado == columna or encabezado.startswith(f"{columna} ["):
+            if encabezado == columna or regla.match(encabezado):
                 return posicion
         raise KeyError(f"El export no tiene la columna {columna!r}.")
 
@@ -609,6 +618,209 @@ def pdf_inventado() -> bytes:
     return bytes(pdf)
 
 
+# Exports con la forma real de Blackboard (spec 003). Los títulos de las actividades son los reales,
+# porque no traen datos de personas, y los números de columna de Blackboard son inventados, de 7
+# cifras y empiezan con 9, nunca los reales. Los cuatro archivos no usan la plantilla de la spec 001.
+NOMBRE_CSV_410 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-59.csv"
+NOMBRE_XLS_410 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-35-54.xls"
+NOMBRE_XLSX_410 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx"
+NOMBRE_XLS_411 = "gc_SINTETICO_20262_450002_411_fullgc_2026-11-04-14-40-10.xls"
+
+ULTIMO_ACCESO_TEXTO = "2026-10-21 21:43"
+ULTIMO_ACCESO_LIBRO = datetime(2026, 10, 21, 21, 43)
+POSICIONES_PI_REALES = {"5.1": 25, "5.2": 28, "5.3": 29, "4.1": 30, "4.2": 31}  # columna 1-based
+
+# Título, tipo ("C" Complete/Incomplete, "S" Score), puntos y, para los PI, su id inventado.
+_COLUMNAS_REALES: tuple[tuple[str, str, int, int | None], ...] = (
+    ("Semana 01: Selección del producto a rediseñar", "C", 20, None),
+    ("Semana 02: Plan de trabajo", "C", 20, None),
+    ("Semana 03: Dilemas / Bitácoras grupal e individuales", "C", 20, None),
+    ("Ejercicio colaborativo 1: Planteamiento del problema de sostenibilidad a resolver", "S", 20, None),
+    ("Semana 04: Gestión del Riesgo", "C", 20, None),
+    ("Semana 05: Visión ecosistémica y PINS", "C", 20, None),
+    ("Semana 06: Análisis de Ciclo de Vida (LCA)", "C", 20, None),
+    ("Semana 07: Métricas en OpenLCA", "C", 20, None),
+    ("Ejercicio colaborativo 2: Reporte LCA diagnóstico y propuesta técnica para la mejora", "S", 20, None),
+    (
+        "Ejercicio colaborativo 3: Reporte LCA de la mejora e interpretación de las métricas de sostenibilidad",
+        "S", 20, None,
+    ),
+    ("Proyecto: Proyecto de Ingeniería Sostenible", "S", 20, None),
+    ("Registro de uso de Normas y Estándares de Diseño de Ingeniería (NEDI)", "S", 20, None),
+    ("Reporte Turnitin (Proyecto Capstone)", "S", 20, None),
+    ("Reporte Turnitin (Paper para publicación)", "S", 20, None),
+    ("2. Ejercicio en clase: 12 principios y ODS", "C", 20, None),
+    ("4. Ejercicio en clase: Diseño de un proceso de limpieza", "C", 20, None),
+    ("5. Ejercicio en clase: Análisis de ecosistemas", "C", 20, None),
+    ("7. Ejercicio en clase: Conceptos y Métricas LCA (10 ejercicios)", "S", 20, None),
+    ("ABET SO5.1", "S", 100, 9000051),
+    ("9. Casos de Circularidad", "S", 100, None),
+    ("11. Innovación y Tecnología", "C", 20, None),
+    ("ABET SO5.2", "S", 100, 9000052),
+    ("ABET SO 5.3", "S", 100, 9000053),
+    ("ABET SO 4.1", "S", 100, 9000041),
+    ("ABET SO4.2", "S", 100, 9000042),
+)
+_ID_ACTIVIDAD_REAL = 9000100  # la columna n sin PI recibe 9000100 + n
+
+
+def encabezado_real() -> tuple[str, ...]:
+    """Las 31 columnas del export real, con títulos reales y números de columna de Blackboard inventados."""
+    columnas = ["Last Name", "First Name", "Username", "Student ID", "Last Access", "Availability"]
+    otras = 0
+    for titulo, tipo, puntos, id_pi in _COLUMNAS_REALES:
+        if id_pi is None:
+            otras += 1
+        identificador = id_pi if id_pi is not None else _ID_ACTIVIDAD_REAL + otras
+        clase = "Complete/Incomplete" if tipo == "C" else "Score"
+        columnas.append(f"{titulo} [Total Pts: {puntos} {clase}] |{identificador}")
+    return tuple(columnas)
+
+
+def _valor_de_actividad(fila: int, columna: int, tipo: str) -> str:
+    """Valor fijo de una actividad, repartido por fila y columna entre los cuatro valores del export real."""
+    if tipo == "C":
+        return ("Complete", "Complete", "Incomplete", "Needs Grading")[(fila + columna) % 4]
+    return ("19.00", "19.00", "Needs Grading", "19.00", "19.00")[(2 * fila + columna) % 5]
+
+
+def _filas_reales(codigos: tuple[int, ...], niveles: tuple[tuple[int, int, int], ...], texto: bool) -> tuple:
+    """Filas de datos del export real. texto da todo como cadena («3.00»), y el libro, números."""
+    filas = []
+    for fila, (codigo, nivel) in enumerate(zip(codigos, niveles, strict=True)):
+        celdas: list[object] = [
+            f"Inventado {codigo - 99000000:02d}",
+            "Estudiante",
+            str(codigo) if texto else codigo,
+            "" if texto else None,
+            ULTIMO_ACCESO_TEXTO if texto else ULTIMO_ACCESO_LIBRO,
+            "Yes",
+        ]
+        pi_nivel = {"5.1": nivel[0], "5.2": nivel[1], "5.3": nivel[2]}
+        otras = 0
+        for posicion, (_, tipo, _, id_pi) in enumerate(_COLUMNAS_REALES, start=7):
+            pi = next((k for k, v in POSICIONES_PI_REALES.items() if v == posicion), None)
+            if pi in pi_nivel:
+                celdas.append(f"{pi_nivel[pi]}.00" if texto else pi_nivel[pi])
+            elif pi is not None:
+                celdas.append("")  # «ABET SO 4.1» y «ABET SO4.2» van vacías
+            else:
+                valor = _valor_de_actividad(fila, otras, tipo)
+                otras += 1
+                celdas.append(valor if texto or not valor[0].isdigit() else float(valor))
+        filas.append(tuple(celdas))
+    return tuple(filas)
+
+
+def export_real_410(texto: bool = True) -> Export:
+    """Export de la 410 con la forma real de Blackboard, para escribir como texto (.csv, .xls) o como libro.
+
+    texto=True da todos los valores como cadena, como los lee un .csv, y texto=False da Username entero,
+    niveles numéricos, la fecha de acceso como fecha y Student ID vacío, con la hoja HOJA_410. Los
+    códigos son 99000001 a 99000011 y los niveles de 5.1, 5.2 y 5.3 son los de NIVELES_410.
+    """
+    codigos = tuple(codigo for _, codigo, _ in NIVELES_410)
+    niveles = tuple(n for _, _, n in NIVELES_410)
+    return Export(HOJA_410 if not texto else "", encabezado_real(), _filas_reales(codigos, niveles, texto))
+
+
+def export_real_411() -> Export:
+    """Export de texto de la 411: códigos 99000012 a 99000022 y los niveles de la 410 en orden inverso."""
+    codigos = tuple(codigo + DESPLAZAMIENTO_411 for _, codigo, _ in NIVELES_410)
+    niveles = tuple(n for _, _, n in reversed(NIVELES_410))
+    return Export("", encabezado_real(), _filas_reales(codigos, niveles, True))
+
+
+CODIFICACIONES_DE_TEXTO = ("utf-8", "utf-8-sig", "utf-16")
+BOM_UTF16_LE = b"\xff\xfe"
+BOM_UTF8 = b"\xef\xbb\xbf"
+
+
+def a_texto(
+    export: Export,
+    *,
+    separador: str = ",",
+    codificacion: str = "utf-8-sig",
+    salto: str = "\n",
+    comillas: bool = True,
+) -> bytes:
+    """Bytes del export como texto, el encabezado y una línea por fila, siempre con salto final.
+
+    separador es «,» o «\\t». codificacion es «utf-8» (sin BOM), «utf-8-sig» (con BOM) o «utf-16»
+    (UTF-16 LE con BOM FF FE, escrito a mano para no depender de la máquina). salto es «\\n» (LF) o
+    «\\r\\n» (CRLF). comillas=True pone comillas dobles en todos los campos (csv.QUOTE_ALL) y False
+    solo donde hagan falta. None se escribe como celda vacía y los demás valores con str().
+    """
+    if codificacion not in CODIFICACIONES_DE_TEXTO:
+        raise ValueError(f"Codificación {codificacion!r} no admitida, use una de {CODIFICACIONES_DE_TEXTO}.")
+    if separador not in (",", "\t") or salto not in ("\n", "\r\n"):
+        raise ValueError("El separador es coma o tabulador y el salto es LF o CRLF.")
+    salida = io.StringIO(newline="")
+    escritor = csv.writer(
+        salida,
+        delimiter=separador,
+        quotechar='"',
+        quoting=csv.QUOTE_ALL if comillas else csv.QUOTE_MINIMAL,
+        lineterminator=salto,
+    )
+    escritor.writerow(export.encabezado)
+    for fila in export.filas:
+        escritor.writerow("" if celda is None else str(celda) for celda in fila)
+    contenido = salida.getvalue()
+    if codificacion == "utf-16":
+        return BOM_UTF16_LE + contenido.encode("utf-16-le")
+    if codificacion == "utf-8-sig":
+        return BOM_UTF8 + contenido.encode("utf-8")
+    return contenido.encode("utf-8")
+
+
+def escribir_texto(export: Export, destino: Path, **opciones: object) -> Path:
+    """Escribe a_texto(export, **opciones) en destino y devuelve la ruta."""
+    destino.write_bytes(a_texto(export, **opciones))  # type: ignore[arg-type]
+    return destino
+
+
+def leer_export_texto(datos: bytes, hoja: str = "", separador: str | None = None) -> Export:
+    """Lee un export de texto (.csv o .xls de Blackboard) a un Export de celdas de texto.
+
+    Detecta la codificación por el BOM (FF FE es UTF-16 LE, EF BB BF es UTF-8 con BOM y sin BOM es
+    UTF-8) y el separador por la línea del encabezado, la coma o el tabulador que da más campos, si no
+    se da separador. Las celdas vacías quedan como cadena vacía. hoja no se usa para el texto, que no
+    tiene hojas, y solo se copia al Export (vacía por defecto). Ignora las líneas vacías del final.
+    """
+    if datos.startswith(BOM_UTF16_LE):
+        contenido = datos[2:].decode("utf-16-le")
+    elif datos.startswith(BOM_UTF8):
+        contenido = datos[3:].decode("utf-8")
+    else:
+        contenido = datos.decode("utf-8")
+    if separador is None:
+        primera = contenido.split("\n", 1)[0]
+        separador = max((",", "\t"), key=lambda s: len(next(csv.reader([primera], delimiter=s), [])))
+    filas = [f for f in csv.reader(io.StringIO(contenido, newline=""), delimiter=separador) if f]
+    if not filas:
+        raise ValueError("El export de texto no tiene encabezado.")
+    ancho = len(filas[0])
+    return Export(hoja, tuple(filas[0]), tuple(tuple(f) + ("",) * (ancho - len(f)) for f in filas[1:]))
+
+
+def leer_export_texto_versionado(nombre: str, carpeta: Path = CARPETA_DATOS) -> Export:
+    """Lee un export de texto versionado de tests/datos_inventados/ por su nombre de archivo."""
+    return leer_export_texto((carpeta / nombre).read_bytes())
+
+
+def exports_reales() -> dict[str, bytes]:
+    """Los cuatro exports con la forma real de Blackboard, por nombre de archivo, con salida determinista."""
+    texto_410 = export_real_410(texto=True)
+    xls_410 = a_texto(texto_410, separador="\t", codificacion="utf-16")
+    return {
+        NOMBRE_CSV_410: a_texto(texto_410),
+        NOMBRE_XLS_410: xls_410,
+        NOMBRE_XLSX_410: a_bytes(export_real_410(texto=False)),
+        NOMBRE_XLS_411: a_texto(export_real_411(), separador="\t", codificacion="utf-16"),
+    }
+
+
 def generar(salida: Path = CARPETA_DATOS, ruta_plantilla: Path = RUTA_PLANTILLA) -> dict[str, Path]:
     """Escribe en salida los exports versionados y devuelve sus rutas por nombre."""
     plantilla, datos_plantilla = leer_plantilla(ruta_plantilla)
@@ -628,6 +840,7 @@ def generar(salida: Path = CARPETA_DATOS, ruta_plantilla: Path = RUTA_PLANTILLA)
     }
     for seccion in SECCIONES_DE_VARIAS:
         archivos[seccion.nombre] = a_bytes(export_de_varias(plantilla, seccion))
+    archivos.update(exports_reales())
     salida.mkdir(parents=True, exist_ok=True)
     rutas = {}
     for nombre, datos in archivos.items():

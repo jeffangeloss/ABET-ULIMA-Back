@@ -540,6 +540,71 @@ BEGIN
     RAISE NOTICE 'ok A08 datos de varias secciones aplicados dos veces, sin duplicar, con el plan 2.1, 2.2 y 5.1 de 450010 y las tres secciones de docente.varias@example.invalid, y solo esas';
 END $$;
 
+-- A09. V1_10: ck_carga_columna_encabezado acepta el prefijo del export real de Blackboard (spec 003, US-26 y J-19) y
+-- sigue rechazando lo que no es el PI. Cada encabezado se prueba sobre la columna del PI 5.1 de la carga de la 410,
+-- dentro de un subbloque cuyo error final deshace los UPDATE, así que los datos de las secciones siguientes no cambian.
+DO $$
+DECLARE
+    v_encabezado text;
+    v_filas      int;
+BEGIN
+    BEGIN
+        FOREACH v_encabezado IN ARRAY ARRAY[
+            'ABET SO5.1 [Total Pts: 100 Score] |9000051',
+            'ABET SO 5.1 [Total Pts: 100 Score] |9000051',
+            'abet so 5.1 [Total Pts: 100 Score] |9000051',
+            'PI 5.1 [Total Pts: 100 Score] |9000051',
+            '5.1[Total Pts: 100 Score] |9000051',
+            '5.1 [Total Pts: 4 Score] |9000051'] LOOP
+            UPDATE abet.carga_columna cc SET encabezado = v_encabezado
+            FROM abet.pi p, abet.carga c, abet.archivo_origen ao
+            WHERE p.pi_id = cc.pi_id AND p.codigo = '5.1' AND c.carga_id = cc.carga_id
+              AND ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx';
+            GET DIAGNOSTICS v_filas = ROW_COUNT;
+            IF v_filas <> 1 THEN
+                RAISE EXCEPTION 'FALLA A09: el encabezado «%» debe actualizar la columna del PI 5.1 de la 410 (filas: %)', v_encabezado, v_filas;
+            END IF;
+        END LOOP;
+        RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'deshacer A09';
+    EXCEPTION WHEN SQLSTATE 'P0001' THEN
+        IF SQLERRM <> 'deshacer A09' THEN
+            RAISE;
+        END IF;
+    END;
+    IF (SELECT count(*) FROM abet.carga_columna cc JOIN abet.pi p ON p.pi_id = cc.pi_id AND p.codigo = '5.1'
+          WHERE cc.encabezado !~ '^5\.1 \[') > 0 THEN
+        RAISE EXCEPTION 'FALLA A09: los encabezados de prueba deben deshacerse';
+    END IF;
+    RAISE NOTICE 'ok A09 encabezados con prefijo (ABET SO5.1, ABET SO 5.1, abet so 5.1, PI 5.1, 5.1[ y 5.1 [) aceptados para el PI 5.1';
+END $$;
+
+-- A10. V1_10: SIN_CALIFICACIONES entra en ck_rechazo_fila_motivo con RECHAZA_CARGA (spec 003, US-36 y D-31). El
+-- rechazo se inserta en un subbloque que se deshace. R60 sigue probando que un motivo desconocido no entra.
+DO $$
+DECLARE
+    v_filas int;
+BEGIN
+    BEGIN
+        INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto)
+        SELECT c.carga_id, NULL, 'SIN_CALIFICACIONES', 'RECHAZA_CARGA'
+        FROM abet.carga c JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+             AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx';
+        GET DIAGNOSTICS v_filas = ROW_COUNT;
+        IF v_filas <> 1 THEN
+            RAISE EXCEPTION 'FALLA A10: SIN_CALIFICACIONES con RECHAZA_CARGA debe aceptarse (filas: %)', v_filas;
+        END IF;
+        RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'deshacer A10';
+    EXCEPTION WHEN SQLSTATE 'P0001' THEN
+        IF SQLERRM <> 'deshacer A10' THEN
+            RAISE;
+        END IF;
+    END;
+    IF EXISTS (SELECT 1 FROM abet.rechazo_fila WHERE motivo = 'SIN_CALIFICACIONES') THEN
+        RAISE EXCEPTION 'FALLA A10: el rechazo de prueba debe deshacerse';
+    END IF;
+    RAISE NOTICE 'ok A10 SIN_CALIFICACIONES aceptado con RECHAZA_CARGA en ck_rechazo_fila_motivo';
+END $$;
+
 -- ---------------------------------------------------------------------------------------------
 -- 3. Números del R-17 de la sección 410 de 450002 (misma distribución que el caso real)
 -- ---------------------------------------------------------------------------------------------
@@ -973,7 +1038,19 @@ $q$, '23514', 'ck_rechazo_fila_pi'),
  SELECT c.carga_id, NULL, 'PI_REPETIDO', 'RECHAZA_CARGA', (SELECT max(pi_id) + 1000 FROM abet.pi)
  FROM abet.carga c JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
       AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
-$q$, '23503', 'fk_rechazo_fila_pi');
+$q$, '23503', 'fk_rechazo_fila_pi'),
+('R63', 'encabezado «ABET SO 5.10 …» para el PI 5.1: el prefijo no deja que «5.10» pase como 5.1 (V1_10, J-19)', $q$
+ UPDATE abet.carga_columna cc SET encabezado = 'ABET SO 5.10 [Total Pts: 100 Score] |9000051'
+ FROM abet.pi p WHERE p.pi_id = cc.pi_id AND p.codigo = '5.1'
+$q$, '23514', 'ck_carga_columna_encabezado'),
+('R64', 'encabezado «Actividad 5.1 …»: una palabra distinta de ABET, SO y PI antes del código (V1_10, J-19)', $q$
+ UPDATE abet.carga_columna cc SET encabezado = 'Actividad 5.1 [Total Pts: 4 Score] |9000051'
+ FROM abet.pi p WHERE p.pi_id = cc.pi_id AND p.codigo = '5.1'
+$q$, '23514', 'ck_carga_columna_encabezado'),
+('R65', 'encabezado «ABET SO 5.1» sin el corchete que sigue al código (V1_10, J-19)', $q$
+ UPDATE abet.carga_columna cc SET encabezado = 'ABET SO 5.1'
+ FROM abet.pi p WHERE p.pi_id = cc.pi_id AND p.codigo = '5.1'
+$q$, '23514', 'ck_carga_columna_encabezado');
 
 DO $$
 DECLARE
