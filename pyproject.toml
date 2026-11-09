@@ -27,7 +27,7 @@ version = "0.0.0"
 description = "Carga del export de Blackboard en PostgreSQL 18 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi~=0.143.1",
+    "fastapi>=0.143.1,<0.163.0",
     "uvicorn~=0.54.0",
     "python-multipart~=0.0.32",
     "psycopg[binary]>=3.3.6,<4",
