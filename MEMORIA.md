@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-17
-- **Rama de trabajo**: `chore/version-0.1.0`, que sale de `develop` (12c6207) con la versión 0.1.0
-- **Versión publicada**: ninguna todavía; la 0.1.0 está en preparación (`VERSION` = 0.1.0)
-- **Último cambio**: la versión 0.1.0 en `VERSION`, `pyproject.toml`, `abet_carga.__version__`, `uv.lock` y el CHANGELOG, y V1_10 en la rama principal de Neon (T077 de la spec 003)
-- **En curso**: la versión 0.1.0 (T076 de la spec 001)
-- **Siguiente paso**: el PR «Versión 0.1.0» de `develop` a `main`, primero en el Back y después en el Front; después, T074 y el ingreso en Production sin cargas con `ABET_SIS_MED/herramientas_neon/comprobar_version.sh`, y T079
-- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); los PR de Dependabot esperan a que salga la versión, por decisión de Jefferson del 2026-11-17
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0 en `chore/version-0.1.0`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Rama de trabajo**: `docs/001-version-0.1.0`, que sale de `develop` (4341bc9) con el registro de la versión en Production
+- **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
+- **Último cambio**: la versión 0.1.0 en Production de los dos proyectos de Vercel, con T074, T076 y T079 de la spec 001 y T077 de la spec 003
+- **En curso**: nada de la versión 0.1.0
+- **Siguiente paso**: los cinco escenarios pendientes de US-17 (`audit.md`), la contraseña de coordinacion en `develop` (T074) y los PR de Dependabot, que esperaban a la versión
+- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-17 17:45 (Lima) · docs/001-version-0.1.0 · Versión 0.1.0 en Production y auditoría del despliegue (T074, T076 y T079)
+- Quién: Jefferson autoriza en el chat empujar y fusionar cada PR con la CI en verde, y corre `ABET_SIS_MED/herramientas_neon/comprobar_version.sh`, que le pide las contraseñas. Claude Code fusiona los PR de versión, comprueba Production y Neon sin contraseñas, escribe y prueba en local ese ayudante, sus pruebas de Playwright (`herramientas_neon/e2e_version/`) y el revisor del R-17 (`herramientas_neon/revisar_r17.py`), y redacta esta entrada. Un subagente revisor (Sonnet, esfuerzo medio) intenta refutar en solo lectura las cifras y los identificadores de este cambio contra la evidencia, GitHub y Vercel. Confirma 41 afirmaciones y refuta 2, el resumen de requisitos y la posición de iad1 en `x-vercel-id`, que se corrigen, y las 6 que no encuentra escritas en la evidencia reciben su fuente o una redacción más precisa.
+- Qué cambió: `main` recibe la versión 0.1.0 (PR #22, 7325231), `release.yml` crea el tag `v0.1.0` y su Release, y Production del Back sale de `main`. En Neon, la rama principal gana las credenciales de los tres usuarios de prueba y dos sesiones cerradas, y `develop` una contraseña nueva de docente410. En este repositorio, `audit.md` gana la sección «Despliegue» y el estado de US-17, y `tasks.md` marca T072, T076 y T079 y anota T070 y T074.
+- Por qué: T074, T076 y T079 de la spec 001 y el pedido de publicar la versión 0.1.0 en Production sin escribir cargas.
+- Lo que debe hacer, cómo se probó: el despliegue de Production del Back, `dpl_8eDNfqHA62QB4AADYuRktHRaAT8M`, sale de `main` en iad1 y responde 401 en JSON. `produccion.spec.ts` da 3 passed contra el dominio de Production del Front, con el 401 por la reescritura, el ingreso de docente410 con la cookie HttpOnly, Secure, SameSite=Lax y sin Domain, y 20 lecturas de coordinacion en 200. `vista_previa_r17.spec.ts` da 1 passed y `revisar_r17.py`, 0 fallas sobre el R-17 de la 410 de la vista previa, con 33 filas, 7, 7 y 8 de 11 y la «Constancia» con 11 / 11 / 11 / 0. Las dos pruebas y el revisor pasan antes en local contra `scripts/api_local.sh`.
+- Lo que no debe hacer, cómo se probó: ninguna prueba sube un export en Production. Los 30 registros de la función de la corrida no traen ninguna subida ni ningún «prepared statement», y la rama principal sigue con 0 cargas y 0 archivos. Ninguna contraseña pasa por Claude Code, y las evidencias de `ABET_SIS_MED/demo_version_010/` no traen contraseñas ni tokens. En la prueba local, `revisar_r17.py` falla, como debe, cuando recibe el export de la 411, porque la huella no coincide.
+- Correcciones: la tabla de US-17 de `audit.md` llamaba gru1 al escenario de la región, que `despliegue.feature` ya nombra iad1 por J-17.
+- Cómo se reporta: esta entrada, `audit.md`, `tasks.md`, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: los cinco escenarios pendientes de US-17, la contraseña de coordinacion en `develop` (T074), el entrenamiento de IA del equipo de Vercel (T070) y los PR de Dependabot.
 
 ### 2026-11-17 17:20 (Lima) · chore/version-0.1.0 · Versión 0.1.0 y V1_10 en la rama principal de Neon (T076 y T077)
 - Quién: Claude Code, por el encargo de la sesión principal de Jefferson del 2026-11-17, aplica V1_10 en la rama principal desde el Windows, la comprueba en solo lectura, prepara la versión y prueba en local el ayudante de las comprobaciones con contraseñas. Jefferson decide en el chat no fusionar los PR de Dependabot antes de la versión, autoriza empujar y fusionar cada PR con la CI en verde y deja T074 para después del despliegue.

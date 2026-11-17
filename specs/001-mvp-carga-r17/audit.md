@@ -5,7 +5,7 @@
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen pytest -q tests/aceptacion -rA` en el Back, `uv run --frozen pytest -q tests -rA` en el Back para las pruebas unitarias y `npm test` en el Front  
 **Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas  
-**Estado**: Corte 1 verificado en local. Quedan abiertos los escenarios que dependen de Neon y de Vercel, la verificación a mano de T062 y todo el corte 2.
+**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). Quedan abiertos cinco escenarios de US-17, la verificación a mano de T062 y todo el corte 2.
 
 Esta auditoría cruza cada historia de usuario (user story, US) con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado de hoy. Después cruza los requisitos funcionales (functional requirements, FR) y los criterios de éxito (success criteria, SC) de la spec con la evidencia, y lista lo que el corte 1 deja abierto. Las reglas de negocio (business rules, BR) son las de `specs/features/`. El resultado de cada escenario sale de una corrida real, no de una nota a mano, y los tres estados posibles son los siguientes.
 
@@ -21,11 +21,11 @@ El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de 
 
 | Conjunto | Escenarios | Aprobados | Omitidos | Pendientes |
 | --- | --- | --- | --- | --- |
-| Corte 1 (US-01 a US-17) | 108 | 91 | 6 | 11 |
+| Corte 1 (US-01 a US-17) | 108 | 97 | 6 | 5 |
 | Corte 2 (US-18 a US-21) | 25 | 0 | 9 | 16 |
-| Total | 133 | 91 | 15 | 27 |
+| Total | 133 | 97 | 15 | 21 |
 
-Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 177 de escenarios dan 158 aprobadas y 19 omitidas.
+Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 177 de escenarios dan 158 aprobadas y 19 omitidas. Los seis escenarios aprobados de US-17 salen de las comprobaciones del 2026-11-17 contra Vercel y Neon, que describe la sección «Despliegue», y no de pytest.
 
 ## Historias
 
@@ -240,21 +240,21 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 ### US-17: Desplegar el piloto en Vercel con Neon y probarlo de punta a punta (P1, corte 1)
 
-11 escenarios, 0 aprobados, 0 omitidos y 11 pendientes.
+11 escenarios, 6 aprobados, 0 omitidos y 5 pendientes. Las pruebas de esta historia corren el 2026-11-17 contra Vercel y Neon, fuera de pytest, y su evidencia está en la sección «Despliegue».
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
-| Cada proyecto fija la región gru1 | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| El Front reescribe /api hacia el Back y todo queda en un solo origen | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| La cookie de sesión es de primera parte y nunca pasa por el almacenamiento del navegador | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| Las variables del Back están en Vercel y no en el repositorio | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| Los secretos del Back no quedan en ningún repositorio | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| La API se conecta a Neon por el pooler con el rol abet_app | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| Preview trabaja sobre otra rama de Neon | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| Production sale solo de main | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| El equipo de Vercel no comparte el contenido para entrenar modelos | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| La guardia de datos inventados está encendida en el piloto | sin prueba todavía | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
-| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | `e2e/humo.spec.ts` de Playwright en el Front, «docente410 recorre P1, P2, P3 y P4», sin corrida contra Preview | pendiente (el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075) |
+| Cada proyecto fija la región iad1 | `vercel.json` de `main` y `vercel api /v13/deployments` del despliegue de Production de cada proyecto | aprobado |
+| El Front reescribe /api hacia el Back y todo queda en un solo origen | `vercel.json` del Front en `main` y `GET /api/sesion` sin cookie a la URL de Production del Front, con curl y con `herramientas_neon/e2e_version/produccion.spec.ts` | aprobado |
+| La cookie de sesión es de primera parte y nunca pasa por el almacenamiento del navegador | `herramientas_neon/e2e_version/produccion.spec.ts`, con docente410 en P1 de Production | aprobado |
+| Las variables del Back están en Vercel y no en el repositorio | `vercel env ls production --project abet-ulima-back` y lectura de `.env.example` | pendiente (las cinco variables están en Production, de tipo Secret, pero `.env.example` trae valor en `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, que no son secretos) |
+| Los secretos del Back no quedan en ningún repositorio | búsqueda de las claves de `bd/.env.neon` en `git log -p --all` de los dos repositorios y `scripts/preflight.sh` | pendiente (con `DATABASE_URL` pasa, porque la clave de `abet_app` aparece 0 veces; el valor de `SESION_SECRETO` no está en la Mac, y la búsqueda no lo incluye) |
+| La API se conecta a Neon por el pooler con el rol abet_app | 20 `GET /api/secciones?periodo=2026-2` con coordinacion en `produccion.spec.ts`, `vercel logs` de esa corrida y `pg_stat_activity` de la rama principal | aprobado |
+| Preview trabaja sobre otra rama de Neon | conteos de las dos ramas del 2026-11-17 (la principal sin cargas y `develop` con las 2 de la prueba del 2026-11-09), T073 y T075 (2026-11-02) y T076 de la spec 003 | aprobado |
+| Production sale solo de main | `vercel api /v9/projects` de los dos proyectos y los despliegues del push a `develop` del 2026-11-17 | aprobado |
+| El equipo de Vercel no comparte el contenido para entrenar modelos | `vercel api /v2/teams/jeffangeloss-projects` | pendiente (`dataSharingConsent` está en `granted` por los términos de servicio; lo apaga Jefferson en Team Settings, Data Preferences, T070) |
+| La guardia de datos inventados está encendida en el piloto | consulta de solo lectura de `pg_constraint` en la rama principal y `vercel env ls production` | pendiente (la restricción y la variable están, pero la subida que la guardia rechaza no corre en Production, porque la versión 0.1.0 no sube nada allí) |
+| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | `e2e/humo.spec.ts` de Playwright en el Front, contra la vista previa de `develop` (T075, 2026-11-02) | pendiente (la corrida pasa de P1 a P4 con 11, 10 y 1 y descarga el R-17, pero nadie abre ese libro y su carga ya no existe en `develop`; el 2026-11-17 se abre el R-17 de la 410 cargada con el `.csv`, que cumple, según la sección «Despliegue») |
 
 ### US-18: Reemplazar la carga publicada de una sección (P2, corte 2)
 
@@ -369,9 +369,9 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-006 | US-03, US-04; BR-ACCESO-01, BR-PERIODO-03 | 10 aprobados, 0 omitidos y 0 pendientes | solo escenarios | Cubierto |
 | FR-007 | US-02, US-03, US-07, US-15; BR-PERIODO-01, BR-PERIODO-02 | 8 aprobados, 0 omitidos y 0 pendientes | `test_api_secciones.py` (8) | Cubierto |
 | FR-008 | US-07; BR-CARGA-01 | 3 aprobados, 0 omitidos y 0 pendientes | `test_carga.py` (12), `test_comando.py` (3), `test_esqueleto.py` (6), `test_validacion.py` (1) | Cubierto |
-| FR-009 | US-05, US-06, US-17; BR-ACCESO-02, BR-ACCESO-03, BR-ACCESO-04, BR-ACCESO-05, BR-ACCESO-06 | 10 aprobados, 0 omitidos y 1 pendiente | `test_api_secciones.py` (1), `test_api_sesion.py` (28) | Parcial |
+| FR-009 | US-05, US-06, US-17; BR-ACCESO-02, BR-ACCESO-03, BR-ACCESO-04, BR-ACCESO-05, BR-ACCESO-06 | 11 aprobados, 0 omitidos y 0 pendientes (el de la cookie de US-17, aprobado el 2026-11-17) | `test_api_secciones.py` (1), `test_api_sesion.py` (28) | Cubierto |
 | FR-010 | US-05, US-06, US-07, US-15, US-16; BR-ACCESO-06, BR-ACCESO-07, BR-ACCESO-08, BR-CARGA-01 | 15 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (4), `test_api_secciones.py` (4), `test_api_sesion.py` (9), `test_carga.py` (12), `test_comando.py` (11), `test_permisos.py` (23), `test_validacion.py` (1), `test_varias_secciones.py` (2) | Cubierto |
-| FR-011 | US-06, US-17; BR-PERIODO-04 | 8 aprobados, 0 omitidos y 1 pendiente | `test_api_cargas.py` (1), `test_api_secciones.py` (13); Vitest, grupos «P2 Mis secciones» (10) | Parcial |
+| FR-011 | US-06, US-17; BR-PERIODO-04 | 9 aprobados, 0 omitidos y 0 pendientes (el del pooler de US-17, aprobado el 2026-11-17) | `test_api_cargas.py` (1), `test_api_secciones.py` (13); Vitest, grupos «P2 Mis secciones» (10) | Cubierto |
 | FR-012 | US-06, US-07, US-08, US-09, US-11, US-13; BR-CARGA-01, BR-CARGA-02, BR-CARGA-03, BR-CARGA-04, BR-CARGA-09, BR-CARGA-10, BR-CARGA-11 | 25 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (8), `test_carga.py` (78), `test_comando.py` (5), `test_demo_punta_a_punta.py` (2), `test_lector.py` (8), `test_validacion.py` (28), `test_varias_secciones.py` (6) | Cubierto |
 | FR-013 | US-06, US-08, US-09, US-11, US-13; BR-CARGA-03, BR-CARGA-05 | 9 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (4), `test_carga.py` (16), `test_lector.py` (39), `test_validacion.py` (1) | Cubierto |
 | FR-014 | US-06, US-07, US-08, US-09, US-11, US-13; BR-CARGA-03, BR-CARGA-06, BR-CARGA-09 | 14 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (3), `test_carga.py` (28), `test_comando.py` (1), `test_demo_punta_a_punta.py` (1), `test_lector.py` (3), `test_validacion.py` (1), `test_varias_secciones.py` (1) | Cubierto |
@@ -383,8 +383,8 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-020 | US-15, US-16; BR-R17-01, BR-R17-09 | 4 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (1), `test_demo_punta_a_punta.py` (2), `test_r17.py` (9) | Cubierto |
 | FR-021 | US-16; BR-R17-09, BR-R17-10 | 5 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (2), `test_constancia.py` (22), `test_r17.py` (5) | Cubierto |
 | FR-022 | US-05, US-06, US-07; sin regla BR | 25 aprobados, 0 omitidos y 0 pendientes | Vitest, grupos «P1 Ingreso» (7); Vitest, grupos «P2 Mis secciones» (10); Vitest, grupos «P3 Subir export» (17); Vitest, grupos «P4 Resultado de la carga» (13); Vitest, grupos «App» (5) | Cubierto |
-| FR-023 | US-05, US-17; BR-ACCESO-03 | 9 aprobados, 0 omitidos y 2 pendientes | `test_api_sesion.py` (3); Vitest, grupos «api.ts» (15) | Parcial |
-| FR-024 | US-17; sin regla BR | 0 aprobados, 0 omitidos y 11 pendientes | solo escenarios | Parcial |
+| FR-023 | US-05, US-17; BR-ACCESO-03 | 11 aprobados, 0 omitidos y 0 pendientes (los de la cookie y la reescritura de US-17, aprobados el 2026-11-17) | `test_api_sesion.py` (3); Vitest, grupos «api.ts» (15) | Cubierto |
+| FR-024 | US-17; sin regla BR | 6 aprobados, 0 omitidos y 5 pendientes | comprobaciones del 2026-11-17 contra Vercel y Neon (sección «Despliegue») | Parcial |
 | FR-025 | ninguna; BR-CARGA-19 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
 | FR-026 | ninguna; BR-CARGA-20 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
 | FR-027 | ninguna; BR-ACCESO-09 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
@@ -394,13 +394,13 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-031 | US-01; sin regla BR | 1 aprobado, 0 omitidos y 0 pendientes | La CI aplica las migraciones con psql, probado en local por el escenario de la CI | Cubierto |
 | FR-032 | ninguna; sin regla BR | ninguno | bash scripts/preflight.sh y la entrada de MEMORIA.md se verifican en la etapa de commit | Parcial |
 
-Resumen de requisitos, Corte 2, pendiente 3, Cubierto 20, Parcial 9.
+Resumen de requisitos, Corte 2, pendiente 3, Cubierto 23, Parcial 6.
 
 ## Criterios de éxito
 
 | SC | Estado | Evidencia |
 | --- | --- | --- |
-| SC-001 | Parcial | 91 de 108 escenarios del corte 1 aprobados, 6 omitidos y 11 pendientes. La CI del Back aún no corrió esta rama; el conteo es el de la corrida local. |
+| SC-001 | Parcial | 97 de 108 escenarios del corte 1 aprobados, 6 omitidos y 5 pendientes. Los seis de US-17 se aprueban el 2026-11-17 contra Vercel y Neon, y el resto sale de la corrida local del 2026-10-30. |
 | SC-002 | Parcial | 7 escenarios, 2 aprobados, 5 omitidos y 0 pendientes. Q01 a Q14 en Neon llegan con T021 y T027. |
 | SC-003 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_demo_punta_a_punta.py` (5), `test_plantilla_r17.py` (4), `test_r17.py` (10) |
 | SC-004 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_plantilla_r17.py` (9), `test_r17.py` (16) |
@@ -410,7 +410,7 @@ Resumen de requisitos, Corte 2, pendiente 3, Cubierto 20, Parcial 9.
 | SC-008 | Parcial | 8 escenarios, 7 aprobados, 1 omitido y 0 pendientes. El rol abet_app de Neon llega con T027 y T028. |
 | SC-009 | Cumplido en local | 9 escenarios, 9 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_api_cargas.py` (4), `test_api_secciones.py` (3), `test_comando.py` (8), `test_permisos.py` (23), `test_varias_secciones.py` (2) |
 | SC-010 | Cumplido en local | 2 escenarios, 2 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_r17.py` (5) |
-| SC-011 | Parcial | 11 escenarios, 0 aprobados, 0 omitidos y 11 pendientes. Depende de la URL de Preview (T075). |
+| SC-011 | Parcial | 11 escenarios, 6 aprobados, 0 omitidos y 5 pendientes, comprobados el 2026-11-17 contra Production y la vista previa (sección «Despliegue»). |
 | SC-012 | Pendiente | sin escenario propio. bash scripts/preflight.sh y la verificación de autoría corren en la etapa de commit y en cada PR. |
 
 ## Reglas de negocio
@@ -482,17 +482,11 @@ Reglas sin prueba, ninguna.
 
 | Escenario | Historia | Razón |
 | --- | --- | --- |
-| Cada proyecto fija la región gru1 | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| El Front reescribe /api hacia el Back y todo queda en un solo origen | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| La cookie de sesión es de primera parte y nunca pasa por el almacenamiento del navegador | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| Las variables del Back están en Vercel y no en el repositorio | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| Los secretos del Back no quedan en ningún repositorio | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| La API se conecta a Neon por el pooler con el rol abet_app | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| Preview trabaja sobre otra rama de Neon | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| Production sale solo de main | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| El equipo de Vercel no comparte el contenido para entrenar modelos | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| La guardia de datos inventados está encendida en el piloto | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
-| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | US-17 | el despliegue llega con T070 a T076 y la prueba de humo contra Preview con T075 |
+| Las variables del Back están en Vercel y no en el repositorio | US-17 | `.env.example` trae valor en tres variables que no son secretas, y cambiar el archivo o el escenario lo decide Jefferson |
+| Los secretos del Back no quedan en ningún repositorio | US-17 | falta buscar `SESION_SECRETO`, cuyo valor no está en la Mac |
+| El equipo de Vercel no comparte el contenido para entrenar modelos | US-17 | el equipo tiene `dataSharingConsent` en `granted` (T070) |
+| La guardia de datos inventados está encendida en el piloto | US-17 | la subida del export con el código 10000004 no corre en Production en la versión 0.1.0 |
+| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | US-17 | falta abrir el R-17 de ese export, que exige restablecer `develop` y repetir la prueba en la vista previa |
 
 ### Escenarios del corte 2
 
@@ -530,32 +524,35 @@ La spec aplica un valor provisional a cada una, y el R-17 sale con la franja PRO
 
 ### Tareas abiertas de Neon, despliegue y de Jefferson
 
-Salen de `tasks.md` al momento de armar esta traza y se acortan a una línea. T062 es la verificación a mano de la sección anterior.
+Salen de `tasks.md` del 2026-11-17 y se acortan a una línea. T062 es la verificación a mano de la sección anterior.
 
 | Tarea | Dónde | Descripción |
 | --- | --- | --- |
 | T004 | Jefferson | Revisar y fusionar la solicitud de integración (pull request, PR) de `docs/plan-mvp` a `develop`, que aprueba la spec, y ratificar la constitución con su fecha |
 | T018 | Jefferson | Comprar el dominio y abrir la cuenta de Resend (J-04) para que el registro del dominio se propague antes del corte 2 |
-| T020 | Jefferson | Crear el proyecto de Neon con PostgreSQL 16 en aws-sa-east-1, con la rama `develop` para Preview, y guardar sus cadenas directa y con pooler en su gestor de claves |
-| T021 | Neon | Aplicar V1_01 a V1_08 y las dos vistas con `flyway -environment=neon migrate` desde `ABET_ULIMA` y comprobar la semilla (7 resultados del estudiante o student outcomes,… |
 | T022 | Jefferson | Fusionar `preparacion-neon` (4ff1952) en `main` de `ABET_ULIMA`, aprobar el traslado y archivar el repositorio en solo lectura cuando termine T023 |
-| T027 | Neon | Aplicar V1_09, `crear_rol_app.sql`, `guardia_datos_inventados.sql` y `periodo_2026_2_inventado.sql`, primero en la rama `develop` y después en la principal, y correr… |
-| T028 | Jefferson | Asignar la clave de `abet_app` en la consola de Neon de cada rama y guardarla en su gestor de claves |
-| T070 | Jefferson | Crear en el equipo `jeffangeloss-projects` los proyectos de Vercel Hobby `abet-ulima-back` y `abet-ulima-front`, enlazados a sus repositorios con Production desde `main`… |
-| T071 | Back | Escribir `vercel.json` del Back con `regions: ["gru1"]` y la función de FastAPI, y confirmar `prepare_threshold=None` en la conexión con pooler |
-| T072 | Front | Escribir `vercel.json` del Front con la reescritura de `/api/:path*` hacia la URL del Back que corresponde a Production y a Preview |
-| T073 | Jefferson | Pegar en Vercel las variables del Back, separadas por Production y Preview (`DATABASE_URL` con pooler y usuario `abet_app` de la rama principal o de `develop`,… |
-| T074 | Jefferson | Asignar con `scripts/asignar_clave.py` las contraseñas de los tres usuarios de prueba en cada rama de Neon, sin pasarlas por un agente |
-| T075 | Neon | Correr la prueba de humo de T053 contra la vista previa de `develop` y su rama de Neon, restablecida desde la principal (valor provisional de J-09), nunca contra… |
-| T076 | Jefferson | Publicar la versión 0.1.0 por PR de `develop` a `main`, primero en el Back y después en el Front |
-| T079 | Back | Auditar la fase (sección «Despliegue» de `audit.md` con cada paso de la prueba de humo y su código HTTP) y registrarla en `MEMORIA.md` de Back y Front |
+| T070 | Jefferson | Apagar el entrenamiento de IA del equipo de Vercel, que sigue con `dataSharingConsent` en `granted`, y enviar la consulta a soporte de J-07 |
+| T074 | Jefferson | Asignar la contraseña de coordinacion en la rama `develop`, la única de los tres usuarios que falta |
 
 ### Despliegue
 
-Sin despliegue todavía. Esta sección se completa con T079, con el commit, la migración y la prueba de humo en Production y en Preview, y cada paso con su código HTTP.
+La versión 0.1.0 llega a Production el 2026-11-17 en los dos proyectos de Vercel (T076), después de V1_10 en la rama principal de Neon (T077 de la spec 003). Esta sección reúne cada paso con su comando o prueba, su código HTTP cuando lo hay y su evidencia (T079). En Production corren solo los pasos que no escriben cargas, porque una carga del piloto no se puede borrar, y la prueba con cargas corre en la vista previa de `develop`, sobre su propia rama de Neon. Las comprobaciones con contraseña las corre Jefferson con `ABET_SIS_MED/herramientas_neon/comprobar_version.sh`, fuera de los repositorios, que antes pasa en local contra `scripts/api_local.sh`, y sus evidencias quedan sin contraseñas ni tokens en `ABET_SIS_MED/demo_version_010/`.
 
 | Paso | Cómo | Evidencia |
 | --- | --- | --- |
-| Migración en Neon | `flyway -environment=neon migrate` (T021, T027) | pendiente |
-| Commit desplegado | Preview desde `develop`, Production desde `main` (T070, T076) | pendiente |
-| Prueba de humo | `e2e/humo.spec.ts` contra Preview (T075) | pendiente |
+| Migración en Neon | `flyway -environment=neon migrate` desde el Windows, con V1_01 a V1_09 en las dos ramas (T021 y T027, 2026-11-02), V1_10 en `develop` (2026-11-09) y V1_10 en la principal con `herramientas_neon/migrar_neon.sh principal 12c6207 --confirmo-principal` (2026-11-17) | La principal queda en la versión 1.10, sin migraciones fallidas, con la marca production, los cuatro roles sin atributos de administración, `abet_app` con los permisos de `crear_rol_app.sql`, Q01 a Q14 en 0 y 0 cargas |
+| Versión en `main` | PR «Versión 0.1.0» de `develop` a `main`, con `pruebas` y `flujo` en verde y merge commit | Back #22 en 7325231 y Front #14 en 0d693b9, cada uno con el mismo árbol que su `develop`; `release.yml` crea el tag `v0.1.0` y el Release «Versión 0.1.0» en los dos repositorios |
+| Despliegue de Production | `vercel api /v9/projects` y `/v13/deployments` de cada proyecto | Back `dpl_8eDNfqHA62QB4AADYuRktHRaAT8M` desde `main` 7325231, en lugar del Redeploy de `develop` f8057d7 del 2026-11-02; Front `dpl_EjScFgZmaZ8AugUs458zYHfeA92v` desde `main` 0d693b9, en lugar del despliegue de la importación (`develop` f26f4a1). Los dos quedan READY, en la región iad1, con los alias `abet-ulima-back-gray.vercel.app` y `abet-ulima-front.vercel.app` |
+| Push a `develop` | Fusión de los PR #21 del Back y #13 del Front en `develop`, a las 17:25 de Lima | Vistas previas READY de 4341bc9 y 35a4266, y Production sin cambios hasta la fusión en `main`; la vista previa del Back de `chore/version-0.1.0` queda cancelada por `ignoreCommand` |
+| API de Production | `GET /api/sesion` sin cookie a `https://abet-ulima-back-gray.vercel.app` | 401, `application/json`, `Cache-Control: no-store` y `{"detail": "La sesión venció. Ingrese otra vez."}`, con iad1 en `x-vercel-id`. La API arranca solo si la marca de la base es production (`comprobar_base` de `app/configuracion.py`, al iniciar), así que su `DATABASE_URL` es la de la rama principal, que muestra después 2 conexiones de `abet_app` desde `pgbouncer` |
+| Reescritura del Front | `GET /api/sesion` sin cookie a `https://abet-ulima-front.vercel.app` | El mismo 401 en JSON del Back, sin `Access-Control-Allow-Origin`, por la regla con `has` del dominio de Production; antes de la versión respondía 404 NOT_FOUND. `GET /` responde 200 sin la protección de Vercel |
+| Variables de Production | `vercel env ls production --project abet-ulima-back` | `DATABASE_URL`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, de tipo Secret |
+| Secretos fuera de los repositorios | Búsqueda en `git log -p --all` de las cinco claves de `bd/.env.neon` y de la clave de `abet_app` codificada como en `DATABASE_URL` | 0 apariciones en los 63 commits del Back y en los 48 del Front, y `scripts/preflight.sh` sin fallas en los dos |
+| Contraseñas de T074 | `herramientas_neon/asignar_claves.py`, que pide cada contraseña en la terminal de Jefferson y manda al Windows solo el hash | La principal guarda las credenciales de docente410, docente411 y coordinacion, con hash Argon2id, del 2026-11-17 a las 17:36; `develop` guarda las de docente410 y docente411 |
+| Ingreso en Production | `herramientas_neon/e2e_version/produccion.spec.ts` contra `https://abet-ulima-front.vercel.app`, sin la clave de omisión, con docente410 en P1 | `POST /api/sesion` 200 desde el origen del Front, con `abet_sesion` HttpOnly, Secure, SameSite=Lax, Path=/ y Max-Age 43200, sin Domain y guardada solo para `abet-ulima-front.vercel.app`. `GET /api/sesion` da 200 con el rol PROFESOR, localStorage y sessionStorage no tienen ningún valor y `document.cookie` no muestra `abet_sesion`. P2 muestra la 410 sin carga, sin subir nada, y «Salir» da 204 y después 401 |
+| Pooler y rol `abet_app` | 20 `GET /api/secciones?periodo=2026-2` seguidas con la sesión de coordinacion, en la misma prueba | 20 respuestas 200 con la 410 y la 411. Los 30 registros de la función de esa corrida, entre las 22:35 y las 22:38 UTC, son de nivel info, sin ningún «prepared statement» ni una subida, y `pg_stat_activity` de la rama principal muestra la conexión de `abet_app` desde `pgbouncer` |
+| Rama de Neon de cada entorno | Consultas de solo lectura desde el Windows, después de la prueba de Production | La principal gana solo las 2 sesiones de la prueba, de docente410 y coordinacion, ya cerradas, y sigue con 0 cargas y 0 archivos; `develop` gana solo la sesión de la vista previa |
+| Prueba con cargas en Preview | `e2e/humo.spec.ts` (T075, 2026-11-02) y `e2e/humo_csv.spec.ts` (T076 de la spec 003, 2026-11-09) contra la vista previa de `develop` | 2 passed en cada corrida, y la rama principal no gana ninguna carga |
+| R-17 descargado en Preview | `herramientas_neon/e2e_version/vista_previa_r17.spec.ts`, en el que docente410 abre P4 de la 410 y pulsa «Descargar R-17», y `herramientas_neon/revisar_r17.py` | `GET /api/cargas/1/r17.xlsx` 200, con `nosniff`, entrega `R017_450002_410_2026-2_PROVISIONAL.xlsx`. Es el R-17 de la 410 cargada con el `.csv` el 2026-11-09, porque la carga del export con el 5 en la fila 3 ya no existe en `develop` |
+| Tabla de estudiantes del R-17 | Lectura del libro con openpyxl en `revisar_r17.py` | 33 filas, de la 43 a la 75, con 11 estudiantes por 3 PI, solo códigos inventados y niveles de 1 a 4. Los 7, 7 y 8 de 11 de la tabla (63,6 %, 63,6 % y 72,7 %) coinciden con los bloques E24:E26 y P29:Q31, y ninguna celda trae una fórmula ni repite uno de los 12 nombres del export |
+| Hoja «Constancia» del R-17 | La misma lectura | «Sin hoja (export de texto)», 11 / 11 / 11 / 0 filas, la huella SHA-256 del `.csv`, PUBLICADA, PROVISIONAL, subida por docente410, 5 avisos de dos tipos, 0 rechazos y la frase final. Su versión del programa es 0.0.0, porque `abet.carga` la guarda al cargar y esa carga es del 2026-11-09, antes de la 0.1.0 |
