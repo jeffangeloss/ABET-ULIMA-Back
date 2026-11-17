@@ -13,7 +13,9 @@
 # La resolución del 2026-10-28 toma solo versiones con al menos 14 días en el índice de paquetes
 # de Python (Python Package Index, PyPI). Corre uv lock --exclude-newer "14 days", que cuenta los
 # 14 días desde la hora de la corrida, y después uv lock, que conserva esas versiones y quita la
-# opción. El corte fijo 2026-10-14T13:00:00Z reproduce desde cero las mismas 43 versiones.
+# opción. Una subida puntual guarda la misma espera con --upgrade-package paquete==versión en la
+# primera corrida. La del 2026-11-17 lleva fastapi, starlette, pydantic, pydantic-core y pillow a
+# las versiones de los PR de Dependabot y deja igual las otras 38 entradas de uv.lock.
 #
 # Después de cambiar este archivo, uv.lock y requirements.txt se regeneran con
 #   uv lock
@@ -27,13 +29,13 @@ version = "0.1.0"
 description = "Carga del export de Blackboard en PostgreSQL 18 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi~=0.143.1",
+    "fastapi~=0.162.0",
     "uvicorn~=0.54.0",
     "python-multipart~=0.0.32",
     "psycopg[binary]>=3.3.6,<4",
     "openpyxl==3.1.5",
     "defusedxml==0.7.1",
-    "pillow>=12.3.0,<13",
+    "pillow>=13.0.0,<14",
     "argon2-cffi>=25.1.0,<26",
 ]
 
@@ -45,7 +47,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.12.8,<0.13"]
+requires = ["uv_build>=0.12.8,<0.14"]
 build-backend = "uv_build"
 
 # Dos paquetes en la raíz del repositorio, sin carpeta src/.

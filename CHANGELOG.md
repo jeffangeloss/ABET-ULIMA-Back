@@ -7,6 +7,11 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 ### Cambiado
 
 - `specs/001-mvp-carga-r17/audit.md` registra la versión 0.1.0 en Production con su sección «Despliegue», y US-17 queda con 6 escenarios aprobados contra Vercel y Neon y 5 pendientes con su razón (T079).
+- fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2 y pillow 13.0.0 en `uv.lock` y `requirements.txt`, `uv_build` hasta 0.13 en `[build-system]` y setup-uv v10.3.3 en la CI, todos con al menos 14 días publicados, en un solo cambio que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20.
+
+### Seguridad
+
+- pillow 13.0.0 cierra los 12 avisos vigentes de pillow 12.3.0, entre ellos el crítico GHSA-5x8w-8jj5-q52h, y pydantic 2.14.2, con pydantic-core 2.50.2, cierra GHSA-qpmf-fgh3-ff25 y GHSA-3r8g-cqwr-jr29 (PR de Dependabot #8 y #20).
 
 ## [0.1.0] - 2026-11-17
 
