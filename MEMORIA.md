@@ -12,14 +12,14 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-11-09
-- **Rama de trabajo**: `develop`, con la spec 003 fusionada (PR #17, e56fb8a) y su registro de la prueba en la vista previa en `docs/003-vista-previa`
-- **Versión publicada**: ninguna (`VERSION` = 0.0.0)
-- **Último cambio**: la vista previa de `develop` carga el `.csv` inventado en la 410 y el `.xls` inventado en la 411 contra la rama `develop` de Neon, en V1_10 (T075 y T076 de la spec 003)
-- **En curso**: nada de la spec 003; queda T077
-- **Siguiente paso**: V1_10 en la rama principal de Neon con `ABET_SIS_MED/herramientas_neon/migrar_neon.sh principal <ref> --confirmo-principal` antes de llevar la versión a `main` (T077 de la spec 003, junto con T074 y T076 de la spec 001)
-- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`)
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (spec 003 fusionada en `develop`, c2f3523) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Fecha**: 2026-11-17
+- **Rama de trabajo**: `chore/version-0.1.0`, que sale de `develop` (12c6207) con la versión 0.1.0
+- **Versión publicada**: ninguna todavía; la 0.1.0 está en preparación (`VERSION` = 0.1.0)
+- **Último cambio**: la versión 0.1.0 en `VERSION`, `pyproject.toml`, `abet_carga.__version__`, `uv.lock` y el CHANGELOG, y V1_10 en la rama principal de Neon (T077 de la spec 003)
+- **En curso**: la versión 0.1.0 (T076 de la spec 001)
+- **Siguiente paso**: el PR «Versión 0.1.0» de `develop` a `main`, primero en el Back y después en el Front; después, T074 y el ingreso en Production sin cargas con `ABET_SIS_MED/herramientas_neon/comprobar_version.sh`, y T079
+- **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); los PR de Dependabot esperan a que salga la versión, por decisión de Jefferson del 2026-11-17
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0 en `chore/version-0.1.0`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-17 17:20 (Lima) · chore/version-0.1.0 · Versión 0.1.0 y V1_10 en la rama principal de Neon (T076 y T077)
+- Quién: Claude Code, por el encargo de la sesión principal de Jefferson del 2026-11-17, aplica V1_10 en la rama principal desde el Windows, la comprueba en solo lectura, prepara la versión y prueba en local el ayudante de las comprobaciones con contraseñas. Jefferson decide en el chat no fusionar los PR de Dependabot antes de la versión, autoriza empujar y fusionar cada PR con la CI en verde y deja T074 para después del despliegue.
+- Qué cambió: `VERSION`, `pyproject.toml`, `abet_carga/__init__.py` y `uv.lock` pasan a 0.1.0. La sección «Sin publicar» del `CHANGELOG.md` pasa a `[0.1.0] - 2026-11-17`, con otra vacía encima. `tasks.md` de la spec 003 marca T077, su `audit.md` da FR-014 por cumplido y `tasks.md` de la spec 001 anota el avance de T076. En Neon, la rama principal pasa de la versión 1.09 a la 1.10.
+- Por qué: T076 de la spec 001 y T077 y FR-014 de la spec 003, que piden V1_10 en la rama principal antes de llevar la versión a `main`. `tests/test_esqueleto.py` exige que `pyproject.toml`, `abet_carga.__version__` y el paquete instalado sigan a `VERSION`, así que la versión cambia en los cuatro archivos.
+- Lo que debe hacer, cómo se probó: `ABET_SIS_MED/herramientas_neon/migrar_neon.sh principal 12c6207 --confirmo-principal` termina con «ok rama principal migrada, marcada con production y con Q01 a Q14 en 0». Una consulta de solo lectura desde el Windows da la versión 1.10 sin migraciones fallidas y la marca production. En esa consulta, los cuatro roles no tienen atributos de administración, `abet_app` conserva los permisos de `crear_rol_app.sql` y las dos restricciones de V1_10 tienen la misma huella md5 que en `develop`. `uv lock --check` pasa, `uv run --frozen --no-build pytest -q` da 1180 passed y 19 skipped, `scripts/preflight.sh` termina sin fallas y el `awk` de `release.yml` extrae la sección [0.1.0].
+- Lo que no debe hacer, cómo se probó: la rama principal sigue con 0 cargas, 0 mediciones, 0 credenciales y 0 sesiones, y `abet_app` no borra, no inserta credenciales ni crea objetos en `abet` o `acceso`. `uv.lock` cambia solo la versión del proyecto. Los diez PR de Dependabot quedan abiertos, y tres de ellos (#20, #15 y #8) fallan en `pruebas` porque cambian `requirements.txt` sin `uv.lock`.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, el CHANGELOG, el PR de esta rama y el PR «Versión 0.1.0».
+- Pendiente y siguiente paso: el PR «Versión 0.1.0» de `develop` a `main`, primero en el Back y después en el Front. Después, Jefferson corre `ABET_SIS_MED/herramientas_neon/comprobar_version.sh`, probado en local contra `scripts/api_local.sh`, que asigna las contraseñas de T074 y prueba el ingreso en Production sin subir nada, y sigue T079.
 
 ### 2026-11-09 11:48 (Lima) · docs/003-vista-previa · Prueba de los exports de texto en la vista previa de develop (T075 y T076)
 - Quién: Jefferson autoriza fusionar los PR, pega en Vercel la DATABASE_URL de Preview con el host de la rama `develop` nueva y corre `ABET_SIS_MED/herramientas_neon/humo_preview.sh`, que pide las contraseñas en su terminal. Claude Code fusiona los PR, vuelve a desplegar la vista previa del Back con la variable nueva, comprueba Neon desde el Windows en solo lectura y escribe esta entrada.
