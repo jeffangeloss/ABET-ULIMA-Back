@@ -12,6 +12,9 @@
 respaldo/
 !tests/datos_inventados/
 !tests/datos_inventados/**
+# La plantilla del R-17 vaciada (T034) es la única planilla fuera de esa carpeta, y scripts/preflight.sh
+# la admite solo en esta ruta exacta (reglas 1 y 2).
+!plantillas/R017_ambiental_general.xlsx
 
 # Secretos y configuración local
 .env

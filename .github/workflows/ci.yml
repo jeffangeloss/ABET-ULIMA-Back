@@ -1,7 +1,8 @@
 # Pruebas de cada cambio y control del flujo de ramas (docs/devops.md).
-# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh). Las pruebas de
-# la base, del backend y de aceptación se suman a este mismo job cuando existan,
-# para que el check requerido por la protección de ramas siga llamándose igual.
+# Hoy «pruebas» corre la revisión previa (scripts/preflight.sh), las pruebas de la base
+# (db/pruebas/) y pytest, que incluye la lectura del Gherkin en español de specs/ y los exports
+# inventados. Los pasos de aceptación (T050) entran en ese mismo pytest, para que el check
+# requerido por la protección de ramas siga llamándose igual.
 # No usa acciones ni imágenes de Redgate mientras su licencia esté en revisión.
 name: CI
 
@@ -17,22 +18,91 @@ permissions:
 jobs:
   pruebas:
     runs-on: ubuntu-latest
+    # PostgreSQL 18 desechable para las pruebas de la base (db/pruebas/), que aplican las
+    # migraciones con psql, sin Flyway ni imágenes de Redgate. Vive solo lo que dura el job.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - name: Prueba de la revisión previa (casos que deben pasar y que deben fallar)
+      - name: Prueba de la revisión previa y del hook de memoria (casos que deben pasar y que deben fallar)
         run: bash scripts/probar_preflight.sh
       - name: Revisión previa (datos inventados, secretos y memoria)
+        # Los PR de Dependabot no escriben MEMORIA.md; se revisa el repositorio completo y la
+        # actualización queda registrada en la memoria con el siguiente cambio (docs/devops.md).
         env:
           EVENTO: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
+          AUTOR: ${{ github.actor }}
         run: |
-          if [ "$EVENTO" = "pull_request" ]; then
+          if [ "$EVENTO" = "pull_request" ] && [ "$AUTOR" != "dependabot[bot]" ]; then
             bash scripts/preflight.sh --pr "origin/$BASE_REF"
           else
             bash scripts/preflight.sh
           fi
+      - name: Cliente de PostgreSQL 18, la versión de Neon (J-17)
+        # El runner trae psql y pg_dump 16, y pg_dump no vuelca un servidor de una versión mayor más nueva.
+        # El repositorio oficial de PostgreSQL (PGDG) da el cliente 18, que pasa al frente del PATH.
+        run: |
+          sudo apt-get install -y -q postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -q postgresql-client-18
+          /usr/lib/postgresql/18/bin/pg_dump --version | grep -q " 18\."
+          echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
+      - name: Pruebas de la base (migraciones, rechazos de cada restricción y consultas de control Q01 a Q14)
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+        run: bash db/pruebas/correr_pruebas.sh
+      - name: uv 0.12.8 con Python 3.12
+        # v10.3.0 (2026-10-09) y no una más nueva: una versión con menos de 14 días publicada espera,
+        # igual que los paquetes de PyPI de uv.lock (pyproject.toml) y la espera de Dependabot.
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.12.8"
+          python-version: "3.12"
+      - name: Dependencias de Python exactamente como las fija uv.lock
+        # --no-build impide construir desde su código fuente cualquier dependencia de terceros, así que
+        # ningún paquete de uv.lock corre código propio al instalarse. uv construye solo este proyecto, con
+        # la construcción directa de uv_build, que no ejecuta Python (hallazgo githubactions:S8541 de
+        # SonarQube Cloud).
+        run: uv sync --frozen --no-build
+      - name: Pruebas de Python (biblioteca abet_carga, bases desechables, exports inventados y Gherkin en español)
+        # --frozen y --no-build también aquí, para que uv run no vuelva a resolver, no toque uv.lock y no
+        # construya desde su código fuente ninguna dependencia. Las pruebas con el marcador base crean y
+        # borran bases abet_demo_ en el mismo PostgreSQL 18 del paso de la base, con las mismas variables
+        # de libpq y sin contraseña.
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+        run: uv run --frozen --no-build pytest -q
+
+  # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
+  # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).
+  secretos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: gitleaks 8.30.1 sobre el historial
+        run: |
+          # --proto =https impide que una redirección lleve la descarga a HTTP (hallazgo de SonarQube Cloud).
+          curl --proto '=https' --tlsv1.2 -sSfL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          ./gitleaks git --config .gitleaks.toml --redact --no-banner --verbose .
 
   # main solo recibe versiones (desde develop) o arreglos urgentes (hotfix/*).
   flujo:
