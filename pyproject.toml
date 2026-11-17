@@ -15,7 +15,8 @@
 # 14 días desde la hora de la corrida, y después uv lock, que conserva esas versiones y quita la
 # opción. Una subida puntual guarda la misma espera con --upgrade-package paquete==versión en la
 # primera corrida. La del 2026-11-17 lleva fastapi, starlette, pydantic, pydantic-core y pillow a
-# las versiones de los PR de Dependabot y deja igual las otras 38 entradas de uv.lock.
+# las versiones de los PR de Dependabot, sube opentelemetry-api a 1.45.2 por el aviso
+# GHSA-mf5v-w3w3-f6cg y deja igual las otras 37 entradas de uv.lock.
 #
 # Después de cambiar este archivo, uv.lock y requirements.txt se regeneran con
 #   uv lock

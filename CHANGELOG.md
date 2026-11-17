@@ -12,6 +12,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 ### Seguridad
 
 - pillow 13.0.0 cierra los 12 avisos vigentes de pillow 12.3.0, entre ellos el crítico GHSA-5x8w-8jj5-q52h, y pydantic 2.14.2, con pydantic-core 2.50.2, cierra GHSA-qpmf-fgh3-ff25 y GHSA-3r8g-cqwr-jr29 (PR de Dependabot #8 y #20).
+- opentelemetry-api 1.45.2, que entra por fastapi y tiene 19 días publicada, cierra GHSA-mf5v-w3w3-f6cg de opentelemetry-api 1.45.1.
 
 ## [0.1.0] - 2026-11-17
 

@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-17
 - **Rama de trabajo**: `chore/dependencias-dependabot`, que sale de `develop` (71aa82c) con los seis saltos de Dependabot
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2, pillow 13.0.0, uv_build hasta 0.13 y setup-uv v10.3.3 en un solo cambio, que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20 y cierra los avisos vigentes de pillow 12.3.0 y pydantic 2.14.1
-- **En curso**: el PR de esta rama, que espera el permiso de Jefferson para empujarlo y fusionarlo
-- **Siguiente paso**: fusionar el PR con la CI en verde, cerrar los seis PR de Dependabot con su razón y repetir la prueba de la vista previa de `develop` con `humo_preview.sh`; después, los cinco escenarios pendientes de US-17 (`audit.md`) y la contraseña de coordinacion en `develop` (T074)
+- **Último cambio**: fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2, pillow 13.0.0, uv_build hasta 0.13 y setup-uv v10.3.3 en un solo cambio, que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20 y cierra los avisos vigentes de pillow 12.3.0 y pydantic 2.14.1, y opentelemetry-api 1.45.2 en un commit aparte por GHSA-mf5v-w3w3-f6cg
+- **En curso**: el PR de esta rama, que Jefferson aprueba en el chat fusionar con la CI en verde («Sí, con opentelemetry»)
+- **Siguiente paso**: al fusionar, cerrar los seis PR de Dependabot con su razón y repetir la prueba de la vista previa de `develop` con `humo_preview.sh`, que corre Jefferson; después, los cinco escenarios pendientes de US-17 (`audit.md`) y la contraseña de coordinacion en `develop` (T074)
 - **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-17 19:05 (Lima) · chore/dependencias-dependabot · opentelemetry-api 1.45.2 por el aviso GHSA-mf5v-w3w3-f6cg
+- Quién: Claude Code, en la misma rama, a partir de la revisión de avisos de la entrada anterior. Como el salto no viene de ningún PR de Dependabot, Jefferson decide sumarlo, y aprueba en el chat empujar las ramas del Back y del Front, fusionarlas con la CI en verde y cerrar los diez PR de Dependabot («Sí, con opentelemetry»).
+- Qué cambió: `uv.lock` y `requirements.txt` suben opentelemetry-api, que entra por fastapi, de 1.45.1 a 1.45.2, y el comentario de `pyproject.toml` lo suma a la subida del 2026-11-17.
+- Por qué: GHSA-mf5v-w3w3-f6cg, de severidad media y publicado el 2026-11-13, afecta a opentelemetry-api 1.45.1 y anteriores con un análisis de `traceparent` de tiempo cuadrático, y 1.45.2 lo corrige. El Back tiene abiertos cinco PR de uv, el máximo que fija `open-pull-requests-limit` en `.github/dependabot.yml`, así que Dependabot no abre otro.
+- Lo que debe hacer, cómo se probó: `uv lock --exclude-newer "14 days" --upgrade-package opentelemetry-api==1.45.2` cambia solo ese paquete, `uv lock --check` pasa y la base de avisos de GitHub no da ningún aviso para opentelemetry-api 1.45.2. Con los dos commits, `uv run --frozen --no-build pytest -q` da 1180 passed y 19 skipped, sin ningún warning en el resumen.
+- Lo que no debe hacer, cómo se probó: 1.45.2 se sube el 2026-10-29, así que cumple la espera de 14 días, y `uv.lock` sigue con 43 entradas. La exposición del Back es baja, porque FastAPI 0.162.0 lee `traceparent` solo con un proveedor de trazas configurado (`fastapi/telemetry/_asgi.py`), y el Back no configura ninguno ni instala el SDK de OpenTelemetry.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: al fusionar el PR, se cierran los seis PR de Dependabot con un comentario que remite a él, y Jefferson repite la prueba de la vista previa de `develop` con `ABET_SIS_MED/herramientas_neon/humo_preview.sh`, porque la API cambia de dependencias.
 
 ### 2026-11-17 18:55 (Lima) · chore/dependencias-dependabot · fastapi, starlette, pydantic, pillow, uv_build y setup-uv en un solo cambio (PR de Dependabot #5, #8, #15, #16, #19 y #20)
 - Quién: Claude Code, por el encargo de la sesión principal de Jefferson del 2026-11-17, sube las dependencias, regenera `uv.lock` y `requirements.txt`, corre las pruebas y escribe esta entrada. Un subagente (Sonnet, esfuerzo medio) lee en solo lectura las notas de cada versión, la base de avisos de GitHub y el uso de cada paquete en `app/` y `abet_carga/`. Antes de aceptar su informe, Claude Code vuelve a consultar los avisos de pillow, pydantic y opentelemetry-api, el commit del tag v10.3.3 de setup-uv, la versión de pydantic-core que exige pydantic 2.14.2 y los usos de código que cita.
