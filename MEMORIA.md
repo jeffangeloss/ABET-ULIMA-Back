@@ -15,7 +15,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-18
 - **Rama de trabajo**: `feat/004-reportes-docente`, que sale de `develop` (13c0c12, con la spec 004 fusionada por el PR #27), con la construcción de la spec 004 de los logros del profesor por resultado del estudiante (student outcome, SO), en el PR #31
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: el cierre de la spec 004 en esta rama (T050, T051 y T060), con `specs/004-reportes-docente/audit.md`, las líneas Verification del 2026-11-18 de `resultados`, `acceso`, `r17` y `periodo` y `tasks.md`, después de la ruta 12 (0db6ee3) y de la fase 1 (55a66b6). El Front trae el contrato, P6 y su cierre en a5d678c, 203d822 y b856515
+- **Último cambio**: el PR #31 de esta rama hacia `develop`, que cita el PR #20 del Front, sobre el cierre de la spec 004 (38f0c9e, con `audit.md` y las líneas Verification del 2026-11-18), la ruta 12 (0db6ee3) y la fase 1 (55a66b6). El Front trae el contrato, P6 y su cierre en a5d678c, 203d822 y b856515
 - **En curso**: el PR #31 de esta rama y el PR #20 del Front, abiertos hacia `develop` el 2026-11-18 con el permiso de Jefferson en el chat («Sí, empuja y abre»), a la espera de la CI y de la fusión, primero el del Back. Los cuatro escenarios pendientes de US-17 (`specs/001-mvp-carga-r17/audit.md`) siguen como los deja el cierre de la spec 003, con los ayudantes `ABET_SIS_MED/herramientas_neon/comprobar_guardia.sh` y `humo_preview_con_error.sh`, que Jefferson corre en su terminal, y el de los secretos espera una clave nueva de `SESION_SECRETO`. En otra sesión avanza M24 a M26 del R-17, con su PR #29, que también toca BR-R17-02
 - **Siguiente paso**: con la CI en verde, la fusión del PR #31 y después la del PR #20 del Front, que decide Jefferson (T070), y luego el humo de P6 contra la vista previa de `develop` (T071) y la versión hacia `main` (T072). Siguen T005 con la Coordinación, la prueba de humo del corte 2 contra la vista previa de `develop` (T099), el registro en `audit.md` de la spec 001 de los escenarios de US-17 que corre Jefferson y T062
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos) y D-32 a D-34 de la spec 004 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; la fusión de los PR #31 y #20 de la spec 004 espera a Jefferson (T070)
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-18 16:35 (Lima) · feat/004-reportes-docente · «Último cambio» con el PR #31
+- Quién: Claude Code, sin subagentes, corrige «Punto actual» al comparar la entrada anterior con la del Front (47af656) y con la que abrió los PR #1 a #4 (8290108).
+- Qué cambió: «Último cambio» nombra el PR #31 en lugar del cierre (38f0c9e), que ahora queda dentro del mismo campo.
+- Por qué: cada commit actualiza «Punto actual», y la entrada anterior (dd434d9) lo hace en cuatro campos y deja este sin tocar.
+- Lo que debe hacer, cómo se probó: `git diff` muestra solo «Último cambio» y esta entrada, y la revisión previa no da fallas.
+- Lo que no debe hacer, cómo se probó: ninguna entrada anterior del «Registro» cambia, según el mismo `git diff`, y el empuje va sin forzar sobre dd434d9.
+- Correcciones: la de esta entrada.
+- Cómo se reporta: esta entrada y el PR #31.
+- Pendiente y siguiente paso: los mismos de la entrada anterior.
 
 ### 2026-11-18 16:32 (Lima) · feat/004-reportes-docente · PR #31 abierto
 - Quién: Jefferson autoriza en el chat empujar las dos ramas y abrir sus PR («Sí, empuja y abre»). Claude Code, sin subagentes, empuja `feat/004-reportes-docente` sin forzar en los dos repositorios, abre jeffangeloss/ABET-ULIMA-Back#31 y jeffangeloss/ABET-ULIMA-Front#20 hacia `develop`, cruza sus referencias y escribe esta entrada.
