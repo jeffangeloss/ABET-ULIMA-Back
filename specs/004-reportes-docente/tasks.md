@@ -50,6 +50,6 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 7: Despliegue
 
-- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/004-reportes-docente` y fusionar sus PR con la integración continua en verde [US-37..US-44]
+- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/004-reportes-docente` y fusionar sus PR con la integración continua en verde [US-37..US-44] · empuje autorizado el 2026-11-18 («Sí, empuja y abre»), con jeffangeloss/ABET-ULIMA-Back#31 y jeffangeloss/ABET-ULIMA-Front#20 abiertos; falta la fusión
 - [ ] T071 [Front] Correr T043 contra la vista previa de `develop`, con la rama `develop` de Neon restablecida con `ABET_SIS_MED/herramientas_neon/humo_preview.sh`, que corre Jefferson [US-37] [US-38] [US-40]
 - [ ] T072 [Jefferson] Llevar la versión hacia `main` y Production, sin migración en Neon [US-37..US-44]
