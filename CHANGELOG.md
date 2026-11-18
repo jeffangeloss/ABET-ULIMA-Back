@@ -4,6 +4,10 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+### Agregado
+
+- Spec 004 «Los logros del profesor por SO, solo en sus secciones» (EP-04), con 8 historias auditadas (US-37 a US-44) que salen de 22 candidatas, 37 escenarios y 45 casos en Gherkin en español, FR-001 a FR-021, SC-001 a SC-008, D-32 a D-34 y J-21 a J-28, pendiente de aprobación de Jefferson (`specs/004-reportes-docente/`). Ningún código cambia.
+
 ### Cambiado
 
 - La spec 003 queda cerrada, salvo D-30 (T005). `specs/003-exports-blackboard/audit.md` registra la corrida final de T053 sobre `develop` y corrige lo que refutan tres verificadores, el escenario del `.xlsx` real de US-26 comprueba también `abet.v_r17_por_pi`, `carga-export.spec.md` y `r17.spec.md` reciben su línea del 2026-11-17, y la sección `[0.1.0]` suma la línea de US-30 que faltaba (T053, T060 y T061).
