@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- BR-R17-02 de `specs/features/r17/r17.spec.md` y el apartado «Bloque II» de `plantillas/README.md` documentan que M24 a M26 del R-17 siguen el corte fijo de sus rótulos, los niveles 1 y 2 frente a los niveles 3 y 4, y no NIVEL_ESPERADO. Una prueba nueva de `tests/test_r17.py` lo fija con R-PRUEBA-APROBADO, de nivel esperado 2, y el R-17 que genera `r17.py` no cambia.
 - La spec 003 queda cerrada, salvo D-30 (T005). `specs/003-exports-blackboard/audit.md` registra la corrida final de T053 sobre `develop` y corrige lo que refutan tres verificadores, el escenario del `.xlsx` real de US-26 comprueba también `abet.v_r17_por_pi`, `carga-export.spec.md` y `r17.spec.md` reciben su línea del 2026-11-17, y la sección `[0.1.0]` suma la línea de US-30 que faltaba (T053, T060 y T061).
 - `.env.example` nombra las cinco variables sin valor y deja en su comentario el valor del piloto de `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, como pide el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17, que queda aprobado. Una copia tal cual ya no arranca la API y deja la guardia encendida (`tests/test_env_example.py`).
 - `specs/001-mvp-carga-r17/audit.md` registra la versión 0.1.0 en Production con su sección «Despliegue», y US-17 queda con 6 escenarios aprobados contra Vercel y Neon y 5 pendientes con su razón (T079).
