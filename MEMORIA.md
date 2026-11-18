@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-18
-- **Rama de trabajo**: `feat/001-corte-2`, con el corte 2 de la spec 001 (US-18, US-19 y US-21), que sale de `develop` (e981a31) y se actualiza con `develop` (3334c5c) después del cierre de la spec 003, en el worktree `ABET_SIS_MED/wt/back-corte2` y con su PR #28 abierto; en el Front, la rama del mismo nombre con jeffangeloss/ABET-ULIMA-Front#19
+- **Rama de trabajo**: `docs/001-t074`, que sale de `develop` (d6d2275) con el cierre de T074, después de que el corte 2 se fusiona en los dos repositorios el 2026-11-18 (PR #28 del Back y jeffangeloss/ABET-ULIMA-Front#19)
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: la actualización de esta rama con `develop`, que trae el cierre de la spec 003 (PR #26) y deja FR-013 de esa spec cumplido también para US-21, sobre el corte 2 (82ddea6) y el cotejo de FR-013 (73027e2)
-- **En curso**: el PR #28, que espera la CI en verde y la decisión de Jefferson de fusionarlo antes que el del Front. Los cuatro escenarios pendientes de US-17 (`specs/001-mvp-carga-r17/audit.md`) siguen como los deja el cierre de la spec 003. El de la guardia en Production y el del humo con el 5 en la fila 3 tienen ayudantes nuevos fuera del repositorio, `ABET_SIS_MED/herramientas_neon/comprobar_guardia.sh` y `humo_preview_con_error.sh`, que Jefferson corre en su terminal, el segundo después de restablecer la rama `develop` de Neon; el humo sirve además de prueba de la vista previa tras los saltos de Dependabot y asigna la contraseña de coordinacion en `develop` (T074). El de los secretos espera que Jefferson genere una clave nueva de `SESION_SECRETO`, la pegue en Vercel en Production y Preview y se vuelva a desplegar, porque no tiene guardada la actual. En otra sesión avanza `docs/004-reportes-docente` (spec 004), con su PR #27
-- **Siguiente paso**: con la CI en verde y la decisión de Jefferson, fusionar el PR #28 y después el del Front, y correr la prueba de humo contra la vista previa de `develop` (T099). Neon no necesita migración para este corte. Después, registrar en `audit.md` de la spec 001 la evidencia de los escenarios de US-17 que Jefferson corre, y T062
+- **Último cambio**: T074 queda hecha, porque coordinacion tiene contraseña en la rama `develop` desde el 2026-11-18 y las dos ramas de Neon guardan las credenciales de los tres usuarios de prueba
+- **En curso**: los cuatro escenarios pendientes de US-17 (`specs/001-mvp-carga-r17/audit.md`) siguen como los deja el cierre de la spec 003. El de la guardia en Production y el del humo con el 5 en la fila 3 tienen ayudantes nuevos fuera del repositorio, `ABET_SIS_MED/herramientas_neon/comprobar_guardia.sh` y `humo_preview_con_error.sh`, que Jefferson corre en su terminal, el segundo después de restablecer la rama `develop` de Neon; el humo sirve además de prueba de la vista previa tras los saltos de Dependabot. El de los secretos espera que Jefferson genere una clave nueva de `SESION_SECRETO`, la pegue en Vercel en Production y Preview y se vuelva a desplegar, porque no tiene guardada la actual. En otras sesiones avanzan `docs/004-reportes-docente` (spec 004), con su PR #27, y M24 a M26 del R-17, con su PR #29
+- **Siguiente paso**: la prueba de humo del corte 2 contra la vista previa de `develop` (T099), ya con los PR #28 y #19 fusionados. Neon no necesita migración para este corte. Después, registrar en `audit.md` de la spec 001 la evidencia de los escenarios de US-17 que Jefferson corre, y T062
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, y la rama `feat/001-corte-2` con su PR #19) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, y el corte 2 fusionado en `develop` con su PR #19) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-18 10:20 (Lima) · docs/001-t074 · Contraseña de coordinacion en develop y cierre de T074
+- Quién: Jefferson asigna en su terminal la contraseña de coordinacion en la rama `develop` con `ABET_SIS_MED/herramientas_neon/asignar_claves.py --rama develop` y autoriza en el chat abrir este PR («Sí, ábrelo»). Claude Code comprueba la credencial en solo lectura desde el Windows y escribe el cambio. No participan subagentes.
+- Qué cambió: en Neon, la rama `develop` gana la credencial de coordinacion. En este repositorio, `tasks.md` de la spec 001 marca T074, `audit.md` la saca de las tareas abiertas y completa la fila de sus contraseñas, y esta memoria corrige el «Punto actual», que todavía daba por abierto el PR #28.
+- Por qué: T074 pide las contraseñas de los tres usuarios de prueba en cada rama de Neon, y en `develop` faltaba la de coordinacion.
+- Lo que debe hacer, cómo se probó: `asignar_claves.py` termina con «ok 1 contraseñas guardadas como hash Argon2id en la rama develop de Neon». Una consulta de solo lectura da en `develop` las credenciales de coordinacion (2026-11-18, 10:12), docente410 y docente411, y en la principal las tres del 2026-11-17, todas con hash Argon2id.
+- Lo que no debe hacer, cómo se probó: el primer intento se detiene sin conectarse a la base, porque las dos contraseñas que escribe Jefferson no coinciden, y la consulta que sigue no muestra ninguna credencial de coordinacion en `develop`. La contraseña no pasa por Claude Code.
+- Correcciones: el «Punto actual» daba el PR #28 como abierto y a la espera de la CI, y el corte 2 ya está fusionado en los dos repositorios (PR #28 del Back y #19 del Front, el 2026-11-18).
+- Cómo se reporta: esta entrada, `tasks.md`, `audit.md`, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: la prueba de humo del corte 2 contra la vista previa de `develop` (T099) y los cuatro escenarios pendientes de US-17.
 
 ### 2026-11-18 07:35 (Lima) · feat/001-corte-2 · Actualización con develop tras el cierre de la spec 003
 - Quién: la sesión principal de Jefferson avisa que `docs/003-cierre` ya está en `develop` (3334c5c, PR #26), con Jefferson de acuerdo. Claude Code, en la sesión lateral del corte 2 y sin subagentes, fusiona `develop` en esta rama, resuelve los choques, corre la suite y escribe esta entrada.

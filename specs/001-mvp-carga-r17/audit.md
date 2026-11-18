@@ -525,7 +525,7 @@ La spec aplica un valor provisional a cada una, y el R-17 sale con la franja PRO
 
 ### Tareas abiertas de Neon, despliegue y de Jefferson
 
-Salen de `tasks.md` del 2026-11-17 y se acortan a una línea. T062 es la verificación a mano de la sección anterior.
+Salen de `tasks.md` del 2026-11-18 y se acortan a una línea. T062 es la verificación a mano de la sección anterior.
 
 | Tarea | Dónde | Descripción |
 | --- | --- | --- |
@@ -533,7 +533,6 @@ Salen de `tasks.md` del 2026-11-17 y se acortan a una línea. T062 es la verific
 | T018 | Jefferson | Comprar el dominio y abrir la cuenta de Resend (J-04) para que el registro del dominio se propague antes del corte 2; de ella dependen T083, T086 y los escenarios de US-20 |
 | T022 | Jefferson | Fusionar `preparacion-neon` (4ff1952) en `main` de `ABET_ULIMA`, aprobar el traslado y archivar el repositorio en solo lectura cuando termine T023 |
 | T070 | Jefferson | Apagar el entrenamiento de IA del equipo de Vercel, que sigue con `dataSharingConsent` en `granted`, y enviar la consulta a soporte de J-07 |
-| T074 | Jefferson | Asignar la contraseña de coordinacion en la rama `develop`, la única de los tres usuarios que falta |
 
 ### Despliegue
 
@@ -550,7 +549,7 @@ La versión 0.1.0 llega a Production el 2026-11-17 en los dos proyectos de Verce
 | Variables de Production | `vercel env ls production --project abet-ulima-back` | `DATABASE_URL`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, de tipo Secret |
 | `.env.example` sin valores | `tests/test_env_example.py` en `fix/001-env-example-sin-valores` y otra vez `vercel env ls production --project abet-ulima-back`, a las 21:12 de Lima | `.env.example` nombra las cinco variables sin valor y deja el valor del piloto de las tres que no son secretas en su comentario. Una copia tal cual no arranca la API, porque le falta `PERIODO_VIGENTE`, y deja la guardia encendida, ya que solo el valor 0 la apaga. Las cinco siguen en Production, de tipo Secret y ocultas |
 | Secretos fuera de los repositorios | Búsqueda en `git log -p --all` de las cinco claves de `bd/.env.neon` y de la clave de `abet_app` codificada como en `DATABASE_URL` | 0 apariciones en los 63 commits del Back y en los 48 del Front, y `scripts/preflight.sh` sin fallas en los dos |
-| Contraseñas de T074 | `herramientas_neon/asignar_claves.py`, que pide cada contraseña en la terminal de Jefferson y manda al Windows solo el hash | La principal guarda las credenciales de docente410, docente411 y coordinacion, con hash Argon2id, del 2026-11-17 a las 17:36; `develop` guarda las de docente410 y docente411 |
+| Contraseñas de T074 | `herramientas_neon/asignar_claves.py`, que pide cada contraseña en la terminal de Jefferson y manda al Windows solo el hash | La principal guarda las credenciales de docente410, docente411 y coordinacion, con hash Argon2id, del 2026-11-17 a las 17:36; `develop` guarda las de docente410 y docente411, y desde el 2026-11-18 también la de coordinacion |
 | Ingreso en Production | `herramientas_neon/e2e_version/produccion.spec.ts` contra `https://abet-ulima-front.vercel.app`, sin la clave de omisión, con docente410 en P1 | `POST /api/sesion` 200 desde el origen del Front, con `abet_sesion` HttpOnly, Secure, SameSite=Lax, Path=/ y Max-Age 43200, sin Domain y guardada solo para `abet-ulima-front.vercel.app`. `GET /api/sesion` da 200 con el rol PROFESOR, localStorage y sessionStorage no tienen ningún valor y `document.cookie` no muestra `abet_sesion`. P2 muestra la 410 sin carga, sin subir nada, y «Salir» da 204 y después 401 |
 | Pooler y rol `abet_app` | 20 `GET /api/secciones?periodo=2026-2` seguidas con la sesión de coordinacion, en la misma prueba | 20 respuestas 200 con la 410 y la 411. Los 30 registros de la función de esa corrida, entre las 22:35 y las 22:38 UTC, son de nivel info, sin ningún «prepared statement» ni una subida, y `pg_stat_activity` de la rama principal muestra la conexión de `abet_app` desde `pgbouncer` |
 | Rama de Neon de cada entorno | Consultas de solo lectura desde el Windows, después de la prueba de Production | La principal gana solo las 2 sesiones de la prueba, de docente410 y coordinacion, ya cerradas, y sigue con 0 cargas y 0 archivos; `develop` gana solo la sesión de la vista previa |
