@@ -370,6 +370,16 @@ def _pi_vacio(ctx: Escenario, nombre: str, pi: str, f: str) -> tuple[bytes, str]
     return _con_celda(ctx, nombre, f, pi, None), nombre
 
 
+def _pi_vacio_en_todas(ctx: Escenario, nombre: str, pi: str, n: str) -> tuple[bytes, str]:
+    """La columna del PI sin ningún nivel en las N filas de datos, y las demás columnas sin cambios (spec 004, T012)."""
+    export = _export(ctx, nombre)
+    assert len(export.filas) == int(n), f"el export trae {len(export.filas)} filas de datos y no {n}"
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in range(2, len(export.filas) + 2):
+        export = ctx.generador.con_celda(export, fila, pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
 def _columna_mas(ctx: Escenario, nombre: str, enc: str) -> tuple[bytes, str]:
     export = _export(ctx, nombre)
     return _a_bytes(ctx, nombre, ctx.generador.con_columna(export, enc, [3] * len(export.filas))), nombre
@@ -643,6 +653,7 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
     (r'con el Username (?P<v>vacío|[0-9]+) en la fila (?P<f>[0-9]+)', _celda_username),
     (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _celda_pi),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en la fila (?P<f>[0-9]+)', _pi_vacio),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en sus (?P<n>[0-9]+) filas', _pi_vacio_en_todas),
     (r'con una columna más "(?P<enc>[^"]+)"', _columna_mas),
     (r'con un (?P<v>-?[0-9]+) en la columna (?P<pi>[0-9]\.[0-9]) de las (?P<n>[0-9]+) filas de datos', _nivel_en_todas),
     (r'con la hoja renombrada "(?P<hoja>[^"]+)"(?: y el nombre "(?P<otro>[^"]+)")?', _hoja),

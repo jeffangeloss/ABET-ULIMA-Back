@@ -4,7 +4,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 
 ## Contexto actual
 
-- Estado al 2026-11-18. La spec `004-reportes-docente` (EP-04, US-37 a US-44, D-32 a D-34 y J-21 a J-28) agrega la ruta `GET /api/resultados` y la pantalla P6 «Mis logros por SO» (propuesta), con los logros del profesor por resultado del estudiante (student outcome, SO) solo en sus secciones y con las mismas cifras del R-17, sin migración. Jefferson la aprueba en el chat el 2026-11-18 («Sí, apruébala»), y entra a `develop` con el PR de la rama `docs/004-reportes-docente`.
+- Estado al 2026-11-18. La spec `004-reportes-docente` (EP-04, US-37 a US-44, D-32 a D-34 y J-21 a J-28) agrega la ruta `GET /api/resultados` y la pantalla P6 «Mis logros por SO» (propuesta), con los logros del profesor por resultado del estudiante (student outcome, SO) solo en sus secciones y con las mismas cifras del R-17, sin migración. Jefferson la aprueba en el chat el 2026-11-18 («Sí, apruébala»), entra a `develop` con el PR #27 de la rama `docs/004-reportes-docente` y se construye en la rama `feat/004-reportes-docente` del Back y del Front, que abre la spec viva `resultados` (BR-RESULTADOS-01 a BR-RESULTADOS-11) y suma BR-ACCESO-10.
 - Estado al 2026-11-09. La spec `003-exports-blackboard` (EP-03, US-26 a US-36) amplía la carga a los tres formatos del export real de Blackboard, `.xlsx`, `.csv` y `.xls` de texto, y a los encabezados «ABET SO5.1 [», con la migración nueva V1_10. Jefferson la aprueba en el chat el mismo día, y su implementación avanza en la rama `feat/003-exports-blackboard` del Back y del Front.
 - Estado al 2026-10-28. `develop` no tiene código de producto. Jefferson aprueba la spec `001-mvp-carga-r17` en el chat el mismo día, y `MEMORIA.md` registra la aprobación. La aprobación formal que pide el Principio V de la constitución es la fusión (merge) en `develop` del PR de la spec desde la rama `docs/plan-mvp` (T004), que espera el permiso de Jefferson. Mientras tanto, el corte 1 avanza en local en la rama `feat/001-mvp-carga-r17`.
 - Solo datos inventados (códigos de estudiante de 99000000 a 99999999) en este repositorio, en Neon y en Vercel, hasta que la universidad autorice los reales (D-10). Ningún nombre de estudiante se guarda ni se muestra, y ningún rechazo guarda el valor leído de una celda.
@@ -47,11 +47,12 @@ ABET-ULIMA-Back/
     carga.py                        cargar(bytes, seccion_id, ...) en una sola transacción
     r17.py                          R-17 desde v_r17_por_pi con valores calculados
     constancia.py                   constancia en JSON y hoja «Constancia»
+    resultados.py                   regla de la meta y conversión de cifras de la ruta 12 (spec 004)
   app/                              API FastAPI con prefijo /api
     main.py
     sesion.py                       cookie abet_sesion, Argon2id, límite de intentos
     permisos.py                     dueño único de la regla de visibilidad
-    rutas/                          sesion, secciones y cargas
+    rutas/                          sesion, secciones, cargas y resultados (spec 004)
   plantillas/R017_ambiental_general.xlsx   copia vaciada de la hoja «Cursos de Carrera», sin #REF!
   tests/
     unit/
@@ -77,8 +78,8 @@ La épica EP-01 vive en `001-mvp-carga-r17/`, y su fase 1 de contrato ya escribe
 | --- | --- | --- | --- | --- |
 | `carga-export` | BR-CARGA-01 a BR-CARGA-20, con los bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17 | US-07 a US-14, US-18, US-19, US-21 y US-26 a US-36 | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
 | `r17` | BR-R17-01 a BR-R17-10 | US-15 y US-16 | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
-| `acceso` | BR-ACCESO-01 a BR-ACCESO-09 | US-04, US-05, US-06 y US-20 | `app/sesion.py`, `app/permisos.py`, `app/rutas/sesion.py`, `scripts/asignar_clave.py` y `db/migration/V1_09__crear_acceso.sql` | en revisión |
+| `acceso` | BR-ACCESO-01 a BR-ACCESO-10 | US-04, US-05, US-06, US-20 y US-38 (spec 004) | `app/sesion.py`, `app/permisos.py`, `app/rutas/*.py`, `scripts/asignar_clave.py` y `db/migration/V1_09__crear_acceso.sql` | en revisión |
 | `periodo` | BR-PERIODO-01 a BR-PERIODO-04 | US-03 y el listado de US-06 | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |
-| `resultados` (spec 004, por escribir en T010) | BR-RESULTADOS-NN (propuesta) | US-37 a US-44 de `004-reportes-docente/`, con BR-ACCESO-10 y bloques nuevos en `acceso`, `r17` y `periodo` | `app/rutas/resultados.py` y `abet_carga/resultados.py` (propuesta) | propuesta, spec 004 en revisión |
+| `resultados` (spec 004) | BR-RESULTADOS-01 a BR-RESULTADOS-11 | US-37 a US-44 de `004-reportes-docente/`, con BR-ACCESO-10 y cambios fechados en `acceso`, `r17` y `periodo` | `app/rutas/resultados.py`, `abet_carga/resultados.py`, `abet_carga/r17.py`, `app/permisos.py`, `db/migration/R__vista_r17_por_pi.sql` y `db/plataforma/neon/revisar_permisos_resultados.sql` | contrato listo (spec 004 aprobada, fase 1 en `feat/004-reportes-docente`) |
 
 US-01, US-02 y US-17 son de plataforma (migración en Neon, rol `abet_app` y despliegue en Vercel), no abren una spec viva y se verifican en `001-mvp-carga-r17/audit.md`.

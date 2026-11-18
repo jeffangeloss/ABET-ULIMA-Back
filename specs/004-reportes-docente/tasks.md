@@ -1,6 +1,6 @@
 # Tasks: Los logros del profesor por SO, solo en sus secciones
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), y Jefferson aprueba la spec en el chat (T004), así que la fase 1 puede empezar
+**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), Jefferson aprueba la spec en el chat (T004) y la construcción avanza en `feat/004-reportes-docente` del Back y del Front
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001 y 003. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Neon]` es la base en la nube, siempre desde el Windows de Jefferson por Tailscale, y `[Jefferson]` marca lo que solo puede hacer él. Ninguna credencial pasa por un agente. Al final, cada tarea lleva las historias que habilita o audita. La estimación de cada fase llega con la aprobación, así que esta lista no promete ninguna fecha.
 
@@ -14,9 +14,9 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 1: Contrato
 
-- [ ] T010 [Back] Escribir `specs/features/resultados/resultados.spec.md` con BR-RESULTADOS-01 a BR-RESULTADOS-NN, sumar BR-ACCESO-10 y la ruta 12 a BR-ACCESO-07 y BR-ACCESO-08, y dejar bloques fechados en BR-R17-02, BR-PERIODO-01 y BR-PERIODO-04 y la fila `resultados` en `specs/README.md` [US-37..US-44]
+- [x] T010 [Back] Escribir `specs/features/resultados/resultados.spec.md` con BR-RESULTADOS-01 a BR-RESULTADOS-NN, sumar BR-ACCESO-10 y la ruta 12 a BR-ACCESO-07 y BR-ACCESO-08, y dejar bloques fechados en BR-R17-02, BR-PERIODO-01 y BR-PERIODO-04 y la fila `resultados` en `specs/README.md` [US-37..US-44] · 2026-11-18, BR-RESULTADOS-01 a BR-RESULTADOS-11 en `feat/004-reportes-docente`
 - [ ] T011 [Front] Pasar a definitivos la ruta 12 en `docs/03-api/contrato.md` (tabla de rutas, su sección, la sección 3.4, la cuenta de caminos de OpenAPI y la carpeta de la spec 004 en la comprobación de mensajes de la sección 10), `docs/specs/api-contracts.md`, `docs/01-arquitectura/frontend.md`, `docs/specs/feature-index.md` y ADR-008 [US-37..US-44]
-- [ ] T012 [Back] Dejar definitivos los dos `.feature` con el analizador de pytest-bdd y sumar a `REGLAS_DE_COPIA` de `tests/aceptacion/pasos/conftest.py` la regla «con la columna X.Y vacía en sus N filas», con su prueba [US-39]
+- [x] T012 [Back] Dejar definitivos los dos `.feature` con el analizador de pytest-bdd y sumar a `REGLAS_DE_COPIA` de `tests/aceptacion/pasos/conftest.py` la regla «con la columna X.Y vacía en sus N filas», con su prueba [US-39] · 2026-11-18, con `test_lectura_gherkin_es.py` y `test_reglas_de_copia.py`
 
 ## Phase 2: Base
 
