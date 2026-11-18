@@ -50,9 +50,8 @@ CONTEXTO_410 = ContextoSeccion(periodo="2026-2", curso_codigo="450002", seccion_
 MENSAJE_GUARDIA_FILA_4 = (
     "El piloto solo admite códigos inventados, de 99000000 a 99999999. Revise la fila 4. No se guardó nada."
 )
-MENSAJE_SIN_SECCION = (
-    "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
-)
+# Corte 2 (US-21, BR-CARGA-18): el 422 pregunta por la sección elegida en lugar de detener el archivo.
+MENSAJE_SIN_SECCION = "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"
 
 AVISO_5_3 = Rechazo(Motivo.PUNTAJE_MAXIMO_DISTINTO, Efecto.AVISO, None, "5.3")
 
@@ -906,3 +905,59 @@ def test_br_carga_16_spec003_un_nivel_fuera_del_plan_no_cuenta_como_calificacion
     filas = (_fila("99000001", "", "", "4"), _fila("99000002", "", "", "3"))
     validacion = validar(_csv(filas), contexto)
     assert validacion.rechazo_de_carga == _de_carga(Motivo.SIN_CALIFICACIONES)
+
+
+# BR-CARGA-18 (corte 2): confirmación de la sección que el archivo no declara.
+
+AVISO_SIN_SECCION = Rechazo(Motivo.SECCION_SIN_DECLARAR, Efecto.AVISO, None, None)
+
+
+def test_br_carga_18_la_pregunta_nombra_la_seccion_la_asignatura_y_el_periodo_elegidos() -> None:
+    otra = ContextoSeccion(periodo="2026-1", curso_codigo="450010", seccion_codigo="412", plan=PLAN)
+    with pytest.raises(SeccionSinDeclarar) as error:
+        validar(_leido(HOJA1, "notas.xlsx"), otra)
+    assert error.value.mensaje == "El archivo no indica su sección. ¿Confirma que es de la sección 412 de 450010 en 2026-1?"
+
+
+def test_br_carga_18_la_seccion_confirmada_valida_el_archivo_y_deja_el_aviso() -> None:
+    validacion = validar(_leido(HOJA1, "notas.xlsx"), CONTEXTO_410, confirmar_seccion=True)
+
+    assert validacion.rechazo_de_carga is None
+    assert _cuentas(validacion) == (11, 11, 0)
+    assert validacion.avisos.count(AVISO_SIN_SECCION) == 1
+    # El aviso de la sección va después de los avisos de las columnas y no tiene fila ni PI.
+    assert validacion.avisos[-1] == AVISO_SIN_SECCION
+    assert AVISO_5_3 in validacion.avisos
+
+
+def test_br_carga_18_spec003_un_texto_confirmado_tambien_deja_el_aviso() -> None:
+    validacion = validar(_csv(FILAS_CSV, "notas 410.csv"), CONTEXTO_410, confirmar_seccion=True)
+    assert validacion.rechazo_de_carga is None
+    assert validacion.avisos == (AVISO_SIN_SECCION,)
+
+
+def test_br_carga_18_la_confirmacion_no_pasa_por_encima_de_una_seccion_declarada_distinta() -> None:
+    validacion = validar(_leido(EXPORT_411), CONTEXTO_410, confirmar_seccion=True)
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.SECCION_NO_COINCIDE)
+    assert validacion.avisos == ()
+
+
+def test_br_carga_18_en_un_archivo_que_declara_su_seccion_la_confirmacion_no_deja_aviso() -> None:
+    confirmada = validar(_leido(CORRECTO), CONTEXTO_410, confirmar_seccion=True)
+    assert confirmada == validar(_leido(CORRECTO), CONTEXTO_410)
+    assert AVISO_SIN_SECCION not in confirmada.avisos
+
+
+def test_br_carga_18_13_una_carga_confirmada_rechazada_por_su_estructura_no_guarda_el_aviso(
+    generador: ModuleType, tmp_path: Path
+) -> None:
+    export = generador.con_hoja(generador.sin_columnas(_export(generador), "5.2"), "Hoja1")
+    validacion = validar(_libro(generador, export, tmp_path, nombre_archivo="notas.xlsx"), CONTEXTO_410,
+                         confirmar_seccion=True)
+    assert validacion.rechazo_de_carga == _de_carga(Motivo.PI_DEL_PLAN_AUSENTE, "5.2")
+    assert validacion.avisos == ()
+
+
+def test_br_carga_18_sin_confirmar_la_seccion_el_archivo_sigue_detenido() -> None:
+    with pytest.raises(SeccionSinDeclarar):
+        validar(_leido(HOJA1, "notas.xlsx"), CONTEXTO_410, confirmar_seccion=False)

@@ -26,10 +26,13 @@ Orden de cargar(), el de BR-CARGA-03.
 5. La guardia de códigos inventados, encendida salvo con GUARDIA_DATOS_INVENTADOS=0 (BR-CARGA-07). Un
    código fuera de 99000000 a 99999999 da 422 sin rastro, antes de buscar la huella en la base.
 6. Ya en la transacción de la carga, la huella en abet.archivo_origen. PUBLICADA en la sección da 200
-   con esa carga, y PUBLICADA en otra sección da 409 sin el carga_id ni la sección ajena (BR-CARGA-09).
-7. Otra carga PUBLICADA en la sección, que da 409 con el número de la sección (BR-CARGA-10).
-8. La sección que ni la hoja ni el nombre del archivo declaran, que da 422 sin rastro en el corte 1
-   (BR-CARGA-11).
+   con esa carga, y en un reemplazo, el 200 del mismo archivo con su aviso (BR-CARGA-19). PUBLICADA en
+   otra sección da 409 sin el carga_id ni la sección ajena (BR-CARGA-09).
+7. Otra carga PUBLICADA en la sección, que da 409 con el número de la sección y, para la pantalla, el
+   carga_id de la publicada (BR-CARGA-10). En un reemplazo, en cambio, la carga que nombra reemplaza
+   debe ser la PUBLICADA de la sección, y si no lo es da 409 sin decir si esa carga existe (BR-CARGA-19).
+8. La sección que ni la hoja ni el nombre del archivo declaran, que da 422 sin rastro con la pregunta
+   por la sección elegida, salvo con confirmar_seccion verdadero (BR-CARGA-18).
 9. La validación en memoria de validacion.validar() y las escrituras de BR-CARGA-11 a BR-CARGA-16.
 
 Las escrituras del paso 9 empiezan por archivo_origen, salvo que la huella ya esté registrada, y por
@@ -49,7 +52,17 @@ con el SQLSTATE, el código de cinco caracteres con que PostgreSQL identifica el
 la restricción, nunca con el DETAIL, que repite la fila (BR-CARGA-02 y BR-CARGA-08). La subida que
 llega segunda a uq_archivo_origen_sha256, uq_carga_publicada_por_seccion o uq_carga_archivo_util se
 deshace y repite una sola vez los pasos 6 a 9, que ya ven lo que confirmó la otra y responden su 200
-o su 409 (BR-CARGA-09 y BR-CARGA-10).
+o su 409 (BR-CARGA-09 y BR-CARGA-10). Un reemplazo que llega segundo choca igual con uq_carga_reemplaza,
+porque las dos cargas nuevas nombran a la misma anterior, y su segunda vuelta responde el 409 de la carga
+que ya no es la publicada o el 200 del mismo archivo (BR-CARGA-19).
+
+Reemplazo (corte 2, BR-CARGA-19). Con reemplaza, la carga nueva entra EN_CURSO con reemplaza_carga_id
+igual a la anterior solo si la validación en memoria la deja publicable, y entonces, antes de cerrarla
+PUBLICADA, un UPDATE pasa la anterior a REEMPLAZADA en la misma transacción, con el único UPDATE que el
+rol de la aplicación tiene en carga. Una carga nueva RECHAZADA deja reemplaza_carga_id nulo desde el
+INSERT y no toca la anterior, porque uq_carga_reemplaza bloquearía el siguiente reemplazo válido. Un
+archivo que no se abre en un reemplazo responde «No se pudo abrir el archivo. La carga publicada no
+cambió.», y los demás 422 conservan su texto.
 
 La conexión llega sin una transacción abierta, porque cargar() abre y confirma las suyas, y cargar()
 le fija prepare_threshold=None, porque el agrupador de conexiones de Neon (pooler) no admite
@@ -86,6 +99,7 @@ from abet_carga.lector import huella, leer
 from abet_carga.modelos import (
     ArchivoIlegible,
     CodigoNoInventado,
+    MotivoIlegible,
     ColumnaDelPlan,
     ContextoSeccion,
     Efecto,
@@ -128,7 +142,9 @@ WHERE ao.sha256 = %s
 """
 _PUBLICADA_EN_LA_SECCION = "SELECT carga_id FROM abet.carga WHERE seccion_id = %s AND estado = 'PUBLICADA'"
 # Índices únicos con que choca la subida que llega segunda cuando otra confirma antes (BR-CARGA-09 y BR-CARGA-10).
-_CARRERAS = frozenset({"uq_archivo_origen_sha256", "uq_carga_publicada_por_seccion", "uq_carga_archivo_util"})
+_CARRERAS = frozenset({
+    "uq_archivo_origen_sha256", "uq_carga_publicada_por_seccion", "uq_carga_archivo_util", "uq_carga_reemplaza",
+})
 _ARCHIVO = """
 INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)
 VALUES (%s, %s, %s, %s)
@@ -136,10 +152,12 @@ RETURNING archivo_id
 """
 _CARGA = """
 INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version,
-                        subida_por)
-VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        subida_por, reemplaza_carga_id)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 RETURNING carga_id
 """
+# La anterior pasa a REEMPLAZADA antes de que la nueva se publique, en la misma transacción (BR-CARGA-19).
+_REEMPLAZADA = "UPDATE abet.carga SET estado = 'REEMPLAZADA' WHERE carga_id = %s"
 _COLUMNA = """
 INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
                                 pi_codigo, posicion, encabezado, bb_columna_id, puntaje_maximo_declarado)
@@ -196,16 +214,20 @@ class Resultado(StrEnum):
     """Resultado de cargar(), con el código HTTP que le asigna el contrato en ResultadoCarga.codigo_http.
 
     PUBLICADA y RECHAZADA son cargas nuevas (201), y YA_PUBLICADA es la carga del mismo archivo en la
-    sección (200). EN_OTRA_SECCION y SECCION_CON_CARGA son los 409 de BR-CARGA-09 y BR-CARGA-10, y
-    SECCION_INEXISTENTE es el 404 (propuesta). SIN_PLAN, ILEGIBLE, GUARDIA y SECCION_SIN_DECLARAR son
-    los 422 sin rastro, y FALLA es el 500 con la transacción deshecha.
+    sección (200), como MISMO_ARCHIVO, su par en un reemplazo, que suma el aviso (BR-CARGA-19).
+    EN_OTRA_SECCION y SECCION_CON_CARGA son los 409 de BR-CARGA-09 y BR-CARGA-10, NO_ES_LA_PUBLICADA es
+    el 409 del reemplazo de una carga que no es la publicada (BR-CARGA-19) y SECCION_INEXISTENTE es el
+    404 (propuesta). SIN_PLAN, ILEGIBLE, GUARDIA y SECCION_SIN_DECLARAR son los 422 sin rastro, y FALLA
+    es el 500 con la transacción deshecha.
     """
 
     PUBLICADA = "PUBLICADA"
     RECHAZADA = "RECHAZADA"
     YA_PUBLICADA = "YA_PUBLICADA"
+    MISMO_ARCHIVO = "MISMO_ARCHIVO"
     EN_OTRA_SECCION = "EN_OTRA_SECCION"
     SECCION_CON_CARGA = "SECCION_CON_CARGA"
+    NO_ES_LA_PUBLICADA = "NO_ES_LA_PUBLICADA"
     SECCION_INEXISTENTE = "SECCION_INEXISTENTE"
     SIN_PLAN = "SIN_PLAN"
     ILEGIBLE = "ILEGIBLE"
@@ -218,8 +240,10 @@ _CODIGO_HTTP = {
     Resultado.PUBLICADA: 201,
     Resultado.RECHAZADA: 201,
     Resultado.YA_PUBLICADA: 200,
+    Resultado.MISMO_ARCHIVO: 200,
     Resultado.EN_OTRA_SECCION: 409,
     Resultado.SECCION_CON_CARGA: 409,
+    Resultado.NO_ES_LA_PUBLICADA: 409,
     Resultado.SECCION_INEXISTENTE: 404,
     Resultado.SIN_PLAN: 422,
     Resultado.ILEGIBLE: 422,
@@ -232,6 +256,10 @@ _CODIGO_HTTP = {
 _FALLA = "La carga no se completó y no se guardó ningún dato. Intente de nuevo."
 _EN_OTRA_SECCION = "Este archivo ya está publicado en otra sección. No se cargó."
 _SECCION_CON_CARGA = "La sección {seccion} ya tiene una carga publicada. No se cargó el archivo."
+# Mensajes del reemplazo (corte 2, BR-CARGA-19). El de la carga que no es la publicada y el aviso son (propuesta).
+_NO_ES_LA_PUBLICADA = "La carga que pide reemplazar no es la publicada de la sección {seccion}. No se cargó el archivo."
+_MISMO_ARCHIVO = "Es el mismo archivo de la carga publicada. No se reemplazó."
+_NO_ABRE_EN_UN_REEMPLAZO = "No se pudo abrir el archivo. La carga publicada no cambió."
 _SECCION_INEXISTENTE = "La sección no existe."
 _SIN_PLAN = "La carrera aún no registra el plan de medición de esta sección."
 _NINGUNA_FILA_ACEPTADA = "Ninguna fila se pudo aceptar. La carga no se publicó."
@@ -254,7 +282,9 @@ class ResultadoCarga:
     """Resultado de cargar(), con el mensaje del contrato y el carga_id cuando la carga existe.
 
     mensaje es el detail de un error o el mensaje de una carga RECHAZADA, y queda en None en una carga
-    PUBLICADA o YA_PUBLICADA. sha256, motivo, el nombre del MotivoIlegible, y detalle, el nombre del
+    PUBLICADA o YA_PUBLICADA. aviso es el texto del 200 del mismo archivo en un reemplazo, y
+    carga_publicada el carga_id de la carga publicada de la sección en el 409 de SECCION_CON_CARGA, que la
+    pantalla usa para ofrecer el reemplazo (corte 2). sha256, motivo, el nombre del MotivoIlegible, y detalle, el nombre del
     DetalleIlegible o None (spec 003), van al registro de un archivo detenido, y sqlstate y restriccion
     al de una falla (BR-CARGA-08). Ninguno de esos cinco va al cuerpo de la respuesta, y ninguno trae el
     DETAIL de PostgreSQL ni un valor leído.
@@ -263,6 +293,8 @@ class ResultadoCarga:
     resultado: Resultado
     mensaje: str | None = None
     carga_id: int | None = None
+    aviso: str | None = None
+    carga_publicada: int | None = None
     sha256: str | None = None
     motivo: str | None = None
     detalle: str | None = None
@@ -273,6 +305,11 @@ class ResultadoCarga:
     def codigo_http(self) -> int:
         """Código HTTP que el contrato asigna al resultado."""
         return _CODIGO_HTTP[self.resultado]
+
+    @property
+    def requiere_confirmacion(self) -> bool:
+        """Si el 422 espera que el profesor confirme la sección elegida (BR-CARGA-18)."""
+        return self.resultado is Resultado.SECCION_SIN_DECLARAR
 
 
 @dataclass(frozen=True)
@@ -296,20 +333,25 @@ def cargar(
     seccion_id: int,
     usuario_id: int,
     configuracion: Configuracion | None = None,
+    reemplaza: int | None = None,
+    confirmar_seccion: bool = False,
 ) -> ResultadoCarga:
     """Carga el export en la sección elegida en una sola transacción y devuelve su resultado.
 
     contenido son los bytes recibidos, nombre_archivo el nombre que envía el navegador, con o sin
-    ruta, y usuario_id quien sube, que queda en carga.subida_por. Lanza ValueError si la conexión trae
-    una transacción abierta y ConfiguracionInvalida si el conjunto de reglas no existe. Los demás
+    ruta, y usuario_id quien sube, que queda en carga.subida_por. reemplaza es el carga_id de la carga
+    PUBLICADA que la nueva reemplaza (BR-CARGA-19), y confirmar_seccion confirma la sección elegida de
+    un archivo que no la declara (BR-CARGA-18), los dos del corte 2. Lanza ValueError si la conexión
+    trae una transacción abierta y ConfiguracionInvalida si el conjunto de reglas no existe. Los demás
     casos, también una falla de la base, vuelven como ResultadoCarga.
     """
     configuracion = Configuracion.desde_entorno() if configuracion is None else configuracion
     if conexion.info.transaction_status != pq.TransactionStatus.IDLE:
         raise ValueError("cargar() necesita una conexión sin una transacción abierta, porque abre y confirma la suya.")
     conexion.prepare_threshold = None
+    pedido = _Pedido(usuario_id=usuario_id, reemplaza=reemplaza, confirmar_seccion=confirmar_seccion)
     try:
-        return _cargar(conexion, contenido, nombre_archivo, seccion_id, usuario_id, configuracion)
+        return _cargar(conexion, contenido, nombre_archivo, seccion_id, pedido, configuracion)
     except psycopg.Error as error:
         return ResultadoCarga(Resultado.FALLA, _FALLA, sqlstate=error.sqlstate, restriccion=error.diag.constraint_name)
 
@@ -336,12 +378,21 @@ def mensaje_de_carga_rechazada(
     return _OTRA_SECCION.format(declarada=declarada.seccion_codigo, elegida=contexto.seccion_codigo)
 
 
+@dataclass(frozen=True)
+class _Pedido:
+    """Quién sube y lo que pide la subida en el corte 2, el reemplazo y la confirmación de la sección."""
+
+    usuario_id: int
+    reemplaza: int | None = None
+    confirmar_seccion: bool = False
+
+
 def _cargar(
     conexion: Connection[Any],
     contenido: bytes,
     nombre_archivo: str,
     seccion_id: int,
-    usuario_id: int,
+    pedido: _Pedido,
     configuracion: Configuracion,
 ) -> ResultadoCarga:
     """Pasos 1 a 9 de BR-CARGA-03, con una segunda vuelta para la subida que llega segunda."""
@@ -356,22 +407,23 @@ def _cargar(
             guardia(libro)
     except ArchivoIlegible as error:
         detalle = error.detalle.name if error.detalle is not None else None
-        return ResultadoCarga(
-            Resultado.ILEGIBLE, error.mensaje, sha256=sha256, motivo=error.motivo.name, detalle=detalle
-        )
+        mensaje = error.mensaje
+        if pedido.reemplaza is not None and error.motivo is MotivoIlegible.NO_SE_PUDO_ABRIR:
+            mensaje = _NO_ABRE_EN_UN_REEMPLAZO
+        return ResultadoCarga(Resultado.ILEGIBLE, mensaje, sha256=sha256, motivo=error.motivo.name, detalle=detalle)
     except CodigoNoInventado as error:
         return ResultadoCarga(Resultado.GUARDIA, error.mensaje, sha256=sha256)
     # La validación coteja el mismo nombre que se guarda, así que la constancia dice lo mismo después.
     libro = replace(libro, nombre_archivo=libro.nombre_archivo[:LARGO_NOMBRE])
     try:
         with conexion.transaction():
-            return _registrar(conexion, libro, sha256, seccion, usuario_id)
+            return _registrar(conexion, libro, sha256, seccion, pedido)
     except errors.UniqueViolation as error:
         if error.diag.constraint_name not in _CARRERAS:
             raise
     # Otra subida confirmó primero, y la segunda vuelta ve lo que dejó y responde como si llegara después.
     with conexion.transaction():
-        return _registrar(conexion, libro, sha256, seccion, usuario_id)
+        return _registrar(conexion, libro, sha256, seccion, pedido)
 
 
 def _seccion(conexion: Connection[Any], seccion_id: int, conjunto_reglas: str) -> _Seccion | ResultadoCarga:
@@ -405,26 +457,34 @@ def _seccion(conexion: Connection[Any], seccion_id: int, conjunto_reglas: str) -
 
 
 def _registrar(
-    conexion: Connection[Any], libro: LibroLeido, sha256: str, seccion: _Seccion, usuario_id: int
+    conexion: Connection[Any], libro: LibroLeido, sha256: str, seccion: _Seccion, pedido: _Pedido
 ) -> ResultadoCarga:
     """Pasos 6 a 9 de BR-CARGA-03, dentro de la transacción de la carga."""
     with conexion.cursor(row_factory=namedtuple_row) as cursor:
         registrado = cursor.execute(_REGISTRADO, (sha256,)).fetchone()
     if registrado is not None and registrado.publicada is not None:
-        if registrado.seccion_publicada == seccion.seccion_id:
+        if registrado.seccion_publicada != seccion.seccion_id:
+            return ResultadoCarga(Resultado.EN_OTRA_SECCION, _EN_OTRA_SECCION, sha256=sha256)
+        if pedido.reemplaza is None:
             return ResultadoCarga(Resultado.YA_PUBLICADA, carga_id=registrado.publicada, sha256=sha256)
-        return ResultadoCarga(Resultado.EN_OTRA_SECCION, _EN_OTRA_SECCION, sha256=sha256)
-    if conexion.execute(_PUBLICADA_EN_LA_SECCION, (seccion.seccion_id,)).fetchone() is not None:
+        return ResultadoCarga(Resultado.MISMO_ARCHIVO, carga_id=registrado.publicada, aviso=_MISMO_ARCHIVO,
+                              sha256=sha256)
+    fila = conexion.execute(_PUBLICADA_EN_LA_SECCION, (seccion.seccion_id,)).fetchone()
+    publicada = int(fila[0]) if fila is not None else None
+    if pedido.reemplaza is None and publicada is not None:
         mensaje = _SECCION_CON_CARGA.format(seccion=seccion.contexto.seccion_codigo)
-        return ResultadoCarga(Resultado.SECCION_CON_CARGA, mensaje, sha256=sha256)
+        return ResultadoCarga(Resultado.SECCION_CON_CARGA, mensaje, carga_publicada=publicada, sha256=sha256)
+    if pedido.reemplaza is not None and pedido.reemplaza != publicada:
+        mensaje = _NO_ES_LA_PUBLICADA.format(seccion=seccion.contexto.seccion_codigo)
+        return ResultadoCarga(Resultado.NO_ES_LA_PUBLICADA, mensaje, sha256=sha256)
     if registrado is not None:
         libro = replace(libro, nombre_archivo=registrado.nombre_archivo)
     try:
-        validacion = validar(libro, seccion.contexto)
+        validacion = validar(libro, seccion.contexto, confirmar_seccion=pedido.confirmar_seccion)
     except SeccionSinDeclarar as error:
         return ResultadoCarga(Resultado.SECCION_SIN_DECLARAR, error.mensaje, sha256=sha256)
     archivo_id = registrado.archivo_id if registrado is not None else _insertar_archivo(conexion, sha256, libro)
-    return _escribir(conexion, libro, archivo_id, seccion, usuario_id, validacion)
+    return _escribir(conexion, libro, archivo_id, seccion, pedido, validacion)
 
 
 def _escribir(
@@ -432,11 +492,16 @@ def _escribir(
     libro: LibroLeido,
     archivo_id: int,
     seccion: _Seccion,
-    usuario_id: int,
+    pedido: _Pedido,
     validacion: Validacion,
 ) -> ResultadoCarga:
-    """Escribe la carga, sus columnas, rechazos, estudiantes, filas y mediciones, y la cierra (BR-CARGA-16)."""
-    carga_id = _insertar_carga(conexion, seccion, archivo_id, validacion.filas_de_datos, usuario_id)
+    """Escribe la carga, sus columnas, rechazos, estudiantes, filas y mediciones, y la cierra (BR-CARGA-16).
+
+    En un reemplazo, reemplaza_carga_id se fija en el INSERT solo si la carga se publica, y la anterior pasa a
+    REEMPLAZADA justo antes de publicar la nueva (BR-CARGA-19).
+    """
+    reemplaza = pedido.reemplaza if validacion.publicable else None
+    carga_id = _insertar_carga(conexion, seccion, archivo_id, validacion.filas_de_datos, pedido.usuario_id, reemplaza)
     rechazo = validacion.rechazo_de_carga
     if rechazo is not None:
         _insertar_rechazos(conexion, carga_id, (rechazo,), {}, seccion)
@@ -450,6 +515,8 @@ def _escribir(
         _cerrar(conexion, carga_id, Resultado.RECHAZADA, validacion)
         return ResultadoCarga(Resultado.RECHAZADA, mensaje_de_carga_rechazada(None, seccion.contexto, None), carga_id)
     _insertar_filas(conexion, carga_id, validacion.filas_aceptadas, columnas)
+    if reemplaza is not None:
+        conexion.execute(_REEMPLAZADA, (reemplaza,))
     _cerrar(conexion, carga_id, Resultado.PUBLICADA, validacion)
     return ResultadoCarga(Resultado.PUBLICADA, carga_id=carga_id)
 
@@ -466,7 +533,12 @@ def _insertar_archivo(conexion: Connection[Any], sha256: str, libro: LibroLeido)
 
 
 def _insertar_carga(
-    conexion: Connection[Any], seccion: _Seccion, archivo_id: int, filas_de_datos: int, usuario_id: int
+    conexion: Connection[Any],
+    seccion: _Seccion,
+    archivo_id: int,
+    filas_de_datos: int,
+    usuario_id: int,
+    reemplaza: int | None,
 ) -> int:
     parametros = (
         seccion.seccion_id,
@@ -476,6 +548,7 @@ def _insertar_carga(
         seccion.conjunto_reglas_id,
         abet_carga.__version__,
         usuario_id,
+        reemplaza,
     )
     return _insertar(conexion, _CARGA, parametros)
 

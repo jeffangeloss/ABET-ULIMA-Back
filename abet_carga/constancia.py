@@ -40,6 +40,16 @@ Lo que fija esta función, con lo que la spec viva o el contrato marcan como (pr
 6. hoja es archivo_origen.hoja tal como está, nula en un export de texto (spec 003, US-34). La
    constancia no la reemplaza por ningún texto, y es el R-17 el que muestra «Sin hoja (export de
    texto)» en su hoja «Constancia».
+7. Desde el corte 2, reemplaza_carga_id es la carga que esta reemplaza y reemplazada_por la que la
+   reemplaza, las dos nulas sin reemplazo (BR-CARGA-19). uq_carga_reemplaza deja a lo sumo una
+   sucesora, y una carga RECHAZADA nunca lo es, porque su reemplaza_carga_id queda nulo.
+
+resumenes(conexion, secciones) devuelve la lista de GET /api/cargas (BR-CARGA-20), una constancia
+resumida por carga de esas secciones, de la más reciente a la más antigua por iniciada_en y, a igual
+hora, por carga_id. Trae sha256_corto, los primeros 12 caracteres de la huella, en lugar de la huella
+completa, y motivo, el del RECHAZA_CARGA de una carga RECHAZADA, nulo en las demás y en la carga que
+no acepta ninguna fila (propuesta). La ruta decide antes con app/permisos.py qué secciones alcanza el
+usuario, así que esta función no filtra por alcance.
 
 Ningún elemento trae un campo valor ni valor_leido, porque la base no guarda el valor leído de una
 celda (BR-CARGA-17).
@@ -66,7 +76,8 @@ SELECT c.carga_id, c.estado, c.seccion_id, a.codigo AS asignatura, s.numero, pe.
        ao.nombre_archivo, ao.hoja, ao.sha256, ao.filas_de_datos, c.filas_leidas, c.filas_aceptadas,
        c.filas_rechazadas, c.conjunto_reglas_id, cr.version AS conjunto_reglas,
        cr.estado AS conjunto_reglas_estado, c.programa_version, u.correo AS subida_por,
-       c.iniciada_en, c.terminada_en
+       c.iniciada_en, c.terminada_en, c.reemplaza_carga_id,
+       (SELECT r.carga_id FROM abet.carga r WHERE r.reemplaza_carga_id = c.carga_id) AS reemplazada_por
 FROM abet.carga c
 JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
 JOIN abet.seccion s         ON s.seccion_id = c.seccion_id
@@ -109,6 +120,26 @@ LEFT JOIN abet.pi p             ON p.pi_id = rf.pi_id
 WHERE rf.carga_id = %s
 ORDER BY rf.fila_origen NULLS FIRST, coalesce(pc.so_numero, p.so_numero) NULLS LAST,
          coalesce(pc.numero, p.numero) NULLS LAST, rf.rechazo_id
+"""
+
+# Lista de GET /api/cargas (BR-CARGA-20), de la más reciente a la más antigua.
+_RESUMENES = """
+SELECT c.carga_id, c.estado, c.seccion_id, a.codigo AS asignatura, s.numero, pe.codigo AS periodo,
+       ao.nombre_archivo, left(ao.sha256, 12) AS sha256_corto, c.filas_leidas, c.filas_aceptadas,
+       c.filas_rechazadas,
+       (SELECT rf.motivo FROM abet.rechazo_fila rf
+        WHERE rf.carga_id = c.carga_id AND rf.efecto = 'RECHAZA_CARGA' ORDER BY rf.rechazo_id LIMIT 1) AS motivo,
+       c.reemplaza_carga_id,
+       (SELECT r.carga_id FROM abet.carga r WHERE r.reemplaza_carga_id = c.carga_id) AS reemplazada_por,
+       u.correo AS subida_por, c.iniciada_en, c.terminada_en
+FROM abet.carga c
+JOIN abet.archivo_origen ao ON ao.archivo_id = c.archivo_id
+JOIN abet.seccion s         ON s.seccion_id = c.seccion_id
+JOIN abet.asignatura a      ON a.asignatura_id = s.asignatura_id
+JOIN abet.periodo pe        ON pe.periodo_id = s.periodo_id
+LEFT JOIN acceso.usuario_autorizado u ON u.usuario_id = c.subida_por
+WHERE c.seccion_id = ANY(%s)
+ORDER BY c.iniciada_en DESC, c.carga_id DESC
 """
 
 _QUEDA_FUERA = "La fila completa queda fuera"
@@ -183,7 +214,35 @@ def armar(conexion: psycopg.Connection, carga_id: int) -> dict[str, Any]:
         "subida_por": carga["subida_por"],
         "iniciada_en": _hora(carga["iniciada_en"]),
         "terminada_en": _hora(carga["terminada_en"]),
+        "reemplaza_carga_id": carga["reemplaza_carga_id"],
+        "reemplazada_por": carga["reemplazada_por"],
     }
+
+
+def resumenes(conexion: psycopg.Connection, secciones: Sequence[int]) -> list[dict[str, Any]]:
+    """Constancias resumidas de las cargas de esas secciones, de la más reciente a la más antigua (BR-CARGA-20)."""
+    with conexion.cursor(row_factory=dict_row) as cursor:
+        filas = cursor.execute(_RESUMENES, (list(secciones),)).fetchall()
+    return [
+        {
+            "carga_id": fila["carga_id"],
+            "estado": fila["estado"],
+            "seccion": {"seccion_id": fila["seccion_id"], "asignatura": fila["asignatura"], "numero": fila["numero"],
+                        "periodo": fila["periodo"]},
+            "nombre_archivo": fila["nombre_archivo"],
+            "sha256_corto": fila["sha256_corto"],
+            "filas_leidas": fila["filas_leidas"],
+            "filas_aceptadas": fila["filas_aceptadas"],
+            "filas_rechazadas": fila["filas_rechazadas"],
+            "motivo": fila["motivo"],
+            "reemplaza_carga_id": fila["reemplaza_carga_id"],
+            "reemplazada_por": fila["reemplazada_por"],
+            "subida_por": fila["subida_por"],
+            "iniciada_en": _hora(fila["iniciada_en"]),
+            "terminada_en": _hora(fila["terminada_en"]),
+        }
+        for fila in filas
+    ]
 
 
 def lista(elementos: Sequence[str]) -> str:

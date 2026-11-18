@@ -4,7 +4,18 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+### Agregado
+
+- Reemplazo de la carga publicada de una sección con `POST /api/secciones/{seccion_id}/cargas?reemplaza={carga_id}`, para el profesor en su sección y el coordinador en cualquiera de la carrera (`app/permisos.puede_reemplazar()`, valor provisional de D-11). La carga nueva entra con `reemplaza_carga_id`, la anterior pasa a REEMPLAZADA en la misma transacción y nada se borra; un reemplazo RECHAZADO deja la anterior publicada y su `reemplaza_carga_id` nulo, el mismo archivo responde 200 con un aviso y una carga que no es la publicada responde 409 (US-18, BR-CARGA-19, T081).
+- `GET /api/cargas?seccion_id=` con la lista resumida de las cargas al alcance del usuario, de la más reciente a la más antigua, con `sha256_corto`, `motivo`, `reemplaza_carga_id` y `reemplazada_por`, y sin `seccion_id`, las de las secciones del periodo vigente (US-19, BR-CARGA-20, T082).
+- Confirmación de la sección de un export que no la declara, con un 422 que pregunta «¿Confirma que es de la sección 410 de 450002 en 2026-2?» y trae `requiere_confirmacion`. Con el campo `confirmar_seccion=true` la carga se publica con el AVISO SECCION_SIN_DECLARAR (US-21, BR-CARGA-18, T084).
+- La constancia suma `reemplaza_carga_id` y `reemplazada_por`, y el 409 de la sección con carga publicada suma `carga_publicada` (contrato del Front, secciones 3.1, 6 y 7).
+- Pasos de `reemplazo_y_cargas.feature` y de US-21 ejecutables con pytest-bdd, y pruebas unitarias del reemplazo, la confirmación, la lista y el alcance (T087).
+
 ### Cambiado
+
+- El export que no declara su sección en la hoja ni en el nombre recibe en los tres formatos la pregunta de US-21 en lugar del 422 del corte 1, el escenario del corte 1 que lo comprobaba sale de `carga.feature` y los dos de la spec 003 esperan la pregunta (D-02).
+- Los escenarios de US-20 siguen omitidos, ahora con la razón de T018, el dominio y la cuenta de Resend de Jefferson.
 
 - `.env.example` nombra las cinco variables sin valor y deja en su comentario el valor del piloto de `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, como pide el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17, que queda aprobado. Una copia tal cual ya no arranca la API y deja la guardia encendida (`tests/test_env_example.py`).
 - `specs/001-mvp-carga-r17/audit.md` registra la versión 0.1.0 en Production con su sección «Despliegue», y US-17 queda con 6 escenarios aprobados contra Vercel y Neon y 5 pendientes con su razón (T079).

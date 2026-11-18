@@ -17,7 +17,11 @@ validar(libro, contexto) sigue los pasos 8 y 9 de BR-CARGA-03.
    tres últimos segmentos numéricos del curso dan el periodo (20262 es 2026-2), la asignatura y la
    sección (propuesta, la regla de lectura). Manda la
    hoja, y el nombre solo cuenta si la hoja no declara nada. Si ninguno declara la sección,
-   validar() lanza SeccionSinDeclarar, el 422 sin rastro del corte 1 (valor provisional de D-02).
+   validar() lanza SeccionSinDeclarar, el 422 sin rastro que pregunta por la sección elegida, salvo
+   con confirmar_seccion verdadero. Entonces la carga sigue en la sección elegida sin cotejar la
+   sección ni el periodo y suma, al final de sus avisos, el AVISO SECCION_SIN_DECLARAR, sin fila ni PI
+   (BR-CARGA-18 y valor del corte 2 de D-02). Una carga confirmada que queda rechazada entera no
+   guarda el aviso, porque guarda un solo rechazo y ningún aviso (BR-CARGA-13).
 2. La carga entera queda rechazada por el primer defecto en este orden, sección o asignatura
    distinta (SECCION_NO_COINCIDE, que manda también cuando difiere el periodo), periodo distinto
    (PERIODO_NO_COINCIDE), ninguna fila de datos (ARCHIVO_SIN_FILAS), ni Username ni Student ID
@@ -121,15 +125,21 @@ def seccion_declarada(hoja: str | None, nombre_archivo: str) -> SeccionDeclarada
     return _declarada_por(_curso_de_la_hoja(hoja)) or _declarada_por(_curso_del_nombre(nombre_archivo))
 
 
-def validar(libro: LibroLeido, contexto: ContextoSeccion) -> Validacion:
-    """Valida el export en memoria, o lanza SeccionSinDeclarar si el archivo no declara su sección."""
+def validar(libro: LibroLeido, contexto: ContextoSeccion, *, confirmar_seccion: bool = False) -> Validacion:
+    """Valida el export en memoria, o lanza SeccionSinDeclarar si el archivo no declara su sección.
+
+    Con confirmar_seccion verdadero, un archivo que no declara su sección se valida en la sección elegida y
+    lleva el aviso SECCION_SIN_DECLARAR (BR-CARGA-18). En un archivo que sí la declara no cambia nada.
+    """
     declarada = seccion_declarada(libro.hoja, libro.nombre_archivo)
-    if declarada is None:
-        raise SeccionSinDeclarar()
+    if declarada is None and not confirmar_seccion:
+        raise SeccionSinDeclarar(contexto)
     rechazo = _rechazo_de_carga(libro, contexto, declarada)
     if rechazo is not None:
         return Validacion(filas_de_datos=libro.filas_de_datos, rechazo_de_carga=rechazo)
     columnas, avisos = _columnas(libro, contexto)
+    if declarada is None:
+        avisos = (*avisos, Rechazo(Motivo.SECCION_SIN_DECLARAR, Efecto.AVISO, None, None))
     aceptadas, rechazos = _filas(libro, columnas)
     if aceptadas and not any(medicion.nivel is not None for fila in aceptadas for medicion in fila.mediciones):
         return Validacion(filas_de_datos=libro.filas_de_datos, rechazo_de_carga=_de_carga(Motivo.SIN_CALIFICACIONES))
@@ -169,11 +179,15 @@ def _declarada_por(curso: str | None) -> SeccionDeclarada | None:
     )
 
 
-def _rechazo_de_carga(libro: LibroLeido, contexto: ContextoSeccion, declarada: SeccionDeclarada) -> Rechazo | None:
-    if (declarada.curso_codigo, declarada.seccion_codigo) != (contexto.curso_codigo, contexto.seccion_codigo):
-        return _de_carga(Motivo.SECCION_NO_COINCIDE)
-    if declarada.periodo != contexto.periodo:
-        return _de_carga(Motivo.PERIODO_NO_COINCIDE)
+def _rechazo_de_carga(
+    libro: LibroLeido, contexto: ContextoSeccion, declarada: SeccionDeclarada | None
+) -> Rechazo | None:
+    """Primer defecto que rechaza la carga entera. Sin sección declarada, la confirmada no se coteja."""
+    if declarada is not None:
+        if (declarada.curso_codigo, declarada.seccion_codigo) != (contexto.curso_codigo, contexto.seccion_codigo):
+            return _de_carga(Motivo.SECCION_NO_COINCIDE)
+        if declarada.periodo != contexto.periodo:
+            return _de_carga(Motivo.PERIODO_NO_COINCIDE)
     if not libro.filas:
         return _de_carga(Motivo.ARCHIVO_SIN_FILAS)
     if libro.columna_codigo is None:

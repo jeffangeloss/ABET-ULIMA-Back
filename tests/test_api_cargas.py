@@ -113,7 +113,10 @@ def test_br_carga_10_otro_archivo_no_entra_en_una_seccion_con_carga_publicada(ap
     antes = api.conteos()
     respuesta = A.subir(cliente, api.seccion("410"), A.archivo(A.CON_ERROR), A.CON_ERROR)
     assert respuesta.status_code == 409
-    assert respuesta.json() == {"detail": "La sección 410 ya tiene una carga publicada. No se cargó el archivo."}
+    # Corte 2: el 409 suma el carga_id de la carga publicada, que P3 usa para ofrecer el reemplazo (contrato, 3.1).
+    publicada = cliente.get("/api/secciones").json()[0]["carga_id"]
+    assert respuesta.json() == {"detail": "La sección 410 ya tiene una carga publicada. No se cargó el archivo.",
+                                "carga_publicada": publicada}
     assert api.conteos() == antes
 
 
@@ -382,3 +385,187 @@ def test_toda_respuesta_de_la_api_lleva_cache_control_no_store(api: object) -> N
 
 def test_una_ruta_fuera_de_api_no_recibe_la_cabecera_de_cache(api: object) -> None:
     assert "cache-control" not in api.cliente().get("/fuera").headers
+
+
+
+# Corte 2. Reemplazo (BR-CARGA-19), confirmación de la sección (BR-CARGA-18) y lista de cargas (BR-CARGA-20)
+
+PREGUNTA_410 = "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"
+CONFIRMACION_INVALIDA = "La sección confirmada no es la sección elegida. No se guardó nada."
+FORMA = {"detail": "La petición no tiene la forma esperada."}
+CAMPOS_DE_LA_LISTA = {
+    "carga_id", "estado", "seccion", "nombre_archivo", "sha256_corto", "filas_leidas", "filas_aceptadas",
+    "filas_rechazadas", "motivo", "reemplaza_carga_id", "reemplazada_por", "subida_por", "iniciada_en", "terminada_en",
+}
+
+
+def _publicar(api: object, nombre: str = A.CON_ERROR, numero: str = "410", correo: str = A.DOCENTE_410) -> dict:
+    respuesta = A.subir(api.sesion(correo), api.seccion(numero), A.archivo(nombre), nombre)
+    assert respuesta.status_code == 201, respuesta.text
+    return respuesta.json()
+
+
+def test_br_carga_19_el_coordinador_reemplaza_con_reemplaza_y_sin_el_sigue_sin_subir(api: object) -> None:
+    anterior = _publicar(api)
+    coordinacion = api.sesion(A.COORDINACION)
+    sin = A.subir(coordinacion, api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO)
+    assert sin.status_code == 403 and sin.json() == AJENA
+    con = A.subir(coordinacion, api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                  params={"reemplaza": str(anterior["carga_id"])})
+    assert con.status_code == 201, con.text
+    cuerpo = con.json()
+    assert (cuerpo["estado"], cuerpo["reemplaza_carga_id"], cuerpo["subida_por"]) == (
+        "PUBLICADA", anterior["carga_id"], A.COORDINACION)
+    leida = coordinacion.get(f"/api/cargas/{anterior['carga_id']}").json()
+    assert (leida["estado"], leida["reemplazada_por"]) == ("REEMPLAZADA", cuerpo["carga_id"])
+
+
+@pytest.mark.parametrize("valor", ["abc", "", "0", "-3", "1.5", "07x"])
+def test_br_carga_19_un_reemplaza_mal_formado_responde_422_sin_escribir(api: object, valor: str) -> None:
+    _publicar(api)
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                        params={"reemplaza": valor})
+    assert (respuesta.status_code, respuesta.json()) == (422, FORMA)
+    assert api.conteos() == antes
+
+
+def test_br_carga_19_dos_valores_de_reemplaza_responden_422(api: object) -> None:
+    anterior = _publicar(api)["carga_id"]
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                        params=[("reemplaza", str(anterior)), ("reemplaza", str(anterior))])
+    assert (respuesta.status_code, respuesta.json()) == (422, FORMA)
+
+
+def test_br_carga_19_03_el_alcance_va_antes_que_la_forma_de_reemplaza(api: object) -> None:
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("411"), A.archivo(A.EXPORT_411), A.EXPORT_411,
+                        params={"reemplaza": "abc"})
+    assert respuesta.status_code == 403 and respuesta.json() == AJENA
+
+
+def test_br_carga_19_el_mismo_archivo_responde_200_con_la_constancia_y_el_aviso(api: object) -> None:
+    publicada = _publicar(api, A.CORRECTO)
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                        params={"reemplaza": str(publicada["carga_id"])})
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {**publicada, "aviso": "Es el mismo archivo de la carga publicada. No se reemplazó."}
+    assert api.conteos() == antes
+
+
+def test_br_carga_03_19_el_mismo_archivo_de_la_publicada_gana_aunque_reemplaza_nombre_otra_carga(api: object) -> None:
+    # La huella se busca en el paso 6 de BR-CARGA-03, antes de cotejar reemplaza en el paso 7, así que el archivo que
+    # ya está publicado en la sección responde su 200 aunque reemplaza nombre una carga vencida o que no existe.
+    publicada = _publicar(api, A.CORRECTO)
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                        params={"reemplaza": "2000000000"})
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {**publicada, "aviso": "Es el mismo archivo de la carga publicada. No se reemplazó."}
+    assert api.conteos() == antes
+
+
+def test_br_carga_19_el_reemplazo_de_una_carga_que_no_es_la_publicada_responde_409(api: object) -> None:
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                        params={"reemplaza": "2000000000"})
+    assert respuesta.status_code == 409
+    assert respuesta.json() == {
+        "detail": "La carga que pide reemplazar no es la publicada de la sección 410. No se cargó el archivo."}
+
+
+def test_br_carga_18_el_422_de_la_seccion_sin_declarar_trae_requiere_confirmacion(
+    api: object, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo("hoja1_sin_seccion.xlsx"),
+                        "notas.xlsx")
+    assert respuesta.status_code == 422
+    assert respuesta.json() == {"detail": PREGUNTA_410, "requiere_confirmacion": True}
+    assert api.conteos() == antes
+    # La pregunta no es un archivo detenido, así que no deja nada en el registro de la aplicación.
+    assert "evento=" not in caplog.text
+
+
+def test_br_carga_18_con_confirmar_seccion_true_la_carga_se_publica_con_su_aviso(api: object) -> None:
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo("hoja1_sin_seccion.xlsx"),
+                        "notas.xlsx", data={"confirmar_seccion": "true"})
+    assert respuesta.status_code == 201, respuesta.text
+    cuerpo = respuesta.json()
+    assert cuerpo["estado"] == "PUBLICADA"
+    assert {"pi": None, "motivo": "SECCION_SIN_DECLARAR", "efecto": "AVISO",
+            "mensaje": "El archivo no indica su sección. Quien lo subió confirmó la sección elegida."} in cuerpo["avisos"]
+
+
+@pytest.mark.parametrize("valores", [["411"], ["false"], ["TRUE"], ["1"], [""], ["true", "true"]])
+def test_br_carga_18_confirmar_seccion_solo_admite_un_true(api: object, valores: list[str]) -> None:
+    antes = api.conteos()
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo("hoja1_sin_seccion.xlsx"),
+                        "notas.xlsx", data={"confirmar_seccion": valores})
+    assert (respuesta.status_code, respuesta.json()) == (422, {"detail": CONFIRMACION_INVALIDA})
+    assert api.conteos() == antes
+
+
+def test_br_carga_07_18_19_ni_la_confirmacion_ni_el_reemplazo_apagan_la_guardia(
+    api: object, generador: ModuleType, tmp_path: Path
+) -> None:
+    anterior = _publicar(api)
+    respuesta = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), _guardia(generador, tmp_path), "guardia.xlsx",
+                        data={"confirmar_seccion": "true", "guardia": "0"},
+                        params={"reemplaza": str(anterior["carga_id"]), "guardia": "0"})
+    assert respuesta.status_code == 422 and respuesta.json() == {"detail": GUARDIA}
+
+
+def test_br_carga_20_sin_sesion_la_lista_responde_401(api: object) -> None:
+    respuesta = api.cliente().get("/api/cargas")
+    assert respuesta.status_code == 401 and "carga_id" not in respuesta.text
+
+
+@pytest.mark.parametrize("valor", ["abc", "1.5", ""])
+def test_br_carga_20_un_seccion_id_mal_formado_responde_422(api: object, valor: str) -> None:
+    respuesta = api.sesion(A.COORDINACION).get("/api/cargas", params={"seccion_id": valor})
+    assert (respuesta.status_code, respuesta.json()) == (422, FORMA)
+
+
+@pytest.mark.parametrize("valor", ["999999", "0", "-1"])
+def test_br_carga_20_una_seccion_que_no_existe_responde_el_mismo_403(api: object, valor: str) -> None:
+    # Un entero, aunque sea 0 o negativo, tiene la forma esperada, y una sección que no existe da el 403 único.
+    respuesta = api.sesion(A.COORDINACION).get("/api/cargas", params={"seccion_id": valor})
+    assert (respuesta.status_code, respuesta.json()) == (403, AJENA)
+
+
+def test_br_carga_20_la_lista_va_de_la_mas_reciente_a_la_mas_antigua_con_los_campos_del_contrato(api: object) -> None:
+    rechazada = _publicar(api, A.EXPORT_411)
+    anterior = _publicar(api, A.CON_ERROR)
+    nueva = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CORRECTO), A.CORRECTO,
+                    params={"reemplaza": str(anterior["carga_id"])}).json()
+    lista = api.sesion(A.DOCENTE_410).get("/api/cargas")
+    assert lista.status_code == 200
+    items = lista.json()
+    assert [i["carga_id"] for i in items] == [nueva["carga_id"], anterior["carga_id"], rechazada["carga_id"]]
+    for item in items:
+        assert set(item) == CAMPOS_DE_LA_LISTA
+        assert len(item["sha256_corto"]) == 12 and re.fullmatch(r"[0-9a-f]{12}", item["sha256_corto"])
+    por_id = {i["carga_id"]: i for i in items}
+    assert por_id[rechazada["carga_id"]]["motivo"] == "SECCION_NO_COINCIDE"
+    assert por_id[nueva["carga_id"]]["reemplaza_carga_id"] == anterior["carga_id"]
+    assert por_id[anterior["carga_id"]]["reemplazada_por"] == nueva["carga_id"]
+    assert por_id[nueva["carga_id"]]["sha256_corto"] == nueva["sha256"][:12]
+    # Lo que no debe pasar: la huella completa, los nombres y los valores leídos no viajan en la lista.
+    assert nueva["sha256"] not in lista.text and "Inventado" not in lista.text
+
+
+def test_br_carga_20_acceso_07_cada_rol_recibe_solo_las_cargas_de_su_alcance(api: object) -> None:
+    de_410 = _publicar(api, A.CON_ERROR)
+    de_411 = _publicar(api, A.EXPORT_411, "411", A.DOCENTE_411)
+
+    def ids(correo: str, **opciones: object) -> list[int]:
+        return [i["carga_id"] for i in api.sesion(correo).get("/api/cargas", **opciones).json()]
+
+    assert ids(A.DOCENTE_410) == [de_410["carga_id"]]
+    assert ids(A.DOCENTE_411) == [de_411["carga_id"]]
+    assert ids(A.COORDINACION) == [de_411["carga_id"], de_410["carga_id"]]
+    assert ids(A.COORDINACION, params={"seccion_id": str(api.seccion("410"))}) == [de_410["carga_id"]]
+    assert ids(A.VARIAS_CORREO) == []
+    ajena = api.sesion(A.DOCENTE_410).get("/api/cargas", params={"seccion_id": str(api.seccion("411"))})
+    assert (ajena.status_code, ajena.json()) == (403, AJENA)

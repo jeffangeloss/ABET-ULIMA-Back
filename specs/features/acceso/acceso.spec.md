@@ -11,7 +11,7 @@ targets:
 
 # Acceso
 
-> **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T013), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y los nombres de tablas, columnas y restricciones de `acceso` salen de `V1_09__crear_acceso.sql` (T024) y los permisos de `abet_app`, de `db/plataforma/neon/crear_rol_app.sql` (T025). La sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
+> **Estado al 2026-11-17.** BR-ACCESO-07 y BR-ACCESO-08 suman el reemplazo y la lista de cargas del corte 2 (T080), escritos antes de su código, y BR-ACCESO-09 espera a T018. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T013), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y los nombres de tablas, columnas y restricciones de `acceso` salen de `V1_09__crear_acceso.sql` (T024) y los permisos de `abet_app`, de `db/plataforma/neon/crear_rol_app.sql` (T025). La sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secciones alcanza cada rol en la interfaz de programación de aplicaciones (application programming interface, API). Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR), criterios de éxito (success criteria, SC) o decisiones abiertas (D de la carrera y J de Jefferson). Cada regla nombra también la restricción de la base que la respalda y el escenario que la prueba, citado por su título, casi siempre de `specs/001-mvp-carga-r17/aceptacion/acceso.feature`. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Las reglas del corte 2 llevan esa marca en su título. Todos los correos de los ejemplos son de prueba, con el dominio reservado `example.invalid`.
 
@@ -76,17 +76,17 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 
 ### BR-ACCESO-07: Visibilidad por acceso.docente_seccion
 - Los de arriba ven hacia abajo y los de abajo no ven hacia arriba. El profesor ve solo las secciones que `acceso.docente_seccion` le asigna, y el coordinador ve todas las de la carrera sin filas propias en `acceso.docente_seccion`.
-- La regla tiene un solo dueño, `app/permisos.py`, que usan las rutas de secciones, cargas, constancia y R-17, el reporte de medición de la sección. Las demás specs vivas solo repiten el caso de su propia ruta.
+- La regla tiene un solo dueño, `app/permisos.py`, que usan las rutas de secciones, cargas, constancia y R-17, el reporte de medición de la sección, y en el corte 2 la lista de cargas, que parte de las mismas secciones visibles (BR-CARGA-20). Las demás specs vivas solo repiten el caso de su propia ruta.
 - En el producto mínimo viable (minimum viable product, MVP), con una sola carrera, las secciones de la carrera son las del periodo cuyas asignaturas están en el catálogo vigente de Ambiental (propuesta).
 - **Fuente**: US-06, FR-010, J-02 y Principio VI de la constitución.
 - **Prueba**: «El profesor ve únicamente su sección» y «El coordinador ve todas las secciones de la carrera»; con un profesor que dicta tres secciones de dos asignaturas, «El profesor de varias secciones ve sus tres secciones y ninguna otra» (`varias_secciones.feature`).
 
 ### BR-ACCESO-08: Un solo 403 para lo que no está a cargo del usuario
 - Una ruta de sección, de carga, de constancia o del R-17 fuera del alcance del usuario responde 403 con `{ "detail": "La sección no está a su cargo." }`, sin datos de esa sección ni de su carga y sin escribir en `archivo_origen`, `carga` ni `estudiante`.
-- En el corte 1 solo sube el profesor asignado, así que el coordinador recibe ese 403 al subir un export, aunque recibe 200 en las rutas de lectura (secciones, constancia y R-17) de cualquier sección de la carrera. En el corte 2 el coordinador reemplaza en cualquier sección (BR-CARGA-19).
+- En el corte 1 solo sube el profesor asignado, así que el coordinador recibe ese 403 al subir un export, aunque recibe 200 en las rutas de lectura (secciones, constancia y R-17) de cualquier sección de la carrera. En el corte 2 la subida de una carga nueva sigue igual, y `app/permisos.puede_reemplazar()` deja reemplazar al profesor en sus secciones y al coordinador en cualquiera de la carrera (valor provisional de D-11, BR-CARGA-19). Un profesor que pide el reemplazo en una sección ajena recibe ese mismo 403, y la lista de cargas con el `seccion_id` de una sección ajena también (BR-CARGA-20).
 - Conocer un identificador ajeno solo produce 403, porque la API comprueba el alcance en cada petición. Una sección o una carga que no existe recibe el mismo 403 (propuesta), y la decisión sigue abierta en la sección 9 de `docs/03-api/contrato.md` del Front.
 - **Fuente**: US-06 (escenarios 4 y 8), US-07 (escenarios 6 y 7), US-15 (escenario 4), US-16 (escenario 6), FR-010, SC-009 y D-11.
-- **Prueba**: «El profesor no alcanza una sección ajena escribiendo la ruta» (`acceso.feature`), «Un profesor no sube a una sección que no tiene asignada» y «El coordinador no sube en el corte 1» (`carga.feature`), «El R-17 de la 410 según quién lo pide» y «La constancia de la 410 según quién la pide» (`r17_constancia.feature`) y «El profesor de varias secciones no alcanza una sección que no dicta» (`varias_secciones.feature`).
+- **Prueba**: «El profesor no alcanza una sección ajena escribiendo la ruta» (`acceso.feature`), «Un profesor no sube a una sección que no tiene asignada» y «El coordinador no sube en el corte 1» (`carga.feature`), «El R-17 de la 410 según quién lo pide» y «La constancia de la 410 según quién la pide» (`r17_constancia.feature`) y «El profesor de varias secciones no alcanza una sección que no dicta» (`varias_secciones.feature`); en el corte 2, «El profesor no reemplaza la carga de otra sección», el ejemplo del coordinador de «El export corregido reemplaza a la carga con el error» y «El profesor ve solo las cargas de su sección» (`reemplazo_y_cargas.feature`).
 
 ### BR-ACCESO-09: Código de acceso por correo (corte 2)
 - `POST /api/sesion/codigo` responde 202 con `{ "detail": "Si el correo está autorizado, recibirá un código en unos minutos." }` exista o no el correo, esté activo o no y aunque no tenga la forma de un correo, y solo envía el código a un usuario autorizado y activo.
@@ -102,9 +102,12 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-17 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_reemplazo_y_cargas_feature.py, test_permisos.py, test_api_cargas.py → BR-ACCESO-07 y BR-ACCESO-08 en el corte 2 (reemplazo y lista de cargas)
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py, test_varias_secciones_feature.py → BR-ACCESO-01 a BR-ACCESO-08
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py, test_api_sesion.py, test_comando.py, test_permisos.py, test_varias_secciones.py → BR-ACCESO-02 a BR-ACCESO-08
 ```
+
+Resultado del 2026-11-17 (corte 2, rama `feat/001-corte-2`, PostgreSQL 18 desechable): suite completa, 1289 passed y 15 skipped in 141.47s (0:02:21); aceptación, 300 passed y 14 skipped, con los 9 casos de US-20 omitidos por T018; el detalle por historia está en la sección «Corte 2» de `specs/001-mvp-carga-r17/audit.md`.
 
 Resultado: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa, 852 passed, 20 skipped in 241.50s (0:04:01). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
 
@@ -122,4 +125,6 @@ Las columnas de escenarios cuentan los del corte 1 que la regla cita en su **Pru
 | BR-ACCESO-06 | 5, 0, 0 | 10 | Aprobada |
 | BR-ACCESO-07 | 3, 0, 0 | 17 | Aprobada |
 | BR-ACCESO-08 | 6, 0, 0 | 23 | Aprobada |
-| BR-ACCESO-09 | 0, 0, 0 | 0 | Corte 2, pendiente (T088) |
+| BR-ACCESO-09 | 0, 5, 0 | 0 | Corte 2, pendiente de T018, T083 y T086 |
+
+En el corte 2, BR-ACCESO-07 y BR-ACCESO-08 suman los escenarios «El profesor no reemplaza la carga de otra sección», «El export corregido reemplaza a la carga con el error» (ejemplo del coordinador) y «El profesor ve solo las cargas de su sección», aprobados el 2026-11-17, y las pruebas de `puede_reemplazar()` de `test_permisos.py` (8), también aprobadas.
