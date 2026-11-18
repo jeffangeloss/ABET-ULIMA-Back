@@ -165,7 +165,9 @@ def _subir(
     seccion: str = "410",
     correo: str = DOCENTE_410,
     configuracion: modulo_carga.Configuracion = CONFIGURACION,
+    **corte2: Any,
 ) -> Any:
+    """cargar() con la sesión de correo en la sección, y en el corte 2 con reemplaza o confirmar_seccion."""
     return modulo_carga.cargar(
         conexion,
         contenido,
@@ -173,6 +175,7 @@ def _subir(
         seccion_id=_seccion_id(revision, seccion),
         usuario_id=_usuario_id(revision, correo),
         configuracion=configuracion,
+        **corte2,
     )
 
 
@@ -766,6 +769,10 @@ def test_br_carga_03_un_archivo_que_no_se_puede_leer_se_detiene_sin_rastro_y_con
     _sin_rastro(revision, antes)
 
 
+# Corte 2 (BR-CARGA-18): la pregunta que reemplaza al 422 del corte 1.
+PREGUNTA_410 = "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"
+
+
 def test_br_carga_11_un_export_que_no_declara_su_seccion_se_detiene_sin_rastro(
     conexion: psycopg.Connection, revision: psycopg.Connection
 ) -> None:
@@ -775,8 +782,9 @@ def test_br_carga_11_un_export_que_no_declara_su_seccion_se_detiene_sin_rastro(
     assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == (
         "SECCION_SIN_DECLARAR",
         422,
-        "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja.",
+        PREGUNTA_410,
     )
+    assert resultado.requiere_confirmacion is True
     _sin_rastro(revision, antes)
 
 
@@ -821,8 +829,9 @@ def test_br_carga_11_spec003_un_csv_sin_seccion_en_el_nombre_se_detiene_sin_rast
     assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == (
         "SECCION_SIN_DECLARAR",
         422,
-        "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja.",
+        PREGUNTA_410,
     )
+    assert resultado.requiere_confirmacion is True
     _sin_rastro(revision, antes)
 
 
@@ -1085,7 +1094,8 @@ def test_br_carga_02_un_corte_de_la_conexion_en_cualquier_punto_no_deja_nada_esc
 def _validar_con_defecto(monkeypatch: pytest.MonkeyPatch, defecto: Any) -> None:
     """Reemplaza la validación que usa cargar() por una con un defecto inyectado del programa."""
     validar_de_verdad = modulo_carga.validar
-    monkeypatch.setattr(modulo_carga, "validar", lambda libro, contexto: defecto(validar_de_verdad(libro, contexto)))
+    monkeypatch.setattr(modulo_carga, "validar",
+                        lambda libro, contexto, **opciones: defecto(validar_de_verdad(libro, contexto, **opciones)))
 
 
 def _nivel_5_en_la_ultima_medicion(validacion: Any) -> Any:
@@ -1204,7 +1214,8 @@ $$
 APLICACION_CONCURRENTE = "abet_prueba_a_la_vez"
 
 
-def _subir_en_hilo(base: Any, modo: str, contenido: bytes, nombre: str, seccion_id: int, usuario_id: int) -> Any:
+def _subir_en_hilo(base: Any, modo: str, contenido: bytes, nombre: str, seccion_id: int, usuario_id: int,
+                   **corte2: Any) -> Any:
     opciones = f"-c lock_timeout=30s -c application_name={APLICACION_CONCURRENTE}"
     conexion = _conectar(base, modo, options=opciones)
     try:
@@ -1215,6 +1226,7 @@ def _subir_en_hilo(base: Any, modo: str, contenido: bytes, nombre: str, seccion_
             seccion_id=seccion_id,
             usuario_id=usuario_id,
             configuracion=CONFIGURACION,
+            **corte2,
         )
     finally:
         conexion.close()
@@ -1381,3 +1393,248 @@ def test_br_carga_05_spec003_un_nombre_con_un_caracter_de_control_responde_422_s
     assert (resultado.resultado, resultado.codigo_http, resultado.motivo) == ("ILEGIBLE", 422, "TIPO_NO_ADMITIDO")
     assert resultado.mensaje == "Solo se admiten exports de Blackboard en formato .xlsx, .csv o .xls."
     _sin_rastro(revision, antes)
+
+
+# Corte 2. Reemplazo de la carga publicada (BR-CARGA-19) y confirmación de la sección (BR-CARGA-18)
+
+NO_ES_LA_PUBLICADA_410 = "La carga que pide reemplazar no es la publicada de la sección 410. No se cargó el archivo."
+MISMO_ARCHIVO = "Es el mismo archivo de la carga publicada. No se reemplazó."
+NO_ABRE_EN_UN_REEMPLAZO = "No se pudo abrir el archivo. La carga publicada no cambió."
+
+
+def _todas_con_un_5(generador: ModuleType, tmp_path: Path) -> bytes:
+    """Copia del export correcto con un 5 en la columna 5.2 de sus 11 filas, que rechaza todas las filas."""
+    export = _export_410(generador)
+    for fila in range(2, 13):
+        export = generador.con_celda(export, fila, "5.2", 5)
+    return _bytes(generador, export, tmp_path, "todas_con_un_5.xlsx")
+
+
+def _estado_de(revision: psycopg.Connection, carga_id: int | None) -> str:
+    return str(_uno(revision, "SELECT estado FROM abet.carga WHERE carga_id = %s", carga_id))
+
+
+def _reemplaza_de(revision: psycopg.Connection, carga_id: int | None) -> int | None:
+    return _uno(revision, "SELECT reemplaza_carga_id FROM abet.carga WHERE carga_id = %s", carga_id)
+
+
+def test_br_carga_19_el_reemplazo_publica_la_carga_nueva_y_deja_la_anterior_reemplazada(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    anterior = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    nueva = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO, reemplaza=anterior.carga_id)
+
+    assert (nueva.resultado, nueva.codigo_http, nueva.mensaje) == ("PUBLICADA", 201, None)
+    assert _cuentas(revision, nueva.carga_id) == ("PUBLICADA", 11, 11, 0, 11, 33)
+    assert _reemplaza_de(revision, nueva.carga_id) == anterior.carga_id
+    # Lo que no debe pasar: la anterior no se borra ni pierde sus filas, sus mediciones ni sus rechazos.
+    assert _cuentas(revision, anterior.carga_id) == ("REEMPLAZADA", 11, 10, 1, 10, 30)
+    assert len(_rechazos(revision, anterior.carga_id)) == 2
+    assert _porcentajes(revision, nueva.carga_id) == _esperados("63.6", "63.6", "72.7")
+    assert _porcentajes(revision, anterior.carga_id) == []
+    assert _controles_con_filas(revision) == {}
+
+
+def test_br_carga_19_el_coordinador_reemplaza_y_queda_como_quien_sube(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    anterior = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    nueva = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO, correo="coordinacion@example.invalid",
+                   reemplaza=anterior.carga_id)
+
+    assert nueva.resultado == "PUBLICADA"
+    assert _uno(revision, "SELECT subida_por FROM abet.carga WHERE carga_id = %s", nueva.carga_id) == _usuario_id(
+        revision, "coordinacion@example.invalid")
+
+
+@pytest.mark.parametrize("cual", ["todas_las_filas", "otra_seccion"])
+def test_br_carga_19_un_reemplazo_rechazado_deja_la_anterior_publicada_y_su_reemplazo_nulo(
+    conexion: psycopg.Connection, revision: psycopg.Connection, generador: ModuleType, tmp_path: Path, cual: str
+) -> None:
+    anterior = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+    if cual == "todas_las_filas":
+        contenido, nombre, cuentas = _todas_con_un_5(generador, tmp_path), "todas_con_un_5.xlsx", (11, 0, 11)
+    else:
+        contenido, nombre, cuentas = _archivo(EXPORT_411), EXPORT_411, (0, 0, 0)
+    rechazada = _subir(conexion, revision, contenido, nombre, reemplaza=anterior.carga_id)
+
+    assert (rechazada.resultado, rechazada.codigo_http) == ("RECHAZADA", 201)
+    assert _cuentas(revision, rechazada.carga_id)[:4] == ("RECHAZADA", *cuentas)
+    assert _reemplaza_de(revision, rechazada.carga_id) is None
+    assert _estado_de(revision, anterior.carga_id) == "PUBLICADA"
+    # Un reemplazo fallido no bloquea el siguiente, porque no ocupa uq_carga_reemplaza.
+    siguiente = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR, reemplaza=anterior.carga_id)
+    assert siguiente.resultado == "PUBLICADA" and _reemplaza_de(revision, siguiente.carga_id) == anterior.carga_id
+    assert _controles_con_filas(revision) == {}
+
+
+def test_br_carga_19_el_mismo_archivo_de_la_publicada_responde_200_con_su_carga_y_el_aviso(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    publicada = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+    antes = _conteos(revision)
+    resultado = _subir(conexion, revision, _archivo(CORRECTO), "otro nombre.xlsx", reemplaza=publicada.carga_id)
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.carga_id) == ("MISMO_ARCHIVO", 200, publicada.carga_id)
+    assert resultado.aviso == MISMO_ARCHIVO
+    _sin_rastro(revision, antes)
+    assert _estado_de(revision, publicada.carga_id) == "PUBLICADA"
+
+
+@pytest.mark.parametrize("caso", ["ya_reemplazada", "sin_publicada", "rechazada", "de_otra_seccion", "inexistente"])
+def test_br_carga_19_reemplazar_una_carga_que_no_es_la_publicada_responde_409_sin_escribir(
+    conexion: psycopg.Connection, revision: psycopg.Connection, generador: ModuleType, tmp_path: Path, caso: str
+) -> None:
+    if caso == "ya_reemplazada":
+        primera = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+        _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR, reemplaza=primera.carga_id)
+        pedida = primera.carga_id
+    elif caso == "sin_publicada":
+        pedida = _subir(conexion, revision, _archivo(EXPORT_411), EXPORT_411).carga_id
+    elif caso == "rechazada":
+        publicada = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+        pedida = _subir(conexion, revision, _todas_con_un_5(generador, tmp_path), "todas_con_un_5.xlsx",
+                        reemplaza=publicada.carga_id).carga_id
+    elif caso == "de_otra_seccion":
+        _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+        pedida = _subir(conexion, revision, _archivo(EXPORT_411), EXPORT_411, seccion="411", correo=DOCENTE_411).carga_id
+    else:
+        _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+        pedida = 2_000_000_000
+    contenido, nombre = (_archivo(CON_ERROR), CON_ERROR) if caso in ("sin_publicada",) else (
+        _todas_con_un_5(generador, tmp_path) if caso == "rechazada" else _archivo(CORRECTO), "otro.xlsx")
+    antes = _conteos(revision)
+    resultado = _subir(conexion, revision, contenido, nombre, reemplaza=pedida)
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == ("NO_ES_LA_PUBLICADA", 409,
+                                                                               NO_ES_LA_PUBLICADA_410)
+    assert resultado.carga_id is None
+    _sin_rastro(revision, antes)
+
+
+@pytest.mark.parametrize(
+    ("nombre", "mensaje"),
+    [
+        ("danado_410.xlsx", NO_ABRE_EN_UN_REEMPLAZO),
+        # Los demás 422 conservan su texto en un reemplazo, porque ninguno escribe nada.
+        ("pdf_renombrado.xlsx", "El contenido del archivo no es un export de Blackboard aunque su nombre termine en "
+                                ".xlsx, .csv o .xls."),
+    ],
+)
+def test_br_carga_19_un_archivo_ilegible_en_un_reemplazo_no_cambia_la_publicada(
+    conexion: psycopg.Connection, revision: psycopg.Connection, nombre: str, mensaje: str
+) -> None:
+    publicada = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    antes = _conteos(revision)
+    resultado = _subir(conexion, revision, _archivo(nombre), nombre, reemplaza=publicada.carga_id)
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == ("ILEGIBLE", 422, mensaje)
+    # El registro de la aplicación sigue recibiendo la huella y el motivo de siempre (BR-CARGA-08).
+    assert resultado.sha256 == hashlib.sha256(_archivo(nombre)).hexdigest() and resultado.motivo is not None
+    _sin_rastro(revision, antes)
+    assert _estado_de(revision, publicada.carga_id) == "PUBLICADA"
+
+
+def test_br_carga_19_09_volver_al_export_anterior_reutiliza_su_archivo(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    a = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+    b = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR, reemplaza=a.carga_id)
+    c = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO, correo="coordinacion@example.invalid",
+               reemplaza=b.carga_id)
+
+    assert (c.resultado, _reemplaza_de(revision, c.carga_id)) == ("PUBLICADA", b.carga_id)
+    archivos = dict(_valores(revision, "SELECT carga_id, archivo_id FROM abet.carga"))
+    assert archivos[c.carga_id] == archivos[a.carga_id]
+    huella = hashlib.sha256(_archivo(CORRECTO)).hexdigest()
+    assert _uno(revision, "SELECT count(*) FROM abet.archivo_origen WHERE sha256 = %s", huella) == 1
+    assert [_estado_de(revision, x.carga_id) for x in (a, b, c)] == ["REEMPLAZADA", "REEMPLAZADA", "PUBLICADA"]
+    assert _controles_con_filas(revision) == {}
+
+
+def test_br_carga_10_sin_reemplaza_el_409_lleva_la_carga_publicada_de_la_seccion(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    publicada = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    resultado = _subir(conexion, revision, _archivo(CORRECTO), CORRECTO)
+
+    assert (resultado.resultado, resultado.codigo_http, resultado.mensaje) == ("SECCION_CON_CARGA", 409,
+                                                                               MENSAJE_SECCION_CON_CARGA)
+    assert (resultado.carga_id, resultado.carga_publicada) == (None, publicada.carga_id)
+
+
+def test_br_carga_19_dos_reemplazos_a_la_vez_dejan_una_sola_carga_nueva_publicada(
+    base: Any, modo: str, revision: psycopg.Connection, generador: ModuleType, tmp_path: Path
+) -> None:
+    with _conectar(base, "dueno") as conexion:
+        anterior = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    revision.execute(BARRERA)
+    revision.execute("CREATE TRIGGER barrera_de_prueba BEFORE INSERT ON abet.carga FOR EACH ROW"
+                     " EXECUTE FUNCTION public.esperar_barrera()")
+    seccion_id, usuario_id = _seccion_id(revision), _usuario_id(revision)
+    otro = _guardado_de_nuevo(_archivo(CORRECTO))
+    with psycopg.connect(base.conexion, autocommit=True) as control, ThreadPoolExecutor(max_workers=2) as hilos:
+        control.execute("SELECT pg_advisory_lock(4242)")
+        futuros = [
+            hilos.submit(_subir_en_hilo, base, modo, contenido, nombre, seccion_id, usuario_id,
+                         reemplaza=anterior.carga_id)
+            for contenido, nombre in ((_archivo(CORRECTO), CORRECTO), (otro, "guardado de nuevo.xlsx"))
+        ]
+        _esperar_bloqueadas(control, 2)
+        control.execute("SELECT pg_advisory_unlock(4242)")
+        resultados = [futuro.result(timeout=60) for futuro in futuros]
+
+    assert sorted(r.resultado for r in resultados) == ["NO_ES_LA_PUBLICADA", "PUBLICADA"]
+    ganadora = next(r for r in resultados if r.resultado == "PUBLICADA")
+    assert _reemplaza_de(revision, ganadora.carga_id) == anterior.carga_id
+    assert _valores(revision, "SELECT estado, count(*) FROM abet.carga GROUP BY estado ORDER BY estado") == [
+        ("PUBLICADA", 1), ("REEMPLAZADA", 1)]
+    assert _uno(revision, "SELECT count(*) FROM abet.carga WHERE estado = 'EN_CURSO'") == 0
+    assert _controles_con_filas(revision) == {}
+
+
+def test_br_carga_18_la_seccion_confirmada_publica_la_carga_con_el_aviso_sin_fila_ni_pi(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    resultado = _subir(conexion, revision, _archivo("hoja1_sin_seccion.xlsx"), "notas.xlsx", confirmar_seccion=True)
+
+    assert (resultado.resultado, resultado.codigo_http) == ("PUBLICADA", 201)
+    assert _cuentas(revision, resultado.carga_id) == ("PUBLICADA", 11, 11, 0, 11, 33)
+    assert _valores(revision, "SELECT fila_origen, carga_columna_id, pi_id, efecto FROM abet.rechazo_fila"
+                              " WHERE carga_id = %s AND motivo = 'SECCION_SIN_DECLARAR'", resultado.carga_id) == [
+        (None, None, None, "AVISO")]
+    assert _valores(revision, "SELECT nombre_archivo, hoja FROM abet.archivo_origen") == [("notas.xlsx", "Hoja1")]
+
+
+def test_br_carga_18_19_un_reemplazo_sin_seccion_declarada_pide_la_confirmacion_y_despues_reemplaza(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    anterior = _subir(conexion, revision, _archivo(CON_ERROR), CON_ERROR)
+    antes = _conteos(revision)
+    pregunta = _subir(conexion, revision, _archivo("hoja1_sin_seccion.xlsx"), "notas.xlsx", reemplaza=anterior.carga_id)
+    assert (pregunta.resultado, pregunta.mensaje, pregunta.requiere_confirmacion) == ("SECCION_SIN_DECLARAR",
+                                                                                      PREGUNTA_410, True)
+    _sin_rastro(revision, antes)
+
+    nueva = _subir(conexion, revision, _archivo("hoja1_sin_seccion.xlsx"), "notas.xlsx", reemplaza=anterior.carga_id,
+                   confirmar_seccion=True)
+    assert nueva.resultado == "PUBLICADA" and _reemplaza_de(revision, nueva.carga_id) == anterior.carga_id
+    assert _estado_de(revision, anterior.carga_id) == "REEMPLAZADA"
+
+
+def test_br_carga_18_spec003_un_csv_sin_seccion_en_el_nombre_se_publica_al_confirmarla_con_la_hoja_nula(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    # Un export de texto no tiene hoja, así que su sección sale solo del nombre (spec 003, US-30). Si el nombre no la
+    # declara, la pregunta y la confirmación de US-21 valen igual que para un libro (FR-013 de la spec 003 y T084).
+    contenido = _csv_410(("4", "3", "2"), ("3", "", "4"))
+    pregunta = _subir(conexion, revision, contenido, "notas 410.csv")
+    assert (pregunta.resultado, pregunta.mensaje, pregunta.requiere_confirmacion) == ("SECCION_SIN_DECLARAR",
+                                                                                      PREGUNTA_410, True)
+
+    resultado = _subir(conexion, revision, contenido, "notas 410.csv", confirmar_seccion=True)
+    assert (resultado.resultado, resultado.codigo_http) == ("PUBLICADA", 201)
+    assert _valores(revision, "SELECT nombre_archivo, hoja FROM abet.archivo_origen") == [("notas 410.csv", None)]
+    assert _valores(revision, "SELECT motivo, efecto, fila_origen, carga_columna_id FROM abet.rechazo_fila"
+                              " WHERE carga_id = %s", resultado.carga_id) == [("SECCION_SIN_DECLARAR", "AVISO", None, None)]
+    assert _cuentas(revision, resultado.carga_id) == ("PUBLICADA", 2, 2, 0, 2, 6)
