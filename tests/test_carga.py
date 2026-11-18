@@ -1620,3 +1620,21 @@ def test_br_carga_18_19_un_reemplazo_sin_seccion_declarada_pide_la_confirmacion_
                    confirmar_seccion=True)
     assert nueva.resultado == "PUBLICADA" and _reemplaza_de(revision, nueva.carga_id) == anterior.carga_id
     assert _estado_de(revision, anterior.carga_id) == "REEMPLAZADA"
+
+
+def test_br_carga_18_spec003_un_csv_sin_seccion_en_el_nombre_se_publica_al_confirmarla_con_la_hoja_nula(
+    conexion: psycopg.Connection, revision: psycopg.Connection
+) -> None:
+    # Un export de texto no tiene hoja, así que su sección sale solo del nombre (spec 003, US-30). Si el nombre no la
+    # declara, la pregunta y la confirmación de US-21 valen igual que para un libro (FR-013 de la spec 003 y T084).
+    contenido = _csv_410(("4", "3", "2"), ("3", "", "4"))
+    pregunta = _subir(conexion, revision, contenido, "notas 410.csv")
+    assert (pregunta.resultado, pregunta.mensaje, pregunta.requiere_confirmacion) == ("SECCION_SIN_DECLARAR",
+                                                                                      PREGUNTA_410, True)
+
+    resultado = _subir(conexion, revision, contenido, "notas 410.csv", confirmar_seccion=True)
+    assert (resultado.resultado, resultado.codigo_http) == ("PUBLICADA", 201)
+    assert _valores(revision, "SELECT nombre_archivo, hoja FROM abet.archivo_origen") == [("notas 410.csv", None)]
+    assert _valores(revision, "SELECT motivo, efecto, fila_origen, carga_columna_id FROM abet.rechazo_fila"
+                              " WHERE carga_id = %s", resultado.carga_id) == [("SECCION_SIN_DECLARAR", "AVISO", None, None)]
+    assert _cuentas(revision, resultado.carga_id) == ("PUBLICADA", 2, 2, 0, 2, 6)

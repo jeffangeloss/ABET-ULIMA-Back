@@ -480,7 +480,10 @@ Característica: Carga del export de Blackboard en la base
   # «confirmar_seccion» igual a "true", y la carga registra en abet.rechazo_fila un AVISO con el motivo
   # SECCION_SIN_DECLARAR, que V1_09 agrega junto con COLUMNA_CODIGO_AUSENTE, PI_REPETIDO y
   # PERIODO_NO_COINCIDE. carga.subida_por dice quién confirma. La respuesta 422 a la espera de la
-  # confirmación y el campo requiere_confirmacion son (propuesta).
+  # confirmación y el campo requiere_confirmacion son (propuesta). La pregunta no nombra la hoja, así que vale
+  # para los tres formatos de la spec 003. Un .csv o un .xls no tiene hoja y su sección sale solo del nombre
+  # (US-30), y el ejemplo «notas 410.csv» de exports_blackboard.feature recibe la misma pregunta. Con eso, T084
+  # revisa el escenario 1 de US-21 que nombra FR-013 de la spec 003, sin cambiar su texto.
   @US-21 @corte2
   Escenario: Un export que no declara su sección espera la confirmación sin escribir nada
     Dado una copia de "sintetico_20262_450002_410.xlsx" con la hoja renombrada "Hoja1" y el nombre "notas.xlsx"
