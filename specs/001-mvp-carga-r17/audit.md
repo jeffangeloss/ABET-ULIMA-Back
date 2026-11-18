@@ -1,11 +1,11 @@
-# Audit: Del export de Blackboard al R-17 desde la base (corte 1)
+# Audit: Del export de Blackboard al R-17 desde la base (cortes 1 y 2)
 
-**Fecha**: 2026-10-30  
+**Fecha**: 2026-10-30 (corte 1) y 2026-11-17 (corte 2)  
 **Spec**: [spec.md](./spec.md)  
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen pytest -q tests/aceptacion -rA` en el Back, `uv run --frozen pytest -q tests -rA` en el Back para las pruebas unitarias y `npm test` en el Front  
-**Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas  
-**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). Quedan abiertos cuatro escenarios de US-17, la verificación a mano de T062 y todo el corte 2.
+**Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas; corte 2 (2026-11-17), aceptación, 300 passed y 14 skipped, y suite completa del Back, 1289 passed y 15 skipped in 141.47s (0:02:21); Vitest del Front, 10 archivos y 139 pruebas aprobadas; prueba de humo local `e2e/humo.spec.ts`, 3 passed  
+**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). El corte 2 queda verificado en local el 2026-11-17 en la rama `feat/001-corte-2` para US-18, US-19 y US-21 (sección «Corte 2»), y US-20 espera a T018. Quedan abiertos cuatro escenarios de US-17, la verificación a mano de T062, US-20 y la prueba de humo del corte 2 contra la vista previa de `develop`.
 
 Esta auditoría cruza cada historia de usuario (user story, US) con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado de hoy. Después cruza los requisitos funcionales (functional requirements, FR) y los criterios de éxito (success criteria, SC) de la spec con la evidencia, y lista lo que el corte 1 deja abierto. Las reglas de negocio (business rules, BR) son las de `specs/features/`. El resultado de cada escenario sale de una corrida real, no de una nota a mano, y los tres estados posibles son los siguientes.
 
@@ -15,17 +15,17 @@ Esta auditoría cruza cada historia de usuario (user story, US) con sus escenari
 
 ## Cómo se armó esta traza
 
-El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de la fase 6) lee los siete `.feature` de `aceptacion/`, arma para cada escenario el nombre de la función de pytest-bdd con la misma regla que `pytest_bdd.scenario.make_python_name` y lo busca entre las pruebas que pytest recolecta. Luego toma el resultado de la salida de `pytest -rA` y el de `npm test`. Se detiene si un escenario no tiene prueba, si una prueba no tiene escenario, si una prueba falla o si los omitidos por razón no suman lo que informa pytest. La corrida de aceptación recolectó 189 pruebas, que son 170 aprobadas y 19 omitidas, y la suite completa suma 682 pruebas unitarias y de plataforma aprobadas además de las de aceptación. Las 12 pruebas de `test_lectura_gherkin_es.py` (T010) comprueban la lectura del Gherkin en español y no pertenecen a ningún escenario.
+El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de la fase 6) lee los siete `.feature` de `aceptacion/`, arma para cada escenario el nombre de la función de pytest-bdd con la misma regla que `pytest_bdd.scenario.make_python_name` y lo busca entre las pruebas que pytest recolecta. Luego toma el resultado de la salida de `pytest -rA` y el de `npm test`. Se detiene si un escenario no tiene prueba, si una prueba no tiene escenario, si una prueba falla o si los omitidos por razón no suman lo que informa pytest. La corrida de aceptación recolectó 189 pruebas, que son 170 aprobadas y 19 omitidas, y la suite completa suma 682 pruebas unitarias y de plataforma aprobadas además de las de aceptación. Las 12 pruebas de `test_lectura_gherkin_es.py` (T010) comprueban la lectura del Gherkin en español y no pertenecen a ningún escenario. La traza del corte 2, del 2026-11-17, sigue la misma regla sobre la salida de `pytest tests/aceptacion -rA` de la rama `feat/001-corte-2`, que recolecta 314 pruebas, 300 aprobadas y 14 omitidas. De ellas, 193 son de escenarios de la spec 001, con 179 aprobadas y 14 omitidas, 104 son de la spec 003 y 17 de `test_lectura_gherkin_es.py`.
 
 ## Resumen
 
 | Conjunto | Escenarios | Aprobados | Omitidos | Pendientes |
 | --- | --- | --- | --- | --- |
-| Corte 1 (US-01 a US-17) | 108 | 98 | 6 | 4 |
-| Corte 2 (US-18 a US-21) | 25 | 0 | 9 | 16 |
-| Total | 133 | 98 | 15 | 20 |
+| Corte 1 (US-01 a US-17) | 107 | 97 | 6 | 4 |
+| Corte 2 (US-18 a US-21) | 25 | 20 | 5 | 0 |
+| Total | 132 | 117 | 11 | 4 |
 
-Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 177 de escenarios dan 158 aprobadas y 19 omitidas. Los siete escenarios aprobados de US-17 salen de las comprobaciones del 2026-11-17 contra Vercel y Neon, que describe la sección «Despliegue», y no de los pasos de pytest-bdd. El de las variables suma además `tests/test_env_example.py`, que revisa `.env.example` en cada corrida de la suite.
+Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 193 de escenarios del 2026-11-17 dan 179 aprobadas y 14 omitidas, que son las 9 de US-20 y las 5 que se comprueban en Neon. El corte 1 pierde el escenario «Un export que no declara su sección se detiene sin dejar rastro» de US-13, que se retira con T084 porque el primero de US-21 lo reemplaza. Los siete escenarios aprobados de US-17 salen de las comprobaciones del 2026-11-17 contra Vercel y Neon, que describe la sección «Despliegue», y no de los pasos de pytest-bdd. El de las variables suma además `tests/test_env_example.py`, que revisa `.env.example` en cada corrida de la suite.
 
 ## Historias
 
@@ -189,7 +189,7 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 ### US-13: Rechazar el export de otra sección o periodo (P1, corte 1)
 
-7 escenarios, 7 aprobados, 0 omitidos y 0 pendientes.
+6 escenarios, 6 aprobados, 0 omitidos y 0 pendientes. El escenario «Un export que no declara su sección se detiene sin dejar rastro» se retira el 2026-11-17 con T084, como anunciaba su comentario, porque el primero de US-21 lo reemplaza con las mismas comprobaciones de la base.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
@@ -197,7 +197,6 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 | Un curso o un periodo distinto en el nombre de hoja rechaza la carga | `test_carga_feature.py::test_un_curso_o_un_periodo_distinto_en_el_nombre_de_hoja_rechaza_la_carga` (2 ejemplos) | aprobado (2 de 2 ejemplos) |
 | Si la hoja no declara la sección, se coteja el nombre del archivo | `test_carga_feature.py::test_si_la_hoja_no_declara_la_sección_se_coteja_el_nombre_del_archivo` | aprobado |
 | Una hoja truncada a 31 caracteres se coteja igual | `test_carga_feature.py::test_una_hoja_truncada_a_31_caracteres_se_coteja_igual` | aprobado |
-| Un export que no declara su sección se detiene sin dejar rastro | `test_carga_feature.py::test_un_export_que_no_declara_su_sección_se_detiene_sin_dejar_rastro` | aprobado |
 | El export de una sección del profesor no entra en otra de sus secciones de la misma asignatura | `test_varias_secciones_feature.py::test_el_export_de_una_sección_del_profesor_no_entra_en_otra_de_sus_secciones_de_la_misma_asignatura` | aprobado |
 | El mismo número de sección en otra asignatura no basta para cargar el export | `test_varias_secciones_feature.py::test_el_mismo_número_de_sección_en_otra_asignatura_no_basta_para_cargar_el_export` | aprobado |
 
@@ -258,33 +257,33 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 ### US-18: Reemplazar la carga publicada de una sección (P2, corte 2)
 
-11 escenarios, 0 aprobados, 0 omitidos y 11 pendientes.
+11 escenarios, 11 aprobados, 0 omitidos y 0 pendientes.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
-| El export corregido reemplaza a la carga con el error | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| Subir sin pedir el reemplazo no pisa la carga publicada | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| Un reemplazo con un archivo ilegible no cambia nada | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| Un reemplazo que rechaza todas las filas no quita la carga vigente | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| Un reemplazo fallido no bloquea el siguiente | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| El mismo archivo de la carga publicada no la reemplaza | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| Volver al export anterior reutiliza su archivo | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| No se reemplaza una carga que ya no es la vigente | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| El profesor no reemplaza la carga de otra sección | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| La base impide dos cargas publicadas en la misma sección | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| La base no deja que una carga reemplace a otra de otra sección | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
+| El export corregido reemplaza a la carga con el error | `test_reemplazo_y_cargas_feature.py::test_el_export_corregido_reemplaza_a_la_carga_con_el_error` (2 ejemplos) | aprobado (2 de 2 ejemplos) |
+| Subir sin pedir el reemplazo no pisa la carga publicada | `test_reemplazo_y_cargas_feature.py::test_subir_sin_pedir_el_reemplazo_no_pisa_la_carga_publicada`; Vitest `tests/pantallas/SubirExport.test.tsx`, «un 409 de la sección con carga publicada pregunta si se reemplaza y reenvía el archivo con reemplaza» | aprobado |
+| Un reemplazo con un archivo ilegible no cambia nada | `test_reemplazo_y_cargas_feature.py::test_un_reemplazo_con_un_archivo_ilegible_no_cambia_nada`; Vitest `tests/pantallas/SubirExport.test.tsx`, «en el reemplazo, el 422 del archivo que no abre muestra que la carga publicada no cambió» | aprobado |
+| Un reemplazo que rechaza todas las filas no quita la carga vigente | `test_reemplazo_y_cargas_feature.py::test_un_reemplazo_que_rechaza_todas_las_filas_no_quita_la_carga_vigente` | aprobado |
+| Un reemplazo fallido no bloquea el siguiente | `test_reemplazo_y_cargas_feature.py::test_un_reemplazo_fallido_no_bloquea_el_siguiente` | aprobado |
+| El mismo archivo de la carga publicada no la reemplaza | `test_reemplazo_y_cargas_feature.py::test_el_mismo_archivo_de_la_carga_publicada_no_la_reemplaza` | aprobado |
+| Volver al export anterior reutiliza su archivo | `test_reemplazo_y_cargas_feature.py::test_volver_al_export_anterior_reutiliza_su_archivo` | aprobado |
+| No se reemplaza una carga que ya no es la vigente | `test_reemplazo_y_cargas_feature.py::test_no_se_reemplaza_una_carga_que_ya_no_es_la_vigente` | aprobado |
+| El profesor no reemplaza la carga de otra sección | `test_reemplazo_y_cargas_feature.py::test_el_profesor_no_reemplaza_la_carga_de_otra_sección` | aprobado |
+| La base impide dos cargas publicadas en la misma sección | `test_reemplazo_y_cargas_feature.py::test_la_base_impide_dos_cargas_publicadas_en_la_misma_sección` | aprobado |
+| La base no deja que una carga reemplace a otra de otra sección | `test_reemplazo_y_cargas_feature.py::test_la_base_no_deja_que_una_carga_reemplace_a_otra_de_otra_sección` | aprobado |
 
 ### US-19: Ver las cargas a mi alcance (P2, corte 2)
 
-5 escenarios, 0 aprobados, 0 omitidos y 5 pendientes.
+5 escenarios, 5 aprobados, 0 omitidos y 0 pendientes.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
-| El coordinador ve las cargas de todas las secciones | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| El coordinador filtra por sección | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| El profesor ve solo las cargas de su sección | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| La constancia de una carga reemplazada sigue disponible | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
-| La lista no expone datos que la base no guarda | sin prueba todavía | pendiente (corte 2, sin pasos todavía (T081 a T087)) |
+| El coordinador ve las cargas de todas las secciones | `test_reemplazo_y_cargas_feature.py::test_el_coordinador_ve_las_cargas_de_todas_las_secciones` | aprobado |
+| El coordinador filtra por sección | `test_reemplazo_y_cargas_feature.py::test_el_coordinador_filtra_por_sección` | aprobado |
+| El profesor ve solo las cargas de su sección | `test_reemplazo_y_cargas_feature.py::test_el_profesor_ve_solo_las_cargas_de_su_sección` | aprobado |
+| La constancia de una carga reemplazada sigue disponible | `test_reemplazo_y_cargas_feature.py::test_la_constancia_de_una_carga_reemplazada_sigue_disponible` | aprobado |
+| La lista no expone datos que la base no guarda | `test_reemplazo_y_cargas_feature.py::test_la_lista_no_expone_datos_que_la_base_no_guarda`; Vitest `tests/pantallas/Cargas.test.tsx`, «no muestra nombres de estudiantes, valores leídos ni rutas locales» | aprobado |
 
 ### US-20: Recibir el código de acceso en el correo institucional (P2, corte 2)
 
@@ -292,41 +291,44 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
-| Un usuario autorizado recibe su código | `test_acceso_feature.py::test_un_usuario_autorizado_recibe_su_código` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| La respuesta es la misma exista o no el correo | `test_acceso_feature.py::test_la_respuesta_es_la_misma_exista_o_no_el_correo` (3 ejemplos) | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| El código vigente abre la sesión | `test_acceso_feature.py::test_el_código_vigente_abre_la_sesión` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| Un código que ya no sirve no abre sesión | `test_acceso_feature.py::test_un_código_que_ya_no_sirve_no_abre_sesión` (3 ejemplos) | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| Pedir códigos en ráfaga no llena el buzón | `test_acceso_feature.py::test_pedir_códigos_en_ráfaga_no_llena_el_buzón` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
+| Un usuario autorizado recibe su código | `test_acceso_feature.py::test_un_usuario_autorizado_recibe_su_código` | omitido (Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.) |
+| La respuesta es la misma exista o no el correo | `test_acceso_feature.py::test_la_respuesta_es_la_misma_exista_o_no_el_correo` (3 ejemplos) | omitido (Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.) |
+| El código vigente abre la sesión | `test_acceso_feature.py::test_el_código_vigente_abre_la_sesión` | omitido (Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.) |
+| Un código que ya no sirve no abre sesión | `test_acceso_feature.py::test_un_código_que_ya_no_sirve_no_abre_sesión` (3 ejemplos) | omitido (Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.) |
+| Pedir códigos en ráfaga no llena el buzón | `test_acceso_feature.py::test_pedir_códigos_en_ráfaga_no_llena_el_buzón` | omitido (Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.) |
 
 ### US-21: Confirmar la sección cuando el archivo no la declara (P3, corte 2)
 
-4 escenarios, 0 aprobados, 4 omitidos y 0 pendientes.
+4 escenarios, 4 aprobados, 0 omitidos y 0 pendientes.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
-| Un export que no declara su sección espera la confirmación sin escribir nada | `test_carga_feature.py::test_un_export_que_no_declara_su_sección_espera_la_confirmación_sin_escribir_nada` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| La sección confirmada publica la carga y la constancia lo dice | `test_carga_feature.py::test_la_sección_confirmada_publica_la_carga_y_la_constancia_lo_dice` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| La confirmación no vale si nombra otra sección | `test_carga_feature.py::test_la_confirmación_no_vale_si_nombra_otra_sección` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
-| La confirmación no pasa por encima de una sección declarada distinta | `test_carga_feature.py::test_la_confirmación_no_pasa_por_encima_de_una_sección_declarada_distinta` | omitido (Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.) |
+| Un export que no declara su sección espera la confirmación sin escribir nada | `test_carga_feature.py::test_un_export_que_no_declara_su_sección_espera_la_confirmación_sin_escribir_nada` | aprobado |
+| La sección confirmada publica la carga y la constancia lo dice | `test_carga_feature.py::test_la_sección_confirmada_publica_la_carga_y_la_constancia_lo_dice` | aprobado |
+| La confirmación no vale si nombra otra sección | `test_carga_feature.py::test_la_confirmación_no_vale_si_nombra_otra_sección` | aprobado |
+| La confirmación no pasa por encima de una sección declarada distinta | `test_carga_feature.py::test_la_confirmación_no_pasa_por_encima_de_una_sección_declarada_distinta` | aprobado |
 
-## Pantallas P1 a P4 en Vitest
+## Pantallas en Vitest
 
-Los pasos de pantalla de los `.feature` los comprueba Vitest con Testing Library (T045). Los escenarios con un paso de pantalla traen su prueba de Vitest en la tabla de su historia, y esta tabla suma todas las del Front.
+Los pasos de pantalla de los `.feature` los comprueba Vitest con Testing Library (T045 y T085). Los escenarios con un paso de pantalla traen su prueba de Vitest en la tabla de su historia, y esta tabla suma todas las del Front con la corrida del 2026-11-17 de `npx vitest run` en la rama `feat/001-corte-2` del Front.
 
 | Grupo de pruebas | Archivo | Historias que la spec le asigna | Pruebas | Resultado |
 | --- | --- | --- | --- | --- |
 | P1 Ingreso | `Ingreso.test.tsx` | US-05, US-17, US-20 | 7 | aprobado (7 de 7) |
 | P2 Mis secciones | `MisSecciones.test.tsx` | US-06 | 10 | aprobado (10 de 10) |
-| P3 Subir export | `SubirExport.test.tsx` | US-07, US-08, US-09, US-11, US-12, US-13, US-18, US-21 | 17 | aprobado (17 de 17) |
-| P4 Resultado de la carga | `ResultadoCarga.test.tsx` | US-07, US-10, US-12, US-13, US-14, US-15, US-16, US-17 | 13 | aprobado (13 de 13) |
-| App | `App.test.tsx` | transversal | 5 | aprobado (5 de 5) |
+| P3 Subir export | `SubirExport.test.tsx` | US-07, US-08, US-09, US-11, US-12, US-13, US-18, US-21 | 32 | aprobado (32 de 32) |
+| P4 Resultado de la carga | `ResultadoCarga.test.tsx` | US-07, US-10, US-12, US-13, US-14, US-15, US-16, US-17, US-18 | 19 | aprobado (19 de 19) |
+| P5 Cargas | `Cargas.test.tsx` | US-18, US-19 | 17 | aprobado (17 de 17) |
+| App | `App.test.tsx` | transversal | 10 | aprobado (10 de 10) |
 | AvisosCarga | `componentes.test.tsx` | transversal | 2 | aprobado (2 de 2) |
 | Mensaje | `componentes.test.tsx` | transversal | 2 | aprobado (2 de 2) |
 | TablaRechazos | `componentes.test.tsx` | transversal | 1 | aprobado (1 de 1) |
-| api.ts | `api.test.ts` | transversal | 15 | aprobado (15 de 15) |
+| api.ts | `api.test.ts` | transversal | 27 | aprobado (27 de 27) |
 | horaDeLima | `formato.test.ts` | transversal | 4 | aprobado (4 de 4) |
+| resumenFilas | `formato.test.ts` | transversal | 2 | aprobado (2 de 2) |
+| vercel.json del Front | `vercel.test.ts` | US-17 | 6 | aprobado (6 de 6) |
 
-Total del Front, 8 archivos y 76 pruebas aprobadas. La prueba de humo `e2e/humo.spec.ts` (Playwright para Node, T053) recorre P1 a P4 contra el Back y el Front locales y no corre con `npm test`, así que su corrida contra Preview queda como pendiente de T075.
+Total del Front, 10 archivos y 139 pruebas aprobadas, frente a 9 archivos y 85 en `develop` (7f6c72b). La prueba de humo `e2e/humo.spec.ts` (Playwright para Node, T053 y T087) recorre P1 a P5, con el reemplazo en P5, contra el Back y el Front locales, y no corre con `npm test`. Su corrida contra la vista previa de `develop` espera la fusión de las dos ramas (sección «Corte 2»).
 
 ## Verificación manual (T062)
 
@@ -385,16 +387,16 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-022 | US-05, US-06, US-07; sin regla BR | 25 aprobados, 0 omitidos y 0 pendientes | Vitest, grupos «P1 Ingreso» (7); Vitest, grupos «P2 Mis secciones» (10); Vitest, grupos «P3 Subir export» (17); Vitest, grupos «P4 Resultado de la carga» (13); Vitest, grupos «App» (5) | Cubierto |
 | FR-023 | US-05, US-17; BR-ACCESO-03 | 11 aprobados, 0 omitidos y 0 pendientes (los de la cookie y la reescritura de US-17, aprobados el 2026-11-17) | `test_api_sesion.py` (3); Vitest, grupos «api.ts» (15) | Cubierto |
 | FR-024 | US-17; sin regla BR | 7 aprobados, 0 omitidos y 4 pendientes | comprobaciones del 2026-11-17 contra Vercel y Neon (sección «Despliegue») y `test_env_example.py` (7) | Parcial |
-| FR-025 | ninguna; BR-CARGA-19 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
-| FR-026 | ninguna; BR-CARGA-20 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
-| FR-027 | ninguna; BR-ACCESO-09 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
+| FR-025 | US-18; BR-CARGA-19 | 11 aprobados, 0 omitidos y 0 pendientes (corte 2) | `test_api_cargas.py` (13), `test_carga.py` (30); Vitest, grupos «P3 Subir export» (32) y «P5 Cargas» (17) | Cubierto |
+| FR-026 | US-19; BR-CARGA-20 | 5 aprobados, 0 omitidos y 0 pendientes (corte 2) | `test_api_cargas.py` (9), `test_constancia.py` (2); Vitest, grupo «P5 Cargas» (17) | Cubierto |
+| FR-027 | US-20; BR-ACCESO-09 | 0 aprobados, 5 omitidos y 0 pendientes (corte 2) | ninguna, porque espera a T018 | Corte 2, pendiente de T018 |
 | FR-028 | ninguna; sin regla BR | ninguno | `test_lectura_gherkin_es.py` (12) | Cubierto |
 | FR-029 | US-07, US-08, US-09, US-10, US-11, US-12, US-13, US-14, US-15, US-16; sin regla BR | 55 aprobados, 0 omitidos y 0 pendientes | solo escenarios | Cubierto |
 | FR-030 | ninguna; sin regla BR | ninguno | `test_generador_exports.py` (73) | Cubierto |
 | FR-031 | US-01; sin regla BR | 1 aprobado, 0 omitidos y 0 pendientes | La CI aplica las migraciones con psql, probado en local por el escenario de la CI | Cubierto |
 | FR-032 | ninguna; sin regla BR | ninguno | bash scripts/preflight.sh y la entrada de MEMORIA.md se verifican en la etapa de commit | Parcial |
 
-Resumen de requisitos, Corte 2, pendiente 3, Cubierto 23, Parcial 6.
+Resumen de requisitos, Corte 2, pendiente de T018 1, Cubierto 25, Parcial 6.
 
 ## Criterios de éxito
 
@@ -427,7 +429,7 @@ Cada regla de las cuatro specs vivas con sus escenarios y sus pruebas unitarias.
 | BR-ACCESO-06 | 5, 0, 0 | `test_api_secciones.py` (1), `test_api_sesion.py` (9) | Aprobada |
 | BR-ACCESO-07 | 3, 0, 0 | `test_api_secciones.py` (3), `test_permisos.py` (13), `test_varias_secciones.py` (1) | Aprobada |
 | BR-ACCESO-08 | 6, 0, 0 | `test_api_cargas.py` (4), `test_comando.py` (8), `test_permisos.py` (10), `test_varias_secciones.py` (1) | Aprobada |
-| BR-ACCESO-09 | 0, 0, 0 | ninguna | Corte 2, pendiente |
+| BR-ACCESO-09 | 0, 5, 0 | ninguna | Corte 2, pendiente de T018 |
 | BR-CARGA-01 | 3, 0, 0 | `test_carga.py` (12), `test_comando.py` (3), `test_validacion.py` (1) | Aprobada |
 | BR-CARGA-02 | 3, 0, 0 | `test_api_cargas.py` (1), `test_carga.py` (16), `test_demo_punta_a_punta.py` (1) | Aprobada |
 | BR-CARGA-03 | 8, 0, 0 | `test_api_cargas.py` (1), `test_carga.py` (16), `test_lector.py` (1), `test_validacion.py` (1) | Aprobada |
@@ -445,9 +447,9 @@ Cada regla de las cuatro specs vivas con sus escenarios y sus pruebas unitarias.
 | BR-CARGA-15 | 6, 0, 0 | `test_api_cargas.py` (1), `test_carga.py` (10), `test_lector.py` (2), `test_validacion.py` (43) | Aprobada |
 | BR-CARGA-16 | 3, 0, 0 | `test_carga.py` (5), `test_comando.py` (1), `test_lector.py` (3), `test_validacion.py` (4) | Aprobada |
 | BR-CARGA-17 | 4, 0, 0 | `test_carga.py` (8), `test_demo_punta_a_punta.py` (1), `test_lector.py` (7), `test_validacion.py` (2) | Aprobada |
-| BR-CARGA-18 | 0, 0, 0 | ninguna | Corte 2, pendiente |
-| BR-CARGA-19 | 0, 0, 0 | ninguna | Corte 2, pendiente |
-| BR-CARGA-20 | 0, 0, 0 | ninguna | Corte 2, pendiente |
+| BR-CARGA-18 | 6, 0, 0 | `test_api_cargas.py` (9), `test_carga.py` (4), `test_validacion.py` (7) | Aprobada (corte 2) |
+| BR-CARGA-19 | 11, 0, 0 | `test_api_cargas.py` (13), `test_carga.py` (30) | Aprobada (corte 2) |
+| BR-CARGA-20 | 5, 0, 0 | `test_api_cargas.py` (9), `test_constancia.py` (2) | Aprobada (corte 2) |
 | BR-PERIODO-01 | 1, 0, 0 | `test_api_secciones.py` (8) | Aprobada |
 | BR-PERIODO-02 | 4, 0, 0 | ninguna | Aprobada |
 | BR-PERIODO-03 | 4, 0, 0 | ninguna | Aprobada |
@@ -489,7 +491,7 @@ Reglas sin prueba, ninguna.
 
 ### Escenarios del corte 2
 
-Los 25 escenarios de US-18 a US-21 quedan para T080 a T099. De ellos, 9 están omitidos con la razón «Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1.» y 16 esperan sus pasos en `reemplazo_y_cargas.feature`.
+Desde el 2026-11-17, 20 de los 25 escenarios de US-18 a US-21 están aprobados (sección «Corte 2»). Los 5 de US-20, que son 9 pruebas de pytest, siguen omitidos con la razón «Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson, y de T083 y T086.».
 
 ### Decisiones abiertas
 
@@ -528,7 +530,7 @@ Salen de `tasks.md` del 2026-11-17 y se acortan a una línea. T062 es la verific
 | Tarea | Dónde | Descripción |
 | --- | --- | --- |
 | T004 | Jefferson | Revisar y fusionar la solicitud de integración (pull request, PR) de `docs/plan-mvp` a `develop`, que aprueba la spec, y ratificar la constitución con su fecha |
-| T018 | Jefferson | Comprar el dominio y abrir la cuenta de Resend (J-04) para que el registro del dominio se propague antes del corte 2 |
+| T018 | Jefferson | Comprar el dominio y abrir la cuenta de Resend (J-04) para que el registro del dominio se propague antes del corte 2; de ella dependen T083, T086 y los escenarios de US-20 |
 | T022 | Jefferson | Fusionar `preparacion-neon` (4ff1952) en `main` de `ABET_ULIMA`, aprobar el traslado y archivar el repositorio en solo lectura cuando termine T023 |
 | T070 | Jefferson | Apagar el entrenamiento de IA del equipo de Vercel, que sigue con `dataSharingConsent` en `granted`, y enviar la consulta a soporte de J-07 |
 | T074 | Jefferson | Asignar la contraseña de coordinacion en la rama `develop`, la única de los tres usuarios que falta |
@@ -556,3 +558,23 @@ La versión 0.1.0 llega a Production el 2026-11-17 en los dos proyectos de Verce
 | R-17 descargado en Preview | `herramientas_neon/e2e_version/vista_previa_r17.spec.ts`, en el que docente410 abre P4 de la 410 y pulsa «Descargar R-17», y `herramientas_neon/revisar_r17.py` | `GET /api/cargas/1/r17.xlsx` 200, con `nosniff`, entrega `R017_450002_410_2026-2_PROVISIONAL.xlsx`. Es el R-17 de la 410 cargada con el `.csv` el 2026-11-09, porque la carga del export con el 5 en la fila 3 ya no existe en `develop` |
 | Tabla de estudiantes del R-17 | Lectura del libro con openpyxl en `revisar_r17.py` | 33 filas, de la 43 a la 75, con 11 estudiantes por 3 PI, solo códigos inventados y niveles de 1 a 4. Los 7, 7 y 8 de 11 de la tabla (63,6 %, 63,6 % y 72,7 %) coinciden con los bloques E24:E26 y P29:Q31, y ninguna celda trae una fórmula ni repite uno de los 12 nombres del export |
 | Hoja «Constancia» del R-17 | La misma lectura | «Sin hoja (export de texto)», 11 / 11 / 11 / 0 filas, la huella SHA-256 del `.csv`, PUBLICADA, PROVISIONAL, subida por docente410, 5 avisos de dos tipos, 0 rechazos y la frase final. Su versión del programa es 0.0.0, porque `abet.carga` la guarda al cargar y esa carga es del 2026-11-09, antes de la 0.1.0 |
+
+## Corte 2
+
+El corte 2 se implementa el 2026-11-17 en las ramas `feat/001-corte-2` del Back (desde e981a31 de `develop`) y del Front (desde 7f6c72b), con las tareas T080 a T082, T084, T085 sin P1, T087 sin US-20 y T088. US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson, y la versión 0.2.0 (T089) es de Jefferson. Todas las pruebas que escriben corren en un clúster desechable de PostgreSQL 18, nunca en localhost:5432, y solo con datos inventados.
+
+| Paso | Cómo | Evidencia |
+| --- | --- | --- |
+| Contrato antes del código | Sección 10 de `docs/03-api/contrato.md` del Front contra los `.feature` de la rama | 0 mensajes de los escenarios sin contrato. El único mensaje del contrato sin escenario es el de la marca de entorno de T077, que ya falta en `develop` |
+| Esquema OpenAPI | `app.openapi()` del Back | 6 caminos, como pide la sección 10 del contrato sin US-20, con `seccion_id` en `GET /api/cargas` y `reemplaza` en la subida |
+| Aceptación del Back | `uv run --frozen --no-build pytest -q -p no:cacheprovider tests/aceptacion -rA` | 300 passed y 14 skipped, con los 20 escenarios de US-18, US-19 y US-21 aprobados y los 5 de US-20 omitidos |
+| Suite completa del Back | `uv run --frozen --no-build pytest -q -p no:cacheprovider` | 1289 passed y 15 skipped in 141.47s (0:02:21), frente a 1187 passed y 19 skipped de `develop` en e981a31 |
+| Front | `npx vitest run`, `npx tsc --noEmit`, `npm run build` y `bash scripts/preflight.sh` | 10 archivos y 139 pruebas aprobadas, la compilación sin errores y la revisión previa sin fallas |
+| Prueba de humo local | `bash scripts/api_local.sh --sin-https` del Back, Vite en el puerto 5173 y `bash scripts/e2e.sh e2e/humo.spec.ts` del Front con `EXPORT_CON_ERROR` y `EXPORT_CORRECTO` | 3 passed. docente410 sube el export con el error (11 / 10 / 1), docente.varias recibe 403 en la 410 y docente410 reemplaza en P5 esa carga por el export correcto, con P4 en 11 / 11 / 0 y P5 con «Vigente, reemplaza a la carga 1» y «Reemplazada por la carga 2» |
+| R-17 de la carga que reemplaza | `herramientas_neon/revisar_r17.py` sobre el `R017_450002_410_2026-2_PROVISIONAL.xlsx` que descarga la prueba de humo, contra `sintetico_20262_450002_410.xlsx` | 0 fallas, 33 filas desde la 43, 7, 7 y 8 de 11 (63,6 %, 63,6 % y 72,7 %), ninguna fórmula ni nombre y la hoja «Constancia» con 11 / 11 / 11 / 0, la huella del export y PUBLICADA. La evidencia, sin contraseñas, queda en `ABET_SIS_MED/demo_corte2/` |
+| Revisión independiente | Un subagente con el modelo de la sesión y esfuerzo alto revisa en solo lectura el diff de los dos repositorios | Ningún hallazgo de severidad alta ni media. De los tres de severidad baja, dos se resuelven con su prueba (un `seccion_id` entero que no es de ninguna sección recibe el 403 único, y el 200 del mismo archivo manda aunque `reemplaza` nombre otra carga) y uno se acepta (P3 no vuelve a ofrecer el reemplazo si otra persona reemplaza la carga mientras pregunta) |
+| Escenario 1 de US-21 y FR-013 de la spec 003 | Cotejo de su texto con BR-CARGA-11 y con US-30 de la spec 003, que saca la sección de un `.csv` o un `.xls` solo del nombre, y `test_carga.py` con un `.csv` sin sección confirmado | La pregunta no nombra la hoja, así que vale para los tres formatos y su texto no cambia. El `.csv` «notas 410.csv» recibe la misma pregunta y, al confirmarla, se publica con la hoja nula y el AVISO SECCION_SIN_DECLARAR. Los textos del corte 1 que `spec.md` conservaba con la forma anterior a la spec 003 pasan a la forma vigente |
+| Prueba de humo contra la vista previa | `e2e/humo.spec.ts` contra la vista previa de `develop` y su rama de Neon | Pendiente (T099), porque exige empujar y fusionar las dos ramas con el permiso de Jefferson |
+| US-20 | Escenarios de `acceso.feature` | Pendiente de T018, T083 y T086 |
+
+El corte 2 no cambia la base. El reemplazo usa `reemplaza_carga_id`, `uq_carga_reemplaza`, `fk_carga_reemplaza` y el estado REEMPLAZADA de V1_07, el aviso SECCION_SIN_DECLARAR de V1_09 y el UPDATE de `estado` que `crear_rol_app.sql` ya da a `abet_app`, así que Neon no necesita ninguna migración para esta versión.

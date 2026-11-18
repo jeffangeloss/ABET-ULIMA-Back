@@ -312,13 +312,16 @@ Característica: El export real de Blackboard en .xlsx, .csv y .xls
       | gc_SINTETICO_20262_450002_411_fullgc_2026-11-04-14-35-59.csv       | la respuesta es 201 y su cuerpo trae estado "RECHAZADA" y el mensaje "El archivo corresponde a la sección 411 y usted eligió la 410. No se publicó."       |
       | gc_SINTETICO_20261_450002_410_fullgc_2026-11-04-14-35-59.csv       | la respuesta es 201 y su cuerpo trae estado "RECHAZADA" y el mensaje "El archivo corresponde al periodo 2026-1 y la sección elegida es de 2026-2. No se publicó." |
       | gc_SINTETICO_20262_450010_410_fullgc_2026-11-04-14-35-59.csv       | la respuesta es 201 y su cuerpo trae estado "RECHAZADA" y el mensaje "El archivo corresponde a la asignatura 450010 y usted eligió la 450002. No se publicó." |
-      | notas 410.csv                                                      | la respuesta es 422 con detail "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."          |
+      | notas 410.csv                                                      | la respuesta es 422 con detail "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"                                     |
 
+  # Cambio del corte 2 de la spec 001 (US-21, valor del corte 2 de D-02). El 422 de un export que no declara su
+  # sección, en cualquiera de los tres formatos, pregunta por la sección elegida en lugar de detener el archivo, y
+  # la confirmación con confirmar_seccion=true la prueban los escenarios de US-21 de carga.feature.
   @US-30 @corte1 @spec003
   Escenario: Un .xlsx sin sección en la hoja ni en el nombre recibe el texto nuevo
     Dado una copia de "sintetico_20262_450002_410.xlsx" con la hoja renombrada "Hoja1" y el nombre "notas.xlsx"
     Cuando el profesor sube esa copia a la sección 410
-    Entonces la respuesta es 422 con detail "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
+    Entonces la respuesta es 422 con detail "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"
     Y abet.archivo_origen, abet.carga, abet.rechazo_fila y abet.estudiante no ganan ninguna fila
 
   # US-31: Saber por qué no se admite un archivo

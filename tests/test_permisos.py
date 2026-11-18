@@ -204,3 +204,39 @@ def test_br_acceso_08_las_consultas_no_dejan_una_transaccion_abierta(base: Any) 
         assert conexion.info.transaction_status == psycopg.pq.TransactionStatus.IDLE
         assert permisos.secciones_visibles(conexion, usuario_id, PERIODO)
         assert conexion.info.transaction_status == psycopg.pq.TransactionStatus.IDLE
+
+
+# BR-ACCESO-08 y BR-CARGA-19 (corte 2): quién reemplaza la carga publicada de una sección.
+
+def test_br_acceso_08_corte2_el_profesor_reemplaza_solo_en_sus_secciones(conexion: psycopg.Connection) -> None:
+    ids = _secciones(conexion)
+    varias = _usuario(conexion, VARIAS_CORREO)
+    for clave, seccion_id in ids.items():
+        assert permisos.puede_reemplazar(conexion, varias, seccion_id) is (clave in DE_VARIAS)
+    docente_410 = _usuario(conexion, DOCENTE_410)
+    assert permisos.puede_reemplazar(conexion, docente_410, ids[("450002", "410")])
+    assert not permisos.puede_reemplazar(conexion, docente_410, ids[("450002", "411")])
+
+
+def test_br_acceso_08_corte2_el_coordinador_reemplaza_en_cualquiera_y_sigue_sin_subir(
+    conexion: psycopg.Connection,
+) -> None:
+    coordinacion = _usuario(conexion, COORDINACION)
+    for seccion_id in _secciones(conexion).values():
+        assert permisos.puede_reemplazar(conexion, coordinacion, seccion_id)
+        assert not permisos.puede_subir(conexion, coordinacion, seccion_id)
+
+
+@pytest.mark.usefixtures("inactivo")
+def test_br_acceso_08_corte2_un_usuario_inactivo_no_reemplaza(conexion: psycopg.Connection) -> None:
+    ids = _secciones(conexion)
+    assert not permisos.puede_reemplazar(conexion, _usuario(conexion, DOCENTE_410), ids[("450002", "410")])
+    assert not permisos.puede_reemplazar(conexion, _usuario(conexion, COORDINACION), ids[("450002", "410")])
+
+
+def test_br_acceso_08_corte2_una_seccion_o_un_usuario_que_no_existen_no_reemplazan(
+    conexion: psycopg.Connection,
+) -> None:
+    ids = _secciones(conexion)
+    assert not permisos.puede_reemplazar(conexion, _usuario(conexion, COORDINACION), 2_000_000_000)
+    assert not permisos.puede_reemplazar(conexion, 2_000_000_000, ids[("450002", "410")])
