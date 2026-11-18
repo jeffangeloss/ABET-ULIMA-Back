@@ -245,12 +245,15 @@ Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un Postg
 
 ```text
 - 2026-11-17 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_reemplazo_y_cargas_feature.py, test_carga_feature.py, test_exports_blackboard_feature.py, test_api_cargas.py, test_carga.py, test_validacion.py, test_constancia.py → BR-CARGA-01, 03, 09 a 11 y 18 a 20 (corte 2)
+- 2026-11-17 · uv run --frozen --no-build pytest -q y bash db/pruebas/correr_pruebas.sh sobre develop (e981a31) · test_exports_blackboard_feature.py, test_lector.py, test_validacion.py, test_carga.py, test_api_cargas.py, test_generador_exports.py y db/pruebas/pruebas.sql (R63 a R65, A09 y A10) → bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17
 - 2026-11-09 · uv run --frozen --no-build pytest -q · test_exports_blackboard_feature.py, test_lector.py, test_validacion.py, test_carga.py, test_api_cargas.py, test_generador_exports.py → bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_carga_feature.py, test_varias_secciones_feature.py → BR-CARGA-01 a BR-CARGA-07, BR-CARGA-09 a BR-CARGA-17
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_carga.py, test_comando.py, test_demo_punta_a_punta.py, test_lector.py, test_validacion.py, test_varias_secciones.py → BR-CARGA-01 a BR-CARGA-17
 ```
 
 Resultado del 2026-11-17 (corte 2, rama `feat/001-corte-2`, PostgreSQL 18 desechable): suite completa, 1289 passed y 15 skipped in 141.47s (0:02:21); aceptación, 300 passed y 14 skipped, con los 9 casos de US-20 omitidos por T018; el detalle por historia está en la sección «Corte 2» de `specs/001-mvp-carga-r17/audit.md`.
+
+El 2026-11-17, al cerrar la spec 003 sobre `develop` (e981a31) con un PostgreSQL 18 desechable, la suite completa da 1187 passed y 19 skipped in 131.41s (0:02:11), con los 104 casos de `exports_blackboard.feature` aprobados y ninguna omitida de esta spec, y `correr_pruebas.sh` da «ok 65/65 casos de rechazo» y «RESULTADO: todo pasó». El escenario del `.xlsx` real de US-26 comprueba desde ese día también `abet.v_r17_por_pi`, y el detalle está en `specs/003-exports-blackboard/audit.md`.
 
 Resultado del 2026-11-09 (spec 003, rama `feat/003-exports-blackboard`, PostgreSQL 18 desechable): suite completa, 1180 passed y 19 skipped in 124.87s (0:02:04), con los 104 casos de `specs/003-exports-blackboard/aceptacion/exports_blackboard.feature` aprobados; el detalle por historia está en `specs/003-exports-blackboard/audit.md`.
 
