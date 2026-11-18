@@ -40,6 +40,7 @@ Característica: El export real de Blackboard en .xlsx, .csv y .xls
     Cuando el profesor sube "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx" a la sección 410
     Entonces la respuesta es 201 y su cuerpo trae estado "PUBLICADA", filas_leidas 11, filas_aceptadas 11 y filas_rechazadas 0
     Y abet.medicion tiene 33 filas de esa carga
+    Y abet.v_r17_por_pi de esa carga da pct_logro_sobre_calificados 63,6 en 5.1, 63,6 en 5.2 y 72,7 en 5.3
     Y abet.carga_columna tiene 3 filas de esa carga, de los PI 5.1, 5.2 y 5.3
     Y la columna del PI 5.1 guarda el encabezado "ABET SO5.1 [Total Pts: 100 Score] |9000051", bb_columna_id "9000051" y puntaje_maximo_declarado 100.00
     Y la columna del PI 5.3 guarda el encabezado "ABET SO 5.3 [Total Pts: 100 Score] |9000053"
