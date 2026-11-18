@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-17
-- **Rama de trabajo**: `chore/dependencias-dependabot`, que sale de `develop` (71aa82c) con los seis saltos de Dependabot
+- **Rama de trabajo**: `fix/001-env-example-sin-valores`, que sale de `develop` (90d0faf) con `.env.example` sin valores
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2, pillow 13.0.0, uv_build hasta 0.13 y setup-uv v10.3.3 en un solo cambio, que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20 y cierra los avisos vigentes de pillow 12.3.0 y pydantic 2.14.1, y opentelemetry-api 1.45.2 en un commit aparte por GHSA-mf5v-w3w3-f6cg
-- **En curso**: el PR de esta rama, que Jefferson aprueba en el chat fusionar con la CI en verde («Sí, con opentelemetry»)
-- **Siguiente paso**: al fusionar, cerrar los seis PR de Dependabot con su razón y repetir la prueba de la vista previa de `develop` con `humo_preview.sh`, que corre Jefferson; después, los cinco escenarios pendientes de US-17 (`audit.md`) y la contraseña de coordinacion en `develop` (T074)
+- **Último cambio**: `.env.example` nombra las cinco variables sin valor, y el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17 queda aprobado
+- **En curso**: el escenario «Los secretos del Back no quedan en ningún repositorio» de US-17, que espera la búsqueda del valor de `SESION_SECRETO` que Jefferson corre en su terminal, porque la variable es de tipo sensitive en Vercel y nadie más puede leerla
+- **Siguiente paso**: con el permiso de Jefferson, empujar esta rama y abrir su PR; después, la prueba de la vista previa de `develop` con `humo_preview.sh` tras los saltos de Dependabot, los otros tres escenarios pendientes de US-17 (`audit.md`) y la contraseña de coordinacion en `develop` (T074)
 - **Bloqueos**: D-30 (escala de las columnas ABET de 100 puntos) espera a Stefanny Montaño o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070)
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-17 21:20 (Lima) · fix/001-env-example-sin-valores · `.env.example` sin valores, escenario de las variables de US-17
+- Quién: Jefferson pide en el chat cerrar los escenarios pendientes de US-17 que no dependen de él («Sí, ciérralos»). Claude Code, sin subagentes, escribe primero las pruebas, cambia `.env.example`, revisa en Vercel solo los nombres y los tipos de las variables, actualiza la auditoría y escribe esta entrada.
+- Qué cambió: `.env.example` deja sin valor `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS` y pasa su valor del piloto al comentario. `tests/test_env_example.py` es nuevo, con 7 pruebas. `audit.md` aprueba el escenario y deja cuatro pendientes en US-17, `tasks.md` anota el cambio en T030, y cambian también `CHANGELOG.md` y esta memoria.
+- Por qué: el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17 pide que `.env.example` nombre las cinco variables sin valor, como la constitución, la regla 7 de `AGENTS.md` y `docs/devops.md`. T030 dejaba el valor de ejemplo en los tres parámetros que no son secretos, y `audit.md` dejaba a Jefferson elegir entre cambiar el archivo o el escenario. Cambia el archivo, porque así el repositorio cumple la spec aprobada sin tocarla.
+- Lo que debe hacer, cómo se probó: la prueba nueva, con `uv run --frozen --no-build pytest -q tests/test_env_example.py`, da 4 failed y 3 passed antes del cambio, por los tres parámetros con valor y por la API que arranca con la copia, y 7 passed después. La suite completa, con `uv run --frozen --no-build pytest -q`, da 1187 passed y 19 skipped en 2 min 8 s, sin warnings, y `bash scripts/preflight.sh` termina sin fallas. La lista de `vercel env ls production --project abet-ulima-back` trae las cinco variables en Production, de tipo Secret y ocultas.
+- Lo que no debe hacer, cómo se probó: una copia tal cual de `.env.example`, con los dos secretos completos, no arranca la API porque le falta `PERIODO_VIGENTE`, y deja la guardia encendida, porque solo el valor 0 la apaga. Un cambio temporal de la lectura de la guardia a `== "1"` en `abet_carga/carga.py` hace fallar esa prueba, y el archivo vuelve después a su versión de `develop`. La consulta a Vercel lee solo nombres y tipos, nunca valores.
+- Correcciones: el pedido supone que el escenario «Los secretos del Back no quedan en ningún repositorio» tampoco depende de Jefferson, pero las variables del Back son de tipo sensitive en Vercel y nadie más puede leer el valor de `SESION_SECRETO`. Ese escenario sigue pendiente, con una búsqueda que Jefferson corre en su terminal sin mostrar el valor, probada antes con un texto que sí está en los repositorios y con otro al azar.
+- Cómo se reporta: esta entrada, `audit.md`, `CHANGELOG.md` y el PR de esta rama, cuando Jefferson autorice empujar.
+- Pendiente y siguiente paso: el escenario de los secretos, con el resultado de esa búsqueda; los otros tres escenarios pendientes de US-17 y la contraseña de coordinacion en `develop` (T074).
 
 ### 2026-11-17 19:05 (Lima) · chore/dependencias-dependabot · opentelemetry-api 1.45.2 por el aviso GHSA-mf5v-w3w3-f6cg
 - Quién: Claude Code, en la misma rama, a partir de la revisión de avisos de la entrada anterior. Como el salto no viene de ningún PR de Dependabot, Jefferson decide sumarlo, y aprueba en el chat empujar las ramas del Back y del Front, fusionarlas con la CI en verde y cerrar los diez PR de Dependabot («Sí, con opentelemetry»).
