@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- La spec 003 queda cerrada, salvo D-30 (T005). `specs/003-exports-blackboard/audit.md` registra la corrida final de T053 sobre `develop` y corrige lo que refutan tres verificadores, el escenario del `.xlsx` real de US-26 comprueba también `abet.v_r17_por_pi`, `carga-export.spec.md` y `r17.spec.md` reciben su línea del 2026-11-17, y la sección `[0.1.0]` suma la línea de US-30 que faltaba (T053, T060 y T061).
 - `.env.example` nombra las cinco variables sin valor y deja en su comentario el valor del piloto de `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, como pide el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17, que queda aprobado. Una copia tal cual ya no arranca la API y deja la guardia encendida (`tests/test_env_example.py`).
 - `specs/001-mvp-carga-r17/audit.md` registra la versión 0.1.0 en Production con su sección «Despliegue», y US-17 queda con 6 escenarios aprobados contra Vercel y Neon y 5 pendientes con su razón (T079).
 - fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2 y pillow 13.0.0 en `uv.lock` y `requirements.txt`, `uv_build` hasta 0.13 en `[build-system]` y setup-uv v10.3.3 en la CI, todos con al menos 14 días publicados, en un solo cambio que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20.
@@ -20,6 +21,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 ### Agregado
 
 - Carga del export real de Blackboard en sus tres formatos, `.xlsx`, `.csv` (UTF-8 con BOM, comas y comillas) y `.xls` de texto (UTF-16 LE con BOM y tabuladores), con el lector elegido por el contenido (spec 003, US-27, US-28 y J-18).
+- La sección de un export de texto (`.csv` o `.xls`), que no tiene hoja, sale del nombre del archivo y se coteja con la sección y el periodo elegidos, con SECCION_NO_COINCIDE y PERIODO_NO_COINCIDE (spec 003, US-30 y BR-CARGA-11).
 - Reconocimiento de las columnas de PI con sus encabezados reales, como «ABET SO5.1 [Total Pts: 100 Score]» y «ABET SO 5.3 […]», en el lector y en la base, con `V1_10__encabezado_pi_con_prefijo.sql` (spec 003, US-26 y J-19).
 - El nivel «3.00», «3,00» o «4.0» que Blackboard escribe en el texto vale el entero (US-29, D-03).
 - Un export sin ningún nivel en los PI del plan queda RECHAZADO con SIN_CALIFICACIONES y deja libre la sección (US-36, D-31).
