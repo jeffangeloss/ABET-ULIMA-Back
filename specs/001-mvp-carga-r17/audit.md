@@ -5,7 +5,7 @@
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen pytest -q tests/aceptacion -rA` en el Back, `uv run --frozen pytest -q tests -rA` en el Back para las pruebas unitarias y `npm test` en el Front  
 **Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas  
-**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). Quedan abiertos cinco escenarios de US-17, la verificación a mano de T062 y todo el corte 2.
+**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). Quedan abiertos cuatro escenarios de US-17, la verificación a mano de T062 y todo el corte 2.
 
 Esta auditoría cruza cada historia de usuario (user story, US) con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado de hoy. Después cruza los requisitos funcionales (functional requirements, FR) y los criterios de éxito (success criteria, SC) de la spec con la evidencia, y lista lo que el corte 1 deja abierto. Las reglas de negocio (business rules, BR) son las de `specs/features/`. El resultado de cada escenario sale de una corrida real, no de una nota a mano, y los tres estados posibles son los siguientes.
 
@@ -21,11 +21,11 @@ El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de 
 
 | Conjunto | Escenarios | Aprobados | Omitidos | Pendientes |
 | --- | --- | --- | --- | --- |
-| Corte 1 (US-01 a US-17) | 108 | 97 | 6 | 5 |
+| Corte 1 (US-01 a US-17) | 108 | 98 | 6 | 4 |
 | Corte 2 (US-18 a US-21) | 25 | 0 | 9 | 16 |
-| Total | 133 | 97 | 15 | 21 |
+| Total | 133 | 98 | 15 | 20 |
 
-Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 177 de escenarios dan 158 aprobadas y 19 omitidas. Los seis escenarios aprobados de US-17 salen de las comprobaciones del 2026-11-17 contra Vercel y Neon, que describe la sección «Despliegue», y no de pytest.
+Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra varios ejemplos. En pruebas de pytest, las 177 de escenarios dan 158 aprobadas y 19 omitidas. Los siete escenarios aprobados de US-17 salen de las comprobaciones del 2026-11-17 contra Vercel y Neon, que describe la sección «Despliegue», y no de los pasos de pytest-bdd. El de las variables suma además `tests/test_env_example.py`, que revisa `.env.example` en cada corrida de la suite.
 
 ## Historias
 
@@ -240,14 +240,14 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 ### US-17: Desplegar el piloto en Vercel con Neon y probarlo de punta a punta (P1, corte 1)
 
-11 escenarios, 6 aprobados, 0 omitidos y 5 pendientes. Las pruebas de esta historia corren el 2026-11-17 contra Vercel y Neon, fuera de pytest, y su evidencia está en la sección «Despliegue».
+11 escenarios, 7 aprobados, 0 omitidos y 4 pendientes. Las pruebas de esta historia corren el 2026-11-17 contra Vercel y Neon, fuera de pytest, y su evidencia está en la sección «Despliegue». La mitad de `.env.example` del escenario de las variables corre además en pytest, con `tests/test_env_example.py`.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
 | Cada proyecto fija la región iad1 | `vercel.json` de `main` y `vercel api /v13/deployments` del despliegue de Production de cada proyecto | aprobado |
 | El Front reescribe /api hacia el Back y todo queda en un solo origen | `vercel.json` del Front en `main` y `GET /api/sesion` sin cookie a la URL de Production del Front, con curl y con `herramientas_neon/e2e_version/produccion.spec.ts` | aprobado |
 | La cookie de sesión es de primera parte y nunca pasa por el almacenamiento del navegador | `herramientas_neon/e2e_version/produccion.spec.ts`, con docente410 en P1 de Production | aprobado |
-| Las variables del Back están en Vercel y no en el repositorio | `vercel env ls production --project abet-ulima-back` y lectura de `.env.example` | pendiente (las cinco variables están en Production, de tipo Secret, pero `.env.example` trae valor en `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, que no son secretos) |
+| Las variables del Back están en Vercel y no en el repositorio | `vercel env ls production --project abet-ulima-back` y `tests/test_env_example.py` | aprobado (2026-11-17, las cinco variables están en Production, de tipo Secret, y `.env.example` las nombra sin valor desde `fix/001-env-example-sin-valores`) |
 | Los secretos del Back no quedan en ningún repositorio | búsqueda de las claves de `bd/.env.neon` en `git log -p --all` de los dos repositorios y `scripts/preflight.sh` | pendiente (con `DATABASE_URL` pasa, porque la clave de `abet_app` aparece 0 veces; el valor de `SESION_SECRETO` no está en la Mac, y la búsqueda no lo incluye) |
 | La API se conecta a Neon por el pooler con el rol abet_app | 20 `GET /api/secciones?periodo=2026-2` con coordinacion en `produccion.spec.ts`, `vercel logs` de esa corrida y `pg_stat_activity` de la rama principal | aprobado |
 | Preview trabaja sobre otra rama de Neon | conteos de las dos ramas del 2026-11-17 (la principal sin cargas y `develop` con las 2 de la prueba del 2026-11-09), T073 y T075 (2026-11-02) y T076 de la spec 003 | aprobado |
@@ -384,7 +384,7 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-021 | US-16; BR-R17-09, BR-R17-10 | 5 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (2), `test_constancia.py` (22), `test_r17.py` (5) | Cubierto |
 | FR-022 | US-05, US-06, US-07; sin regla BR | 25 aprobados, 0 omitidos y 0 pendientes | Vitest, grupos «P1 Ingreso» (7); Vitest, grupos «P2 Mis secciones» (10); Vitest, grupos «P3 Subir export» (17); Vitest, grupos «P4 Resultado de la carga» (13); Vitest, grupos «App» (5) | Cubierto |
 | FR-023 | US-05, US-17; BR-ACCESO-03 | 11 aprobados, 0 omitidos y 0 pendientes (los de la cookie y la reescritura de US-17, aprobados el 2026-11-17) | `test_api_sesion.py` (3); Vitest, grupos «api.ts» (15) | Cubierto |
-| FR-024 | US-17; sin regla BR | 6 aprobados, 0 omitidos y 5 pendientes | comprobaciones del 2026-11-17 contra Vercel y Neon (sección «Despliegue») | Parcial |
+| FR-024 | US-17; sin regla BR | 7 aprobados, 0 omitidos y 4 pendientes | comprobaciones del 2026-11-17 contra Vercel y Neon (sección «Despliegue») y `test_env_example.py` (7) | Parcial |
 | FR-025 | ninguna; BR-CARGA-19 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
 | FR-026 | ninguna; BR-CARGA-20 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
 | FR-027 | ninguna; BR-ACCESO-09 | no aplica en el corte 1 | solo escenarios | Corte 2, pendiente |
@@ -400,7 +400,7 @@ Resumen de requisitos, Corte 2, pendiente 3, Cubierto 23, Parcial 6.
 
 | SC | Estado | Evidencia |
 | --- | --- | --- |
-| SC-001 | Parcial | 97 de 108 escenarios del corte 1 aprobados, 6 omitidos y 5 pendientes. Los seis de US-17 se aprueban el 2026-11-17 contra Vercel y Neon, y el resto sale de la corrida local del 2026-10-30. |
+| SC-001 | Parcial | 98 de 108 escenarios del corte 1 aprobados, 6 omitidos y 4 pendientes. Los siete de US-17 se aprueban el 2026-11-17 contra Vercel y Neon, y el resto sale de la corrida local del 2026-10-30. |
 | SC-002 | Parcial | 7 escenarios, 2 aprobados, 5 omitidos y 0 pendientes. Q01 a Q14 en Neon llegan con T021 y T027. |
 | SC-003 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_demo_punta_a_punta.py` (5), `test_plantilla_r17.py` (4), `test_r17.py` (10) |
 | SC-004 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_plantilla_r17.py` (9), `test_r17.py` (16) |
@@ -410,7 +410,7 @@ Resumen de requisitos, Corte 2, pendiente 3, Cubierto 23, Parcial 6.
 | SC-008 | Parcial | 8 escenarios, 7 aprobados, 1 omitido y 0 pendientes. El rol abet_app de Neon llega con T027 y T028. |
 | SC-009 | Cumplido en local | 9 escenarios, 9 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_api_cargas.py` (4), `test_api_secciones.py` (3), `test_comando.py` (8), `test_permisos.py` (23), `test_varias_secciones.py` (2) |
 | SC-010 | Cumplido en local | 2 escenarios, 2 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_r17.py` (5) |
-| SC-011 | Parcial | 11 escenarios, 6 aprobados, 0 omitidos y 5 pendientes, comprobados el 2026-11-17 contra Production y la vista previa (sección «Despliegue»). |
+| SC-011 | Parcial | 11 escenarios, 7 aprobados, 0 omitidos y 4 pendientes, comprobados el 2026-11-17 contra Production y la vista previa (sección «Despliegue»). |
 | SC-012 | Pendiente | sin escenario propio. bash scripts/preflight.sh y la verificación de autoría corren en la etapa de commit y en cada PR. |
 
 ## Reglas de negocio
@@ -482,7 +482,6 @@ Reglas sin prueba, ninguna.
 
 | Escenario | Historia | Razón |
 | --- | --- | --- |
-| Las variables del Back están en Vercel y no en el repositorio | US-17 | `.env.example` trae valor en tres variables que no son secretas, y cambiar el archivo o el escenario lo decide Jefferson |
 | Los secretos del Back no quedan en ningún repositorio | US-17 | falta buscar `SESION_SECRETO`, cuyo valor no está en la Mac |
 | El equipo de Vercel no comparte el contenido para entrenar modelos | US-17 | el equipo tiene `dataSharingConsent` en `granted` (T070) |
 | La guardia de datos inventados está encendida en el piloto | US-17 | la subida del export con el código 10000004 no corre en Production en la versión 0.1.0 |
@@ -547,6 +546,7 @@ La versión 0.1.0 llega a Production el 2026-11-17 en los dos proyectos de Verce
 | API de Production | `GET /api/sesion` sin cookie a `https://abet-ulima-back-gray.vercel.app` | 401, `application/json`, `Cache-Control: no-store` y `{"detail": "La sesión venció. Ingrese otra vez."}`, con iad1 en `x-vercel-id`. La API arranca solo si la marca de la base es production (`comprobar_base` de `app/configuracion.py`, al iniciar), así que su `DATABASE_URL` es la de la rama principal, que muestra después 2 conexiones de `abet_app` desde `pgbouncer` |
 | Reescritura del Front | `GET /api/sesion` sin cookie a `https://abet-ulima-front.vercel.app` | El mismo 401 en JSON del Back, sin `Access-Control-Allow-Origin`, por la regla con `has` del dominio de Production; antes de la versión respondía 404 NOT_FOUND. `GET /` responde 200 sin la protección de Vercel |
 | Variables de Production | `vercel env ls production --project abet-ulima-back` | `DATABASE_URL`, `SESION_SECRETO`, `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, de tipo Secret |
+| `.env.example` sin valores | `tests/test_env_example.py` en `fix/001-env-example-sin-valores` y otra vez `vercel env ls production --project abet-ulima-back`, a las 21:12 de Lima | `.env.example` nombra las cinco variables sin valor y deja el valor del piloto de las tres que no son secretas en su comentario. Una copia tal cual no arranca la API, porque le falta `PERIODO_VIGENTE`, y deja la guardia encendida, ya que solo el valor 0 la apaga. Las cinco siguen en Production, de tipo Secret y ocultas |
 | Secretos fuera de los repositorios | Búsqueda en `git log -p --all` de las cinco claves de `bd/.env.neon` y de la clave de `abet_app` codificada como en `DATABASE_URL` | 0 apariciones en los 63 commits del Back y en los 48 del Front, y `scripts/preflight.sh` sin fallas en los dos |
 | Contraseñas de T074 | `herramientas_neon/asignar_claves.py`, que pide cada contraseña en la terminal de Jefferson y manda al Windows solo el hash | La principal guarda las credenciales de docente410, docente411 y coordinacion, con hash Argon2id, del 2026-11-17 a las 17:36; `develop` guarda las de docente410 y docente411 |
 | Ingreso en Production | `herramientas_neon/e2e_version/produccion.spec.ts` contra `https://abet-ulima-front.vercel.app`, sin la clave de omisión, con docente410 en P1 | `POST /api/sesion` 200 desde el origen del Front, con `abet_sesion` HttpOnly, Secure, SameSite=Lax, Path=/ y Max-Age 43200, sin Domain y guardada solo para `abet-ulima-front.vercel.app`. `GET /api/sesion` da 200 con el rol PROFESOR, localStorage y sessionStorage no tienen ningún valor y `document.cookie` no muestra `abet_sesion`. P2 muestra la 410 sin carga, sin subir nada, y «Salir» da 204 y después 401 |
