@@ -113,10 +113,13 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_alcance_resultados_feature.py, test_resultados_feature.py, test_rutas_protegidas.py, test_api_resultados.py → BR-ACCESO-07, BR-ACCESO-08 y BR-ACCESO-10 con la ruta 12 (spec 004)
 - 2026-11-17 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_reemplazo_y_cargas_feature.py, test_permisos.py, test_api_cargas.py → BR-ACCESO-07 y BR-ACCESO-08 en el corte 2 (reemplazo y lista de cargas)
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py, test_varias_secciones_feature.py → BR-ACCESO-01 a BR-ACCESO-08
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py, test_api_sesion.py, test_comando.py, test_permisos.py, test_varias_secciones.py → BR-ACCESO-02 a BR-ACCESO-08
 ```
+
+Resultado del 2026-11-18 (spec 004, rama `feat/004-reportes-docente`, PostgreSQL 18 desechable): suite completa, 1440 passed y 15 skipped in 156.81s (0:02:36); BR-ACCESO-10 y los cambios de BR-ACCESO-07 y BR-ACCESO-08 con sus escenarios aprobados, y el detalle por historia en `specs/004-reportes-docente/audit.md`.
 
 Resultado del 2026-11-17 (corte 2, rama `feat/001-corte-2`, PostgreSQL 18 desechable): suite completa, 1289 passed y 15 skipped in 141.47s (0:02:21); aceptación, 300 passed y 14 skipped, con los 9 casos de US-20 omitidos por T018; el detalle por historia está en la sección «Corte 2» de `specs/001-mvp-carga-r17/audit.md`.
 
@@ -137,5 +140,8 @@ Las columnas de escenarios cuentan los del corte 1 que la regla cita en su **Pru
 | BR-ACCESO-07 | 3, 0, 0 | 17 | Aprobada |
 | BR-ACCESO-08 | 6, 0, 0 | 23 | Aprobada |
 | BR-ACCESO-09 | 0, 5, 0 | 0 | Corte 2, pendiente de T018, T083 y T086 |
+| BR-ACCESO-10 | 1, 0, 0 | 7 | Aprobada el 2026-11-18 (spec 004) |
+
+Con la spec 004, BR-ACCESO-07 suma «El reporte del profesor de varias secciones no trae las de otros profesores», «Cada profesor de una sección ve solo la suya», «El alcance se lee de la base en cada petición» y «El coordinador ve las cinco secciones del periodo», y BR-ACCESO-08 suma «Un seccion_id en la consulta no abre otra sección» y «Ninguna ruta con datos responde sin sesión», todos aprobados el 2026-11-18.
 
 En el corte 2, BR-ACCESO-07 y BR-ACCESO-08 suman los escenarios «El profesor no reemplaza la carga de otra sección», «El export corregido reemplaza a la carga con el error» (ejemplo del coordinador) y «El profesor ve solo las cargas de su sección», aprobados el 2026-11-17, y las pruebas de `puede_reemplazar()` de `test_permisos.py` (8), también aprobadas.

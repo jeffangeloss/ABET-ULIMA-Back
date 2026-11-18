@@ -65,9 +65,12 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_alcance_resultados_feature.py, test_resultados_feature.py, test_api_resultados.py → cambios de la spec 004 en BR-PERIODO-01 y BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py → BR-PERIODO-01 a BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py → BR-PERIODO-01, BR-PERIODO-04
 ```
+
+Resultado del 2026-11-18 (spec 004, rama `feat/004-reportes-docente`, PostgreSQL 18 desechable): suite completa, 1440 passed y 15 skipped in 156.81s (0:02:36), con «Un periodo mal formado responde 422», «Sin secciones en el periodo, la respuesta es una lista vacía y no un error» y «Una sección sin carga publicada no trae cifras» aprobados y la ruta 12 sin `periodo` en `tests/test_api_resultados.py`.
 
 Resultado: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa, 852 passed, 20 skipped in 241.50s (0:04:01). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
 

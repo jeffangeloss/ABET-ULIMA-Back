@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Agregado
 
+- `specs/004-reportes-docente/audit.md`, con las 8 historias, los 37 escenarios y los 45 casos de la spec 004 aprobados, 12 de ellos en Vitest del Front, y las líneas Verification del 2026-11-18 de `resultados`, `acceso`, `r17` y `periodo` (T050, T051 y T060).
 - Ruta `GET /api/resultados?periodo=2026-2` (ruta 12 del contrato del Front) con los logros por SO y PI de las secciones al alcance del usuario, leídos de `abet.v_r17_por_pi` en una sola transacción `READ ONLY` con `REPEATABLE READ`, con los porcentajes como números JSON de un decimal, `en_meta` con la regla del R-17, la marca provisional por sección y una lista cerrada de claves sin datos de personas (US-37 a US-44, BR-RESULTADOS-01 a BR-RESULTADOS-11, T032).
 - `abet_carga/resultados.py`, con `en_meta()` y `cifra()`, que también usa `_plan_de_accion` del R-17 (T031).
 - `db/plataforma/neon/revisar_permisos_resultados.sql`, revisión de solo lectura de los permisos de `abet_app` que usa la ruta 12, sin migración (T020 y T021).

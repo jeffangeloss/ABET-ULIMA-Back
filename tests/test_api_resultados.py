@@ -523,9 +523,11 @@ def test_br_resultados_03_leer_la_ruta_no_escribe_en_ninguna_tabla(api: Any) -> 
 # SC-005 y T034, el volumen del coordinador
 
 def _sembrar(api: Any, secciones: int) -> list[int]:
-    """Secciones 500 en adelante de 450002 en 2026-2, cada una con una carga PUBLICADA de 11 filas."""
+    """Secciones 500 en adelante de 450002 en 2026-2, cada una con una carga PUBLICADA de 11 filas inventadas."""
     with api.dueno.transaction():
-        return [_publicar(api, "450002", str(500 + i), CORRECTO_410, desde=99200001 + 20 * i, subida_por=None)
+        return [C.publicar(api.dueno, asignatura="450002", numero=str(500 + i), pis=["5.1", "5.2", "5.3"],
+                           filas=C.filas_inventadas(11, desde=99200001 + 20 * i, niveles=(3, 4, 2)),
+                           nombre_archivo=f"inventado_volumen_{500 + i}.xlsx", subida_por=None)
                 for i in range(secciones)]
 
 

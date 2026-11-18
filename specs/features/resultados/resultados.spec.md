@@ -12,7 +12,7 @@ targets:
 
 # Resultados
 
-> **Estado al 2026-11-18.** Reglas de la fase 1 de contrato de la spec 004 (T010), escritas antes del código en la rama `feat/004-reportes-docente`, después de la aprobación de Jefferson en el chat el 2026-11-18 («Sí, apruébala»). Los archivos de `targets` nacen o cambian en las fases 2 a 4, y la sección Verification se llena con T060.
+> **Estado al 2026-11-18.** Reglas de la fase 1 de contrato de la spec 004 (T010), escritas antes del código en la rama `feat/004-reportes-docente`, después de la aprobación de Jefferson en el chat el 2026-11-18 («Sí, apruébala»). Los archivos de `targets` nacen o cambian en las fases 2 a 4, y la sección Verification se llena el mismo día con T060, sobre Back 0db6ee3 y Front 203d822.
 
 Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz de programación de aplicaciones (application programming interface, API), la ruta 12 de `docs/03-api/contrato.md` del Front, con los logros por resultado del estudiante (student outcome, SO), y qué muestra con ella la pantalla P6 «Mis logros por SO» (propuesta). La ruta entrega a cada usuario el logro de cada indicador de desempeño (performance indicator, PI) de sus secciones, agrupado bajo su SO y frente a la meta, con las mismas cifras del R-17 de cada carga. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/004-reportes-docente/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR), criterios de éxito (success criteria, SC), decisiones del crítico de arquitectura (AD) o decisiones de Jefferson (J). Cada regla nombra también la vista, la restricción o la consulta de control que la respalda y el escenario que la prueba, citado por su título, de `specs/004-reportes-docente/aceptacion/resultados.feature` o de `alcance_y_privacidad.feature`. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Los ejemplos usan solo datos inventados.
 
@@ -118,8 +118,35 @@ Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz d
 - P6 muestra la franja provisional de cada sección con el texto que corresponde a `conjunto_reglas_estado`, como `_franja` de `abet_carga/r17.py`, y ofrece el R-17 de cada sección PUBLICADA por la ruta del R-17 de su carga.
 - P6 no ofrece «Subir export», no muestra correos ni nombres de profesores y no escribe en `localStorage` ni en `sessionStorage`. P2 y P4 siguen sin porcentajes (invariante 8 de ADR-008).
 - **Fuente**: US-37 a US-44, FR-011 a FR-016, SC-004, SC-007, J-24 y la sección 9 de `docs/01-arquitectura/frontend.md` del Front.
-- **Prueba**: los diez escenarios con `@delegado_a_vitest` de los dos `.feature`, que comprueba `tests/pantallas/MisLogros.test.tsx` del Front, y la prueba de humo de `e2e/humo.spec.ts` del Front contra la vista previa de `develop` (T043 y T071).
+- **Prueba**: los diez escenarios con `@delegado_a_vitest` de los dos `.feature`, que comprueban `tests/pantallas/MisLogros.test.tsx` y `tests/App.test.tsx` del Front, y la prueba de humo de `e2e/humo.spec.ts` del Front contra la vista previa de `develop` (T043 y T071).
 
 ## Verification
 
-Pendiente de T060. La línea fechada llega con `audit.md` de la spec 004, después de la suite completa del Back y del Front.
+Corrida del 2026-11-18 en el Back y en el Front, rama `feat/004-reportes-docente`, sobre un PostgreSQL 18 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
+
+```text
+- 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_resultados_feature.py, test_alcance_resultados_feature.py, test_api_resultados.py, test_resultados.py, test_rutas_protegidas.py, test_permisos_resultados.py → BR-RESULTADOS-01 a BR-RESULTADOS-10
+- 2026-11-18 · npx vitest run (Front) · tests/pantallas/MisLogros.test.tsx, tests/App.test.tsx, tests/servicios/api.test.ts, tests/servicios/formato.test.ts → BR-RESULTADOS-11
+- 2026-11-18 · npx playwright test e2e/humo.spec.ts (Front) contra scripts/api_local.sh del Back · los dos casos de P6 → BR-RESULTADOS-03 y BR-RESULTADOS-11 en local
+- 2026-11-18 · revisar_permisos_resultados.sql en la rama develop de Neon, desde el Windows de Jefferson y en solo lectura → BR-RESULTADOS-03 (sin migración)
+```
+
+Resultado: suite completa del Back, 1440 passed y 15 skipped in 156.81s (0:02:36), con los 45 casos de los dos `.feature` de la spec 004 aprobados, 12 de ellos delegados a Vitest; Vitest del Front, 11 archivos y 164 pruebas aprobadas; humo local, 5 passed; Neon `develop`, «Faltan 0 permisos de lectura de la ruta 12.». El detalle por historia está en `specs/004-reportes-docente/audit.md`, y la corrida del humo contra la vista previa de `develop` queda para T071, después de las dos fusiones.
+
+### Resultado por regla
+
+Las columnas de escenarios cuentan los que la regla cita en su **Prueba**, y un caso delegado a Vitest cuenta como aprobado cuando su prueba del Front pasa.
+
+| Regla | Escenarios (aprobados, omitidos, pendientes) | Casos | Pruebas unitarias aprobadas | Resultado |
+| --- | --- | --- | --- | --- |
+| BR-RESULTADOS-01 | 5, 0, 0 | 10 | 12 | Aprobada |
+| BR-RESULTADOS-02 | 4, 0, 0 | 5 | 2 | Aprobada |
+| BR-RESULTADOS-03 | 5, 0, 0 | 5 | 7 | Aprobada, con el `EXPLAIN` y 150 secciones (SC-005) |
+| BR-RESULTADOS-04 | 2, 0, 0 | 2 | 3 | Aprobada |
+| BR-RESULTADOS-05 | 3, 0, 0 | 3 | 10 | Aprobada |
+| BR-RESULTADOS-06 | 2, 0, 0 | 2 | 34 | Aprobada |
+| BR-RESULTADOS-07 | 6, 0, 0 | 7 | 5 | Aprobada |
+| BR-RESULTADOS-08 | 3, 0, 0 | 3 | 3 | Aprobada |
+| BR-RESULTADOS-09 | 3, 0, 0 | 3 | 1 | Aprobada |
+| BR-RESULTADOS-10 | 2, 0, 0 | 2 | 1 | Aprobada, con un escenario delegado a Vitest |
+| BR-RESULTADOS-11 | 10, 0, 0 | 12 | 20 en Vitest | Aprobada en Vitest y en el humo local; la vista previa queda para T071 |

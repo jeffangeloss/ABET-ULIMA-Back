@@ -34,19 +34,19 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 4: Frontend
 
-- [ ] T040 [Front] `obtenerResultados` en `src/servicios/api.ts` y su tipo en `src/servicios/tipos.ts`, con su prueba [US-37]
-- [ ] T041 [Front] Escribir primero `tests/pantallas/MisLogros.test.tsx` y después `src/pantallas/MisLogros.tsx` (P6), con las barras de texto completo, `aria-hidden`, los grupos por SO, la marca provisional, los nulos, la lista vacía, los enlaces al R-17, sin «Subir export» y sin almacenamiento del navegador [US-37] [US-38] [US-39] [US-41] [US-42] [US-43]
-- [ ] T042 [Front] La vista `logros` en `src/App.tsx` y los enlaces de P2 («Ver mis logros por SO» y, para el coordinador, «Ver los logros por SO de la carrera») y de P4, con sus pruebas [US-37] [US-44]
-- [ ] T043 [Front] Prueba de humo con Playwright en `e2e/humo.spec.ts`. Después de la subida de la 410 en la vista previa de `develop`, abre P6, compara sus cifras con el R-17 descargado de esa misma carga y comprueba que `docente411@example.invalid` no ve la 410 en su P6. Corre una vez por restablecimiento de la rama `develop` de Neon y nunca con `docente.varias@example.invalid`, que no existe en Neon [US-37] [US-38] [US-40]
+- [x] T040 [Front] `obtenerResultados` en `src/servicios/api.ts` y su tipo en `src/servicios/tipos.ts`, con su prueba [US-37] · 2026-11-18, en 203d822 del Front
+- [x] T041 [Front] Escribir primero `tests/pantallas/MisLogros.test.tsx` y después `src/pantallas/MisLogros.tsx` (P6), con las barras de texto completo, `aria-hidden`, los grupos por SO, la marca provisional, los nulos, la lista vacía, los enlaces al R-17, sin «Subir export» y sin almacenamiento del navegador [US-37] [US-38] [US-39] [US-41] [US-42] [US-43] · 2026-11-18, en 203d822 del Front, con 15 pruebas de P6
+- [x] T042 [Front] La vista `logros` en `src/App.tsx` y los enlaces de P2 («Ver mis logros por SO» y, para el coordinador, «Ver los logros por SO de la carrera») y de P4, con sus pruebas [US-37] [US-44] · 2026-11-18, en 203d822 del Front, con 5 pruebas en `tests/App.test.tsx`
+- [x] T043 [Front] Prueba de humo con Playwright en `e2e/humo.spec.ts`. Después de la subida de la 410 en la vista previa de `develop`, abre P6, compara sus cifras con el R-17 descargado de esa misma carga y comprueba que `docente411@example.invalid` no ve la 410 en su P6. Corre una vez por restablecimiento de la rama `develop` de Neon y nunca con `docente.varias@example.invalid`, que no existe en Neon [US-37] [US-38] [US-40] · 2026-11-18, los dos casos de P6 en 203d822 del Front pasan en local contra `api_local.sh`, y su corrida en la vista previa es T071
 
 ## Phase 5: Pruebas
 
-- [ ] T050 [Back] Suite completa con `uv run --frozen --no-build pytest -q`, `bash scripts/preflight.sh` y `bash db/pruebas/correr_pruebas.sh` con Q01 a Q15 en 0 [US-37..US-44]
-- [ ] T051 [Front] `npm test`, `npm run build` y la comprobación de mensajes de la sección 10 del contrato con la carpeta de la spec 004 [US-37..US-44]
+- [x] T050 [Back] Suite completa con `uv run --frozen --no-build pytest -q`, `bash scripts/preflight.sh` y `bash db/pruebas/correr_pruebas.sh` con Q01 a Q15 en 0 [US-37..US-44] · 2026-11-18, 1440 passed y 15 skipped, revisión previa sin fallas y «RESULTADO: todo pasó» con Q01 a Q15
+- [x] T051 [Front] `npm test`, `npm run build` y la comprobación de mensajes de la sección 10 del contrato con la carpeta de la spec 004 [US-37..US-44] · 2026-11-18, 164 pruebas aprobadas, compilación sin errores y 0 mensajes de los escenarios sin contrato
 
 ## Phase 6: Auditoría
 
-- [ ] T060 [Back] `specs/004-reportes-docente/audit.md` con el cruce de historia, escenario, prueba y resultado, la línea Verification fechada en `resultados`, `acceso`, `r17` y `periodo`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios [US-37..US-44]
+- [x] T060 [Back] `specs/004-reportes-docente/audit.md` con el cruce de historia, escenario, prueba y resultado, la línea Verification fechada en `resultados`, `acceso`, `r17` y `periodo`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios [US-37..US-44] · 2026-11-18, `audit.md` y las líneas Verification del 2026-11-18
 
 ## Phase 7: Despliegue
 
