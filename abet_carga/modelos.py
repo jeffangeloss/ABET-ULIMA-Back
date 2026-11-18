@@ -19,7 +19,7 @@ ColumnaLeida numera su posición desde 1, como carga_columna.posicion (BR-CARGA-
 BR-CARGA-11 coteja la sección con el nombre del archivo cuando la hoja no la declara. Validacion
 suma filas_de_datos, que la conciliación de BR-CARGA-16 compara con las filas leídas, y las columnas
 del plan (ColumnaDelPlan) que entran a carga_columna. CodigoNoInventado y SeccionSinDeclarar son los
-422 sin rastro de BR-CARGA-07 y BR-CARGA-11.
+422 sin rastro de BR-CARGA-07 y BR-CARGA-18.
 """
 
 from __future__ import annotations
@@ -183,8 +183,8 @@ class Motivo(StrEnum):
     NIVEL_FUERA_DE_ESCALA y NIVEL_NO_NUMERICO. Usa RECHAZA_CARGA con SECCION_NO_COINCIDE,
     PERIODO_NO_COINCIDE, ARCHIVO_SIN_FILAS, COLUMNA_CODIGO_AUSENTE, PI_DEL_PLAN_AUSENTE, PI_REPETIDO y
     SIN_CALIFICACIONES, que agrega V1_10 para las filas aceptadas sin ningún nivel (spec 003, D-31),
-    y AVISO con COLUMNA_PI_FUERA_DEL_PLAN y PUNTAJE_MAXIMO_DISTINTO. SECCION_SIN_DECLARAR es el aviso
-    del corte 2 (BR-CARGA-18), que la validación del corte 1 no produce.
+    y AVISO con COLUMNA_PI_FUERA_DEL_PLAN, PUNTAJE_MAXIMO_DISTINTO y, desde el corte 2, SECCION_SIN_DECLARAR,
+    el aviso de la sección que el profesor confirma (BR-CARGA-18).
     """
 
     CODIGO_VACIO = "CODIGO_VACIO"
@@ -227,15 +227,17 @@ class CodigoNoInventado(ArchivoNoAdmitido):
 
 
 class SeccionSinDeclarar(ArchivoNoAdmitido):
-    """Export cuya hoja y cuyo nombre no declaran la sección, que el corte 1 detiene (BR-CARGA-11 y D-02).
+    """Export cuya hoja y cuyo nombre no declaran la sección, que espera la confirmación (BR-CARGA-18 y D-02).
 
-    El texto es el de la spec 003, el mismo para el .xlsx, el .csv y el .xls.
+    Desde el corte 2 el mensaje pregunta por la sección, la asignatura y el periodo que eligió el profesor, el
+    mismo para el .xlsx, el .csv y el .xls, y la API lo responde con requiere_confirmacion. Reemplaza al texto del
+    corte 1, que detenía el archivo sin ofrecer la confirmación (BR-CARGA-11).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, contexto: ContextoSeccion) -> None:
         super().__init__(
-            "El archivo no indica su sección. "
-            "Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
+            "El archivo no indica su sección. ¿Confirma que es de la sección "
+            f"{contexto.seccion_codigo} de {contexto.curso_codigo} en {contexto.periodo}?"
         )
 
 

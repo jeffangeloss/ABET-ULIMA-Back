@@ -1,9 +1,10 @@
 """Alcance de cada usuario sobre las secciones, único dueño de BR-ACCESO-07 y BR-ACCESO-08 (parte de T037).
 
 Las reglas de negocio (business rules, BR) viven en specs/features/acceso/acceso.spec.md. El
-profesor ve, sube y lee solo en las secciones que acceso.docente_seccion le asigna. El coordinador
-lee todas las secciones de la carrera sin filas propias en acceso.docente_seccion y no sube en el
-corte 1. Un usuario inactivo, o que no existe, no ve ni alcanza ninguna sección. En el producto
+profesor ve, sube, reemplaza y lee solo en las secciones que acceso.docente_seccion le asigna. El
+coordinador lee todas las secciones de la carrera sin filas propias en acceso.docente_seccion, no sube
+una carga nueva y, desde el corte 2, reemplaza la carga publicada de cualquiera de ellas (valor
+provisional de D-11, BR-CARGA-19). Un usuario inactivo, o que no existe, no ve ni alcanza ninguna sección. En el producto
 mínimo viable (minimum viable product, MVP), con una sola carrera, las secciones de la carrera son
 las del periodo cuya asignatura está en el plan de estudios del catálogo vigente de ese periodo
 (propuesta de BR-ACCESO-07).
@@ -74,6 +75,15 @@ def secciones_visibles(conexion: Connection[Any], usuario_id: int, periodo: str)
 def puede_subir(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:
     """Si el usuario sube un export en la sección. En el corte 1 solo sube el profesor asignado (BR-ACCESO-08)."""
     return _alcanza(conexion, usuario_id, seccion_id, coordinador_alcanza=False)
+
+
+def puede_reemplazar(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:
+    """Si el usuario reemplaza la carga publicada de la sección (corte 2, BR-ACCESO-08, BR-CARGA-19 y D-11).
+
+    El profesor reemplaza en sus secciones y el coordinador en cualquiera de la carrera, así que el alcance es el
+    de la lectura. Vive aparte de puede_leer() porque D-11 sigue abierta y puede fijar otro alcance o un plazo.
+    """
+    return _alcanza(conexion, usuario_id, seccion_id, coordinador_alcanza=True)
 
 
 def puede_leer(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:

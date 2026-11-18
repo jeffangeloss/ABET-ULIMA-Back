@@ -12,7 +12,7 @@ Dos mecanismos provocan fallos de verdad, como piden los escenarios de inyecció
   en la última medición, y la restricción ck_medicion_nivel la rechaza la base misma. La restricción
   se comprueba en el registro de la API (logger abet.api), que guarda solo el SQLSTATE y su nombre.
 
-Los escenarios de US-21 llevan la etiqueta @corte2 y el conftest.py los omite con su razón.
+Los escenarios de US-21, del corte 2, corren desde T084 con el campo multipart confirmar_seccion.
 """
 
 from __future__ import annotations
@@ -118,7 +118,8 @@ def _nivel_5_en_la_ultima_medicion(validacion: Any) -> Any:
 def _inyecta_defecto(ctx: Escenario, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     validar_de_verdad = modulo_carga.validar
     monkeypatch.setattr(modulo_carga, "validar",
-                        lambda libro, contexto: _nivel_5_en_la_ultima_medicion(validar_de_verdad(libro, contexto)))
+                        lambda libro, contexto, **opciones: _nivel_5_en_la_ultima_medicion(
+                            validar_de_verdad(libro, contexto, **opciones)))
     caplog.set_level(logging.ERROR, logger="abet.api")
 
 
@@ -187,7 +188,10 @@ def _una_de_las_respuestas(ctx: Escenario, estado: str) -> None:
 def _la_otra(ctx: Escenario, codigo: str, detail: str) -> None:
     otras = [r for r in ctx.extras["respuestas"] if r is not ctx.extras["ganadora"]]
     assert len(otras) == 1
-    assert (otras[0].status_code, otras[0].json()) == (int(codigo), {"detail": detail})
+    cuerpo = otras[0].json()
+    assert (otras[0].status_code, cuerpo["detail"]) == (int(codigo), detail)
+    # Corte 2: el 409 de la sección con carga publicada suma carga_publicada (contrato, sección 3.1), y nada más.
+    assert set(cuerpo) - {"detail"} <= {"carga_publicada"}, cuerpo
 
 
 # Archivos y sus filas
@@ -638,7 +642,7 @@ def _inserta_rechazo(ctx: Escenario, motivo: str, efecto: str) -> None:
              ctx.carga_id, motivo, efecto)
 
 
-# US-21, pasos del corte 2. Sus escenarios llevan @corte2 y el conftest.py los omite hasta que el Back los implemente.
+# US-21, pasos del corte 2 (T084).
 
 @then(parsers.re(r'el cuerpo de la respuesta trae requiere_confirmacion verdadero'))
 def _requiere_confirmacion(ctx: Escenario) -> None:

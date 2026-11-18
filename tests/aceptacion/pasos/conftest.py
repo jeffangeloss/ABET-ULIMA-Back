@@ -16,8 +16,9 @@ lo que repiten sus Antecedentes y sus escenarios.
   viven en su propio módulo, y los que repiten varios viven aquí.
 - El estado de un escenario vive en la fixture ctx (clase Escenario), que guarda la respuesta, el
   conteo previo de las tablas de la carga, el archivo en uso y la carga a la que se refiere «esa carga».
-- Las etiquetas. Todo escenario con la etiqueta @corte2 se omite con su razón, porque la spec lo deja
-  para el corte 2 y el Back del corte 1 todavía no lo implementa.
+- Las etiquetas. Los escenarios del corte 2 corren desde T087, salvo los de US-20 (@US-20), que se omiten
+  con su razón, porque el código de acceso por correo espera a T018, el dominio y la cuenta de Resend de
+  Jefferson (T083 y T086).
 
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
@@ -52,7 +53,10 @@ CONTROLES = RAIZ / "db" / "plataforma" / "neon" / "controles_neon.sql"
 GUARDIA_SQL = "db/plataforma/neon/guardia_datos_inventados.sql"
 VARIAS_SQL = RAIZ / "db" / "datos" / "varias_secciones_2026_2_inventado.sql"
 ASIGNATURA = "450002"
-RAZON_CORTE_2 = "Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1."
+# Campos que un error del corte 2 suma a detail (contrato, sección 3.1).
+CAMPOS_EXTRA_DE_UN_ERROR = frozenset({"requiere_confirmacion", "carga_publicada"})
+RAZON_US_20 = ("Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson,"
+               " y de T083 y T086.")
 
 
 def _modulo_de_pruebas(nombre: str) -> ModuleType:
@@ -69,12 +73,12 @@ def _modulo_de_pruebas(nombre: str) -> ModuleType:
 A = _modulo_de_pruebas("api_de_prueba")
 
 
-# Omisión de los escenarios del corte 2
+# Omisión de los escenarios de US-20, los únicos del corte 2 que esperan a Jefferson
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
-        if "tests/aceptacion/pasos" in item.nodeid and item.get_closest_marker("corte2") is not None:
-            item.add_marker(pytest.mark.skip(reason=RAZON_CORTE_2))
+        if "tests/aceptacion/pasos" in item.nodeid and item.get_closest_marker("US-20") is not None:
+            item.add_marker(pytest.mark.skip(reason=RAZON_US_20))
 
 
 # Resumen de los pasos que no comprueban todo en el Back
@@ -887,7 +891,10 @@ def _la_respuesta_es(ctx: Escenario, codigo: str, e1: str | None, leidas: str | 
     assert respuesta.status_code == int(codigo), respuesta.text
     cuerpo = respuesta.json()
     if detail is not None:
-        assert cuerpo == {"detail": detail}
+        # El 422 que pide confirmar la sección y el 409 de la sección con carga publicada suman un solo campo más,
+        # que nombra la sección 3.1 del contrato. Ningún otro error trae más que detail.
+        assert cuerpo["detail"] == detail
+        assert set(cuerpo) - {"detail"} <= CAMPOS_EXTRA_DE_UN_ERROR, cuerpo
     if e1 or e2:
         assert cuerpo["estado"] == (e1 or e2)
     if leidas is not None:
