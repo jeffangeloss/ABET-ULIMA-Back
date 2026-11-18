@@ -15,22 +15,22 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 ## Phase 1: Contrato
 
 - [x] T010 [Back] Escribir `specs/features/resultados/resultados.spec.md` con BR-RESULTADOS-01 a BR-RESULTADOS-NN, sumar BR-ACCESO-10 y la ruta 12 a BR-ACCESO-07 y BR-ACCESO-08, y dejar bloques fechados en BR-R17-02, BR-PERIODO-01 y BR-PERIODO-04 y la fila `resultados` en `specs/README.md` [US-37..US-44] · 2026-11-18, BR-RESULTADOS-01 a BR-RESULTADOS-11 en `feat/004-reportes-docente`
-- [ ] T011 [Front] Pasar a definitivos la ruta 12 en `docs/03-api/contrato.md` (tabla de rutas, su sección, la sección 3.4, la cuenta de caminos de OpenAPI y la carpeta de la spec 004 en la comprobación de mensajes de la sección 10), `docs/specs/api-contracts.md`, `docs/01-arquitectura/frontend.md`, `docs/specs/feature-index.md` y ADR-008 [US-37..US-44]
+- [x] T011 [Front] Pasar a definitivos la ruta 12 en `docs/03-api/contrato.md` (tabla de rutas, su sección, la sección 3.4, la cuenta de caminos de OpenAPI y la carpeta de la spec 004 en la comprobación de mensajes de la sección 10), `docs/specs/api-contracts.md`, `docs/01-arquitectura/frontend.md`, `docs/specs/feature-index.md` y ADR-008 [US-37..US-44] · 2026-11-18, en a5d678c de `feat/004-reportes-docente` del Front
 - [x] T012 [Back] Dejar definitivos los dos `.feature` con el analizador de pytest-bdd y sumar a `REGLAS_DE_COPIA` de `tests/aceptacion/pasos/conftest.py` la regla «con la columna X.Y vacía en sus N filas», con su prueba [US-39] · 2026-11-18, con `test_lectura_gherkin_es.py` y `test_reglas_de_copia.py`
 
 ## Phase 2: Base
 
-- [ ] T020 [Back] Sin migración. Comprobar en la base desechable que `abet_app` lee `abet.v_r17_por_pi`, `abet.so`, `abet.pi`, `abet.instrumento` y `abet.plan_medicion`, y dejar en `db/plataforma/neon/` la consulta de solo lectura con `has_table_privilege` para Neon [US-37]
-- [ ] T021 [Neon] Correr esa consulta en la rama `develop` desde el Windows de Jefferson con `ssh windows-worker`, antes de fusionar el PR del Back [US-37]
+- [x] T020 [Back] Sin migración. Comprobar en la base desechable que `abet_app` lee `abet.v_r17_por_pi`, `abet.so`, `abet.pi`, `abet.instrumento` y `abet.plan_medicion`, y dejar en `db/plataforma/neon/` la consulta de solo lectura con `has_table_privilege` para Neon [US-37] · 2026-11-18, `db/plataforma/neon/revisar_permisos_resultados.sql` y `tests/test_permisos_resultados.py`
+- [x] T021 [Neon] Correr esa consulta en la rama `develop` desde el Windows de Jefferson con `ssh windows-worker`, antes de fusionar el PR del Back [US-37] · 2026-11-18, «Faltan 0 permisos de lectura de la ruta 12.» en la rama develop, con la sesión en solo lectura
 
 ## Phase 3: Backend
 
-- [ ] T030 [Back] Declarar la dependencia de sesión en cada router con datos y escribir primero `tests/test_rutas_protegidas.py`, que recorre `app.routes` con la lista cerrada de rutas públicas y exige 401 sin cookie y 403 con un `seccion_id` o un `carga_id` ajeno [US-38]
-- [ ] T031 [Back] Escribir primero las pruebas unitarias y después `abet_carga/resultados.py`, con la función pura de la meta y la conversión de `Decimal`, y hacer que `_plan_de_accion` de `abet_carga/r17.py` la use (63,6 sale como `63.6`, el nulo como `null` y 80,0 frente a 80,0 da verdadero) [US-37] [US-40]
-- [ ] T032 [Back] Escribir primero `tests/test_api_resultados.py` y después `app/rutas/resultados.py`, con una sola instantánea, la lista cerrada de claves, la unión por `pi_id` y `so_id` y el orden de FR-005, sembrando cargas con `publicar()` y `filas_inventadas()` [US-37..US-44]
-- [ ] T033 [Back] Pasos de pytest-bdd en `tests/aceptacion/pasos/test_resultados_feature.py` y `test_alcance_resultados_feature.py` para los escenarios sin `@delegado_a_vitest` [US-37..US-44]
-- [ ] T034 [Back] Sembrar 150 secciones en la base desechable, revisar con `EXPLAIN` que el filtro por `carga_id` baja por debajo de la agregación de la vista y medir la ruta del coordinador en menos de 1 s (SC-005) [US-44]
-- [ ] T035 [Back] Prueba con una segunda versión de catálogo inventada y un PI 5.10 en la base desechable, sin indicadores duplicados y con el 5.10 después del 5.2 [US-37]
+- [x] T030 [Back] Declarar la dependencia de sesión en cada router con datos y escribir primero `tests/test_rutas_protegidas.py`, que recorre `app.routes` con la lista cerrada de rutas públicas y exige 401 sin cookie y 403 con un `seccion_id` o un `carga_id` ajeno [US-38] · 2026-11-18, routers de `secciones`, `cargas` y `resultados`
+- [x] T031 [Back] Escribir primero las pruebas unitarias y después `abet_carga/resultados.py`, con la función pura de la meta y la conversión de `Decimal`, y hacer que `_plan_de_accion` de `abet_carga/r17.py` la use (63,6 sale como `63.6`, el nulo como `null` y 80,0 frente a 80,0 da verdadero) [US-37] [US-40] · 2026-11-18, `tests/test_resultados.py`
+- [x] T032 [Back] Escribir primero `tests/test_api_resultados.py` y después `app/rutas/resultados.py`, con una sola instantánea, la lista cerrada de claves, la unión por `pi_id` y `so_id` y el orden de FR-005, sembrando cargas con `publicar()` y `filas_inventadas()` [US-37..US-44] · 2026-11-18, `tests/test_api_resultados.py`
+- [x] T033 [Back] Pasos de pytest-bdd en `tests/aceptacion/pasos/test_resultados_feature.py` y `test_alcance_resultados_feature.py` para los escenarios sin `@delegado_a_vitest` [US-37..US-44] · 2026-11-18, 27 escenarios y 33 casos de la API, y 10 escenarios y 12 casos delegados a Vitest
+- [x] T034 [Back] Sembrar 150 secciones en la base desechable, revisar con `EXPLAIN` que el filtro por `carga_id` baja por debajo de la agregación de la vista y medir la ruta del coordinador en menos de 1 s (SC-005) [US-44] · 2026-11-18, en `tests/test_api_resultados.py`
+- [x] T035 [Back] Prueba con una segunda versión de catálogo inventada y un PI 5.10 en la base desechable, sin indicadores duplicados y con el 5.10 después del 5.2 [US-37] · 2026-11-18, en `tests/test_api_resultados.py`
 
 ## Phase 4: Frontend
 

@@ -208,7 +208,7 @@ def armar(conexion: psycopg.Connection, carga_id: int) -> dict[str, Any]:
         "avisos": avisos,
         "conjunto_reglas": carga["conjunto_reglas"],
         "conjunto_reglas_estado": carga["conjunto_reglas_estado"],
-        "parametros_pendientes": _en_orden(reglas["pendientes"]),
+        "parametros_pendientes": en_orden(reglas["pendientes"]),
         "provisional": reglas["provisional"],
         "programa_version": carga["programa_version"],
         "subida_por": carga["subida_por"],
@@ -310,7 +310,9 @@ def _mensaje_de_la_carga(estado: str, rechazos: Sequence[dict[str, Any]]) -> str
     return de_carga["mensaje"] if de_carga is not None else SIN_FILAS_ACEPTADAS
 
 
-def _en_orden(claves: Sequence[str]) -> list[str]:
+def en_orden(claves: Sequence[str]) -> list[str]:
+    """Claves en PENDIENTE en el orden de PARAMETROS_EN_ORDEN, el de la constancia y el de la ruta 12 (BR-R17-10)."""
+
     def posicion(clave: str) -> tuple[int, str]:
         return (PARAMETROS_EN_ORDEN.index(clave) if clave in PARAMETROS_EN_ORDEN else len(PARAMETROS_EN_ORDEN), clave)
 

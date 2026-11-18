@@ -815,6 +815,8 @@ def _sesion_iniciada(ctx: Escenario, correo: str, rol: str, numero: str | None, 
         assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE usuario_id = %s AND seccion_id = %s",
                        ctx.usuario_id(correo), seccion) == 1
     ctx.sesion(correo)
+    # La ruta 12 de la spec 004 se pide con la cookie de quien inició la sesión al último.
+    ctx.extras["con_sesion"] = correo
     if rol == "PROFESOR" and ctx.profesor is None:
         ctx.profesor = correo
 
@@ -1084,3 +1086,71 @@ def _seccion_sin_carga_en_estado(ctx: Escenario, numero: str, estado: str) -> No
 @then(parsers.re(r'la sección (?P<numero>[0-9]+) no tiene ninguna carga'))
 def _seccion_sin_ninguna_carga(ctx: Escenario, numero: str) -> None:
     assert ctx.cuenta("carga", "seccion_id = %s", ctx.seccion_id(numero)) == 0
+
+
+# Spec 004, los pasos que repiten resultados.feature y alcance_y_privacidad.feature
+
+EXPORTS_DE_VARIAS = {
+    ("450002", "412"): "sintetico_20262_450002_412.xlsx",
+    ("450010", "410"): "sintetico_20262_450010_410.xlsx",
+    ("450010", "412"): "sintetico_20262_450010_412.xlsx",
+}
+ASIGNADAS = {
+    "docente410@example.invalid": {("450002", "410")},
+    "docente411@example.invalid": {("450002", "411")},
+    "docente.varias@example.invalid": set(EXPORTS_DE_VARIAS),
+}
+
+
+@given('acceso.docente_seccion asigna la sección 410 de "450002" a "docente410@example.invalid", la 411 de "450002" a '
+       '"docente411@example.invalid" y la 412 de "450002" y las secciones 410 y 412 de "450010" a '
+       '"docente.varias@example.invalid", y no tiene filas de "coordinacion@example.invalid"')
+def _asignaciones_de_la_spec_004(ctx: Escenario) -> None:
+    filas = ctx.filas("SELECT u.correo, a.codigo, s.numero FROM acceso.docente_seccion d"
+                      " JOIN acceso.usuario_autorizado u USING (usuario_id) JOIN abet.seccion s USING (seccion_id)"
+                      " JOIN abet.asignatura a USING (asignatura_id)")
+    asignadas: dict[str, set[tuple[str, str]]] = {}
+    for correo, asignatura, numero in filas:
+        asignadas.setdefault(correo, set()).add((asignatura, numero))
+    assert asignadas == ASIGNADAS, asignadas
+
+
+@given("ninguna de las cinco secciones de 2026-2 tiene cargas")
+def _cinco_secciones_sin_cargas(ctx: Escenario) -> None:
+    assert ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.periodo p USING (periodo_id)"
+                   " WHERE p.codigo = '2026-2'") == 5
+    assert ctx.cuenta("carga") == 0
+
+
+@given(parsers.re(r'que "(?P<correo>[^"]+)" tiene publicadas sus tres secciones'))
+def _tres_secciones_publicadas(ctx: Escenario, correo: str) -> None:
+    for (asignatura, numero), nombre in EXPORTS_DE_VARIAS.items():
+        respuesta = ctx.subir(correo, ctx.de_inventados(nombre), nombre, numero, asignatura)
+        assert respuesta.status_code == 201, respuesta.text
+        assert respuesta.json()["estado"] == "PUBLICADA", respuesta.json()["estado"]
+        ctx.extras.setdefault("cargas_de", {})[(asignatura, numero)] = respuesta.json()["carga_id"]
+
+
+@given(parsers.re(r'que la sección (?P<numero>[0-9]+) de "(?P<asignatura>[0-9]+)" tiene una carga PUBLICADA de '
+                  r'"(?P<nombre>[^"]+)", subida por "(?P<quien>[^"]+)"'))
+def _seccion_con_carga_publicada(ctx: Escenario, numero: str, asignatura: str, nombre: str, quien: str) -> None:
+    respuesta = ctx.subir(quien, ctx.de_inventados(nombre), nombre, numero, asignatura)
+    assert respuesta.status_code == 201, respuesta.text
+    assert respuesta.json()["estado"] == "PUBLICADA", respuesta.json()["estado"]
+    ctx.extras.setdefault("cargas_de", {})[(asignatura, numero)] = respuesta.json()["carga_id"]
+
+
+def pedir_resultados(ctx: Escenario, periodo: str, **parametros: Any) -> Any:
+    """GET /api/resultados con la cookie de quien inició la sesión al último, o sin cookie si el escenario lo pide."""
+    if ctx.extras.get("sin_cookie"):
+        cliente = ctx.api.cliente()
+    else:
+        assert "con_sesion" in ctx.extras, "el escenario todavía no inició ninguna sesión"
+        cliente = ctx.sesion(ctx.extras["con_sesion"])
+    ctx.respuesta = cliente.get("/api/resultados", params={"periodo": periodo, **parametros})
+    return ctx.respuesta
+
+
+@when(parsers.re(r'se envía GET /api/resultados\?periodo=(?P<periodo>[0-9]+-[0-9]+)'))
+def _pide_resultados(ctx: Escenario, periodo: str) -> None:
+    pedir_resultados(ctx, periodo)
