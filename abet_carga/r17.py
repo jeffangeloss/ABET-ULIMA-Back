@@ -100,7 +100,7 @@ ORDER BY so, CAST(split_part(pi, '.', 2) AS smallint)
 """
 
 _PLAN = """
-SELECT p.codigo, p.descripcion, i.nombre AS instrumento
+SELECT p.codigo, p.descripcion, i.nombre AS instrumento, pm.descripcion_instrumento
 FROM abet.carga c
 JOIN abet.seccion s        ON s.seccion_id = c.seccion_id
 JOIN abet.plan_medicion pm ON pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id
@@ -268,6 +268,8 @@ def _bloques(hoja: Worksheet, filas: list[dict[str, Any]], plan: dict[str, dict[
         _escribir(hoja, f"B{bloque_i}", fila["pi"])
         _escribir(hoja, f"C{bloque_i}", detalle["descripcion"])
         _escribir(hoja, f"E{bloque_i}", detalle["instrumento"])
+        # BR-R17-11. La descripción del instrumento sale de la base, y un PI sin ella deja vacía su celda de G.
+        _escribir(hoja, f"G{bloque_i}", detalle["descripcion_instrumento"])
         _escribir(hoja, f"B{bloque_ii}", fila["pi"])
         _escribir(hoja, f"C{bloque_ii}", detalle["instrumento"])
         _escribir(hoja, f"E{bloque_ii}", _fraccion(fila["pct_logro_sobre_calificados"]), "0.0%")

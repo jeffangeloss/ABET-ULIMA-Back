@@ -6,6 +6,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Agregado
 
+- La descripción del instrumento de medición sale de la base (spec 005, US-51, BR-R17-11). V1_11 agrega `abet.plan_medicion.descripcion_instrumento` varchar(400) nula con `ck_plan_medicion_descripcion`, que exige al menos un carácter visible y ningún blanco a los lados con los 29 blancos de `str.isspace()`, y el R-17 la escribe en G17, G18 y G19 y deja vacía la celda de un PI sin ella. `abet_app` la lee y no la escribe. El guion repetible `db/datos/descripcion_instrumento_2026_2.sql` carga textos de prueba distintos para 5.1, 5.2 y 5.3 de 450002 en 2026-2, y la consulta de solo lectura `db/plataforma/neon/pi_sin_descripcion_instrumento.sql` lista los PI del plan sin descripción. El contenido real espera a D-34.
 - Spec 005 «Oportunidades de mejora en la carga, con semáforo, declaración y R-17 desde la base» (EP-05), con 10 historias auditadas (US-45 a US-54) que salen de 15 candidatas, 65 escenarios y 90 casos en Gherkin en español, FR-001 a FR-017, SC-001 a SC-007, D-35 a D-37 y J-29 a J-37, aprobada por Jefferson en el chat el 2026-11-18 (`specs/005-oportunidades-de-mejora/`). Ningún código cambia.
 - Spec 004 «Los logros del profesor por SO, solo en sus secciones» (EP-04), con 8 historias auditadas (US-37 a US-44) que salen de 22 candidatas, 37 escenarios y 45 casos en Gherkin en español, FR-001 a FR-021, SC-001 a SC-008, D-32 a D-34 y J-21 a J-28, aprobada por Jefferson en el chat el 2026-11-18 (`specs/004-reportes-docente/`). Ningún código cambia.
 - Reemplazo de la carga publicada de una sección con `POST /api/secciones/{seccion_id}/cargas?reemplaza={carga_id}`, para el profesor en su sección y el coordinador en cualquiera de la carrera (`app/permisos.puede_reemplazar()`, valor provisional de D-11). La carga nueva entra con `reemplaza_carga_id`, la anterior pasa a REEMPLAZADA en la misma transacción y nada se borra; un reemplazo RECHAZADO deja la anterior publicada y su `reemplaza_carga_id` nulo, el mismo archivo responde 200 con un aviso y una carga que no es la publicada responde 409 (US-18, BR-CARGA-19, T081).
@@ -16,6 +17,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- `plantillas/README.md` da G17:I19 como «desde la base» en lugar de «vacía y editable», y `r17_desde_la_base.feature` deja definitivos los escenarios de US-51 con los Antecedentes en V1_11, mientras V1_12 no existe (FR-017).
 - El export que no declara su sección en la hoja ni en el nombre recibe en los tres formatos la pregunta de US-21 en lugar del 422 del corte 1, el escenario del corte 1 que lo comprobaba sale de `carga.feature` y los dos de la spec 003 esperan la pregunta (D-02).
 - Los escenarios de US-20 siguen omitidos, ahora con la razón de T018, el dominio y la cuenta de Resend de Jefferson.
 - `spec.md` de la spec 001 cita el texto vigente del 422 sin sección, el de la spec 003, en US-13 y en D-02, y deja escrito que la pregunta de US-21 vale para los tres formatos, como el comentario de US-21 en `carga.feature` (FR-013 de la spec 003).

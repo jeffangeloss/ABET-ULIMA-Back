@@ -760,3 +760,45 @@ def test_br_r17_09_la_hoja_constancia_dice_lo_mismo_que_la_constancia_en_json(
     mensajes = {mensaje for clave, mensaje in pares.items()
                 if isinstance(clave, str) and clave.startswith(("Fila ", "PUNTAJE"))}
     assert mensajes == {elemento["mensaje"] for elemento in cuerpo["rechazos"] + cuerpo["avisos"]}
+
+
+# BR-R17-11: Descripción del instrumento desde la base (spec 005, US-51).
+
+DESCRIPCION_5_1 = "Texto de prueba. Informe del trabajo integrador con el diagnóstico ambiental del caso."
+FORMULA_5_2 = "=SUMA(1;2)"
+
+
+@pytest.fixture(scope="module")
+def r17_con_descripciones(base_desechable: ModuleType, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """R-17 de la 410 con una descripción en 5.1, un texto que parece fórmula en 5.2 y ninguna en 5.3."""
+    with base_desechable.abierta(datos_2026_2=False, despues=[CARGAS.SINTETICOS, base_desechable.DATOS_2026_2]) as base:
+        with psycopg.connect(base.conexion) as conexion:
+            carga_id = CARGAS.preparar_410(conexion)
+            for pi, texto in (("5.1", DESCRIPCION_5_1), ("5.2", FORMULA_5_2)):
+                conexion.execute(
+                    "UPDATE abet.plan_medicion pm SET descripcion_instrumento = %s FROM abet.pi p, abet.asignatura a, "
+                    "abet.periodo pe WHERE p.pi_id = pm.pi_id AND a.asignatura_id = pm.asignatura_id "
+                    "AND pe.periodo_id = pm.periodo_id AND p.codigo = %s AND a.codigo = '450002' AND pe.codigo = '2026-2'",
+                    (texto, pi))
+        return _generar(base, carga_id, tmp_path_factory.mktemp("r17_descripciones"))
+
+
+def test_br_r17_11_g17_trae_la_descripcion_del_pi_5_1_desde_la_base(r17_con_descripciones: Path) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G17"].value == DESCRIPCION_5_1
+    assert hoja["E17"].value == "Trabajo Integrador"
+
+
+def test_br_r17_11_un_pi_sin_descripcion_deja_su_celda_vacia_junto_a_otro_que_la_tiene(
+    r17_con_descripciones: Path,
+) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G19"].value is None
+    assert [hoja[f"{columna}19"].value for columna in "HI"] == [None, None]
+
+
+def test_br_r17_11_una_descripcion_que_parece_formula_queda_como_cadena(r17_con_descripciones: Path) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G18"].value == FORMULA_5_2
+    assert hoja["G18"].data_type == "s"
+    assert not [nombre for nombre, datos in _partes(r17_con_descripciones).items() if b"<f>" in datos]

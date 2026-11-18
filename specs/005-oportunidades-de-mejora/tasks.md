@@ -14,15 +14,15 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 1: Contrato
 
-- [ ] T010 [Back] Escribir las specs vivas, que son `specs/features/r17/r17.spec.md` con BR-R17-04 (de «vacíos y editables» a «desde la base»), BR-R17-11 y BR-R17-12 y la feature `specs/features/mejora/mejora.spec.md` con BR-MEJORA-01 a BR-MEJORA-NN (propuesta), y sumar la fila `mejora` en `specs/README.md` [US-47..US-51]
+- [ ] T010 [Back] Escribir las specs vivas, que son `specs/features/r17/r17.spec.md` con BR-R17-04 (de «vacíos y editables» a «desde la base»), BR-R17-11 y BR-R17-12 y la feature `specs/features/mejora/mejora.spec.md` con BR-MEJORA-01 a BR-MEJORA-NN (propuesta), y sumar la fila `mejora` en `specs/README.md` [US-47..US-51] · BR-R17-11 escrita el 2026-11-18 con US-51; BR-R17-04, BR-R17-12 y `mejora` siguen pendientes
 - [ ] T011 [Front] Pasar a definitivos el contrato de las rutas 13 a 16 en `docs/03-api/contrato.md` (sección nueva), `docs/specs/api-contracts.md`, P4 en `docs/01-arquitectura/frontend.md`, `docs/specs/feature-index.md` y ADR-009, con el cambio de FR-016 de la spec 004 y del invariante 8 de ADR-008 [US-45..US-54]
-- [ ] T012 [Back] Dejar definitivos los cuatro `.feature` con el analizador de pytest-bdd y cumplir FR-017, que amplía la expresión de migraciones de `tests/aceptacion/pasos/conftest.py:756` a V1_11 y V1_12 y suma la regla de copia «con la columna X.Y vacía en las filas N y M» [US-45..US-54]
+- [ ] T012 [Back] Dejar definitivos los cuatro `.feature` con el analizador de pytest-bdd y cumplir FR-017, que amplía la expresión de migraciones de `tests/aceptacion/pasos/conftest.py:756` a V1_11 y V1_12 y suma la regla de copia «con la columna X.Y vacía en las filas N y M» [US-45..US-54] · Los escenarios de US-51 quedan definitivos y la expresión admite V1_11 el 2026-11-18; V1_12, la regla de copia y los demás `.feature` siguen pendientes
 
 ## Phase 2: Base
 
-- [ ] T020 [Back] V1_11 con `abet.plan_medicion.descripcion_instrumento` y `ck_plan_medicion_descripcion`, probada en el clúster desechable con los casos del escenario 3 de US-51 [US-51]
+- [x] T020 [Back] V1_11 con `abet.plan_medicion.descripcion_instrumento` y `ck_plan_medicion_descripcion`, probada en el clúster desechable con los casos del escenario 3 de US-51 [US-51] · Hecha el 2026-11-18 en `feat/005-us51-descripcion-instrumento`
 - [ ] T021 [Back] V1_12 con `abet.mejora_borrador`, `abet.mejora_declaracion` y sus CHECK, y los permisos exactos de `abet_app` en `db/plataforma/neon/crear_rol_app.sql` con sus listas de comprobación [US-47..US-49] [US-53]
-- [ ] T022 [Back] Guion de datos `db/datos/descripcion_instrumento_2026_2.sql` (propuesta) con un UPDATE repetible y textos «Texto de prueba.» por PI, y la consulta informativa de solo lectura de los PI sin descripción en `db/plataforma/neon/` [US-51]
+- [x] T022 [Back] Guion de datos `db/datos/descripcion_instrumento_2026_2.sql` con un UPDATE repetible y textos «Texto de prueba.» por PI, y la consulta informativa de solo lectura de los PI sin descripción en `db/plataforma/neon/pi_sin_descripcion_instrumento.sql` [US-51] · Hecha el 2026-11-18 en `feat/005-us51-descripcion-instrumento`
 - [ ] T023 [Neon] Consulta de solo lectura de las cargas publicadas sin declaración y de los permisos de `abet_app`, desde el Windows de Jefferson con `ssh windows-worker` [US-49]
 - [ ] T024 [Neon] Migrar la rama `develop` desde el Windows con V1_11, V1_12, los permisos sin APP_DB_CLAVE y la comprobación con `has_table_privilege` y `has_column_privilege` [US-47..US-51]
 - [ ] T025 [Jefferson] Correr el guion de la descripción en la rama `develop` desde el Windows [US-51]
@@ -34,7 +34,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [ ] T032 [Back] Rutas 14 a 16 con `puede_declarar()`, el orden 401, 403, 422 y 409, el cuerpo leído después del alcance, JSON obligatorio, la normalización del texto y el patrón de códigos y correos, y su entrada en la prueba que recorre las rutas registradas [US-47] [US-48] [US-53]
 - [ ] T033 [Back] `DeclaracionPendiente` en `r17.generar()` con la lectura en la misma transacción `READ ONLY` y `REPEATABLE READ`, y su captura en `python -m abet_carga r17` [US-49]
 - [ ] T034 [Back] B29 y B34 desde la última declaración, con ajuste de texto, alineación arriba y el alto calculado de las filas 31 y 36 con prueba unitaria, y la edición de `plantillas/README.md` [US-50]
-- [ ] T035 [Back] G17:I19 desde `abet.plan_medicion.descripcion_instrumento` en `_PLAN` y `_bloques` [US-51]
+- [x] T035 [Back] G17:I19 desde `abet.plan_medicion.descripcion_instrumento` en `_PLAN` y `_bloques` [US-51] · Hecha el 2026-11-18 en `feat/005-us51-descripcion-instrumento`
 - [ ] T036 [Back] Herencia del texto al leer en la ruta 14, con `heredado_de` y el 409 con `reemplazada_por` [US-54]
 - [ ] T037 [Back] Ayudante `declarar()` y conjunto de reglas parametrizado R-PRUEBA-SEMAFORO en `tests/cargas_de_prueba.py`, y ajuste de las 26 llamadas de prueba que generan un R-17 [US-49] [US-45]
 - [ ] T038 [Back] Pasos de pytest-bdd para los escenarios sin `@delegado_a_vitest` [US-45..US-54]
