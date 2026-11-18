@@ -1,6 +1,6 @@
 # Tasks: Oportunidades de mejora en la carga, con semáforo, declaración y R-17 desde la base
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo la aprobación de Jefferson (T004) y las decisiones de la carrera (T005), así que la fase 1 espera la aprobación
+**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), y Jefferson aprueba la spec en el chat (T004), así que la fase 1 puede empezar. La implementación espera la fusión de la spec 004, salvo US-51 y V1_11
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001, 003 y 004. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Neon]` es la base en la nube, siempre desde el Windows de Jefferson por Tailscale, y `[Jefferson]` marca lo que solo puede hacer él. Ninguna credencial pasa por un agente. Al final, cada tarea lleva las historias que habilita o audita. La estimación de cada fase llega con la aprobación, así que esta lista no promete ninguna fecha. La implementación sale de `develop` después de fusionar la spec 004.
 
@@ -9,7 +9,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [x] T001 [Back] Revisar los requisitos de la carrera (N2, N6, N11, N12, N13 y N15), el código de P4, de `App.tsx`, de `abet_carga/r17.py` y de `app/permisos.py`, y la base de Neon en solo lectura, sin copiar datos personales [US-45..US-54]
 - [x] T002 [Back] Escribir 15 candidatas desde el pedido de Jefferson, auditarlas con las lentes de necesidad, solapamiento y verificabilidad y con el crítico de arquitectura, y dejar el resultado en `specs/005-oportunidades-de-mejora/revision-historias.md` [US-45..US-54]
 - [x] T003 [Back] Redactar `spec.md`, `plan.md`, `tasks.md` y los cuatro `.feature` de `specs/005-oportunidades-de-mejora/` en la rama `docs/005-oportunidades-de-mejora`, que el analizador de pytest-bdd lee con 65 escenarios y 90 casos [US-45..US-54]
-- [ ] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/005-oportunidades-de-mejora` o con su «apruebo» en el chat, y decidir J-29 a J-37 [US-45..US-54]
+- [x] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/005-oportunidades-de-mejora` o con su «apruebo» en el chat, y decidir J-29 a J-37 [US-45..US-54] · Aprobada en el chat el 2026-11-18 («Sí, apruébala»), con J-29 a J-37 en el valor que propone la spec
 - [ ] T005 [Jefferson] Llevar D-34 a D-37 a la Coordinación de Ambiental [US-45..US-51]
 
 ## Phase 1: Contrato

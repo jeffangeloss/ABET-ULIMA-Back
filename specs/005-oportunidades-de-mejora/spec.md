@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/005-oportunidades-de-mejora` (PR a `develop`), con la implementación en `feat/005-oportunidades-de-mejora` del Back y del Front después de la aprobación
 **Created**: 2026-11-18
-**Status**: Borrador, a la espera de la aprobación de Jefferson
+**Status**: Aprobada por Jefferson en el chat el 2026-11-18 («Sí, apruébala»), con J-29 a J-37 en el valor que propone la spec
 **Input**: «la descripción siempre viene de la base de datos» (Jefferson, 2026-11-18, con una captura del bloque I del R-17 de la 410). «esto no es?» y «a que tabla y atributo hace referencia entonces (?» (Jefferson, 2026-11-18, con una captura de la consola de Neon que muestra `abet.so` y su columna `descripcion`). «estos campos deben aparecer en la carga, pero como si fuera formulario. La base de datos debe guardarlos. Pero antes de hacerlo esa tabla que sale en el R17 (tercera imagen) tiene que salir hacia donde está la carga, se tiene que mostrar justo después de haber cargado para que le muestre como en forma de una figura estilo semáforo como va la sección del profesor y así mismo él declare lo que se le pregunta. Solo podrá obtener el R17 si es que el docente ha completado tmb esos dos campos. Si puedes mantener la persistencia de los datos que se escriben como borrador genial. También cuando se haga click atrás debería volver atrás (no salirse de la página).» (Jefferson, 2026-11-18, con tres capturas del R-17 y de P4)
 
 ## Épica
