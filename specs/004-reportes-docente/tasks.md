@@ -1,6 +1,6 @@
 # Tasks: Los logros del profesor por SO, solo en sus secciones
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-17**: la fase 0 queda hecha salvo la aprobación de Jefferson (T004) y las decisiones de la carrera (T005); ninguna tarea de código empieza antes de T004
+**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), y Jefferson aprueba la spec en el chat (T004), así que la fase 1 puede empezar
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001 y 003. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Neon]` es la base en la nube, siempre desde el Windows de Jefferson por Tailscale, y `[Jefferson]` marca lo que solo puede hacer él. Ninguna credencial pasa por un agente. Al final, cada tarea lleva las historias que habilita o audita. La estimación de cada fase llega con la aprobación, así que esta lista no promete ninguna fecha.
 
@@ -9,7 +9,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [x] T001 [Back] Revisar los límites de acceso que ya existen (`app/permisos.py`, BR-ACCESO-07 y BR-ACCESO-08 y sus escenarios aprobados) y los requisitos de reportes de `ABET_SIS_MED` (N6, N9, N10, N15, H05, H06, H13 y PA-04), sin copiar datos personales [US-37..US-44]
 - [x] T002 [Back] Escribir 22 candidatas desde cuatro ángulos, auditarlas con las lentes de necesidad, tamaño y verificabilidad y con el crítico de arquitectura, y dejar el resultado en `specs/004-reportes-docente/revision-historias.md` [US-37..US-44]
 - [x] T003 [Back] Redactar `spec.md`, `plan.md`, `tasks.md` y los dos `.feature` de `specs/004-reportes-docente/`, que el analizador de pytest-bdd lee con 37 escenarios y 45 casos [US-37..US-44]
-- [ ] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/004-reportes-docente` o con su «apruebo» en el chat, y decidir J-21 a J-28 [US-37..US-44]
+- [x] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/004-reportes-docente` o con su «apruebo» en el chat, y decidir J-21 a J-28 [US-37..US-44] · Aprobada en el chat el 2026-11-18 («Sí, apruébala»), con J-21 a J-28 en el valor que propone la spec
 - [ ] T005 [Jefferson] Llevar D-32, D-33 y D-34 a la Coordinación de Ambiental y recordarle D-12 y D-30, que siguen con su dueño [US-37]
 
 ## Phase 1: Contrato

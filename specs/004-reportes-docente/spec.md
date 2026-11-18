@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/004-reportes-docente` (PR a `develop`), con la implementación en `feat/004-reportes-docente` del Back y del Front después de la aprobación
 **Created**: 2026-11-17
-**Status**: Borrador, pendiente de aprobación de Jefferson
+**Status**: Aprobada por Jefferson en el chat el 2026-11-18 («Sí, apruébala»), con J-21 a J-28 en el valor que propone la spec
 **Input**: «los profesores suben sus export de blackboard, ellos desean como constancia su R17 y que bueno, el profesor tmb vea de forma visual con reportes como le ha ido a él frente a los SO, pero solamente debe poder consultar a él e sus secciones, no otras secciones de otros profesores. Ese debería ser el límite, tampoco él debería subir un export a secciones que no son de él.» (Jefferson, 2026-11-17, por la sesión que encarga la spec 004)
 
 ## Épica

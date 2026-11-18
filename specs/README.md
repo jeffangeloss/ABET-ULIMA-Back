@@ -4,7 +4,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 
 ## Contexto actual
 
-- Estado al 2026-11-17. La spec `004-reportes-docente` (EP-04, US-37 a US-44, D-32 a D-34 y J-21 a J-28) agrega la ruta `GET /api/resultados` y la pantalla P6 «Mis logros por SO» (propuesta), con los logros del profesor por resultado del estudiante (student outcome, SO) solo en sus secciones y con las mismas cifras del R-17, sin migración. Está en revisión en la rama `docs/004-reportes-docente` y espera la aprobación de Jefferson.
+- Estado al 2026-11-18. La spec `004-reportes-docente` (EP-04, US-37 a US-44, D-32 a D-34 y J-21 a J-28) agrega la ruta `GET /api/resultados` y la pantalla P6 «Mis logros por SO» (propuesta), con los logros del profesor por resultado del estudiante (student outcome, SO) solo en sus secciones y con las mismas cifras del R-17, sin migración. Jefferson la aprueba en el chat el 2026-11-18 («Sí, apruébala»), y entra a `develop` con el PR de la rama `docs/004-reportes-docente`.
 - Estado al 2026-11-09. La spec `003-exports-blackboard` (EP-03, US-26 a US-36) amplía la carga a los tres formatos del export real de Blackboard, `.xlsx`, `.csv` y `.xls` de texto, y a los encabezados «ABET SO5.1 [», con la migración nueva V1_10. Jefferson la aprueba en el chat el mismo día, y su implementación avanza en la rama `feat/003-exports-blackboard` del Back y del Front.
 - Estado al 2026-10-28. `develop` no tiene código de producto. Jefferson aprueba la spec `001-mvp-carga-r17` en el chat el mismo día, y `MEMORIA.md` registra la aprobación. La aprobación formal que pide el Principio V de la constitución es la fusión (merge) en `develop` del PR de la spec desde la rama `docs/plan-mvp` (T004), que espera el permiso de Jefferson. Mientras tanto, el corte 1 avanza en local en la rama `feat/001-mvp-carga-r17`.
 - Solo datos inventados (códigos de estudiante de 99000000 a 99999999) en este repositorio, en Neon y en Vercel, hasta que la universidad autorice los reales (D-10). Ningún nombre de estudiante se guarda ni se muestra, y ningún rechazo guarda el valor leído de una celda.
@@ -62,7 +62,7 @@ ABET-ULIMA-Back/
     README.md
     001-mvp-carga-r17/              revision-historias, spec, plan, tasks y audit
     003-exports-blackboard/         export real en .xlsx, .csv y .xls, encabezados ABET SO y V1_10 (spec 003)
-    004-reportes-docente/           logros del profesor por SO en la ruta 12 y la pantalla P6, en revisión (spec 004)
+    004-reportes-docente/           logros del profesor por SO en la ruta 12 y la pantalla P6, aprobada (spec 004)
       aceptacion/                   base_neon, acceso, carga, r17_constancia, despliegue, reemplazo_y_cargas y varias_secciones (.feature)
     features/<feature>/<feature>.spec.md
   docs/
