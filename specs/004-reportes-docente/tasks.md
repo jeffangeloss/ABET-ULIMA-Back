@@ -1,6 +1,6 @@
 # Tasks: Los logros del profesor por SO, solo en sus secciones
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), Jefferson aprueba la spec en el chat (T004) y la construcción avanza en `feat/004-reportes-docente` del Back y del Front
+**Input**: spec.md, plan.md · **Estado al 2026-11-18**: la fase 0 queda hecha salvo las decisiones de la carrera (T005), Jefferson aprueba la spec en el chat (T004) y la construcción, auditada en `audit.md`, entra a `develop` con el PR #31 del Back y el PR #20 del Front (T070)
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001 y 003. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Neon]` es la base en la nube, siempre desde el Windows de Jefferson por Tailscale, y `[Jefferson]` marca lo que solo puede hacer él. Ninguna credencial pasa por un agente. Al final, cada tarea lleva las historias que habilita o audita. La estimación de cada fase llega con la aprobación, así que esta lista no promete ninguna fecha.
 
@@ -50,6 +50,6 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 7: Despliegue
 
-- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/004-reportes-docente` y fusionar sus PR con la integración continua en verde [US-37..US-44] · empuje autorizado el 2026-11-18 («Sí, empuja y abre»), con jeffangeloss/ABET-ULIMA-Back#31 y jeffangeloss/ABET-ULIMA-Front#20 abiertos; falta la fusión
+- [x] T070 [Jefferson] Autorizar empujar las ramas `feat/004-reportes-docente` y fusionar sus PR con la integración continua en verde [US-37..US-44] · empuje autorizado el 2026-11-18 («Sí, empuja y abre»), con jeffangeloss/ABET-ULIMA-Back#31 y jeffangeloss/ABET-ULIMA-Front#20, y fusión autorizada el mismo día («Sí, fusiónalos»), con el #31 en f403d52 y el #20 en 778ae23
 - [ ] T071 [Front] Correr T043 contra la vista previa de `develop`, con la rama `develop` de Neon restablecida con `ABET_SIS_MED/herramientas_neon/humo_preview.sh`, que corre Jefferson [US-37] [US-38] [US-40]
 - [ ] T072 [Jefferson] Llevar la versión hacia `main` y Production, sin migración en Neon [US-37..US-44]
