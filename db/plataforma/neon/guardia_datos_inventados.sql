@@ -1,4 +1,5 @@
 -- Guardia de datos inventados en la base de Neon (script de plataforma; US-08, FR-005, SC-007 y Principio II).
+-- RETIRADA el 2026-11-19 en las dos ramas de Neon, con D-10 decidida. Este guion solo sirve para volver a ponerla.
 -- Agrega a abet.estudiante la restricción ck_estudiante_codigo_inventado, que junto con ck_estudiante_codigo de
 -- V1_08 solo admite códigos de 99000000 a 99999999. Repite en la base la regla que la interfaz de
 -- programación de aplicaciones (application programming interface, API) aplica con GUARDIA_DATOS_INVENTADOS=1,

@@ -12,7 +12,7 @@ Backend del sistema de medición ABET de la Carrera de Ingeniería Ambiental de 
 
 ## Reglas que no cambian
 
-- Solo datos inventados (códigos de estudiante que empiezan con 99) en el repositorio, en Neon y en Vercel, hasta que la universidad autorice los reales.
+- Desde el 2026-11-19 la universidad autoriza los datos reales en Neon y en Vercel (D-10). El repositorio sigue solo con datos inventados (códigos de estudiante que empiezan con 99).
 - Ningún nombre de estudiante se guarda ni se muestra.
 - Ninguna credencial entra al repositorio ni a los registros.
 - Todo cambio entra por PR a `develop` y actualiza `MEMORIA.md`.
