@@ -392,6 +392,26 @@ def test_br_r17_02_sin_nivel_esperado_ni_meta_el_r17_no_inventa_cifras(
     assert "R-PRUEBA-PENDIENTE" in hoja["B7"].value
 
 
+def test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas(
+    base_aprobada: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_aprobada
+    hoja = _libro(_generar(base, ids["aprobada"], tmp_path))[HOJA]
+    # Los rótulos de la plantilla fijan el corte de M24 y M25 en los niveles de la escala (plantillas/README.md).
+    assert [hoja[ref].value for ref in ("K24", "K25")] == [
+        "Número de alumnos que obtuvieron 1 y 2", "Número de alumnos que obtuvieron 3 y 4"]
+    # Con NIVEL_ESPERADO 2 el bloque II da 10 de 11 en cada PI, y M24 a M26 siguen en 11, 22 y 22 / 33.
+    assert [hoja[f"E{fila}"].value for fila in (24, 25, 26)] == pytest.approx([0.909] * 3)
+    assert [hoja[ref].value for ref in ("M24", "M25")] == [11, 22]
+    assert hoja["M26"].value == pytest.approx(22 / 33)
+    # Lo que no debe pasar: que M24 y M25 tomen los conteos contra el nivel esperado que la vista expone.
+    contra_el_esperado = _consulta(
+        base, "SELECT sum(n_debajo_del_esperado), sum(n_esperado_o_superior) FROM abet.v_r17_por_pi "
+              "WHERE carga_id = %s", (ids["aprobada"],))
+    assert contra_el_esperado == [(3, 30)]
+    assert [hoja[ref].value for ref in ("M24", "M25")] != [3, 30]
+
+
 def test_br_r17_02_sirve_para_otra_asignatura_con_un_solo_pi(
     base_410: tuple[Any, dict[str, int]], tmp_path: Path,
 ) -> None:
