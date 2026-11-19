@@ -119,6 +119,8 @@ Las filas siguen el orden del bloque I.
 
 M24 a M26 repiten lo que calculaban las fórmulas de la fuente sobre F43:F184, que cuentan las mediciones de todos los PI juntas. E24:F26 trae seis reglas de formato condicional con umbrales fijos de 0,75, 0,79 y 0,8, con fuente roja por debajo de 0,8, y M26 trae una regla verde por encima de 0,8. Esos umbrales no siguen `META_LOGRO`, así que con una meta de 70 % los colores quedan en 80 %.
 
+Los conteos de M24 y M25 tampoco siguen `NIVEL_ESPERADO`, porque sus rótulos de K24 y K25 nombran los niveles 1 y 2 y los niveles 3 y 4. M26 coincide con la proporción conjunta de los PI del bloque II cuando el nivel esperado es 3, como en R-2026-BORRADOR. El cambio del 2026-11-18 de BR-R17-02 muestra que con R-PRUEBA-APROBADO, de nivel esperado 2, deja de coincidir.
+
 ### Recuadros y tabla de estudiantes
 
 | Celdas | Contenido | Fuente |

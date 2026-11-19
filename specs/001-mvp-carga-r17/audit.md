@@ -5,7 +5,7 @@
 **Plan**: [plan.md](./plan.md)  
 **Comando**: `uv run --frozen pytest -q tests/aceptacion -rA` en el Back, `uv run --frozen pytest -q tests -rA` en el Back para las pruebas unitarias y `npm test` en el Front  
 **Resultado**: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa del Back, 852 passed, 20 skipped in 241.50s (0:04:01); Vitest del Front, 8 archivos y 76 pruebas aprobadas; corte 2 (2026-11-17), aceptación, 300 passed y 14 skipped, y suite completa del Back, 1289 passed y 15 skipped in 141.47s (0:02:21); Vitest del Front, 10 archivos y 139 pruebas aprobadas; prueba de humo local `e2e/humo.spec.ts`, 3 passed  
-**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). El corte 2 queda verificado en local el 2026-11-17 en la rama `feat/001-corte-2` para US-18, US-19 y US-21 (sección «Corte 2»), y US-20 espera a T018. Quedan abiertos cuatro escenarios de US-17, la verificación a mano de T062, US-20 y la prueba de humo del corte 2 contra la vista previa de `develop`.
+**Estado**: Corte 1 verificado en local el 2026-10-30 y publicado en Production con la versión 0.1.0 el 2026-11-17 (sección «Despliegue»). El corte 2 queda verificado en local el 2026-11-17 en la rama `feat/001-corte-2` para US-18, US-19 y US-21 (sección «Corte 2»), y US-20 espera a T018. Quedan abiertos tres escenarios de US-17, la verificación a mano de T062, US-20 y la prueba de humo del corte 2 contra la vista previa de `develop`.
 
 Esta auditoría cruza cada historia de usuario (user story, US) con sus escenarios en Gherkin, la prueba que los ejecuta y su resultado de hoy. Después cruza los requisitos funcionales (functional requirements, FR) y los criterios de éxito (success criteria, SC) de la spec con la evidencia, y lista lo que el corte 1 deja abierto. Las reglas de negocio (business rules, BR) son las de `specs/features/`. El resultado de cada escenario sale de una corrida real, no de una nota a mano, y los tres estados posibles son los siguientes.
 
@@ -21,7 +21,7 @@ El script `traza.py` (guardado fuera del repositorio, en la carpeta temporal de 
 
 | Conjunto | Escenarios | Aprobados | Omitidos | Pendientes |
 | --- | --- | --- | --- | --- |
-| Corte 1 (US-01 a US-17) | 107 | 97 | 6 | 4 |
+| Corte 1 (US-01 a US-17) | 107 | 98 | 6 | 3 |
 | Corte 2 (US-18 a US-21) | 25 | 20 | 5 | 0 |
 | Total | 132 | 117 | 11 | 4 |
 
@@ -239,7 +239,7 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 
 ### US-17: Desplegar el piloto en Vercel con Neon y probarlo de punta a punta (P1, corte 1)
 
-11 escenarios, 7 aprobados, 0 omitidos y 4 pendientes. Las pruebas de esta historia corren el 2026-11-17 contra Vercel y Neon, fuera de pytest, y su evidencia está en la sección «Despliegue». La mitad de `.env.example` del escenario de las variables corre además en pytest, con `tests/test_env_example.py`.
+11 escenarios, 8 aprobados, 0 omitidos y 3 pendientes. Las pruebas de esta historia corren el 2026-11-17 y el 2026-11-18 contra Vercel y Neon, fuera de pytest, y su evidencia está en la sección «Despliegue». La mitad de `.env.example` del escenario de las variables corre además en pytest, con `tests/test_env_example.py`.
 
 | Escenario | Prueba | Resultado |
 | --- | --- | --- |
@@ -253,7 +253,7 @@ Un esquema de escenario (Esquema del escenario) cuenta una vez aunque corra vari
 | Production sale solo de main | `vercel api /v9/projects` de los dos proyectos y los despliegues del push a `develop` del 2026-11-17 | aprobado |
 | El equipo de Vercel no comparte el contenido para entrenar modelos | `vercel api /v2/teams/jeffangeloss-projects` | pendiente (`dataSharingConsent` está en `granted` por los términos de servicio; lo apaga Jefferson en Team Settings, Data Preferences, T070) |
 | La guardia de datos inventados está encendida en el piloto | consulta de solo lectura de `pg_constraint` en la rama principal y `vercel env ls production` | pendiente (la restricción y la variable están, pero la subida que la guardia rechaza no corre en Production, porque la versión 0.1.0 no sube nada allí) |
-| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | `e2e/humo.spec.ts` de Playwright en el Front, contra la vista previa de `develop` (T075, 2026-11-02) | pendiente (la corrida pasa de P1 a P4 con 11, 10 y 1 y descarga el R-17, pero nadie abre ese libro y su carga ya no existe en `develop`; el 2026-11-17 se abre el R-17 de la 410 cargada con el `.csv`, que cumple, según la sección «Despliegue») |
+| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | `ABET_SIS_MED/herramientas_neon/humo_preview_con_error.sh` el 2026-11-18, con las dos pruebas de US-17 de `e2e/humo.spec.ts` del Front (f10fdc3) contra la vista previa de `develop` (Back 7da9aa4), después de restablecer la rama `develop` de Neon desde la principal, y `revisar_r17.py` sobre el R-17 descargado | aprobado |
 
 ### US-18: Reemplazar la carga publicada de una sección (P2, corte 2)
 
@@ -386,7 +386,7 @@ Cada requisito toma sus escenarios de las reglas BR que lo citan como fuente y d
 | FR-021 | US-16; BR-R17-09, BR-R17-10 | 5 aprobados, 0 omitidos y 0 pendientes | `test_api_cargas.py` (1), `test_comando.py` (2), `test_constancia.py` (22), `test_r17.py` (5) | Cubierto |
 | FR-022 | US-05, US-06, US-07; sin regla BR | 25 aprobados, 0 omitidos y 0 pendientes | Vitest, grupos «P1 Ingreso» (7); Vitest, grupos «P2 Mis secciones» (10); Vitest, grupos «P3 Subir export» (17); Vitest, grupos «P4 Resultado de la carga» (13); Vitest, grupos «App» (5) | Cubierto |
 | FR-023 | US-05, US-17; BR-ACCESO-03 | 11 aprobados, 0 omitidos y 0 pendientes (los de la cookie y la reescritura de US-17, aprobados el 2026-11-17) | `test_api_sesion.py` (3); Vitest, grupos «api.ts» (15) | Cubierto |
-| FR-024 | US-17; sin regla BR | 7 aprobados, 0 omitidos y 4 pendientes | comprobaciones del 2026-11-17 contra Vercel y Neon (sección «Despliegue») y `test_env_example.py` (7) | Parcial |
+| FR-024 | US-17; sin regla BR | 8 aprobados, 0 omitidos y 3 pendientes | comprobaciones del 2026-11-17 y del 2026-11-18 contra Vercel y Neon (sección «Despliegue») y `test_env_example.py` (7) | Parcial |
 | FR-025 | US-18; BR-CARGA-19 | 11 aprobados, 0 omitidos y 0 pendientes (corte 2) | `test_api_cargas.py` (13), `test_carga.py` (30); Vitest, grupos «P3 Subir export» (32) y «P5 Cargas» (17) | Cubierto |
 | FR-026 | US-19; BR-CARGA-20 | 5 aprobados, 0 omitidos y 0 pendientes (corte 2) | `test_api_cargas.py` (9), `test_constancia.py` (2); Vitest, grupo «P5 Cargas» (17) | Cubierto |
 | FR-027 | US-20; BR-ACCESO-09 | 0 aprobados, 5 omitidos y 0 pendientes (corte 2) | ninguna, porque espera a T018 | Corte 2, pendiente de T018 |
@@ -402,7 +402,7 @@ Resumen de requisitos, Corte 2, pendiente de T018 1, Cubierto 25, Parcial 6.
 
 | SC | Estado | Evidencia |
 | --- | --- | --- |
-| SC-001 | Parcial | 98 de 108 escenarios del corte 1 aprobados, 6 omitidos y 4 pendientes. Los siete de US-17 se aprueban el 2026-11-17 contra Vercel y Neon, y el resto sale de la corrida local del 2026-10-30. |
+| SC-001 | Parcial | 98 de 107 escenarios del corte 1 aprobados, 6 omitidos y 3 pendientes. Ocho de US-17 se aprueban contra Vercel y Neon, siete el 2026-11-17 y uno el 2026-11-18, y el resto sale de la corrida local del 2026-10-30. |
 | SC-002 | Parcial | 7 escenarios, 2 aprobados, 5 omitidos y 0 pendientes. Q01 a Q14 en Neon llegan con T021 y T027. |
 | SC-003 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_demo_punta_a_punta.py` (5), `test_plantilla_r17.py` (4), `test_r17.py` (10) |
 | SC-004 | Cumplido en local | 3 escenarios, 3 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_plantilla_r17.py` (9), `test_r17.py` (16) |
@@ -412,7 +412,7 @@ Resumen de requisitos, Corte 2, pendiente de T018 1, Cubierto 25, Parcial 6.
 | SC-008 | Parcial | 8 escenarios, 7 aprobados, 1 omitido y 0 pendientes. El rol abet_app de Neon llega con T027 y T028. |
 | SC-009 | Cumplido en local | 9 escenarios, 9 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_api_cargas.py` (4), `test_api_secciones.py` (3), `test_comando.py` (8), `test_permisos.py` (23), `test_varias_secciones.py` (2) |
 | SC-010 | Cumplido en local | 2 escenarios, 2 aprobados, 0 omitidos y 0 pendientes; pruebas unitarias `test_r17.py` (5) |
-| SC-011 | Parcial | 11 escenarios, 7 aprobados, 0 omitidos y 4 pendientes, comprobados el 2026-11-17 contra Production y la vista previa (sección «Despliegue»). |
+| SC-011 | Parcial | 11 escenarios, 8 aprobados, 0 omitidos y 3 pendientes, comprobados el 2026-11-17 y el 2026-11-18 contra Production y la vista previa (sección «Despliegue»). |
 | SC-012 | Pendiente | sin escenario propio. bash scripts/preflight.sh y la verificación de autoría corren en la etapa de commit y en cada PR. |
 
 ## Reglas de negocio
@@ -487,7 +487,6 @@ Reglas sin prueba, ninguna.
 | Los secretos del Back no quedan en ningún repositorio | US-17 | falta buscar `SESION_SECRETO`, cuyo valor no está en la Mac |
 | El equipo de Vercel no comparte el contenido para entrenar modelos | US-17 | el equipo tiene `dataSharingConsent` en `granted` (T070) |
 | La guardia de datos inventados está encendida en el piloto | US-17 | la subida del export con el código 10000004 no corre en Production en la versión 0.1.0 |
-| Prueba de humo de punta a punta con el export que trae el 5 en la fila 3 | US-17 | falta abrir el R-17 de ese export, que exige restablecer `develop` y repetir la prueba en la vista previa |
 
 ### Escenarios del corte 2
 
@@ -512,6 +511,7 @@ La spec aplica un valor provisional a cada una, y el R-17 sale con la franja PRO
 | D-11 | Quién reemplaza una carga publicada y hasta cuándo | Coordinación de Ambiental | abierta, con valor provisional |
 | D-12 | Nombre del profesor en el R-17 y firma frente a validación en el sistema | Coordinación de Ambiental y Oficina de Calidad | abierta, con valor provisional |
 | D-13 | Usuarios del piloto | Coordinación de Ambiental | abierta, con valor provisional |
+| D-38 | Nivel esperado según el estadio del curso en la malla | Coordinación de Ambiental | abierta, con valor provisional (desde el 2026-11-18) |
 | J-01 | Lenguaje del Back | Jefferson | decidida |
 | J-02 | Uno o dos roles de aplicación en la base | Jefferson | decidida |
 | J-03 | Identidad de la semana 1 | Jefferson | decidida |
@@ -554,6 +554,7 @@ La versión 0.1.0 llega a Production el 2026-11-17 en los dos proyectos de Verce
 | Pooler y rol `abet_app` | 20 `GET /api/secciones?periodo=2026-2` seguidas con la sesión de coordinacion, en la misma prueba | 20 respuestas 200 con la 410 y la 411. Los 30 registros de la función de esa corrida, entre las 22:35 y las 22:38 UTC, son de nivel info, sin ningún «prepared statement» ni una subida, y `pg_stat_activity` de la rama principal muestra la conexión de `abet_app` desde `pgbouncer` |
 | Rama de Neon de cada entorno | Consultas de solo lectura desde el Windows, después de la prueba de Production | La principal gana solo las 2 sesiones de la prueba, de docente410 y coordinacion, ya cerradas, y sigue con 0 cargas y 0 archivos; `develop` gana solo la sesión de la vista previa |
 | Prueba con cargas en Preview | `e2e/humo.spec.ts` (T075, 2026-11-02) y `e2e/humo_csv.spec.ts` (T076 de la spec 003, 2026-11-09) contra la vista previa de `develop` | 2 passed en cada corrida, y la rama principal no gana ninguna carga |
+| Humo con el 5 en la fila 3 | `herramientas_neon/humo_preview_con_error.sh` el 2026-11-18 a las 12:44 de Lima, después de restablecer la rama `develop` de Neon desde la principal, con las dos pruebas de US-17 de `e2e/humo.spec.ts` del Front (f10fdc3) contra la vista previa de `develop` (Back 7da9aa4), y después `herramientas_neon/e2e_version/vista_previa_r17.spec.ts` y `herramientas_neon/revisar_r17.py` | Antes de empezar, la 410 de `develop` no tiene cargas y la base tiene la marca preview. P1 a P4 da 11 filas leídas, 10 aceptadas y 1 rechazada, con la fila 3 fuera por el 5 del PI 5.2. `GET /api/cargas/1/r17.xlsx` responde 200 con `R017_450002_410_2026-2_PROVISIONAL.xlsx`, que trae 6 de 10, 6 de 10 y 7 de 10 (60,0 %, 60,0 % y 70,0 %) con meta 80 % y formato 0,0 %, una tabla de 30 filas sin 99000002 y la constancia 11 / 11 / 10 / 1. `abet.v_r17_por_pi` da los mismos 60,0, 60,0 y 70,0, Q01 a Q14 devuelven 0 filas y la principal sigue sin cargas antes y después. Las evidencias, sin contraseñas ni nombres, quedan en `ABET_SIS_MED/demo_us17/` |
 | R-17 descargado en Preview | `herramientas_neon/e2e_version/vista_previa_r17.spec.ts`, en el que docente410 abre P4 de la 410 y pulsa «Descargar R-17», y `herramientas_neon/revisar_r17.py` | `GET /api/cargas/1/r17.xlsx` 200, con `nosniff`, entrega `R017_450002_410_2026-2_PROVISIONAL.xlsx`. Es el R-17 de la 410 cargada con el `.csv` el 2026-11-09, porque la carga del export con el 5 en la fila 3 ya no existe en `develop` |
 | Tabla de estudiantes del R-17 | Lectura del libro con openpyxl en `revisar_r17.py` | 33 filas, de la 43 a la 75, con 11 estudiantes por 3 PI, solo códigos inventados y niveles de 1 a 4. Los 7, 7 y 8 de 11 de la tabla (63,6 %, 63,6 % y 72,7 %) coinciden con los bloques E24:E26 y P29:Q31, y ninguna celda trae una fórmula ni repite uno de los 12 nombres del export |
 | Hoja «Constancia» del R-17 | La misma lectura | «Sin hoja (export de texto)», 11 / 11 / 11 / 0 filas, la huella SHA-256 del `.csv`, PUBLICADA, PROVISIONAL, subida por docente410, 5 avisos de dos tipos, 0 rechazos y la frase final. Su versión del programa es 0.0.0, porque `abet.carga` la guarda al cargar y esa carga es del 2026-11-09, antes de la 0.1.0 |

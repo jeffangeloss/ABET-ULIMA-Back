@@ -60,7 +60,8 @@ from abet_carga.constancia import HORA_DE_LIMA
 from app import permisos, sesion
 from app.configuracion import FORMA_INESPERADA, REGISTRO, ajustes_de, conexion, error
 
-router = APIRouter()
+# BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
+router = APIRouter(dependencies=[Depends(sesion.usuario_actual)])
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 CONFIRMACION_INVALIDA = "La sección confirmada no es la sección elegida. No se guardó nada."
 # reemplaza es un carga_id, un entero positivo sin signo, ceros a la izquierda ni decimales. seccion_id de la lista

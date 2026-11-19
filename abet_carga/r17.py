@@ -61,7 +61,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from psycopg.rows import dict_row
 
-from abet_carga import constancia
+from abet_carga import constancia, resultados
 
 RAIZ = Path(__file__).resolve().parent.parent
 PLANTILLA = RAIZ / "plantillas" / "R017_ambiental_general.xlsx"
@@ -278,10 +278,11 @@ def _bloques(hoja: Worksheet, filas: list[dict[str, Any]], plan: dict[str, dict[
 
 
 def _plan_de_accion(fila: dict[str, Any]) -> str | None:
-    logro, meta = fila["pct_logro_sobre_calificados"], fila["meta_logro_pct"]
-    if logro is None or meta is None:
+    """Texto de la celda H con la regla de la meta de la ruta 12 (BR-RESULTADOS-06), o None sin logro o sin meta."""
+    logrado = resultados.en_meta(fila["pct_logro_sobre_calificados"], fila["meta_logro_pct"])
+    if logrado is None:
         return None
-    return LOGRADO if logro >= meta else NO_LOGRADO
+    return LOGRADO if logrado else NO_LOGRADO
 
 
 def _frecuencias(hoja: Worksheet, filas: list[dict[str, Any]]) -> None:

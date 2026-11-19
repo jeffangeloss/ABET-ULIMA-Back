@@ -16,11 +16,11 @@
 #   tests/datos_inventados/README.md resume por sección y por indicador de desempeño (performance
 #   indicator, PI).
 # - Las copias con celdas vacías se arman en tmp_path con REGLAS_DE_COPIA de
-#   tests/aceptacion/pasos/conftest.py. La regla «con la columna X.Y vacía en sus N filas» es nueva y
-#   llega con la tarea T012.
+#   tests/aceptacion/pasos/conftest.py. La regla «con la columna X.Y vacía en sus N filas» llega con la
+#   tarea T012.
 #
 # Vocabulario de los pasos, el de acceso.feature y varias_secciones.feature.
-# - «se envía GET /api/resultados?periodo=2026-2» es la petición a la ruta 12 (propuesta) con la cookie
+# - «se envía GET /api/resultados?periodo=2026-2» es la petición a la ruta 12 (J-23) con la cookie
 #   abet_sesion de quien tiene la sesión iniciada.
 # - «que "docente.varias@example.invalid" tiene publicadas sus tres secciones» sube por la ruta 5, con la
 #   sesión de ese profesor, sintetico_20262_450002_412.xlsx a la sección 412 de 450002,
@@ -39,7 +39,8 @@
 #   API o de la base y nunca se suponen.
 # - @delegado_a_vitest marca un escenario de la pantalla P6 que prueba Vitest en el Front, como en la spec
 #   003, y aquí queda como criterio escrito.
-# - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Lo marcado «(propuesta)» no lo fija ninguna decisión de la spec, que Jefferson aprueba el 2026-11-18 con
+#   J-21 a J-28, y lo confirma la revisión del contrato.
 
 Característica: Resultados del profesor por SO, calculados desde la base
   Como profesor de Ingeniería Ambiental, quiero ver en el sistema cómo le va a cada PI de mis secciones
@@ -54,7 +55,7 @@ Característica: Resultados del profesor por SO, calculados desde la base
     Y ninguna de las cinco secciones de 2026-2 tiene cargas
 
   # US-37: Ver mis logros por SO en el periodo
-  # (propuesta) La ruta 12 y la forma de su respuesta (J-22 y J-23 de spec.md). Las secciones van por código
+  # La ruta 12 y la forma de su respuesta las fijan J-22 y J-23 de spec.md. Las secciones van por código
   # de asignatura y número de sección, y los indicadores por número de SO y número de PI.
 
   @US-37 @corte1 @spec004
@@ -209,8 +210,8 @@ Característica: Resultados del profesor por SO, calculados desde la base
     Entonces abet.archivo_origen, abet.carga, abet.medicion, abet.rechazo_fila, acceso.sesion y acceso.intento_fallido conservan su número de filas
     Y las consultas de control Q01 a Q14 devuelven 0 filas
 
-  # Depende de US-18 (reemplazo de la carga publicada) del corte 2 de la spec 001, que otra sesión
-  # implementa. Se activa cuando US-18 esté en develop.
+  # Depende de US-18 (reemplazo de la carga publicada) del corte 2 de la spec 001, que está en develop desde
+  # el PR #28 del Back, así que el escenario corre con los demás.
   @US-40 @corte2 @spec004
   Escenario: Una carga reemplazada sale del reporte
     Dado que "docente410@example.invalid" tiene la sesión iniciada con rol "PROFESOR"
