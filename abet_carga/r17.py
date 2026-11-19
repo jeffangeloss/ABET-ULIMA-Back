@@ -1,7 +1,7 @@
 """R-17, el reporte de medición de una sección, desde la carga publicada en la base (T035).
 
 generar(conexion, carga_id, carpeta) escribe en carpeta el R-17 de una carga PUBLICADA y devuelve su
-ruta. Cumple las reglas de negocio (business rules, BR) BR-R17-01 a BR-R17-09 de
+ruta. Cumple las reglas de negocio (business rules, BR) BR-R17-01 a BR-R17-09 y BR-R17-11 de
 specs/features/r17/r17.spec.md sobre plantillas/R017_ambiental_general.xlsx, con el mapa de celdas
 de plantillas/README.md, y sirve a cualquier asignatura y sección del plan de medición. Lee con la
 conexión que recibe, sin escribir en la base ni confirmar o deshacer su transacción.
@@ -14,8 +14,9 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    n_esperado_o_superior entre n_total - n_sin_evidencia, porque la vista no expone los calificados
    (BR-R17-03). La descripción de cada indicador de desempeño (performance indicator, PI) sale de
    abet.pi, su instrumento del plan de medición y la tabla de estudiantes de abet.medicion de la
-   carga, por PI y por fila de origen (BR-R17-08). Nada se recalcula del archivo subido, que la base
-   no conserva.
+   carga, por PI y por fila de origen (BR-R17-08). La descripción del instrumento de cada PI sale de
+   abet.plan_medicion.descripcion_instrumento y queda vacía si no la hay (BR-R17-11). Nada se
+   recalcula del archivo subido, que la base no conserva.
 3. Cada celda recibe un valor y nunca una fórmula (BR-R17-04). Un texto que llega de la petición,
    como el nombre del archivo o de la hoja, queda como texto aunque empiece por «=», y un carácter
    de control, que una hoja de Excel no admite, pasa a U+FFFD, el carácter de reemplazo. El

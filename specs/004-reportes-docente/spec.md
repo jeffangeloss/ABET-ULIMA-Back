@@ -253,7 +253,7 @@ De la carrera (D). Mientras no se decidan, el sistema aplica el valor provisiona
 | --- | --- | --- | --- |
 | D-32 | Cómo se resume un PI medido en varias secciones y un SO a partir de sus PI (H06 y P14) | El reporte no suma secciones ni resume un SO en una cifra, y muestra cada PI de cada sección frente a la meta, agrupado bajo su SO. La propuesta del equipo sería sumar estudiantes por PI y curso (Σx/Σn, PA-04, H73 y H74) y dar el SO en la meta solo si todos sus PI medidos lo están (PA-13) | Coordinación de Ambiental y Oficina de Calidad |
 | D-33 | Si el profesor ve el agregado de su curso o de la carrera junto al suyo, y con cuántas secciones como mínimo (N6 y H68) | No lo ve, porque el pedido limita la consulta a sus secciones y, con pocas secciones, el agregado menos la propia revela a las otras | Coordinación de Ambiental |
-| D-34 | Descripción del instrumento de medición de cada curso y PI, quién la redacta y con qué campos (N2, con la evidencia y la semana de aplicación) | Sin descripción. La descripción de G17 a I19 del R-17 sigue vacía y editable, y P6 muestra solo el nombre del instrumento | Coordinación de Ambiental |
+| D-34 | Descripción del instrumento de medición de cada curso y PI, quién la redacta y con qué campos (N2, con la evidencia y la semana de aplicación) | Sin descripción. La descripción de G17 a I19 del R-17 sigue vacía y editable, y P6 muestra solo el nombre del instrumento. Desde US-51 de la spec 005 (BR-R17-11), G17 a I19 salen de `abet.plan_medicion.descripcion_instrumento` y quedan vacías si no hay texto, así que D-34 decide el texto y sus campos | Coordinación de Ambiental |
 | D-12 | Nombre del profesor en el R-17 y firma frente a validación en el sistema (spec 001) | Sigue sin nombre, y la constancia muestra el correo de quien sube | Coordinación de Ambiental y Oficina de Calidad |
 | D-30 | Escala de las columnas ABET de 100 puntos (spec 003), de la que depende convertir otras escalas, como la de 20 puntos | Sigue sin conversión | Stefanny Montaño o la Oficina de Calidad, con la Coordinación de Ambiental |
 
@@ -275,7 +275,7 @@ De Jefferson (J), con el valor que sostiene el crítico de arquitectura.
 - El consolidado por PI de varias secciones y una cifra por SO (C-03), que esperan a D-32.
 - La comparación entre periodos y el selector de periodo de P6 (C-04), porque los datos solo traen 2026-2 y no hay R-17 históricos cargados.
 - El agregado del curso o de la carrera junto al resultado del profesor (C-05), que espera a D-33.
-- La descripción del instrumento en el catálogo, en las celdas G17 a I19 del R-17 y en P6 (C-08 y C-12), que esperan a D-34 y a J-27.
+- La descripción del instrumento en el catálogo, en las celdas G17 a I19 del R-17 y en P6 (C-08 y C-12), que esperan a D-34 y a J-27. G17 a I19 llegan después con US-51 de la spec 005, que cierra J-27 con J-31 (BR-R17-11).
 - La lista de códigos de los estudiantes debajo del nivel esperado (C-09), que N6 pide como «la lista de estudiantes con apoyo» y que necesita una decisión de privacidad propia antes de los datos reales (D-10).
 - Los roles de coordinador de asignatura y de área de N15 (C-11), que exigen un rol nuevo en `ck_usuario_autorizado_rol`.
 - El nombre del profesor en el R-17 (C-13), que espera a D-12 y que exige cambiar Q15, porque hoy no vigila una columna `nombre` en `acceso`.

@@ -16,7 +16,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 - [ ] T010 [Back] Escribir las specs vivas, que son `specs/features/r17/r17.spec.md` con BR-R17-04 (de «vacíos y editables» a «desde la base»), BR-R17-11 y BR-R17-12 y la feature `specs/features/mejora/mejora.spec.md` con BR-MEJORA-01 a BR-MEJORA-NN (propuesta), y sumar la fila `mejora` en `specs/README.md` [US-47..US-51] · BR-R17-11 escrita el 2026-11-18 con US-51; BR-R17-04, BR-R17-12 y `mejora` siguen pendientes
 - [ ] T011 [Front] Pasar a definitivos el contrato de las rutas 13 a 16 en `docs/03-api/contrato.md` (sección nueva), `docs/specs/api-contracts.md`, P4 en `docs/01-arquitectura/frontend.md`, `docs/specs/feature-index.md` y ADR-009, con el cambio de FR-016 de la spec 004 y del invariante 8 de ADR-008 [US-45..US-54]
-- [ ] T012 [Back] Dejar definitivos los cuatro `.feature` con el analizador de pytest-bdd y cumplir FR-017, que amplía la expresión de migraciones de `tests/aceptacion/pasos/conftest.py:756` a V1_11 y V1_12 y suma la regla de copia «con la columna X.Y vacía en las filas N y M» [US-45..US-54] · Los escenarios de US-51 quedan definitivos y la expresión admite V1_11 el 2026-11-18; V1_12, la regla de copia y los demás `.feature` siguen pendientes
+- [ ] T012 [Back] Dejar definitivos los cuatro `.feature` con el analizador de pytest-bdd y cumplir FR-017, que amplía la expresión de migraciones de `tests/aceptacion/pasos/conftest.py:767` a V1_11 y V1_12 y suma la regla de copia «con la columna X.Y vacía en las filas N y M» [US-45..US-54] · Los escenarios de US-51 quedan definitivos y la expresión admite V1_11 el 2026-11-18; V1_12, la regla de copia y los demás `.feature` siguen pendientes
 
 ## Phase 2: Base
 
@@ -24,8 +24,8 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [ ] T021 [Back] V1_12 con `abet.mejora_borrador`, `abet.mejora_declaracion` y sus CHECK, y los permisos exactos de `abet_app` en `db/plataforma/neon/crear_rol_app.sql` con sus listas de comprobación [US-47..US-49] [US-53]
 - [x] T022 [Back] Guion de datos `db/datos/descripcion_instrumento_2026_2.sql` con un UPDATE repetible y textos «Texto de prueba.» por PI, y la consulta informativa de solo lectura de los PI sin descripción en `db/plataforma/neon/pi_sin_descripcion_instrumento.sql` [US-51] · Hecha el 2026-11-18 en `feat/005-us51-descripcion-instrumento`
 - [ ] T023 [Neon] Consulta de solo lectura de las cargas publicadas sin declaración y de los permisos de `abet_app`, desde el Windows de Jefferson con `ssh windows-worker` [US-49]
-- [ ] T024 [Neon] Migrar la rama `develop` desde el Windows con V1_11, V1_12, los permisos sin APP_DB_CLAVE y la comprobación con `has_table_privilege` y `has_column_privilege` [US-47..US-51]
-- [ ] T025 [Jefferson] Correr el guion de la descripción en la rama `develop` desde el Windows [US-51]
+- [ ] T024 [Neon] Migrar la rama `develop` desde el Windows con V1_11, V1_12, los permisos sin APP_DB_CLAVE y la comprobación con `has_table_privilege` y `has_column_privilege` [US-47..US-51] · V1_11 aplicada en la rama `develop` el 2026-11-19 con `migrar_neon.sh develop 8d51852`; V1_12 y los permisos siguen con T021
+- [x] T025 [Jefferson] Correr el guion de la descripción en la rama `develop` desde el Windows [US-51] · Hecha el 2026-11-19 en la rama `develop` de Neon por Claude Code, con el permiso de Jefferson («Sí, prepárala») y la huella md5 de los tres textos comprobada
 
 ## Phase 3: Backend
 
