@@ -764,7 +764,7 @@ def contenedor_ole_sin_cifrado(generador: ModuleType) -> bytes:
 
 # Antecedentes
 
-@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10)(?P<resto>.*)'))
+@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10|11)(?P<resto>.*)'))
 def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
     con_varias = "varias_secciones_2026_2_inventado.sql" in resto
     guardia = ctx.request.node.get_closest_marker("guardia_en_base") is not None
@@ -772,12 +772,16 @@ def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
-    if ultima == "10":
+    if ultima in ("10", "11"):
         # V1_10 reemplaza ck_carga_columna_encabezado por la regla J-19 y suma SIN_CALIFICACIONES a los motivos.
         definiciones = dict(ctx.filas("SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname IN"
                                       " ('ck_carga_columna_encabezado', 'ck_rechazo_fila_motivo')"))
         assert "[Aa][Bb][Ee][Tt]" in definiciones.get("ck_carga_columna_encabezado", ""), "falta la migración V1_10"
         assert "SIN_CALIFICACIONES" in definiciones.get("ck_rechazo_fila_motivo", ""), "falta la migración V1_10"
+    if ultima == "11":
+        # V1_11 suma abet.plan_medicion.descripcion_instrumento con ck_plan_medicion_descripcion (spec 005, US-51).
+        assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
+            "falta la migración V1_11"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"
     if con_varias:
         assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s", A.VARIAS_CORREO) == 1

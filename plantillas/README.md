@@ -100,7 +100,7 @@ Una fila por PI del plan, ordenados por SO y por número de PI (`abet.pi.so_nume
 | B17, B18 y B19 | Código del PI, como «5.1» | `v_r17_por_pi.pi` |
 | C17:D17, C18:D18 y C19:D19 | Descripción del PI (propuesta) | `abet.pi.descripcion` |
 | E17:F17, E18:F18 y E19:F19 | Instrumento de medición (propuesta) | `abet.instrumento.nombre` del plan de medición |
-| G17:I17, G18:I18 y G19:I19 | Descripción del instrumento, vacía y editable | Ninguna, porque la base no la guarda |
+| G17:I17, G18:I18 y G19:I19 | Descripción del instrumento, desde la base, y vacía si el PI no la tiene (BR-R17-11) | `abet.plan_medicion.descripcion_instrumento` del plan de medición (V1_11) |
 
 ### Bloque II, filas fijas de PI 24 a 26
 

@@ -317,7 +317,7 @@ Como profesor, quiero que, al reemplazar mi carga por un export corregido, la ca
 - **FR-014** La herencia del texto de una carga reemplazada ocurre al leer (US-54).
 - **FR-015** Antes de implementar, el Front documenta las rutas 13 a 16 en `docs/03-api/contrato.md` (sección nueva), `docs/specs/api-contracts.md`, P4 en `docs/01-arquitectura/frontend.md`, la feature en `docs/specs/feature-index.md` y ADR-009. El Back escribe las reglas en las specs vivas, que son `r17.spec.md` con BR-R17-04, BR-R17-11 y BR-R17-12 y una feature viva nueva `mejora` con BR-MEJORA-01 a BR-MEJORA-NN (propuesta).
 - **FR-016** Cada escenario tiene su prueba, con pytest-bdd para la API y el R-17 y Vitest para las pantallas. La prueba de humo de `e2e/humo.spec.ts` suma el semáforo, la declaración y la descarga con A y B en la vista previa de `develop`.
-- **FR-017** La infraestructura de pruebas se amplía así. La expresión de migraciones de `tests/aceptacion/pasos/conftest.py:756` admite V1_11 y V1_12. `REGLAS_DE_COPIA` suma «con la columna X.Y vacía en las filas N y M» (y tres filas). `tests/cargas_de_prueba.py` suma `declarar()` y un conjunto de reglas parametrizado para R-PRUEBA-SEMAFORO. El Front reinicia el fragmento en `tests/preparar.ts`.
+- **FR-017** La infraestructura de pruebas se amplía así. La expresión de migraciones de `tests/aceptacion/pasos/conftest.py:767` admite V1_11 y V1_12. `REGLAS_DE_COPIA` suma «con la columna X.Y vacía en las filas N y M» (y tres filas). `tests/cargas_de_prueba.py` suma `declarar()` y un conjunto de reglas parametrizado para R-PRUEBA-SEMAFORO. El Front reinicia el fragmento en `tests/preparar.ts`.
 
 ## Success Criteria *(mandatory)*
 
