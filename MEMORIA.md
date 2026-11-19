@@ -13,12 +13,12 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-18
-- **Rama de trabajo**: `docs/004-memoria-tras-fusion`, que sale de `develop` (f403d52, con la construcción de la spec 004 fusionada por el PR #31), con esta memoria, T070 y los estados de la spec 004 al día después de la fusión
+- **Rama de trabajo**: `docs/004-memoria-tras-fusion`, que sale de `develop` (f403d52, con la construcción de la spec 004 fusionada por el PR #31) y se actualiza con `develop` en 95a252d, que trae D-38 fusionada por el PR #34, con esta memoria, T070 y los estados de la spec 004 al día después de la fusión
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: la fusión del PR #31 en `develop` (f403d52) y la del PR #20 en el Front (778ae23), que Jefferson autoriza en el chat el 2026-11-18 («Sí, fusiónalos»), y los dos proyectos de ABET públicos en SonarCloud desde el mismo día, también con su permiso («Sí, pásalos»), porque la organización `jeffangeloss` llegaba al tope de 50 000 líneas de código privadas
-- **En curso**: el PR de esta rama y el del Front con el mismo nombre, que ponen al día la memoria de `develop`. Su fusión da el primer análisis de SonarCloud de `develop` desde que el proyecto es público. Los cuatro escenarios pendientes de US-17 (`specs/001-mvp-carga-r17/audit.md`) siguen como los deja el cierre de la spec 003, con los ayudantes `ABET_SIS_MED/herramientas_neon/comprobar_guardia.sh` y `humo_preview_con_error.sh`, que Jefferson corre en su terminal, y el de los secretos espera una clave nueva de `SESION_SECRETO`. En otra sesión avanza M24 a M26 del R-17, con su PR #29, que también toca BR-R17-02 y resuelve el choque con la spec 004
-- **Siguiente paso**: T071, el humo de P6 contra la vista previa de `develop`, que corre Jefferson con `ABET_SIS_MED/herramientas_neon/humo_preview.sh` después de restablecer la rama `develop` de Neon, y T072, la versión hacia `main`. La spec 005 sigue con su fase 1 (T010 a T012). Siguen T005 de las specs 004 y 005 con la Coordinación, la prueba de humo del corte 2 contra la vista previa de `develop` (T099), el registro en `audit.md` de la spec 001 de los escenarios de US-17 que corre Jefferson y T062
-- **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
+- **Último cambio**: la actualización de esta rama con `develop` (95a252d), que trae D-38 como decisión abierta de la spec 001 (PR #34), sobre la memoria al día tras la fusión de los PR #31 y #20, que Jefferson autoriza en el chat el 2026-11-18 («Sí, fusiónalos»), y los dos proyectos de ABET públicos en SonarCloud desde el mismo día, también con su permiso («Sí, pásalos»), porque la organización `jeffangeloss` llegaba al tope de 50 000 líneas de código privadas
+- **En curso**: el PR #35 de esta rama y el PR #22 del Front, que ponen al día la memoria de `develop`. Su fusión da el primer análisis de SonarCloud de `develop` desde que el proyecto es público. La construcción de la spec 004 ya está en `develop` con los PR #31 del Back y #20 del Front, así que la spec 005 (EP-05, US-45 a US-54) puede seguir con su implementación (AD-16). De los cuatro escenarios pendientes de US-17 (`specs/001-mvp-carga-r17/audit.md`), el humo con el 5 en la fila 3 pasa el 2026-11-18 contra la vista previa, con sus evidencias en `ABET_SIS_MED/demo_us17/`, y falta registrarlo. La guardia espera `ABET_SIS_MED/herramientas_neon/comprobar_guardia.sh`, que Jefferson corre en su terminal, y el de los secretos espera una clave nueva de `SESION_SECRETO`. En otra sesión avanza M24 a M26 del R-17, con su PR #29, que también toca BR-R17-02 y resuelve el choque con la spec 004
+- **Siguiente paso**: T071, el humo de P6 contra la vista previa de `develop`, que corre Jefferson con `ABET_SIS_MED/herramientas_neon/humo_preview.sh` después de restablecer la rama `develop` de Neon, y T072, la versión hacia `main`. Siguen la fase 1 de la spec 005 (T010 a T012), T005 de las specs 004 y 005 con la Coordinación, el registro de T099 con las evidencias de `ABET_SIS_MED/demo_corte2/t099/`, el registro en `audit.md` de la spec 001 de los escenarios de US-17 que corre Jefferson y T062
+- **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), D-38 (nivel esperado según el estadio del curso), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, la documentación de las specs 004 y 005 fusionada en `develop` con sus PR #18 y #21 y la construcción de la spec 004 con el PR #20, en 778ae23) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-18 19:27 (Lima) · docs/004-memoria-tras-fusion · Rama actualizada con develop tras D-38 (PR #34)
+- Quién: Claude Code, sin subagentes, fusiona `origin/develop` (95a252d) en esta rama, resuelve el choque de esta memoria y escribe esta entrada, dentro del permiso de Jefferson para abrir este PR («Sí, ábrelos»), que queda CONFLICTING a minutos de abrirse.
+- Qué cambió: la rama trae D-38 (PR #34) en `spec.md` y `audit.md` de la spec 001, `specs/README.md` y `CHANGELOG.md`, que entran sin choque. En esta memoria, «Punto actual» junta los dos lados, con D-38 en «Bloqueos», el humo de US-17 con el 5 en la fila 3 por registrar, T099 con sus evidencias y sin el análisis de SonarCloud como bloqueo, y el «Registro» conserva las entradas de las dos ramas en orden de hora.
+- Por qué: el PR #35 queda CONFLICTING por la fusión del PR #34 en `develop`, y Jefferson pide estos PR para poner al día la memoria.
+- Lo que debe hacer, cómo se probó: la rama contiene `origin/develop` (95a252d), así que el PR #35 no trae choques, y `bash scripts/preflight.sh --pr origin/develop` no da fallas.
+- Lo que no debe hacer, cómo se probó: `git diff --stat origin/develop` sigue con solo `MEMORIA.md`, `tasks.md` y `audit.md` de la spec 004 y `specs/README.md`, sin código, y cada entrada anterior del «Registro» coincide letra por letra con la de una de las dos ramas.
+- Correcciones: «Punto actual» de `develop` daba el análisis de SonarCloud como bloqueado, y los dos proyectos de ABET ya son públicos.
+- Cómo se reporta: esta entrada y el PR #35.
+- Pendiente y siguiente paso: la CI del PR #35 y la del PR #22 del Front, y su fusión por Jefferson.
+
 ### 2026-11-18 19:24 (Lima) · docs/004-memoria-tras-fusion · Memoria al día tras la fusión de la spec 004
 - Quién: Jefferson autoriza en el chat abrir un PR por repositorio que ponga al día la memoria de `develop` («Sí, ábrelos»). Claude Code, sin subagentes, crea esta rama desde `develop` (f403d52), hace el cambio y escribe esta entrada. Antes, con el permiso de Jefferson en el chat, fusiona los PR #31 y #20 («Sí, fusiónalos») y pasa a públicos los dos proyectos de ABET en SonarCloud con la sesión de Jefferson en el navegador del app («Sí, pásalos»).
 - Qué cambió: «Punto actual» deja de dar los PR #31 y #20 como abiertos y el análisis de SonarCloud como bloqueado. `tasks.md` marca T070 con la fusión, `audit.md` de la spec 004 lleva su estado y su pendiente a la fusión, y `specs/README.md` da la construcción de la spec 004 en `develop`.
@@ -47,6 +57,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Cómo se reporta: esta entrada y el PR de esta rama, que cita el del Front.
 - Pendiente y siguiente paso: T071 y T072 de la spec 004, la fase 1 de la spec 005 y el primer análisis de SonarCloud de `develop` sin el tope, con la fusión de este PR.
 
+### 2026-11-18 19:20 (Lima) · docs/001-d38-nivel-por-estadio · Rama actualizada con develop tras la construcción de la spec 004 (PR #31)
+- Quién: Jefferson autoriza en el chat fusionar el PR #34 con la CI en verde («Sí, fusiónalo»). Claude Code, sin subagentes, fusiona `origin/develop` (f403d52) en esta rama, resuelve el choque de esta memoria y escribe esta entrada.
+- Qué cambió: la rama trae la construcción de la spec 004 (PR #31) y sus líneas de `CHANGELOG.md` y `specs/README.md`, que entran sin choque. En esta memoria, «Punto actual» junta los dos lados y el «Registro» conserva las entradas de las dos ramas en orden de hora.
+- Por qué: el PR #34 queda CONFLICTING después de la fusión del PR #31 en `develop`, y Jefferson pide fusionarlo con la CI en verde.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa en el commit de la fusión, y la CI del PR #34 vuelve a correr sobre la rama actualizada.
+- Lo que no debe hacer, cómo se probó: `git diff --cached --stat origin/develop -- app abet_carga tests db scripts` no muestra cambios, así que el código queda igual que en `develop`, y cada entrada anterior del «Registro» coincide letra por letra con la de una de las dos ramas.
+- Correcciones: «Punto actual» de `develop` daba los PR #31 y #20 a la espera de la fusión, y los dos ya están fusionados.
+- Cómo se reporta: esta entrada y el PR #34.
+- Pendiente y siguiente paso: la CI del PR #34 y su fusión.
+
+
 ### 2026-11-18 18:55 (Lima) · feat/004-reportes-docente · Rama actualizada con develop tras la spec 005 (PR #32)
 - Quién: Jefferson autoriza en el chat actualizar las dos ramas con `develop` y resolver sus choques («Sí, actualízalas»). Claude Code, sin subagentes, fusiona `origin/develop` (dd66cb6) en esta rama, resuelve los choques y escribe esta entrada. Antes, a pedido de Jefferson por la sesión de la spec 004, lee con su sesión de SonarCloud la causa de la falla del análisis del PR #31.
 - Qué cambió: la rama trae la spec 005 aprobada (`specs/005-oportunidades-de-mejora/`, con cuatro `.feature`) y sus líneas de `CHANGELOG.md` y de `specs/README.md`. Los choques de `CHANGELOG.md`, `specs/README.md` y esta memoria conservan los dos lados, con la línea de estado de la spec 004 de esta rama, y las entradas del «Registro» de las dos ramas quedan intactas y en orden de hora. «Punto actual» junta el estado de las dos specs.
@@ -56,6 +77,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Correcciones: «Punto actual» de `develop` todavía da la spec 005 en su rama y sin PR, y aquí figura ya fusionada por el PR #32. «En curso» suma la causa de la falla de SonarCloud en el #31 y en `develop`, que la tarea fallida del proyecto da como el tope de 50 000 líneas de código privadas de la organización `jeffangeloss`, con 49 130 en uso, 3302 en el análisis del PR y 17 942 en el de `develop`.
 - Cómo se reporta: esta entrada y el PR #31.
 - Pendiente y siguiente paso: la CI del PR #31 y su fusión por Jefferson antes que la del PR #20 del Front, y su decisión sobre SonarCloud, pasar a públicos los dos proyectos de ABET o liberar líneas del tope.
+
+### 2026-11-18 18:53 (Lima) · docs/001-d38-nivel-por-estadio · Decisión abierta D-38, nivel esperado según el estadio del curso
+- Quién: la sesión «Base ABET en Neon con prueba» encuentra que la malla asigna un estadio a cada par de asignatura y competencia y que ninguna spec lo usa, y se lo pasa a la sesión principal con el permiso de Jefferson («Sí, pásaselo»). Jefferson pide en el chat anotarlo como decisión abierta («Sí, anótala»). Claude Code, sin subagentes, comprueba las cifras en solo lectura en la rama `develop` de Neon, desde el Windows, y escribe la decisión.
+- Qué cambió: `specs/001-mvp-carga-r17/spec.md` suma D-38 a la tabla de decisiones de la carrera, con un párrafo sobre su origen y sus efectos, y `audit.md` la suma a sus decisiones abiertas. `specs/README.md` nombra D-38 junto a D-01 a D-13, y `CHANGELOG.md` la registra en «Sin publicar».
+- Por qué: R-2026-BORRADOR usa un solo NIVEL_ESPERADO, el 3, para todos los cursos, mientras la malla distingue los estadios INICIAL, REFUERZO y LOGRADO. La respuesta de la Coordinación de Ambiental decide si el nivel esperado cambia por estadio, y con ella D-06, M24 a M26 del R-17, los logros por SO de la spec 004 y el semáforo de la spec 005.
+- Lo que debe hacer, cómo se probó: en solo lectura, `abet.asignatura_competencia` da 95 pares (32 INICIAL, 32 REFUERZO y 31 LOGRADO), los 61 pares de `abet.asignatura_so` dan 15, 23 y 23 por `abet.competencia_so`, `abet.rubrica_nivel` tiene 102 descriptores con los niveles -1, 1, 2, 3, 4 y 5, y 450002 mide el SO 4 y el SO 5 en REFUERZO. Ninguna rama remota usa D-38 ni un número mayor.
+- Lo que no debe hacer, cómo se probó: `git diff --stat` muestra solo `spec.md` y `audit.md` de la spec 001, `specs/README.md`, `CHANGELOG.md` y esta memoria, así que ningún escenario, código, migración ni spec viva cambia, y el R-17 sigue con el nivel esperado 3.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada, `CHANGELOG.md` y, con el permiso de Jefferson, el PR de esta rama a `develop`. Jefferson tiene lista la consulta para Stefanny Montaño o la Coordinación de Ambiental, con D-38, D-06 y D-30.
+- Pendiente y siguiente paso: empujar la rama y abrir su PR con el permiso de Jefferson, y la respuesta de la Coordinación de Ambiental.
 
 ### 2026-11-18 16:35 (Lima) · feat/004-reportes-docente · «Último cambio» con el PR #31
 - Quién: Claude Code, sin subagentes, corrige «Punto actual» al comparar la entrada anterior con la del Front (47af656) y con la que abrió los PR #1 a #4 (8290108).
@@ -76,6 +107,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Correcciones: «Punto actual» del cierre (38f0c9e) daba el empuje y los PR como pendientes.
 - Cómo se reporta: esta entrada y los dos PR.
 - Pendiente y siguiente paso: la CI de los dos PR, su fusión por Jefferson con el Back primero, T071 después de las dos fusiones, T072 y T005.
+
 
 ### 2026-11-18 16:31 (Lima) · docs/005-oportunidades-de-mejora · Spec 005 aprobada por Jefferson
 - Quién: Jefferson aprueba la spec 005 en el chat de esta sesión. A la pregunta «¿Apruebas la spec 005 con J-29 a J-37 en el valor que propone?», que llega después de un resumen de lo que conviene mirar antes de aprobar (el ámbar sujeto a CORTE_ROJO, el R-17 solo desde P4, el 409 para el coordinador y las cargas ya publicadas, los nombres que no se detectan y las reglas aprobadas que cambian), responde «Sí, apruébala». Claude Code registra la aprobación sin subagentes.

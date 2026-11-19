@@ -512,6 +512,7 @@ La spec aplica un valor provisional a cada una, y el R-17 sale con la franja PRO
 | D-11 | Quién reemplaza una carga publicada y hasta cuándo | Coordinación de Ambiental | abierta, con valor provisional |
 | D-12 | Nombre del profesor en el R-17 y firma frente a validación en el sistema | Coordinación de Ambiental y Oficina de Calidad | abierta, con valor provisional |
 | D-13 | Usuarios del piloto | Coordinación de Ambiental | abierta, con valor provisional |
+| D-38 | Nivel esperado según el estadio del curso en la malla | Coordinación de Ambiental | abierta, con valor provisional (desde el 2026-11-18) |
 | J-01 | Lenguaje del Back | Jefferson | decidida |
 | J-02 | Uno o dos roles de aplicación en la base | Jefferson | decidida |
 | J-03 | Identidad de la semana 1 | Jefferson | decidida |
