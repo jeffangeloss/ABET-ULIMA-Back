@@ -600,7 +600,7 @@ De la carrera (D). Mientras no se decidan, el sistema aplica el valor provisiona
 | D-07 | Un archivo por sección o uno por SO (fila H51 de la revisión de requisitos) | Un archivo por sección con todos los PI de su plan (propuesta) | Coordinación de Ambiental |
 | D-08 | Plantilla oficial del R-17 | Copia vaciada de «Plantilla Base - Final.xlsx», hoja «Cursos de Carrera», llenada celda por celda | Coordinación de Ambiental y Oficina de Calidad |
 | D-09 | Plan de medición de 2026-2 | 450002 mide 5.1, 5.2 y 5.3 con datos inventados | Coordinación de Ambiental |
-| D-10 | Autorización de datos reales (Ley 29733 y DS 016-2024-JUS) | Solo datos inventados, con la guardia doble encendida | Universidad de Lima |
+| D-10 | Autorización de datos reales (Ley 29733 y DS 016-2024-JUS) | Decidida el 2026-11-19: la universidad, la Coordinación de Ambiental y la cliente autorizan los datos reales en Neon y en Vercel, según Jefferson en el chat, y la guardia doble se retira. El sistema sigue en Vercel y Neon, sin el traslado a Cloud Run | Universidad de Lima |
 | D-11 | Quién reemplaza una carga publicada y hasta cuándo | En el corte 2, el profesor en su sección y el coordinador en cualquiera, sin fecha de cierre en el MVP; en el corte 1 solo sube el profesor asignado y nadie reemplaza | Coordinación de Ambiental |
 | D-12 | Nombre del profesor en el R-17 y firma frente a validación en el sistema | Sin nombre del profesor; la constancia muestra el correo de quien sube la carga | Coordinación de Ambiental y Oficina de Calidad |
 | D-13 | Usuarios del piloto | Un coordinador y dos profesores de prueba con correos `@example.invalid` | Coordinación de Ambiental |
@@ -637,4 +637,4 @@ Estos temas quedan para después del MVP, y cada uno abre su propia spec cuando 
 - Power BI leyendo Neon.
 - R-18 y la hoja «Cursos Capstone» del R-17, que necesita `asignatura.tipo_curso`.
 - Los motivos STUDENT_ID_DISTINTO y PI_TIPO_NO_SCORE.
-- Datos reales de estudiantes, que exigen D-10 y pasar primero a Cloud Run en southamerica-east1 y después a Vercel Pro con la autorización de la universidad.
+- El traslado a Cloud Run en southamerica-east1 y a Vercel Pro, que Jefferson descarta el 2026-11-19 al decidirse D-10.

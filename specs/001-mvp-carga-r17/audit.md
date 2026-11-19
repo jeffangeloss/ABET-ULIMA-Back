@@ -507,7 +507,7 @@ La spec aplica un valor provisional a cada una, y el R-17 sale con la franja PRO
 | D-07 | Un archivo por sección o uno por SO (fila H51 de la revisión de requisitos) | Coordinación de Ambiental | abierta, con valor provisional |
 | D-08 | Plantilla oficial del R-17 | Coordinación de Ambiental y Oficina de Calidad | abierta, con valor provisional |
 | D-09 | Plan de medición de 2026-2 | Coordinación de Ambiental | abierta, con valor provisional |
-| D-10 | Autorización de datos reales (Ley 29733 y DS 016-2024-JUS) | Universidad de Lima | abierta, con valor provisional |
+| D-10 | Autorización de datos reales (Ley 29733 y DS 016-2024-JUS) | Universidad de Lima | decidida el 2026-11-19, con la guardia retirada |
 | D-11 | Quién reemplaza una carga publicada y hasta cuándo | Coordinación de Ambiental | abierta, con valor provisional |
 | D-12 | Nombre del profesor en el R-17 y firma frente a validación en el sistema | Coordinación de Ambiental y Oficina de Calidad | abierta, con valor provisional |
 | D-13 | Usuarios del piloto | Coordinación de Ambiental | abierta, con valor provisional |

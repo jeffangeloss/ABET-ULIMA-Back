@@ -24,6 +24,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- D-10 queda decidida el 2026-11-19: los datos reales de estudiantes entran a Neon y a Vercel. La guardia `ck_estudiante_codigo_inventado` sale de las dos ramas de Neon y la constitución, AGENTS.md, el README y la spec 001 lo registran. El repositorio sigue solo con datos inventados.
 - `specs/001-mvp-carga-r17/audit.md` aprueba el escenario «Prueba de humo de punta a punta con el export que trae el 5 en la fila 3» de US-17 con la corrida del 2026-11-18 contra la vista previa de `develop`, así que US-17 queda con 8 escenarios aprobados y 3 pendientes, y SC-001 vuelve a sumar los 107 escenarios del corte 1.
 - Los routers de `secciones` y `cargas` declaran la dependencia de sesión en `APIRouter(dependencies=…)`, como el de `resultados`, así que una ruta nueva de ellos no responde sin sesión (BR-ACCESO-10 y J-25).
 - BR-R17-02 de `specs/features/r17/r17.spec.md` y el apartado «Bloque II» de `plantillas/README.md` documentan que M24 a M26 del R-17 siguen el corte fijo de sus rótulos, los niveles 1 y 2 frente a los niveles 3 y 4, y no NIVEL_ESPERADO. Una prueba nueva de `tests/test_r17.py` lo fija con R-PRUEBA-APROBADO, de nivel esperado 2, y el R-17 que genera `r17.py` no cambia.
