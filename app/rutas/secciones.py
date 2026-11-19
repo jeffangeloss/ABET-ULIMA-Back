@@ -22,10 +22,10 @@ from fastapi.responses import JSONResponse
 from psycopg.rows import dict_row
 
 from app import permisos, sesion
-from app.configuracion import PERIODO, ajustes_de, conexion, error
+from app.configuracion import PERIODO, PERIODO_MAL_FORMADO, ajustes_de, conexion, error
 
-router = APIRouter()
-PERIODO_MAL_FORMADO = "El periodo no tiene la forma AAAA-C."
+# BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
+router = APIRouter(dependencies=[Depends(sesion.usuario_actual)])
 
 _DETALLE = """
 SELECT s.seccion_id,

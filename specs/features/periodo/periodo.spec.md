@@ -4,12 +4,13 @@ description: Periodo vigente y conjunto de reglas de una carga nueva desde la co
 targets:
   - ../../../app/main.py
   - ../../../app/rutas/secciones.py
+  - ../../../app/rutas/resultados.py
   - ../../../db/datos/periodo_2026_2_inventado.sql
 ---
 
 # Periodo y secciones
 
-> **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
+> **Estado al 2026-11-18.** BR-PERIODO-01 y BR-PERIODO-04 suman los cambios fechados de la spec 004 (T010), escritos antes de su código. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones (application programming interface, API) el periodo vigente y el conjunto de reglas de una carga nueva, qué datos del periodo 2026-2 siembra el script de datos y qué devuelve la lista de secciones. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR) o decisiones abiertas (D). Cada regla nombra también la restricción o la consulta de control de la base que la respalda y el escenario que la prueba, citado por su título. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Los ejemplos usan solo datos inventados.
 
@@ -28,6 +29,7 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 - `GET /api/secciones` sin el parámetro `periodo` usa `PERIODO_VIGENTE`.
 - **Fuente**: FR-007, US-03 (escenario 4), Principio I de la constitución y `uq_periodo_codigo`.
 - **Prueba**: «La API no arranca con un periodo o un conjunto de reglas que la base no conoce» (`base_neon.feature`).
+- **Cambio del 2026-11-18 (spec 004, US-37).** `GET /api/resultados` sin el parámetro `periodo` usa también `PERIODO_VIGENTE` (BR-RESULTADOS-01). **Prueba**: ningún escenario pide la ruta 12 sin `periodo`, así que lo comprueba `tests/test_api_resultados.py`.
 
 ### BR-PERIODO-02: Conjunto de reglas de una carga nueva
 - La base tampoco marca un conjunto de reglas como vigente, así que cada carga nueva toma el de la variable `CONJUNTO_REGLAS`, que en el piloto vale `R-2026-BORRADOR`, y lo guarda en `carga.conjunto_reglas_id`. La clave foránea `fk_carga_reglas` exige que el conjunto sea de la carrera de la carga.
@@ -56,15 +58,19 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 - Con la conexión por el pooler de Neon, su agrupador de conexiones, y psycopg 3 con `prepare_threshold=None`, 20 peticiones seguidas del coordinador responden 200 con la 410 y la 411 (US-17).
 - **Fuente**: FR-011, US-06 (escenarios 1, 2, 3, 5 y 6), `uq_carga_publicada_por_seccion` y `ck_periodo_codigo`.
 - **Prueba** (`acceso.feature`): «El profesor ve únicamente su sección», «El coordinador ve todas las secciones de la carrera», «El estado refleja la carga publicada», «Sin sesión no hay lista» y «Sección de una asignatura sin plan de medición»; en el piloto, «La API se conecta a Neon por el pooler con el rol abet_app» (`despliegue.feature`).
+- **Cambio del 2026-11-18 (spec 004, US-38 y US-39).** `GET /api/resultados` valida el periodo con esta misma forma y responde 422 con «El periodo no tiene la forma AAAA-C.» (propuesta) a otra forma que `AAAA-C`, y 200 con `so` y `secciones` vacíos a un periodo sin secciones del usuario. Su `estado` «SIN_CARGA» y su lista `pi` siguen la regla de esta lista de secciones (BR-RESULTADOS-07). **Prueba**: «Un periodo mal formado responde 422» (`specs/004-reportes-docente/aceptacion/alcance_y_privacidad.feature`), y «Sin secciones en el periodo, la respuesta es una lista vacía y no un error» y «Una sección sin carga publicada no trae cifras» (`specs/004-reportes-docente/aceptacion/resultados.feature`).
 
 ## Verification
 
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_alcance_resultados_feature.py, test_resultados_feature.py, test_api_resultados.py → cambios de la spec 004 en BR-PERIODO-01 y BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py → BR-PERIODO-01 a BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py → BR-PERIODO-01, BR-PERIODO-04
 ```
+
+Resultado del 2026-11-18 (spec 004, rama `feat/004-reportes-docente`, PostgreSQL 18 desechable): suite completa, 1440 passed y 15 skipped in 156.81s (0:02:36), con «Un periodo mal formado responde 422», «Sin secciones en el periodo, la respuesta es una lista vacía y no un error» y «Una sección sin carga publicada no trae cifras» aprobados y la ruta 12 sin `periodo` en `tests/test_api_resultados.py`.
 
 Resultado: aceptación, 170 passed, 19 skipped in 116.97s (0:01:56); suite completa, 852 passed, 20 skipped in 241.50s (0:04:01). Las pantallas P1 a P4 tienen sus pruebas en el Front (`npm test`, 8 archivos y 76 pruebas aprobadas), que `audit.md` lista por grupo.
 

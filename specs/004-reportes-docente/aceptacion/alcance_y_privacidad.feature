@@ -5,7 +5,7 @@
 # 004-reportes-docente. Jefferson pide el 2026-11-17 que el profesor «solamente debe poder consultar a él e
 # sus secciones, no otras secciones de otros profesores. Ese debería ser el límite» (spec.md, Input). Las
 # reglas de negocio (business rules, BR) que prueba son BR-ACCESO-06, BR-ACCESO-07 y BR-ACCESO-08 de
-# acceso.spec.md, con la regla nueva BR-ACCESO-10 (propuesta, tarea T010).
+# acceso.spec.md, con la regla nueva BR-ACCESO-10 (J-25, tarea T010).
 #
 # El límite de subida que pide la misma frase («tampoco él debería subir un export a secciones que no son de
 # él») ya lo prueban escenarios aprobados de la spec 001, que este archivo no repite. Son «El profesor no
@@ -18,7 +18,7 @@
 # desechables de estas pruebas y nunca en Neon.
 #
 # Vocabulario de los pasos, el de resultados.feature.
-# - «se envía GET /api/resultados?periodo=2026-2» es la petición a la ruta 12 (propuesta) con la cookie
+# - «se envía GET /api/resultados?periodo=2026-2» es la petición a la ruta 12 (J-23) con la cookie
 #   abet_sesion de quien tiene la sesión iniciada.
 # - «que "docente.varias@example.invalid" tiene publicadas sus tres secciones» sube sus tres exports
 #   inventados a la 412 de 450002 y a la 410 y la 412 de 450010, cada uno con respuesta 201 y PUBLICADA.
@@ -27,7 +27,8 @@
 # - Cada escenario corre en una base desechable propia, así que los carga_id y los seccion_id salen de la
 #   API o de la base y nunca se suponen.
 # - @delegado_a_vitest marca un escenario de la pantalla P6 que prueba Vitest en el Front.
-# - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Lo marcado «(propuesta)» no lo fija ninguna decisión de la spec, que Jefferson aprueba el 2026-11-18 con
+#   J-21 a J-28, y lo confirma la revisión del contrato.
 
 Característica: Los resultados por SO respetan el límite de cada profesor y no exponen personas
   Un profesor ve en sus resultados solo las secciones que acceso.docente_seccion le asigna, el coordinador
@@ -108,7 +109,7 @@ Característica: Los resultados por SO respetan el límite de cada profesor y no
     Cuando se envía GET /api/resultados?periodo=2026-13
     Entonces la API responde 422 con el cuerpo {"detail": "El periodo no tiene la forma AAAA-C."} y sin secciones
 
-  # (propuesta) La guardia de sesión por router y su lista cerrada de rutas públicas (J-25 y BR-ACCESO-10).
+  # La guardia de sesión por router y su lista cerrada de rutas públicas (J-25 y BR-ACCESO-10).
   # La API no publica /docs ni /redoc (docs_url y redoc_url en None, app/main.py). El 403 de un identificador
   # que no existe sigue siendo una propuesta de BR-ACCESO-08.
   @US-38 @corte1 @spec004

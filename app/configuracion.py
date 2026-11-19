@@ -23,6 +23,8 @@ from abet_carga.carga import Configuracion, ConfiguracionInvalida
 
 REGISTRO = logging.getLogger("abet.api")
 PERIODO = re.compile(r"[0-9]{4}-[0-2]")
+# El 422 de un periodo con otra forma que AAAA-C en las rutas 4 y 12 (BR-PERIODO-04 y BR-RESULTADOS-01, propuesta).
+PERIODO_MAL_FORMADO = "El periodo no tiene la forma AAAA-C."
 LARGO_MINIMO_DEL_SECRETO = 32
 FORMA_INESPERADA = "La petición no tiene la forma esperada."
 ERROR_INTERNO = "Ocurrió un error interno. Intente de nuevo."
