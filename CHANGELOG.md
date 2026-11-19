@@ -23,6 +23,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- `specs/001-mvp-carga-r17/audit.md` aprueba el escenario «Prueba de humo de punta a punta con el export que trae el 5 en la fila 3» de US-17 con la corrida del 2026-11-18 contra la vista previa de `develop`, así que US-17 queda con 8 escenarios aprobados y 3 pendientes, y SC-001 vuelve a sumar los 107 escenarios del corte 1.
 - Los routers de `secciones` y `cargas` declaran la dependencia de sesión en `APIRouter(dependencies=…)`, como el de `resultados`, así que una ruta nueva de ellos no responde sin sesión (BR-ACCESO-10 y J-25).
 - El export que no declara su sección en la hoja ni en el nombre recibe en los tres formatos la pregunta de US-21 en lugar del 422 del corte 1, el escenario del corte 1 que lo comprobaba sale de `carga.feature` y los dos de la spec 003 esperan la pregunta (D-02).
 - Los escenarios de US-20 siguen omitidos, ahora con la razón de T018, el dominio y la cuenta de Resend de Jefferson.
