@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/005-om-bp-y-006` (PR a `develop`, junto con el cambio del 2026-11-21 de la spec 005), con la implementación en `feat/006-programacion-docente` del Back después de la aprobación
 **Created**: 2026-11-21
-**Status**: Borrador del 2026-11-21, pendiente de aprobación de Jefferson. Jefferson aprueba el alcance en el chat el mismo día («Sí, escríbelo»), y la spec no se construye hasta su aprobación, con D-44, D-45 y J-42 en el valor que propone
+**Status**: Aprobada por Jefferson en el chat el 2026-11-21 («Sí, apruébalas»), después de aprobar su alcance el mismo día («Sí, escríbelo»), con D-44, D-45 y J-42 en el valor que propone
 **Input**: «¿El R17 podría llenar el dato de sección y docente de forma automática? Son datos maestros que cargarían al inicio del ciclo con la programación docente post-matrícula.» (Claudia León, secretaria académica de Ingeniería Ambiental, correo del 19 o 20 de noviembre de 2026). «en la semana 14 deberíamos capacitar a los profesores, para que en la 15 (máximo 16) hagan sus registros» (Claudia León, correo del 18 de noviembre de 2026)
 
 ## Épica

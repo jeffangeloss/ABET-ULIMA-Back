@@ -1,6 +1,6 @@
 # Tasks: Programación docente del ciclo, cargada desde el archivo de la carrera
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-21**: borrador de la spec escrito en la rama `docs/005-om-bp-y-006`, pendiente de aprobación de Jefferson (T004). Nada está construido
+**Input**: spec.md, plan.md · **Estado al 2026-11-21**: spec aprobada por Jefferson en el chat el 2026-11-21 («Sí, apruébalas», T004). Nada está construido
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001, 003, 004 y 005. `[Back]` es ABET-ULIMA-Back, `[Neon]` es la base en la nube, siempre desde el Windows de Jefferson por Tailscale, `[Carrera]` es la Coordinación de Ambiental y `[Jefferson]` marca lo que solo puede hacer él. Ninguna credencial ni ningún archivo real pasan por un agente. Al final, cada tarea lleva las historias que habilita o audita. La estimación de cada fase llega con la aprobación, así que esta lista no promete ninguna fecha, salvo el límite de la capacitación de la semana 14.
 
@@ -9,7 +9,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [x] T001 [Back] Revisar las tablas `abet.seccion`, `acceso.usuario_autorizado` y `acceso.docente_seccion` con sus restricciones, `_ALCANCE` de `app/permisos.py`, `db/datos/`, `crear_rol_app.sql` y `asignar_claves.py`, sin abrir ninguna base [US-55..US-58]
 - [x] T002 [Back] Auditar C-C01 con las lentes de necesidad, tamaño y verificabilidad y con el crítico de arquitectura, dentro de la auditoría del cambio del 2026-11-21 de la spec 005, y dejar el resultado en `specs/006-programacion-docente/revision-historias.md` [US-55..US-58]
 - [x] T003 [Back] Redactar `spec.md`, `plan.md`, `tasks.md` y los dos `.feature` de `specs/006-programacion-docente/`, que el analizador de pytest-bdd lee con 19 escenarios y 29 casos [US-55..US-58] · 2026-11-21
-- [ ] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/005-om-bp-y-006` o con su «apruebo» en el chat, y decidir J-42 [US-55..US-58]
+- [x] T004 [Jefferson] Aprobar la spec, con la fusión del PR de `docs/005-om-bp-y-006` o con su «apruebo» en el chat, y decidir J-42 [US-55..US-58] · Hecha el 2026-11-21 («Sí, apruébalas»)
 - [ ] T005 [Carrera] Pedir hoy a la Coordinación de Ambiental el formato, el dueño y la fecha del archivo de la programación docente (D-44), y si la cuenta del profesor la crea el guion (D-45). Si el archivo no llega antes de la semana 14, acordar que la Coordinación llene el CSV mínimo de FR-002 [US-55]
 - [ ] T006 [Back] Pasar AD-01 a AD-05 por el crítico de arquitectura antes de construir, y ajustar la spec con lo que no se sostenga [US-55..US-58]
 

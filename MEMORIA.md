@@ -16,7 +16,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Rama de trabajo**: `docs/005-om-bp-y-006`, que sale de `develop` (4eb6f33) con el cambio de la spec 005 y la spec 006
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
 - **Último cambio**: la spec 005 pasa a OM y BP por indicador con V1_12 rediseñada, y la spec 006 nueva carga la programación docente post-matrícula, en borrador para la reaprobación de Jefferson. Antes, el 2026-11-19, D-10 queda decidida y la guardia de datos inventados sale de las dos ramas de Neon (PR #37)
-- **En curso**: el PR de esta rama y el del Front, que esperan la aprobación de Jefferson. La carrera debe responder D-43 (nombre de la actividad en Blackboard) y D-44 (archivo de la programación docente) antes de la capacitación de la semana 14. Siguen pendientes los escenarios de los secretos y del entrenamiento de IA de US-17 (el de la guardia deja de aplicar con D-10). Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
+- **En curso**: la fusión del PR de esta rama, aprobado por Jefferson el 2026-11-21 («Sí, apruébalas»), y después la construcción de la spec 006 y de la spec 005 en el orden de J-41. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
 - **Siguiente paso**: con la aprobación, construir la spec 006 y después la spec 005 en el orden de J-41, cargar las secciones y los profesores reales en la rama `develop` de Neon y probar con los exports reales. Después, una versión hacia `main`, T062, la decisión sobre los PR #4 de Capstone y el R-18 con los coordinadores de curso y de área en una spec posterior
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, la documentación de las specs 004 y 005 fusionada en `develop` con sus PR #18 y #21 y la construcción de la spec 004 con el PR #20, en 778ae23) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-21 22:01 (Lima) · docs/005-om-bp-y-006 · Cambio de la spec 005 y spec 006 aprobados
+- Quién: Jefferson aprueba en el chat el cambio de la spec 005 y la spec 006 («Sí, apruébalas»). Claude Code, sin subagentes, registra la aprobación.
+- Qué cambió: el Status de las specs 005 y 006, `specs/README.md`, `plan.md` y T008 de la spec 005 y T004 de la spec 006 registran la aprobación.
+- Por qué: la aprobación es la fusión del PR o el «apruebo» explícito de Jefferson, que queda registrado aquí y en el PR.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa en el commit.
+- Lo que no debe hacer, cómo se probó: el commit cambia solo líneas de estado y esta memoria, sin tocar escenarios ni código.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la fusión con la CI en verde y después la construcción de la spec 006.
 
 ### 2026-11-21 21:15 (Lima) · docs/005-om-bp-y-006 · Spec 005 con OM y BP por indicador y spec 006 de la programación docente
 - Quién: Jefferson pide en el chat el 2026-11-21 actualizar la spec 005 con los correos de Claudia León y Mechelle Prado y aprueba el alcance («Sí, escríbelo»). Claude Code arma dos workflows. En el primero, tres subagentes proponen 21 candidatas desde el profesor, la coordinación y la base, y tres lentes y un crítico de arquitectura las auditan. En el segundo, cuatro redactores escriben la spec 005, su plan y tareas, la spec 006 y el contrato del Front, un revisor encuentra 20 problemas (uno bloqueante, el cuerpo de la ruta 15) y un corrector los aplica. Claude Code revisa el resultado y escribe esta entrada.

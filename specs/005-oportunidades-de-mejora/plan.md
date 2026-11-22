@@ -2,7 +2,7 @@
 
 **Branch**: `docs/005-oportunidades-de-mejora` (PR a `develop`), con la implementación en `feat/005-oportunidades-de-mejora` del Back y del Front después de la aprobación. El cambio del 2026-11-21 va en `docs/005-om-bp-y-006` | **Date**: 2026-11-18, cambiado el 2026-11-21 | **Spec**: [spec.md](./spec.md)
 
-**Estado del cambio del 2026-11-21**: borrador pendiente de la reaprobación de Jefferson (T008). Jefferson aprueba el alcance en el chat el 2026-11-21 («Sí, escríbelo»), y la revisión de las 21 candidatas está en `revision-historias.md`. Nada de lo que el cambio toca está construido, salvo US-51 y V1_11, que quedan igual. Por eso las decisiones técnicas se reescriben en su lugar, y la tabla «Decisiones técnicas que cambian el 2026-11-21» registra cada cambio.
+**Estado del cambio del 2026-11-21**: aprobado por Jefferson en el chat el 2026-11-21 («Sí, apruébalas», T008). Jefferson aprueba el alcance en el chat el 2026-11-21 («Sí, escríbelo»), y la revisión de las 21 candidatas está en `revision-historias.md`. Nada de lo que el cambio toca está construido, salvo US-51 y V1_11, que quedan igual. Por eso las decisiones técnicas se reescriben en su lugar, y la tabla «Decisiones técnicas que cambian el 2026-11-21» registra cada cambio.
 
 ## Summary
 
