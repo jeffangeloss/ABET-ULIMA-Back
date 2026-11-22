@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-22 18:27 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 aprobada
+- Quién: Jefferson aprueba en el chat la spec 007 («Sí, apruébala»). Claude Code, sin subagentes, registra la aprobación.
+- Qué cambió: el Status de la spec 007, `tasks.md`, `specs/README.md` y las notas de la documentación del Front pasan de borrador a aprobada.
+- Por qué: la aprobación es la fusión del PR o el «apruebo» explícito de Jefferson.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa en el commit.
+- Lo que no debe hacer, cómo se probó: el commit cambia solo líneas de estado y esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la fusión y la construcción de la etapa A (US-59 a US-63).
+
 ### 2026-11-22 18:18 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 en borrador, lo importante para cada cuenta en cada momento
 - Quién: Jefferson pide en el chat mejorar la experiencia con specs en Gherkin que muestren lo importante para cada cuenta y en cada momento («también mejora la UX…», «Sí, sigue»). Claude Code arma un workflow de diez subagentes: tres proponen 18 candidatas (profesor, coordinación y lo transversal), tres lentes y un crítico de arquitectura las auditan, un redactor escribe la spec y un revisor y un corrector arreglan 13 problemas, uno bloqueante sobre el orden de construcción.
 - Qué cambió: en el Back, `specs/007-experiencia-por-cuenta/` (spec.md, revision-historias.md, plan.md, tasks.md y cinco .feature con 35 escenarios) y su línea en `specs/README.md`.

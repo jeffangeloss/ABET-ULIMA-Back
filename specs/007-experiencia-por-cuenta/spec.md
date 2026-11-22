@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/007-experiencia-por-cuenta` del Back y del Front (PR a `develop`), con la implementación en `feat/007-experiencia-por-cuenta` después de la aprobación
 **Created**: 2026-11-22
-**Status**: Borrador pendiente de aprobación de Jefferson. Ninguna historia está construida, y D-46, D-47 y J-43 a J-48 siguen abiertas con el valor que propone la spec
+**Status**: Aprobada por Jefferson en el chat el 2026-11-22 («Sí, apruébala»). Ninguna historia está construida, y D-46, D-47 y J-43 a J-48 siguen abiertas con el valor que propone la spec
 **Input**: «también mejora la UX, creo que todo eso se elabora bajo specs usando gerkin para mostrar lo que es importante para cada cuenta y en cada momento» (Jefferson, 2026-11-22). «en la semana 14 deberíamos capacitar a los profesores, para que en la 15 (máximo 16) hagan sus registros» (Claudia León, secretaria académica de Ingeniería Ambiental, correo del 18-11-2026). «Hay que definir un nombre estándar para la evaluación que el docente crea en Blackboard, porque de eso depende la lectura automática» (Mechelle Prado, correo del 19-11-2026, según la transcripción de las notas de la sesión)
 
 ## Épica

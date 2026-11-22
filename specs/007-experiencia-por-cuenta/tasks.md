@@ -1,6 +1,6 @@
 # Tasks: Lo importante para cada cuenta y en cada momento del registro
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-22**: borrador pendiente de aprobación de Jefferson, con la auditoría, la spec, el plan y los cinco `.feature` en `docs/007-experiencia-por-cuenta` del Back y del Front, sin commit. Ninguna tarea tiene estimación todavía, así que el plan no promete fechas
+**Input**: spec.md, plan.md · **Estado al 2026-11-22**: spec aprobada por Jefferson en el chat el 2026-11-22 («Sí, apruébala»), con la auditoría, la spec, el plan y los cinco `.feature` en `docs/007-experiencia-por-cuenta` del Back y del Front, sin commit. Ninguna tarea tiene estimación todavía, así que el plan no promete fechas
 
 Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las specs 001 y 003 a 006. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Carrera]` es la Coordinación de Ambiental y `[Jefferson]` marca lo que solo él decide o autoriza. Ninguna tarea escribe en Neon ni en Vercel. Las tareas de la etapa A llevan [A] y las de la etapa B llevan [B].
 
@@ -10,7 +10,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [x] T002 [Back] Auditar las candidatas con las lentes de necesidad, tamaño y verificabilidad y con el crítico de arquitectura, y dejar el resultado en `specs/007-experiencia-por-cuenta/revision-historias.md` [US-59..US-66] · 2026-11-22
 - [x] T003 [Back] Redactar `spec.md`, `plan.md`, `tasks.md` y los cinco `.feature`, que el analizador de pytest-bdd lee con 35 escenarios y 70 casos tras la revisión, y sumar la línea de la spec a `specs/README.md` [US-59..US-66] · 2026-11-22
 - [x] T004 [Front] Anotar la propuesta en `docs/01-arquitectura/frontend.md` (sección 11), `docs/specs/feature-index.md` y la ruta 17 en `docs/03-api/contrato.md` (sección 14) [US-59..US-66] · 2026-11-22
-- [ ] T005 [Jefferson] Aprobar la spec, con la fusión de los PR de `docs/007-experiencia-por-cuenta` o con su «apruebo» en el chat, y decidir J-43 a J-48, también si C-P04, C-T03 o C-T05 suben a la spec [US-59..US-66]
+- [x] T005 [Jefferson] Aprobar la spec, con la fusión de los PR de `docs/007-experiencia-por-cuenta` o con su «apruebo» en el chat, y decidir J-43 a J-48, también si C-P04, C-T03 o C-T05 suben a la spec [US-59..US-66] · Hecha el 2026-11-22 («Sí, apruébala»)
 - [ ] T006 [Carrera] Pedir a la Coordinación de Ambiental, esta semana y durante la capacitación, primero D-43 de la spec 005, porque P3 muestra el nombre de la actividad de Blackboard. Después, el texto de contacto del profesor sin secciones (D-46) y si la coordinación ve los correos de los profesores en P7 (D-47) [US-59] [US-60] [US-66]
 
 ## Phase 1: Contrato
