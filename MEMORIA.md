@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-22 13:40 (Lima) · chore/version-0.2.0 · Número de versión 0.2.0
+- Quién: Jefferson pide publicar la versión nueva («si por favor»). Claude Code, sin subagentes, sube el número de versión. Antes, un workflow de tres subagentes arma y prueba en local `ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh`, la prueba final de la vista previa, que exige VERSION 0.2.0 en `develop`.
+- Qué cambió: `VERSION`, `pyproject.toml`, `abet_carga/__init__.py` y `uv.lock` pasan a 0.2.0, y `CHANGELOG.md` abre «[0.2.0] - 2026-11-23» con todo lo que estaba en «Sin publicar».
+- Por qué: la 0.2.0 lleva a Production el corte 2, el cierre de la spec 003, la spec 004, US-51 y el retiro de la guardia de datos inventados, para la capacitación de la semana 14 (23 al 28-11-2026).
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa y la CI del PR corre la suite.
+- Lo que no debe hacer, cómo se probó: el commit no cambia código ni escenarios, solo el número de versión, el CHANGELOG y esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la prueba final de Jefferson con `comprobar_version_020.sh`, V1_11 en la rama principal de Neon y el PR «Versión 0.2.0» de `develop` a `main`, con su permiso.
+
 ### 2026-11-22 09:36 (Lima) · feat/006-programacion-docente · Spec 006 construida, carga de la programación docente
 - Quién: Jefferson pide seguir con la construcción de la spec 006 («Sí, sigue»). Claude Code arma un workflow de cinco subagentes. Un crítico revisa AD-01 a AD-05 (T006) y marca un bloqueo, el informe de filas inválidas, y seis ajustes. Un constructor escribe primero cada prueba y después el código. Dos revisores encuentran diez problemas, entre ellos que `--ap` contaba como `--aplicar` y que un correo con un carácter invisible pasaba, y un corrector los arregla con pruebas primero.
 - Qué cambió: `db/herramientas/cargar_programacion.py` (solo biblioteca estándar, códigos 0 a 3, se niega a leer un archivo dentro de un repositorio y nunca reenvía el error de psql), `db/herramientas/cargar_programacion.sql` (INSERT con ON CONFLICT sobre la restricción nombrada, un solo UPDATE del curso nulo, COMMIT o ROLLBACK con una línea centinela), `db/plataforma/neon/secciones_sin_docente.sql`, `programacion_*.csv` en `.gitignore`, BR-ACCESO-11 en la spec viva `acceso`, el uso en `db/README.md`, las pruebas de la spec 006, `audit.md` y las tareas T006, T010 a T040 y T050.
