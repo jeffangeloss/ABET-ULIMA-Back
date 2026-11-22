@@ -4,6 +4,10 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+### Agregado
+
+- Spec 007 «Lo importante para cada cuenta en cada momento» (EP-07, US-59 a US-66), en borrador para la aprobación de Jefferson: P2 con el siguiente paso de cada sección, P3 con «Antes de subir», P4 con «Qué corregir» en una carga rechazada, rótulos por rol y, para la coordinación, la ruta 17 y P7 «Avance del registro». Ningún código cambia.
+
 ## [0.2.0] - 2026-11-23
 
 ### Agregado
