@@ -4,6 +4,7 @@ Esta carpeta es la fuente de verdad del comportamiento de ABET-ULIMA-Back y sigu
 
 ## Contexto actual
 
+- Estado al 2026-11-22. La spec `006-programacion-docente` queda construida en `feat/006-programacion-docente`, sin commit, con el guion, su SQL, la consulta, BR-ACCESO-11 en `acceso` y `specs/006-programacion-docente/audit.md`. Siguen pendientes `MEMORIA.md`, `CHANGELOG.md` y la corrida real en Neon de la fase 6.
 - Estado al 2026-11-21. La spec `006-programacion-docente` (EP-06, US-55 a US-58, D-44, D-45 y J-42) queda aprobada por Jefferson en el chat el 2026-11-21 («Sí, apruébalas») desde la rama `docs/005-om-bp-y-006`, después de aprobar su alcance el mismo día («Sí, escríbelo»). Agrega el guion `db/herramientas/cargar_programacion.py`, que carga desde el archivo de la carrera las secciones, los profesores y sus asignaciones del ciclo, en seco por omisión y con `--aplicar` en una sola transacción desde el Windows, y la consulta informativa `db/plataforma/neon/secciones_sin_docente.sql`. No tiene migración y va antes de la capacitación de la semana 14.
 - Estado al 2026-11-21. El cambio de la spec `005-oportunidades-de-mejora` (D-39 a D-43 y J-38 a J-41, sin historias nuevas) queda aprobado por Jefferson en el chat el 2026-11-21 («Sí, apruébalas») desde la rama `docs/005-om-bp-y-006`, después de aprobar su alcance el mismo día («Sí, escríbelo»). Lleva el análisis a cada PI, con una causa y una acción que el semáforo rotula como oportunidad de mejora o buena práctica, rediseña V1_12 con cuatro tablas y compone los recuadros A y B del R-17 con un párrafo por PI. US-51 y V1_11 ya están construidas y no cambian.
 - Estado al 2026-11-18. La spec `005-oportunidades-de-mejora` (EP-05, US-45 a US-54, D-35 a D-37 y J-29 a J-37) vive en la rama `docs/005-oportunidades-de-mejora`, y Jefferson la aprueba en el chat el 2026-11-18 («Sí, apruébala»). Lleva a P4 el semáforo de cada PI, la declaración de causas y acciones con su borrador y el R-17 solo con esa declaración, y hace que el R-17 tome de la base las causas, las acciones y la descripción del instrumento, con las rutas 13 a 16 y la navegación con el botón atrás. Reserva las migraciones V1_11 y V1_12, y su implementación espera la fusión de la spec 004.
@@ -69,7 +70,7 @@ ABET-ULIMA-Back/
     004-reportes-docente/           logros del profesor por SO en la ruta 12 y la pantalla P6, construida, auditada y fusionada (spec 004)
       aceptacion/                   base_neon, acceso, carga, r17_constancia, despliegue, reemplazo_y_cargas y varias_secciones (.feature)
     005-oportunidades-de-mejora/    semáforo, declaración y R-17 desde la base en P4 y las rutas 13 a 16, aprobada (spec 005), con el cambio por indicador aprobado el 2026-11-21
-    006-programacion-docente/       carga de la programación docente del ciclo desde el archivo de la carrera, sin migración, aprobada (spec 006)
+    006-programacion-docente/       carga de la programación docente del ciclo desde el archivo de la carrera, sin migración, aprobada y construida (spec 006)
     features/<feature>/<feature>.spec.md
   docs/
     devops.md
@@ -83,7 +84,7 @@ La épica EP-01 vive en `001-mvp-carga-r17/`, y su fase 1 de contrato ya escribe
 | --- | --- | --- | --- | --- |
 | `carga-export` | BR-CARGA-01 a BR-CARGA-20, con los bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17 | US-07 a US-14, US-18, US-19, US-21 y US-26 a US-36 | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
 | `r17` | BR-R17-01 a BR-R17-10 | US-15 y US-16 | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
-| `acceso` | BR-ACCESO-01 a BR-ACCESO-10 | US-04, US-05, US-06, US-20 y US-38 (spec 004) | `app/sesion.py`, `app/permisos.py`, `app/rutas/*.py`, `scripts/asignar_clave.py` y `db/migration/V1_09__crear_acceso.sql` | en revisión |
+| `acceso` | BR-ACCESO-01 a BR-ACCESO-11 | US-04, US-05, US-06, US-20, US-38 (spec 004) y US-55 a US-58 (spec 006) | `app/sesion.py`, `app/permisos.py`, `app/rutas/*.py`, `scripts/asignar_clave.py`, `db/migration/V1_09__crear_acceso.sql`, `db/herramientas/cargar_programacion.py` y su SQL y `db/plataforma/neon/secciones_sin_docente.sql` | en revisión |
 | `periodo` | BR-PERIODO-01 a BR-PERIODO-04 | US-03 y el listado de US-06 | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |
 | `resultados` (spec 004) | BR-RESULTADOS-01 a BR-RESULTADOS-11 | US-37 a US-44 de `004-reportes-docente/`, con BR-ACCESO-10 y cambios fechados en `acceso`, `r17` y `periodo` | `app/rutas/resultados.py`, `abet_carga/resultados.py`, `abet_carga/r17.py`, `app/permisos.py`, `db/migration/R__vista_r17_por_pi.sql` y `db/plataforma/neon/revisar_permisos_resultados.sql` | contrato listo (implementada y verificada, con `specs/004-reportes-docente/audit.md`, en `develop` desde el PR #31, a la espera del humo contra la vista previa de T071) |
 

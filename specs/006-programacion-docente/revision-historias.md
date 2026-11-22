@@ -53,15 +53,29 @@ Las tres lentes coinciden en C-C01, así que no hay desacuerdo que resolver. La 
 | C-C01 (AD-49 de la spec 005) | Guion repetible de la programación docente post-matrícula, en seco por omisión y con `--aplicar` en una transacción | SE_SOSTIENE | Spec 006 pequeña, sin migración, con la consulta de secciones con plan y sin docente. El guion acepta un CSV mínimo si el archivo no llega, las contraseñas siguen aparte y la corrida real va desde el Windows con el permiso de Jefferson |
 | C-C02 (AD-50 de la spec 005) | Nombre del docente en `acceso.usuario_autorizado.nombre` para llenar D10 del R-17 | DUDOSA | Fuera de alcance. Si entra, va en V1_13 o después, nunca en V1_12, con la regla para dos docentes que decida la carrera |
 
-El crítico revisa la decisión de conjunto, y el redactor la baja a cinco decisiones técnicas (propuestas), que el crítico todavía no ataca uno por uno (T006 de `tasks.md`).
+El crítico revisa la decisión de conjunto, y el redactor la baja a cinco decisiones técnicas (propuestas), que el crítico ataca una por una en T006 de `tasks.md`, con el resultado del apartado siguiente.
 
 | N.º | Decisión | Origen | Lo que adopta la spec |
 | --- | --- | --- | --- |
 | AD-01 | Guion en Python con la biblioteca estándar, que llama a psql 18 | Redactor (propuesta) | FR-001 y J-42. El Windows tiene Python 3.14 y psql 18 y no necesita instalar psycopg, y las pruebas lo corren con Python 3.12 |
 | AD-02 | La corrida en seco ejecuta el mismo SQL y termina con ROLLBACK | Redactor (propuesta) | FR-006. El informe en seco cuenta lo que escribiría la corrida real, sin una segunda lógica que pueda divergir |
-| AD-03 | Solo INSERT con `ON CONFLICT DO NOTHING`, sin DELETE ni cambios de `rol` o `activo` | Redactor (propuesta), con la corrección de la necesidad sobre lo que el archivo no trae | FR-005 y US-56 |
+| AD-03 | INSERT con `ON CONFLICT DO NOTHING` y un solo UPDATE, el del `curso_blackboard` nulo, sin DELETE ni cambios de `rol` o `activo` (título del 2026-11-22, T006) | Redactor (propuesta), con la corrección de la necesidad sobre lo que el archivo no trae y la del crítico de T006 | FR-005 y US-56. Cada INSERT nombra su objetivo, `(periodo_id, asignatura_id, numero)`, `(correo)` y `(usuario_id, seccion_id)` |
 | AD-04 | Consulta informativa en `db/plataforma/neon/` y no un control Q | Lente de verificabilidad | FR-011 y US-58 |
 | AD-05 | Archivo real fuera de todo repositorio, enviado al Windows con `scp` y borrado al terminar, y conexión por las variables de libpq | Redactor (propuesta), por la regla 6 de `AGENTS.md` y las instrucciones de Jefferson sobre el Windows | FR-009, FR-010 y J-42 |
+
+## Revisión de AD-01 a AD-05 por el crítico (T006, 2026-11-22)
+
+El crítico de arquitectura ataca las cinco decisiones antes de construir, contra el código de `develop` 7fc19a9 y con ensayos de psql en un clúster desechable, sin tocar localhost:5432, Neon ni el Windows. La construcción adopta lo que el crítico marca CAMBIAR o corregir con una razón que el código o un `.feature` sostiene, y deja como duda lo que la spec no fija.
+
+| N.º | Veredicto | Lo que cambia o queda como duda |
+| --- | --- | --- |
+| AD-01 | SE_SOSTIENE | El guion fija su salida en UTF-8, porque con `python -I` el Windows escribe en cp1252 hacia una tubería, entrega las filas a psql como bytes UTF-8 y normaliza el correo con la misma expresión de `app.sesion.normalizar_correo()`, con una prueba que compara las dos. Con `-I` no entra la carpeta del guion en `sys.path`, así que el guion no importa `abet_carga` ni `app` |
+| AD-02 | SE_SOSTIENE | Cambia el flujo de la forma. El escenario «El informe nombra todas las filas inválidas» junta una falla de la base (fila 2) y una de forma (fila 3), así que el guion entrega todas las filas a psql con su marca de forma y solo un archivo entero ilegible termina sin conectarse (plan.md, viñeta Guion). El código 1 se separa del 3 con una línea centinela y no con el texto de un error de psql, que cambia con el idioma |
+| AD-03 | CAMBIAR | Nuevo título, «INSERT con ON CONFLICT DO NOTHING y un solo UPDATE, el del curso_blackboard nulo, sin DELETE ni cambios de rol o activo», porque FR-005 completa con UPDATE el curso nulo de una sección. En el clúster desechable, un `ON CONFLICT DO NOTHING` sin objetivo se salta en silencio el choque de `uq_seccion_curso_bb`, así que cada INSERT nombra su objetivo y ese choque llega como error de la base, con código 3 |
+| AD-04 | SE_SOSTIENE | Sin cambios. `db/pruebas/pruebas.sql` tiene a propósito las secciones 301 sin profesor, y `abet_respaldo` lee `abet` y `acceso` en solo lectura |
+| AD-05 | DUDOSA | `db/README.md` asigna las variables `NEON_*` a las de libpq con `PGSSLMODE=require`, `PGCHANNELBINDING=require`, `PGCLIENTENCODING=UTF8` y la ruta completa de psql, y el guion busca `.git` como carpeta o como archivo en cada carpeta que contiene el archivo, porque en un worktree `.git` es un archivo. Quedan dos dudas para Jefferson antes de T063, si el informe real, con correos, puede pasar por un agente, y qué se hace con la 410 y la 411 inventadas de 450002 que tiene la rama principal de Neon |
+
+Las dudas que la spec no fija quedan en la Clarification «Session 2026-11-22» de `spec.md`, con el valor que la construcción aplica mientras tanto.
 
 ## Decisiones que salen de la revisión
 

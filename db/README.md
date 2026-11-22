@@ -17,6 +17,8 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 | `plataforma/neon/controles_neon.sql` | Consultas de control Q01 a Q14 en solo lectura, para Neon |
 | `plataforma/neon/marcar_entorno.sql` | Marca de entorno de Vercel de cada rama (`abet.entorno`), production en la principal y preview en `develop` (T077) |
 | `plataforma/neon/pi_sin_descripcion_instrumento.sql` | Consulta informativa de solo lectura de los PI del plan de un periodo sin descripción del instrumento (spec 005, US-51) |
+| `herramientas/cargar_programacion.py` y `herramientas/cargar_programacion.sql` | Guion de la programación docente del ciclo, con su SQL, que carga secciones, profesores y asignaciones desde el CSV de la carrera, en seco por omisión (spec 006) |
+| `plataforma/neon/secciones_sin_docente.sql` | Consulta informativa de solo lectura de las secciones de un periodo con plan de medición y sin profesor activo (spec 006, US-58) |
 | `datos/periodo_2026_2_inventado.sql` | Datos inventados del periodo 2026-2, con la vigencia, las secciones 410 y 411, el plan y los usuarios de prueba |
 | `datos/varias_secciones_2026_2_inventado.sql` | Datos inventados del profesor con varias secciones en 2026-2, con el plan de 450010, la 412 de 450002, la 410 y la 412 de 450010 y sus asignaciones |
 | `datos/descripcion_instrumento_2026_2.sql` | Textos de prueba de la descripción del instrumento de 5.1, 5.2 y 5.3 de 450002 en 2026-2, hasta que la Coordinación fije los reales (D-34) |
@@ -83,6 +85,8 @@ Lo que depende del alojamiento o del periodo queda fuera de `migration/`, porque
 | `datos/varias_secciones_2026_2_inventado.sql` | Completa los datos de 2026-2 con `docente.varias@example.invalid`, un profesor activo y sin contraseña que dicta la 412 de 450002 y la 410 y la 412 de 450010, cada una con su curso de Blackboard, y con su asignación en `acceso.docente_seccion`. Siembra además el plan de 450010, con 2.1 y 2.2 del SO 2 y 5.1 del SO 5 y el instrumento Trabajo Integrador, en tres PI porque los bloques I y II del R-17 tienen tres filas fijas. Se aplica después de `periodo_2026_2_inventado.sql`, no cambia ninguna de sus filas, usa `ON CONFLICT DO NOTHING` y se detiene si faltan esos datos o si un dato no queda como dice su cabecera | Las pruebas, entre ellas las bases desechables de `varias_secciones.feature`, y, cuando haga falta, `abet_sis_med_dev`. No entra en Neon (T027) |
 | `datos/descripcion_instrumento_2026_2.sql` | Fija en `abet.plan_medicion.descripcion_instrumento` un texto de prueba distinto para 5.1, 5.2 y 5.3 de 450002 en 2026-2, cada uno con «Texto de prueba.» al comienzo, que el R-17 lleva a G17:I19 (BR-R17-11). Va después de V1_11 y de `periodo_2026_2_inventado.sql`, se puede repetir y se detiene, sin cambiar nada, si falta uno de los tres PI del plan | Neon, desde el Windows de Jefferson, y las pruebas de `tests/test_descripcion_instrumento.py` y de `r17_desde_la_base.feature` |
 | `plataforma/neon/pi_sin_descripcion_instrumento.sql` | Lista en una sesión de solo lectura los PI del plan del periodo de `-v periodo=` con la descripción del instrumento nula, y cuántos son. No es un control de `pruebas/pruebas.sql`, porque un PI sin descripción es válido mientras D-34 siga abierta | Neon con `abet_respaldo` y las pruebas de `tests/test_descripcion_instrumento.py` |
+| `herramientas/cargar_programacion.py` y `herramientas/cargar_programacion.sql` | Cargan la programación docente del ciclo desde el CSV de la carrera en `abet.seccion`, `acceso.usuario_autorizado` y `acceso.docente_seccion`, en una sola transacción, en seco por omisión y con `--aplicar` para escribir (spec 006, BR-ACCESO-11). Solo INSERT con `ON CONFLICT DO NOTHING` y el UPDATE del curso de Blackboard nulo, sin DELETE y sin tocar contraseñas | Neon, desde el Windows de Jefferson con el dueño de la base, y las pruebas de `tests/test_cargar_programacion.py` y de `programacion_docente.feature` |
+| `plataforma/neon/secciones_sin_docente.sql` | Lista en una sesión de solo lectura las secciones del periodo de `-v periodo=` con plan de medición y sin ningún profesor activo, y cuántas son (spec 006, US-58). No es un control de `pruebas/pruebas.sql`, porque esa base tiene a propósito dos secciones 301 sin profesor | Neon con `abet_respaldo` y las pruebas de `secciones_sin_docente.feature` |
 
 El rol de la aplicación hace INSERT en las siete tablas de una carga, UPDATE solo de `estado`, `filas_leidas`, `filas_aceptadas`, `filas_rechazadas` y `terminada_en` de `abet.carga` y SELECT sobre el resto de `abet` y las dos vistas, salvo `flyway_schema_history`. En `acceso` lee usuarios, credenciales, asignaciones, sesiones e intentos fallidos, inserta solo `usuario_id` y `hash_token` de una sesión y `hash_cuenta` de un intento, y actualiza solo `sesion.expira_en`. Así las fechas de una sesión y de un intento salen siempre de la base, y el tope de 12 horas corre desde la hora real de la sesión. No tiene DELETE ni TRUNCATE en ninguna tabla, no escribe reglas, catálogo, plan, secciones, usuarios ni credenciales y no toca `acceso.codigo_acceso` hasta el corte 2. Convive con `abet_lectura`, `powerbi_lectura` y `abet_respaldo`, que siguen de solo lectura.
 
@@ -120,6 +124,43 @@ psql "$CONEXION" -c "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.o
 La clave del rol va en hexadecimal porque la aplicación la usa dentro de `DATABASE_URL`, donde una «/» de base64 corta la cadena de conexión si no va codificada en porcentaje.
 
 Con V1_09, `fk_carga_subida_por` ata `abet.carga` a `acceso.usuario_autorizado`, así que un volcado solo de `abet` ya no se restaura en una base vacía. Por eso el respaldo suma `acceso` sin los datos de `credencial`, `sesion`, `intento_fallido` ni `codigo_acceso` (J-10), como describe el apartado «Respaldo diario», y T027 lo prueba con una restauración real.
+
+## Programación docente del ciclo (spec 006)
+
+`herramientas/cargar_programacion.py` lee el CSV de la programación docente post-matrícula y carga las secciones, los profesores y sus asignaciones del periodo, para que cada profesor encuentre su sección en P2 en la semana 15. El guion usa solo la biblioteca estándar de Python 3.12 y llama a psql 18 con `herramientas/cargar_programacion.sql`, así que el Windows de Jefferson lo corre con su Python 3.14 sin instalar paquetes. Sin `--aplicar` hace una corrida en seco, que ejecuta el mismo SQL y termina con ROLLBACK, y con `--aplicar` escribe todo en una sola transacción. Nunca borra una fila, nunca cambia `rol` ni `activo` y no asigna contraseñas.
+
+El archivo es un CSV en UTF-8, con BOM o sin ella, separado por comas, con las columnas `periodo`, `asignatura`, `seccion` y `correo` y la columna opcional `curso_blackboard` (valor provisional de D-44). El guion ignora las demás columnas sin leer sus valores y se niega a leer un archivo que está dentro de un repositorio de git. El archivo real trae correos de profesores, así que nunca entra a git, y `.gitignore` excluye `programacion_*.csv` como segunda barrera.
+
+El informe trae el resumen, los avisos y una línea final. El código de salida es 0 cuando la corrida sale bien, 1 cuando el archivo se rechaza, con todas las filas inválidas en el orden de las filas, 2 por un argumento inválido y 3 cuando psql falta o no es de la 18, la base no responde o rechaza la escritura. Con el código 3 el guion no reenvía el error de psql, porque su DETAIL repetiría los valores de la fila, y escribe en la salida de errores solo el SQLSTATE.
+
+La conexión llega por las variables de libpq, nunca por argumentos. Desde el Windows, cada variable de `bd/.env.neon` se asigna a la de libpq (`NEON_HOST` o `NEON_HOST_DEVELOP` a `PGHOST`, `NEON_DB` a `PGDATABASE`, `NEON_DB_USER` a `PGUSER` y `NEON_DB_PASSWORD` a `PGPASSWORD`), con `PGSSLMODE=require`, `PGCHANNELBINDING=require` y `PGCLIENTENCODING=UTF8`, como en `migrar_neon.sh` y `asignar_claves.py`. psql no está en el PATH de Git Bash, así que `PSQL` nombra su ruta completa. El guion corre con el usuario dueño de la base y la conexión directa, sin «-pooler», porque `abet_app` no escribe ninguna de las tres tablas (FR-010).
+
+El orden en Neon sigue FR-015 de la spec 006, y cada paso que escribe espera el permiso de Jefferson.
+
+1. Actualizar la copia del Back del Windows al commit fusionado de `develop` que trae el guion y comprobar que trae `herramientas/cargar_programacion.py` y su SQL (T063).
+2. Respaldar la rama principal con `herramientas/respaldar_neon.sh` (T061). Desde el Windows el respaldo usa `PGSSLMODE=require` y `PGCHANNELBINDING=require` en lugar de `verify-full` con `PGSSLROOTCERT=system`, y antes se comprueba que Git Bash trae `gpg`. Si falta, su instalación pide el permiso de Jefferson.
+3. Copiar el archivo real al Windows con `scp`, a una carpeta propia fuera de todo repositorio, sin que pase por un agente (T062).
+4. Correr el guion en seco en la rama principal y leer el informe (T063 y T064).
+5. Correr el guion con `--aplicar`, con el permiso de Jefferson (T064).
+6. Correr `plataforma/neon/secciones_sin_docente.sql` con `abet_respaldo` y llevar a la Coordinación cada sección que devuelva (T065).
+7. Asignar las contraseñas de los usuarios nuevos con `asignar_claves.py`, o activar el código por correo si el corte 2 está listo (D-45), y borrar del Windows el archivo real (T066).
+
+```sh
+# Desde la Mac. Las claves viajan por la entrada estándar de SSH y nunca quedan en un archivo ni en un argumento.
+# RUTA_DEL_BACK y /c/abet_programacion/ se reemplazan por las carpetas del Windows. El primero corre en seco.
+ENV_NEON="$HOME/Downloads/ABET_SIS_MED/bd/.env.neon"
+python3 -I ~/.claude/scripts/en_windows.py "$ENV_NEON" NEON_HOST,NEON_DB,NEON_DB_USER,NEON_DB_PASSWORD \
+  'cd RUTA_DEL_BACK && PGHOST="$NEON_HOST" PGDATABASE="$NEON_DB" PGUSER="$NEON_DB_USER" PGPASSWORD="$NEON_DB_PASSWORD" \
+   PGSSLMODE=require PGCHANNELBINDING=require PGCLIENTENCODING=UTF8 PSQL="/c/Program Files/PostgreSQL/18/bin/psql" \
+   python -I db/herramientas/cargar_programacion.py --periodo 2026-2 --archivo /c/abet_programacion/programacion_20262.csv'
+# La consulta de US-58, con abet_respaldo, que solo lee.
+python3 -I ~/.claude/scripts/en_windows.py "$ENV_NEON" NEON_HOST,NEON_DB,RESPALDO_DB_CLAVE \
+  'cd RUTA_DEL_BACK && PGHOST="$NEON_HOST" PGDATABASE="$NEON_DB" PGUSER=abet_respaldo PGPASSWORD="$RESPALDO_DB_CLAVE" \
+   PGSSLMODE=require PGCHANNELBINDING=require PGCLIENTENCODING=UTF8 \
+   "/c/Program Files/PostgreSQL/18/bin/psql" -X -w -v ON_ERROR_STOP=1 -v periodo=2026-2 -f db/plataforma/neon/secciones_sin_docente.sql'
+```
+
+El informe de la corrida real trae los correos de los avisos y de los rechazos, y vuelve por la salida de `en_windows.py`. Antes de T063, Jefferson decide si ese informe lo lee solo él en su terminal o si puede pasar por un agente. Además, la rama principal de Neon tiene la 410 y la 411 inventadas de 450002, con los cursos `SINTETICO_…` y los usuarios de `@example.invalid` de `datos/periodo_2026_2_inventado.sql`. Una 410 o una 411 real de 450002 quedaría con el profesor inventado y con el real, y su curso real se rechazaría con «ya tiene otro curso de Blackboard en la base». El guion no resuelve ese choque, así que Jefferson decide antes de T063 si esos datos se retiran a mano, con respaldo, o si se aceptan los avisos.
 
 ## Cómo correr las pruebas hoy, sin Flyway
 

@@ -12,12 +12,12 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Punto actual
 
-- **Fecha**: 2026-11-21
-- **Rama de trabajo**: `docs/005-om-bp-y-006`, que sale de `develop` (4eb6f33) con el cambio de la spec 005 y la spec 006
+- **Fecha**: 2026-11-22
+- **Rama de trabajo**: `feat/006-programacion-docente`, que sale de `develop` (7fc19a9) y construye la spec 006
 - **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
-- **Último cambio**: la spec 005 pasa a OM y BP por indicador con V1_12 rediseñada, y la spec 006 nueva carga la programación docente post-matrícula, en borrador para la reaprobación de Jefferson. Antes, el 2026-11-19, D-10 queda decidida y la guardia de datos inventados sale de las dos ramas de Neon (PR #37)
-- **En curso**: la fusión del PR de esta rama, aprobado por Jefferson el 2026-11-21 («Sí, apruébalas»), y después la construcción de la spec 006 y de la spec 005 en el orden de J-41. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
-- **Siguiente paso**: con la aprobación, construir la spec 006 y después la spec 005 en el orden de J-41, cargar las secciones y los profesores reales en la rama `develop` de Neon y probar con los exports reales. Después, una versión hacia `main`, T062, la decisión sobre los PR #4 de Capstone y el R-18 con los coordinadores de curso y de área en una spec posterior
+- **Último cambio**: la spec 006 queda construida: `db/herramientas/cargar_programacion.py` y su SQL cargan la programación docente post-matrícula en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor. Antes, el 2026-11-21, Jefferson aprueba el cambio de la spec 005 y la spec 006 (PR #38)
+- **En curso**: el PR de esta rama, que espera la CI y el permiso de Jefferson para fusionarlo (T060). Antes de la primera corrida en Neon (T063), Jefferson decide si el informe real, que trae correos de profesores, puede pasar por un agente, y qué se hace con las secciones 410 y 411 inventadas de 450002 que siguen en la rama principal. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
+- **Siguiente paso**: con la fusión, el respaldo de la rama principal (T061), el archivo real en el Windows por Jefferson (T062), la corrida en seco (T063), la corrida con `--aplicar` con su permiso (T064), las secciones sin docente (T065) y las contraseñas (T066). Después, la construcción de la spec 005 en el orden de J-41 y la prueba con los exports reales
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, la documentación de las specs 004 y 005 fusionada en `develop` con sus PR #18 y #21 y la construcción de la spec 004 con el PR #20, en 778ae23) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-22 09:36 (Lima) · feat/006-programacion-docente · Spec 006 construida, carga de la programación docente
+- Quién: Jefferson pide seguir con la construcción de la spec 006 («Sí, sigue»). Claude Code arma un workflow de cinco subagentes. Un crítico revisa AD-01 a AD-05 (T006) y marca un bloqueo, el informe de filas inválidas, y seis ajustes. Un constructor escribe primero cada prueba y después el código. Dos revisores encuentran diez problemas, entre ellos que `--ap` contaba como `--aplicar` y que un correo con un carácter invisible pasaba, y un corrector los arregla con pruebas primero.
+- Qué cambió: `db/herramientas/cargar_programacion.py` (solo biblioteca estándar, códigos 0 a 3, se niega a leer un archivo dentro de un repositorio y nunca reenvía el error de psql), `db/herramientas/cargar_programacion.sql` (INSERT con ON CONFLICT sobre la restricción nombrada, un solo UPDATE del curso nulo, COMMIT o ROLLBACK con una línea centinela), `db/plataforma/neon/secciones_sin_docente.sql`, `programacion_*.csv` en `.gitignore`, BR-ACCESO-11 en la spec viva `acceso`, el uso en `db/README.md`, las pruebas de la spec 006, `audit.md` y las tareas T006, T010 a T040 y T050.
+- Por qué: sin la programación cargada, ningún profesor real encuentra su sección en P2 en la semana 15.
+- Lo que debe hacer, cómo se probó: la suite completa, en el clúster desechable, da el resultado que registra el PR de esta rama, con 159 casos de la spec 006 en sus cuatro módulos, y `bash scripts/preflight.sh --staged` pasa en el commit.
+- Lo que no debe hacer, cómo se probó: la corrida en seco deja las tres tablas igual, `--ap` y `--apli` terminan con código 2 sin escribir, un correo con U+200B se rechaza sin dejar filas, y ninguna prueba toca localhost:5432 ni Neon.
+- Correcciones: el plan decía que una falla de forma terminaba sin conectarse, y el .feature pide juntar en un solo informe las fallas de forma y las de la base, así que el guion entrega todas las filas y el SQL hace ROLLBACK antes de escribir.
+- Cómo se reporta: esta entrada, `audit.md`, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: el permiso de Jefferson para fusionar (T060), sus dos decisiones antes de T063 y la corrida real de T061 a T066. No se probó todavía en el Windows ni contra Neon.
 
 ### 2026-11-21 22:01 (Lima) · docs/005-om-bp-y-006 · Cambio de la spec 005 y spec 006 aprobados
 - Quién: Jefferson aprueba en el chat el cambio de la spec 005 y la spec 006 («Sí, apruébalas»). Claude Code, sin subagentes, registra la aprobación.

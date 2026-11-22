@@ -16,6 +16,9 @@ lo que repiten sus Antecedentes y sus escenarios.
   viven en su propio módulo, y los que repiten varios viven aquí.
 - El estado de un escenario vive en la fixture ctx (clase Escenario), que guarda la respuesta, el
   conteo previo de las tablas de la carga, el archivo en uso y la carga a la que se refiere «esa carga».
+- La spec 006. La variante «programacion» parte sin los datos de 2026-2 y recibe en su plantilla la base de
+  partida de tests/cargas_de_prueba.base_de_partida_006(). El guion de la programación docente corre como
+  proceso aparte con las variables de libpq de la copia del escenario, y su archivo se arma en tmp_path.
 - Las etiquetas. Los escenarios del corte 2 corren desde T087, salvo los de US-20 (@US-20), que se omiten
   con su razón, porque el código de acceso por correo espera a T018, el dominio y la cuenta de Resend de
   Jefferson (T083 y T086).
@@ -26,6 +29,7 @@ versionan.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import importlib.util
 import io
@@ -71,6 +75,7 @@ def _modulo_de_pruebas(nombre: str) -> ModuleType:
 
 
 A = _modulo_de_pruebas("api_de_prueba")
+C = _modulo_de_pruebas("cargas_de_prueba")
 
 
 # Omisión de los escenarios de US-20, los únicos del corte 2 que esperan a Jefferson
@@ -112,7 +117,12 @@ VARIANTES = {
     "periodo": {},
     "varias": {"despues": (VARIAS_SQL,)},
     "guardia": {"guardia": True},
+    # Spec 006. Sin los datos de 2026-2, con el rol de la aplicación para GET /api/secciones, y con la base de
+    # partida que siembra tests/cargas_de_prueba.base_de_partida_006() en la plantilla (FR-012).
+    "programacion": {"datos_2026_2": False},
 }
+# Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
+SIEMBRAS = {"programacion": C.base_de_partida_006}
 
 
 class Plantillas:
@@ -123,7 +133,13 @@ class Plantillas:
 
     def de(self, variante: str) -> Any:
         if variante not in self.creadas:
-            self.creadas[variante] = self.pila.enter_context(self.base_desechable.abierta(**VARIANTES[variante]))
+            plantilla = self.pila.enter_context(self.base_desechable.abierta(**VARIANTES[variante]))
+            if variante in SIEMBRAS:
+                # La conexión se cierra antes de copiar, porque CREATE DATABASE ... TEMPLATE exige la plantilla sin
+                # conexiones.
+                with psycopg.connect(plantilla.conexion, autocommit=True) as conexion:
+                    SIEMBRAS[variante](conexion)
+            self.creadas[variante] = plantilla
         return self.creadas[variante]
 
     def copia(self, variante: str, pila: ExitStack) -> Any:
@@ -1158,3 +1174,103 @@ def pedir_resultados(ctx: Escenario, periodo: str, **parametros: Any) -> Any:
 @when(parsers.re(r'se envía GET /api/resultados\?periodo=(?P<periodo>[0-9]+-[0-9]+)'))
 def _pide_resultados(ctx: Escenario, periodo: str) -> None:
     pedir_resultados(ctx, periodo)
+
+
+# Spec 006, los pasos que repiten programacion_docente.feature y secciones_sin_docente.feature
+
+ENCABEZADOS_006 = ("periodo", "asignatura", "seccion", "correo", "curso_blackboard")
+ARCHIVO_BASE_006 = (
+    ("2026-2", "450002", "410", "docente410@example.invalid", "SINTETICO_20262_450002_410"),
+    ("2026-2", "450002", "411", "docente411@example.invalid", "SINTETICO_20262_450002_411"),
+)
+NOMBRE_006 = "programacion_20262_inventada.csv"
+
+
+@dataclass
+class ArchivoDeProgramacion:
+    """Encabezados y filas de datos del archivo de un escenario de la spec 006. La fila 2 es la primera de datos."""
+
+    encabezados: list[str] = field(default_factory=lambda: list(ENCABEZADOS_006))
+    filas: list[list[str]] = field(default_factory=lambda: [list(fila) for fila in ARCHIVO_BASE_006])
+
+    def a_bytes(self) -> bytes:
+        salida = io.StringIO(newline="")
+        escritor = csv.writer(salida, lineterminator="\r\n")
+        escritor.writerow(self.encabezados)
+        escritor.writerows(self.filas)
+        return salida.getvalue().encode("utf-8")
+
+
+def archivo_006(ctx: Escenario) -> ArchivoDeProgramacion:
+    """Archivo del escenario, que nace como el archivo base y cambia con los pasos que lo describen."""
+    return ctx.extras.setdefault("archivo_006", ArchivoDeProgramacion())
+
+
+def escribir_archivo_006(ctx: Escenario, archivo: ArchivoDeProgramacion, carpeta: Path | None = None) -> Path:
+    """Escribe el archivo en tmp_path, o en carpeta, y nunca dentro de tests/datos_inventados/."""
+    destino = (carpeta or ctx.request.getfixturevalue("tmp_path")) / NOMBRE_006
+    destino.write_bytes(archivo.a_bytes())
+    return destino
+
+
+def tres_tablas_006(ctx: Escenario) -> dict[str, list[tuple[Any, ...]]]:
+    """Filas completas de abet.seccion, acceso.usuario_autorizado y acceso.docente_seccion, más las credenciales."""
+    return {
+        "seccion": ctx.filas("SELECT * FROM abet.seccion ORDER BY seccion_id"),
+        "usuario_autorizado": ctx.filas("SELECT * FROM acceso.usuario_autorizado ORDER BY usuario_id"),
+        "docente_seccion": ctx.filas("SELECT * FROM acceso.docente_seccion ORDER BY docente_seccion_id"),
+        "credencial": ctx.filas("SELECT usuario_id FROM acceso.credencial ORDER BY usuario_id"),
+    }
+
+
+def correr_guion_006(ctx: Escenario, *argumentos: str, aplicar: bool = False, entorno: dict[str, str] | None = None,
+                     guion: Path | None = None) -> Any:
+    """Corre el guion contra la copia del escenario y guarda su corrida y las tres tablas de antes.
+
+    Sin argumentos, el guion recibe --periodo 2026-2 y el archivo del escenario escrito en tmp_path. El entorno
+    sale de tests/cargas_de_prueba.entorno_de_programacion(), que fija PGHOST, PGPORT, PGUSER y PGDATABASE de la
+    copia y exige el clúster desechable, así que el guion nunca cae en localhost:5432.
+    """
+    if not argumentos:
+        argumentos = ("--periodo", "2026-2", "--archivo", str(escribir_archivo_006(ctx, archivo_006(ctx))))
+    if aplicar:
+        argumentos = (*argumentos, "--aplicar")
+    ctx.extras["antes_006"] = tres_tablas_006(ctx)
+    corrida = C.correr_programacion(entorno or C.entorno_de_programacion(ctx.api.base.nombre), *argumentos,
+                                    guion=guion or C.GUION_006)
+    ctx.extras["corrida_006"] = corrida
+    return corrida
+
+
+@given("una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_11, la "
+       "vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni profesores")
+def _base_de_partida_006(ctx: Escenario) -> None:
+    ctx.crear_base("programacion")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
+        "falta la migración V1_11"
+    assert ctx.filas("SELECT cv.codigo FROM abet.catalogo_vigencia v JOIN abet.catalogo_version cv"
+                     " USING (catalogo_version_id) JOIN abet.periodo pe ON pe.periodo_id = v.periodo_id"
+                     " WHERE pe.codigo = '2026-2'") == [("AMB-2026",)]
+    planes = ctx.filas("SELECT a.codigo, string_agg(p.codigo, ',' ORDER BY p.codigo) FROM abet.plan_medicion pm"
+                       " JOIN abet.asignatura a USING (asignatura_id) JOIN abet.pi p USING (pi_id)"
+                       " JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id WHERE pe.codigo = '2026-2'"
+                       " GROUP BY a.codigo ORDER BY a.codigo")
+    assert planes == [("450002", "5.1,5.2,5.3"), ("450010", "2.1,2.2,5.1")], planes
+    assert ctx.uno("SELECT count(*) FROM abet.seccion") == 0
+    assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE rol = 'PROFESOR'") == 0
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion") == 0
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" activo con rol "(?P<rol>[A-Z]+)" y sin secciones en acceso\.docente_seccion'))
+def _activo_sin_secciones_006(ctx: Escenario, correo: str, rol: str) -> None:
+    assert ctx.filas("SELECT rol, activo FROM acceso.usuario_autorizado WHERE correo = %s", correo) == [(rol, True)]
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE usuario_id = %s", ctx.usuario_id(correo)) == 0
+
+
+@given(parsers.re(r'que el administrador corrió el guion con el archivo base y con --aplicar'))
+def _guion_aplicado_006(ctx: Escenario) -> None:
+    corrida = correr_guion_006(ctx, "--periodo", "2026-2", "--archivo",
+                               str(escribir_archivo_006(ctx, ArchivoDeProgramacion())), aplicar=True)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines()[-1] == "Cambios guardados.", corrida.stdout

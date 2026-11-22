@@ -14,11 +14,19 @@ con el 5 en la fila 3, sin las mediciones de 99000002 y con su rechazo NIVEL_FUE
 reemplaza con el conjunto inventado R-PRUEBA-APROBADO del caso A03 de pruebas.sql. publicar() y
 rechazar() registran cargas nuevas de cualquier asignatura y sección del plan. Los códigos son
 inventados, de 99000000 a 99999999, y los correos terminan en @example.invalid.
+
+Para la spec 006, base_de_partida_006() siembra la base de partida de la programación docente, sin
+secciones ni profesores, y entorno_de_programacion() y correr_programacion() corren
+db/herramientas/cargar_programacion.py como proceso aparte contra una base desechable, siempre con las
+variables de libpq del clúster de tests/cluster_desechable.py.
 """
 
 from __future__ import annotations
 
 import hashlib
+import os
+import subprocess
+import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -429,3 +437,65 @@ def _fila(
 def filas_inventadas(cantidad: int, *, desde: int, niveles: Sequence[int | None]) -> list[Fila]:
     """cantidad filas desde la fila 2, con códigos inventados consecutivos y los mismos niveles en cada una."""
     return [Fila(2 + i, str(desde + i), tuple(niveles)) for i in range(cantidad)]
+
+
+# Spec 006, base de partida de la programación docente y corrida del guion (T021)
+
+COORDINACION = "coordinacion@example.invalid"
+PLANES_006 = {"450002": ("5.1", "5.2", "5.3"), "450010": ("2.1", "2.2", "5.1")}
+GUION_006 = RAIZ / "db" / "herramientas" / "cargar_programacion.py"
+
+
+def base_de_partida_006(conexion: psycopg.Connection) -> None:
+    """Base de partida de la spec 006 sobre una base con las migraciones y sin los datos de 2026-2 (FR-012).
+
+    Siembra la vigencia de AMB-2026 en 2026-2, el plan de 450002 (5.1, 5.2 y 5.3) y el de 450010 (2.1, 2.2 y
+    5.1) y a coordinacion@example.invalid con rol COORDINADOR, sin secciones ni profesores. Corre con la
+    conexión del dueño de la base y se puede repetir.
+    """
+    conexion.execute(
+        "INSERT INTO abet.catalogo_vigencia (periodo_id, carrera_id, catalogo_version_id) "
+        "SELECT pe.periodo_id, cv.carrera_id, cv.catalogo_version_id FROM abet.periodo pe "
+        "JOIN abet.catalogo_version cv ON cv.codigo = 'AMB-2026' WHERE pe.codigo = %s ON CONFLICT DO NOTHING",
+        (PERIODO,),
+    )
+    for asignatura, pis in PLANES_006.items():
+        plan(conexion, asignatura, pis)
+    conexion.execute(
+        "INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (%s, 'COORDINADOR') ON CONFLICT DO NOTHING",
+        (COORDINACION,),
+    )
+
+
+def entorno_de_programacion(base: str, *, sin_servidor: Path | None = None) -> dict[str, str]:
+    """Variables de libpq para correr el guion de la spec 006 contra la base desechable base.
+
+    El guion corre como proceso aparte y su psql toma la conexión de PGHOST, PGPORT, PGUSER y PGDATABASE, así
+    que este entorno las fija siempre y nunca deja que libpq caiga en sus valores por omisión, que en la Mac
+    son el clúster de localhost:5432. cluster_desechable.exigir() revisa el entorno antes de devolverlo. Con
+    sin_servidor, PGHOST apunta a esa carpeta vacía y PSQL a un programa que no existe, así que un intento de
+    conexión haría fallar la corrida con el código 3 sin alcanzar ningún servidor.
+    """
+    cluster = sys.modules.get("cluster_desechable")
+    assert cluster is not None, "la fixture cluster_postgres todavía no cargó tests/cluster_desechable.py"
+    entorno = {clave: valor for clave, valor in os.environ.items()
+               if not clave.startswith("PG") and clave not in ("DATABASE_URL", "APP_DB_CLAVE")}
+    if cluster.en_ci():
+        entorno.update(PGHOST=os.environ.get("PGHOST", "localhost"), PGPORT=os.environ.get("PGPORT", "5432"))
+        if "PGPASSWORD" in os.environ:
+            entorno["PGPASSWORD"] = os.environ["PGPASSWORD"]
+    else:
+        entorno.update(PGHOST=os.environ["PGHOST"], PGPORT=os.environ["PGPORT"])
+    entorno.update(PGUSER=os.environ.get("PGUSER", "postgres"), PGDATABASE=base, PGCLIENTENCODING="UTF8")
+    cluster.exigir(entorno)
+    if sin_servidor is not None:
+        entorno.update(PGHOST=str(sin_servidor), PSQL=str(sin_servidor / "psql_que_no_existe"))
+    return entorno
+
+
+def correr_programacion(
+    entorno: dict[str, str], *argumentos: str, guion: Path = GUION_006,
+) -> subprocess.CompletedProcess[str]:
+    """Corre el guion con python -I, como en el Windows de Jefferson, y devuelve su código y su informe."""
+    return subprocess.run([sys.executable, "-I", str(guion), *argumentos], env=entorno, capture_output=True,
+                          text=True, encoding="utf-8", check=False, timeout=120)
