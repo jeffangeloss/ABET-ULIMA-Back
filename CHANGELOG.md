@@ -4,6 +4,8 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-23
+
 ### Agregado
 
 - `db/herramientas/cargar_programacion.py` carga la programación docente post-matrícula (secciones, profesores y asignaciones) en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor (spec 006, US-55 a US-58).
