@@ -34,6 +34,10 @@ RAIZ = Path(__file__).resolve().parents[3]
 CARGA = "specs/001-mvp-carga-r17/aceptacion/carga.feature"
 R17 = "specs/001-mvp-carga-r17/aceptacion/r17_constancia.feature"
 EXPORTS = "specs/003-exports-blackboard/aceptacion/exports_blackboard.feature"
+RESULTADOS = "specs/004-reportes-docente/aceptacion/resultados.feature"
+ALCANCE = "specs/004-reportes-docente/aceptacion/alcance_y_privacidad.feature"
+PROGRAMACION = "specs/006-programacion-docente/aceptacion/programacion_docente.feature"
+SIN_DOCENTE = "specs/006-programacion-docente/aceptacion/secciones_sin_docente.feature"
 
 
 class _EscenariosDeCarga:
@@ -54,8 +58,36 @@ class _EscenariosDeExports:
     scenarios(EXPORTS)
 
 
-_ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports}
-_POR_ARCHIVO = pytest.mark.parametrize("ruta", [CARGA, R17, EXPORTS], ids=["carga", "r17_constancia", "exports_blackboard"])
+class _EscenariosDeResultados:
+    """Funciones que scenarios() arma para resultados.feature (spec 004) con la ruta relativa a la raíz."""
+
+    scenarios(RESULTADOS)
+
+
+class _EscenariosDeAlcance:
+    """Funciones que scenarios() arma para alcance_y_privacidad.feature (spec 004) con la ruta relativa a la raíz."""
+
+    scenarios(ALCANCE)
+
+
+class _EscenariosDeProgramacion:
+    """Funciones que scenarios() arma para programacion_docente.feature (spec 006) con la ruta relativa a la raíz."""
+
+    scenarios(PROGRAMACION)
+
+
+class _EscenariosSinDocente:
+    """Funciones que scenarios() arma para secciones_sin_docente.feature (spec 006) con la ruta relativa a la raíz."""
+
+    scenarios(SIN_DOCENTE)
+
+
+_ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports,
+            RESULTADOS: _EscenariosDeResultados, ALCANCE: _EscenariosDeAlcance,
+            PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente}
+_POR_ARCHIVO = pytest.mark.parametrize("ruta", [CARGA, R17, EXPORTS, RESULTADOS, ALCANCE, PROGRAMACION, SIN_DOCENTE],
+                                       ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
+                                            "alcance_y_privacidad", "programacion_docente", "secciones_sin_docente"])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero
@@ -233,3 +265,26 @@ def test_cada_escenario_lleva_su_historia_y_su_corte(ruta: str) -> None:
         cortes = [t for t in escenario.tags if t in ("corte1", "corte2")]
         assert len(historias) == 1, f"{escenario.name}: {sorted(escenario.tags)}"
         assert len(cortes) == 1, f"{escenario.name}: {sorted(escenario.tags)}"
+
+
+@pytest.mark.parametrize("ruta", [RESULTADOS, ALCANCE], ids=["resultados", "alcance_y_privacidad"])
+def test_cada_escenario_de_la_spec_004_lleva_su_etiqueta_y_la_pantalla_va_a_vitest(ruta: str) -> None:
+    # spec.md de la spec 004. Cada escenario lleva @spec004, y uno que abre o nombra la pantalla P6 lleva además
+    # @delegado_a_vitest, porque lo prueba Vitest en el Front y no pytest-bdd.
+    for escenario in _feature(ruta).scenarios.values():
+        assert "spec004" in escenario.tags, f"{escenario.name}: {sorted(escenario.tags)}"
+        pantalla = escenario.name.startswith("P6 ") or any("P6" in paso.name for paso in escenario.steps)
+        assert pantalla == ("delegado_a_vitest" in escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+
+
+def test_la_spec_006_trae_19_escenarios_con_29_casos_y_ninguno_va_a_vitest() -> None:
+    # T003 y T011 de specs/006-programacion-docente/tasks.md. Cada escenario lleva @spec006, y ninguno lleva
+    # @delegado_a_vitest, porque la spec no cambia ninguna pantalla.
+    escenarios = casos = 0
+    for ruta in (PROGRAMACION, SIN_DOCENTE):
+        for escenario in _feature(ruta).scenarios.values():
+            escenarios += 1
+            casos += sum(len(t.examples) for t in escenario.examples) if escenario.templated else 1
+            assert {"spec006", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            assert "delegado_a_vitest" not in escenario.tags, escenario.name
+    assert (escenarios, casos) == (19, 29)

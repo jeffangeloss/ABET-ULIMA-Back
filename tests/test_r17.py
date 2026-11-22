@@ -392,6 +392,26 @@ def test_br_r17_02_sin_nivel_esperado_ni_meta_el_r17_no_inventa_cifras(
     assert "R-PRUEBA-PENDIENTE" in hoja["B7"].value
 
 
+def test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas(
+    base_aprobada: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_aprobada
+    hoja = _libro(_generar(base, ids["aprobada"], tmp_path))[HOJA]
+    # Los rótulos de la plantilla fijan el corte de M24 y M25 en los niveles de la escala (plantillas/README.md).
+    assert [hoja[ref].value for ref in ("K24", "K25")] == [
+        "Número de alumnos que obtuvieron 1 y 2", "Número de alumnos que obtuvieron 3 y 4"]
+    # Con NIVEL_ESPERADO 2 el bloque II da 10 de 11 en cada PI, y M24 a M26 siguen en 11, 22 y 22 / 33.
+    assert [hoja[f"E{fila}"].value for fila in (24, 25, 26)] == pytest.approx([0.909] * 3)
+    assert [hoja[ref].value for ref in ("M24", "M25")] == [11, 22]
+    assert hoja["M26"].value == pytest.approx(22 / 33)
+    # Lo que no debe pasar: que M24 y M25 tomen los conteos contra el nivel esperado que la vista expone.
+    contra_el_esperado = _consulta(
+        base, "SELECT sum(n_debajo_del_esperado), sum(n_esperado_o_superior) FROM abet.v_r17_por_pi "
+              "WHERE carga_id = %s", (ids["aprobada"],))
+    assert contra_el_esperado == [(3, 30)]
+    assert [hoja[ref].value for ref in ("M24", "M25")] != [3, 30]
+
+
 def test_br_r17_02_sirve_para_otra_asignatura_con_un_solo_pi(
     base_410: tuple[Any, dict[str, int]], tmp_path: Path,
 ) -> None:
@@ -760,3 +780,45 @@ def test_br_r17_09_la_hoja_constancia_dice_lo_mismo_que_la_constancia_en_json(
     mensajes = {mensaje for clave, mensaje in pares.items()
                 if isinstance(clave, str) and clave.startswith(("Fila ", "PUNTAJE"))}
     assert mensajes == {elemento["mensaje"] for elemento in cuerpo["rechazos"] + cuerpo["avisos"]}
+
+
+# BR-R17-11: Descripción del instrumento desde la base (spec 005, US-51).
+
+DESCRIPCION_5_1 = "Texto de prueba. Informe del trabajo integrador con el diagnóstico ambiental del caso."
+FORMULA_5_2 = "=SUMA(1;2)"
+
+
+@pytest.fixture(scope="module")
+def r17_con_descripciones(base_desechable: ModuleType, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """R-17 de la 410 con una descripción en 5.1, un texto que parece fórmula en 5.2 y ninguna en 5.3."""
+    with base_desechable.abierta(datos_2026_2=False, despues=[CARGAS.SINTETICOS, base_desechable.DATOS_2026_2]) as base:
+        with psycopg.connect(base.conexion) as conexion:
+            carga_id = CARGAS.preparar_410(conexion)
+            for pi, texto in (("5.1", DESCRIPCION_5_1), ("5.2", FORMULA_5_2)):
+                conexion.execute(
+                    "UPDATE abet.plan_medicion pm SET descripcion_instrumento = %s FROM abet.pi p, abet.asignatura a, "
+                    "abet.periodo pe WHERE p.pi_id = pm.pi_id AND a.asignatura_id = pm.asignatura_id "
+                    "AND pe.periodo_id = pm.periodo_id AND p.codigo = %s AND a.codigo = '450002' AND pe.codigo = '2026-2'",
+                    (texto, pi))
+        return _generar(base, carga_id, tmp_path_factory.mktemp("r17_descripciones"))
+
+
+def test_br_r17_11_g17_trae_la_descripcion_del_pi_5_1_desde_la_base(r17_con_descripciones: Path) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G17"].value == DESCRIPCION_5_1
+    assert hoja["E17"].value == "Trabajo Integrador"
+
+
+def test_br_r17_11_un_pi_sin_descripcion_deja_su_celda_vacia_junto_a_otro_que_la_tiene(
+    r17_con_descripciones: Path,
+) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G19"].value is None
+    assert [hoja[f"{columna}19"].value for columna in "HI"] == [None, None]
+
+
+def test_br_r17_11_una_descripcion_que_parece_formula_queda_como_cadena(r17_con_descripciones: Path) -> None:
+    hoja = _libro(r17_con_descripciones)[HOJA]
+    assert hoja["G18"].value == FORMULA_5_2
+    assert hoja["G18"].data_type == "s"
+    assert not [nombre for nombre, datos in _partes(r17_con_descripciones).items() if b"<f>" in datos]

@@ -1,17 +1,23 @@
 """Subida del export, constancia y R-17 (T038, BR-CARGA-01 a BR-CARGA-17, BR-R17-01 a BR-R17-10).
 
 POST /api/secciones/{seccion_id}/cargas sigue el orden fijo de BR-CARGA-03.
-1. La sesión y el alcance, con app/permisos.puede_subir(). En el corte 1 solo sube el profesor
-   asignado, así que el coordinador recibe el mismo 403 que un profesor ajeno (BR-ACCESO-08).
-2. Recién entonces lee el cuerpo multipart. Sin el campo archivo responde 422 con «La petición no
-   tiene la forma esperada.». Los demás campos y los parámetros de consulta no se leen, así que
-   ninguno apaga la guardia (BR-CARGA-07).
+1. La sesión y el alcance, con app/permisos.puede_subir() o, si la petición trae el parámetro
+   reemplaza, con app/permisos.puede_reemplazar() (corte 2, BR-CARGA-19). Solo sube una carga nueva el
+   profesor asignado, así que el coordinador recibe el mismo 403 que un profesor ajeno, y reemplaza
+   la carga publicada en cualquier sección de la carrera (BR-ACCESO-08 y D-11).
+2. La forma de reemplaza, un solo entero positivo, y recién entonces el cuerpo multipart. Sin el campo
+   archivo, o con un reemplaza mal formado, responde 422 con «La petición no tiene la forma
+   esperada.». El campo confirmar_seccion solo admite un único «true», y otro valor responde 422 con
+   «La sección confirmada no es la sección elegida. No se guardó nada.» (BR-CARGA-18). Los demás
+   campos y parámetros no se leen, así que ninguno apaga la guardia (BR-CARGA-07).
 3. abet_carga.carga.cargar() comprueba el plan de la sección, calcula la huella SHA-256 (Secure
    Hash Algorithm de 256 bits) de todo el contenido recibido antes del tope de 1 MB, revisa el
    archivo, aplica la guardia de datos inventados antes de buscar la huella en la base o de escribir
    nada, y escribe la carga en una sola transacción. La ruta responde el código HTTP que el
    resultado trae, con la constancia de abet_carga.constancia si la carga existe o con su mensaje
-   en detail si no.
+   en detail si no. Dos errores del corte 2 suman un campo para la pantalla (contrato, sección 3.1),
+   requiere_confirmacion en el 422 de la sección sin declarar y carga_publicada en el 409 de la
+   sección con otra carga publicada, y el 200 del mismo archivo en un reemplazo suma aviso.
 
 El registro de la aplicación (logger abet.api) guarda de un archivo detenido por tamaño o por ser
 ilegible la huella, la hora, el motivo y el detalle de la lista cerrada de la spec 003, con «-» si
@@ -19,6 +25,13 @@ no tiene, en la forma evento=archivo_detenido hora=… sha256=… motivo=… det
 por la guardia solo la huella y la hora, y
 de una falla de la base solo el SQLSTATE y el nombre de la restricción (BR-CARGA-08). Nunca guarda
 el nombre del archivo, de la hoja, un código, un valor leído, el DETAIL de PostgreSQL ni la cookie.
+
+GET /api/cargas?seccion_id= (corte 2, BR-CARGA-20) responde la lista resumida de las cargas al
+alcance del usuario, de la más reciente a la más antigua. Sin seccion_id lista las de las secciones que
+app/permisos.secciones_visibles() da en PERIODO_VIGENTE, y con seccion_id, las de esa sección si
+app/permisos.puede_leer() la alcanza, o el 403 único si no, también para un entero que no es el de
+ninguna sección, como 0. Un seccion_id que no es un entero responde 422 con el texto de la forma
+inesperada.
 
 GET /api/cargas/{carga_id} responde la constancia, con el mensaje de cada rechazo y de cada aviso, y
 GET /api/cargas/{carga_id}/r17.xlsx el libro del R-17 de una carga PUBLICADA, con las cabeceras del
@@ -29,6 +42,7 @@ distinto revelaría qué identificadores existen (sección 9 del contrato, propu
 
 from __future__ import annotations
 
+import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -46,15 +60,28 @@ from abet_carga.constancia import HORA_DE_LIMA
 from app import permisos, sesion
 from app.configuracion import FORMA_INESPERADA, REGISTRO, ajustes_de, conexion, error
 
-router = APIRouter()
+# BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
+router = APIRouter(dependencies=[Depends(sesion.usuario_actual)])
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+CONFIRMACION_INVALIDA = "La sección confirmada no es la sección elegida. No se guardó nada."
+# reemplaza es un carga_id, un entero positivo sin signo, ceros a la izquierda ni decimales. seccion_id de la lista
+# admite cualquier entero, como el seccion_id de la ruta de subida, y uno que no existe recibe el 403 único.
+_ENTERO_POSITIVO = re.compile(r"[1-9][0-9]{0,17}")
+_ENTERO = re.compile(r"[+-]?[0-9]{1,18}")
 _SECCION_DE_LA_CARGA = "SELECT seccion_id FROM abet.carga WHERE carga_id = %s"
+# reemplaza y seccion_id se declaran solo en el esquema OpenAPI. Las rutas los leen después de comprobar el alcance,
+# como pide el orden de BR-CARGA-03, y no con la conversión de FastAPI, que respondería su 422 antes que el 403.
+_REEMPLAZA = {"name": "reemplaza", "in": "query", "required": False,
+              "schema": {"type": "integer", "minimum": 1}, "description": "Carga PUBLICADA que la nueva reemplaza."}
+_SECCION_ID = {"name": "seccion_id", "in": "query", "required": False, "schema": {"type": "integer"}}
 _MULTIPART = {
+    "parameters": [_REEMPLAZA],
     "requestBody": {
         "required": True,
         "content": {"multipart/form-data": {"schema": {
             "type": "object", "required": ["archivo"],
-            "properties": {"archivo": {"type": "string", "format": "binary"}},
+            "properties": {"archivo": {"type": "string", "format": "binary"},
+                           "confirmar_seccion": {"type": "string", "enum": ["true"]}},
         }}},
     }
 }
@@ -64,6 +91,13 @@ def _ajena() -> JSONResponse:
     return error(403, permisos.SIN_ALCANCE)
 
 
+def _entero(valores: list[str], forma: re.Pattern[str] = _ENTERO_POSITIVO) -> int | None:
+    """El único valor de un parámetro como entero de esa forma, o None si falta, se repite o tiene otra forma."""
+    if len(valores) != 1 or not forma.fullmatch(valores[0]):
+        return None
+    return int(valores[0])
+
+
 @router.post("/secciones/{seccion_id}/cargas", openapi_extra=_MULTIPART)
 async def subir(
     seccion_id: int,
@@ -71,28 +105,54 @@ async def subir(
     usuario: sesion.Usuario = Depends(sesion.usuario_actual),
     abierta: psycopg.Connection[Any] = Depends(conexion),
 ) -> Response:
-    if not await run_in_threadpool(permisos.puede_subir, abierta, usuario.usuario_id, seccion_id):
+    pide_reemplazo = "reemplaza" in request.query_params
+    alcance = permisos.puede_reemplazar if pide_reemplazo else permisos.puede_subir
+    if not await run_in_threadpool(alcance, abierta, usuario.usuario_id, seccion_id):
         return _ajena()
+    reemplazada = _entero(request.query_params.getlist("reemplaza")) if pide_reemplazo else None
+    if pide_reemplazo and reemplazada is None:
+        return error(422, FORMA_INESPERADA)
     try:
         async with request.form() as formulario:
             archivo = formulario.get("archivo")
             if not isinstance(archivo, UploadFile):
                 return error(422, FORMA_INESPERADA)
+            confirmaciones = formulario.getlist("confirmar_seccion")
+            if confirmaciones and confirmaciones != ["true"]:
+                return error(422, CONFIRMACION_INVALIDA)
             contenido = await archivo.read()
             nombre = archivo.filename or ""
     except Exception:  # noqa: BLE001 - un multipart mal formado es un cuerpo con otra forma
         return error(422, FORMA_INESPERADA)
-    return await run_in_threadpool(_cargar, abierta, request, contenido, nombre, seccion_id, usuario.usuario_id)
+    pedido = _Pedido(seccion_id, usuario.usuario_id, reemplazada, confirmar_seccion=bool(confirmaciones))
+    return await run_in_threadpool(_cargar, abierta, request, contenido, nombre, pedido)
 
 
-def _cargar(abierta: psycopg.Connection[Any], request: Request, contenido: bytes, nombre: str, seccion_id: int,
-            usuario_id: int) -> Response:
-    resultado = cargar(abierta, contenido, nombre_archivo=nombre, seccion_id=seccion_id, usuario_id=usuario_id,
-                       configuracion=ajustes_de(request).carga)
+class _Pedido:
+    """Sección, usuario y lo que pide la subida en el corte 2, ya revisados por la ruta."""
+
+    def __init__(self, seccion_id: int, usuario_id: int, reemplaza: int | None, *, confirmar_seccion: bool) -> None:
+        self.seccion_id, self.usuario_id = seccion_id, usuario_id
+        self.reemplaza, self.confirmar_seccion = reemplaza, confirmar_seccion
+
+
+def _cargar(abierta: psycopg.Connection[Any], request: Request, contenido: bytes, nombre: str,
+            pedido: _Pedido) -> Response:
+    resultado = cargar(abierta, contenido, nombre_archivo=nombre, seccion_id=pedido.seccion_id,
+                       usuario_id=pedido.usuario_id, configuracion=ajustes_de(request).carga,
+                       reemplaza=pedido.reemplaza, confirmar_seccion=pedido.confirmar_seccion)
     _registrar(resultado)
     if resultado.carga_id is None:
-        return error(resultado.codigo_http, resultado.mensaje or FORMA_INESPERADA)
-    return JSONResponse(constancia.armar(abierta, resultado.carga_id), status_code=resultado.codigo_http)
+        cuerpo: dict[str, Any] = {"detail": resultado.mensaje or FORMA_INESPERADA}
+        if resultado.requiere_confirmacion:
+            cuerpo["requiere_confirmacion"] = True
+        if resultado.carga_publicada is not None:
+            cuerpo["carga_publicada"] = resultado.carga_publicada
+        return JSONResponse(cuerpo, status_code=resultado.codigo_http)
+    cuerpo = constancia.armar(abierta, resultado.carga_id)
+    if resultado.aviso is not None:
+        cuerpo["aviso"] = resultado.aviso
+    return JSONResponse(cuerpo, status_code=resultado.codigo_http)
 
 
 def _registrar(resultado: ResultadoCarga) -> None:
@@ -111,6 +171,25 @@ def _registrar(resultado: ResultadoCarga) -> None:
 def _seccion_legible(abierta: psycopg.Connection[Any], usuario: sesion.Usuario, carga_id: int) -> bool:
     fila = abierta.execute(_SECCION_DE_LA_CARGA, (carga_id,)).fetchone()
     return fila is not None and permisos.puede_leer(abierta, usuario.usuario_id, int(fila[0]))
+
+
+@router.get("/cargas", openapi_extra={"parameters": [_SECCION_ID]})
+def listar_cargas(
+    request: Request,
+    usuario: sesion.Usuario = Depends(sesion.usuario_actual),
+    abierta: psycopg.Connection[Any] = Depends(conexion),
+) -> Response:
+    if "seccion_id" in request.query_params:
+        pedida = _entero(request.query_params.getlist("seccion_id"), _ENTERO)
+        if pedida is None:
+            return error(422, FORMA_INESPERADA)
+        if not permisos.puede_leer(abierta, usuario.usuario_id, pedida):
+            return _ajena()
+        secciones = [pedida]
+    else:
+        visibles = permisos.secciones_visibles(abierta, usuario.usuario_id, ajustes_de(request).periodo_vigente)
+        secciones = [visible.seccion_id for visible in visibles]
+    return JSONResponse(constancia.resumenes(abierta, secciones))
 
 
 @router.get("/cargas/{carga_id}")

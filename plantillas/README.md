@@ -100,7 +100,7 @@ Una fila por PI del plan, ordenados por SO y por número de PI (`abet.pi.so_nume
 | B17, B18 y B19 | Código del PI, como «5.1» | `v_r17_por_pi.pi` |
 | C17:D17, C18:D18 y C19:D19 | Descripción del PI (propuesta) | `abet.pi.descripcion` |
 | E17:F17, E18:F18 y E19:F19 | Instrumento de medición (propuesta) | `abet.instrumento.nombre` del plan de medición |
-| G17:I17, G18:I18 y G19:I19 | Descripción del instrumento, vacía y editable | Ninguna, porque la base no la guarda |
+| G17:I17, G18:I18 y G19:I19 | Descripción del instrumento, desde la base, y vacía si el PI no la tiene (BR-R17-11) | `abet.plan_medicion.descripcion_instrumento` del plan de medición (V1_11) |
 
 ### Bloque II, filas fijas de PI 24 a 26
 
@@ -118,6 +118,8 @@ Las filas siguen el orden del bloque I.
 | M26 | M25 / (M24 + M25) | Calculado por `r17.py` | `0%` |
 
 M24 a M26 repiten lo que calculaban las fórmulas de la fuente sobre F43:F184, que cuentan las mediciones de todos los PI juntas. E24:F26 trae seis reglas de formato condicional con umbrales fijos de 0,75, 0,79 y 0,8, con fuente roja por debajo de 0,8, y M26 trae una regla verde por encima de 0,8. Esos umbrales no siguen `META_LOGRO`, así que con una meta de 70 % los colores quedan en 80 %.
+
+Los conteos de M24 y M25 tampoco siguen `NIVEL_ESPERADO`, porque sus rótulos de K24 y K25 nombran los niveles 1 y 2 y los niveles 3 y 4. M26 coincide con la proporción conjunta de los PI del bloque II cuando el nivel esperado es 3, como en R-2026-BORRADOR. El cambio del 2026-11-18 de BR-R17-02 muestra que con R-PRUEBA-APROBADO, de nivel esperado 2, deja de coincidir.
 
 ### Recuadros y tabla de estudiantes
 

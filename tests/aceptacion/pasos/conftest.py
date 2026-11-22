@@ -16,8 +16,12 @@ lo que repiten sus Antecedentes y sus escenarios.
   viven en su propio módulo, y los que repiten varios viven aquí.
 - El estado de un escenario vive en la fixture ctx (clase Escenario), que guarda la respuesta, el
   conteo previo de las tablas de la carga, el archivo en uso y la carga a la que se refiere «esa carga».
-- Las etiquetas. Todo escenario con la etiqueta @corte2 se omite con su razón, porque la spec lo deja
-  para el corte 2 y el Back del corte 1 todavía no lo implementa.
+- La spec 006. La variante «programacion» parte sin los datos de 2026-2 y recibe en su plantilla la base de
+  partida de tests/cargas_de_prueba.base_de_partida_006(). El guion de la programación docente corre como
+  proceso aparte con las variables de libpq de la copia del escenario, y su archivo se arma en tmp_path.
+- Las etiquetas. Los escenarios del corte 2 corren desde T087, salvo los de US-20 (@US-20), que se omiten
+  con su razón, porque el código de acceso por correo espera a T018, el dominio y la cuenta de Resend de
+  Jefferson (T083 y T086).
 
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
@@ -25,6 +29,7 @@ versionan.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import importlib.util
 import io
@@ -52,7 +57,10 @@ CONTROLES = RAIZ / "db" / "plataforma" / "neon" / "controles_neon.sql"
 GUARDIA_SQL = "db/plataforma/neon/guardia_datos_inventados.sql"
 VARIAS_SQL = RAIZ / "db" / "datos" / "varias_secciones_2026_2_inventado.sql"
 ASIGNATURA = "450002"
-RAZON_CORTE_2 = "Escenario del corte 2 (@corte2), todavía sin implementar en el Back del corte 1."
+# Campos que un error del corte 2 suma a detail (contrato, sección 3.1).
+CAMPOS_EXTRA_DE_UN_ERROR = frozenset({"requiere_confirmacion", "carga_publicada"})
+RAZON_US_20 = ("Escenario de US-20 (corte 2), pendiente de T018, el dominio y la cuenta de Resend de Jefferson,"
+               " y de T083 y T086.")
 
 
 def _modulo_de_pruebas(nombre: str) -> ModuleType:
@@ -67,14 +75,15 @@ def _modulo_de_pruebas(nombre: str) -> ModuleType:
 
 
 A = _modulo_de_pruebas("api_de_prueba")
+C = _modulo_de_pruebas("cargas_de_prueba")
 
 
-# Omisión de los escenarios del corte 2
+# Omisión de los escenarios de US-20, los únicos del corte 2 que esperan a Jefferson
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
-        if "tests/aceptacion/pasos" in item.nodeid and item.get_closest_marker("corte2") is not None:
-            item.add_marker(pytest.mark.skip(reason=RAZON_CORTE_2))
+        if "tests/aceptacion/pasos" in item.nodeid and item.get_closest_marker("US-20") is not None:
+            item.add_marker(pytest.mark.skip(reason=RAZON_US_20))
 
 
 # Resumen de los pasos que no comprueban todo en el Back
@@ -108,7 +117,12 @@ VARIANTES = {
     "periodo": {},
     "varias": {"despues": (VARIAS_SQL,)},
     "guardia": {"guardia": True},
+    # Spec 006. Sin los datos de 2026-2, con el rol de la aplicación para GET /api/secciones, y con la base de
+    # partida que siembra tests/cargas_de_prueba.base_de_partida_006() en la plantilla (FR-012).
+    "programacion": {"datos_2026_2": False},
 }
+# Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
+SIEMBRAS = {"programacion": C.base_de_partida_006}
 
 
 class Plantillas:
@@ -119,7 +133,13 @@ class Plantillas:
 
     def de(self, variante: str) -> Any:
         if variante not in self.creadas:
-            self.creadas[variante] = self.pila.enter_context(self.base_desechable.abierta(**VARIANTES[variante]))
+            plantilla = self.pila.enter_context(self.base_desechable.abierta(**VARIANTES[variante]))
+            if variante in SIEMBRAS:
+                # La conexión se cierra antes de copiar, porque CREATE DATABASE ... TEMPLATE exige la plantilla sin
+                # conexiones.
+                with psycopg.connect(plantilla.conexion, autocommit=True) as conexion:
+                    SIEMBRAS[variante](conexion)
+            self.creadas[variante] = plantilla
         return self.creadas[variante]
 
     def copia(self, variante: str, pila: ExitStack) -> Any:
@@ -364,6 +384,16 @@ def _celda_pi(ctx: Escenario, nombre: str, pi: str, v: str, f: str) -> tuple[byt
 
 def _pi_vacio(ctx: Escenario, nombre: str, pi: str, f: str) -> tuple[bytes, str]:
     return _con_celda(ctx, nombre, f, pi, None), nombre
+
+
+def _pi_vacio_en_todas(ctx: Escenario, nombre: str, pi: str, n: str) -> tuple[bytes, str]:
+    """La columna del PI sin ningún nivel en las N filas de datos, y las demás columnas sin cambios (spec 004, T012)."""
+    export = _export(ctx, nombre)
+    assert len(export.filas) == int(n), f"el export trae {len(export.filas)} filas de datos y no {n}"
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in range(2, len(export.filas) + 2):
+        export = ctx.generador.con_celda(export, fila, pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
 
 
 def _columna_mas(ctx: Escenario, nombre: str, enc: str) -> tuple[bytes, str]:
@@ -639,6 +669,7 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
     (r'con el Username (?P<v>vacío|[0-9]+) en la fila (?P<f>[0-9]+)', _celda_username),
     (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _celda_pi),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en la fila (?P<f>[0-9]+)', _pi_vacio),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en sus (?P<n>[0-9]+) filas', _pi_vacio_en_todas),
     (r'con una columna más "(?P<enc>[^"]+)"', _columna_mas),
     (r'con un (?P<v>-?[0-9]+) en la columna (?P<pi>[0-9]\.[0-9]) de las (?P<n>[0-9]+) filas de datos', _nivel_en_todas),
     (r'con la hoja renombrada "(?P<hoja>[^"]+)"(?: y el nombre "(?P<otro>[^"]+)")?', _hoja),
@@ -749,7 +780,7 @@ def contenedor_ole_sin_cifrado(generador: ModuleType) -> bytes:
 
 # Antecedentes
 
-@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10)(?P<resto>.*)'))
+@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10|11)(?P<resto>.*)'))
 def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
     con_varias = "varias_secciones_2026_2_inventado.sql" in resto
     guardia = ctx.request.node.get_closest_marker("guardia_en_base") is not None
@@ -757,12 +788,16 @@ def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
-    if ultima == "10":
+    if ultima in ("10", "11"):
         # V1_10 reemplaza ck_carga_columna_encabezado por la regla J-19 y suma SIN_CALIFICACIONES a los motivos.
         definiciones = dict(ctx.filas("SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname IN"
                                       " ('ck_carga_columna_encabezado', 'ck_rechazo_fila_motivo')"))
         assert "[Aa][Bb][Ee][Tt]" in definiciones.get("ck_carga_columna_encabezado", ""), "falta la migración V1_10"
         assert "SIN_CALIFICACIONES" in definiciones.get("ck_rechazo_fila_motivo", ""), "falta la migración V1_10"
+    if ultima == "11":
+        # V1_11 suma abet.plan_medicion.descripcion_instrumento con ck_plan_medicion_descripcion (spec 005, US-51).
+        assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
+            "falta la migración V1_11"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"
     if con_varias:
         assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s", A.VARIAS_CORREO) == 1
@@ -800,6 +835,8 @@ def _sesion_iniciada(ctx: Escenario, correo: str, rol: str, numero: str | None, 
         assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE usuario_id = %s AND seccion_id = %s",
                        ctx.usuario_id(correo), seccion) == 1
     ctx.sesion(correo)
+    # La ruta 12 de la spec 004 se pide con la cookie de quien inició la sesión al último.
+    ctx.extras["con_sesion"] = correo
     if rol == "PROFESOR" and ctx.profesor is None:
         ctx.profesor = correo
 
@@ -887,7 +924,10 @@ def _la_respuesta_es(ctx: Escenario, codigo: str, e1: str | None, leidas: str | 
     assert respuesta.status_code == int(codigo), respuesta.text
     cuerpo = respuesta.json()
     if detail is not None:
-        assert cuerpo == {"detail": detail}
+        # El 422 que pide confirmar la sección y el 409 de la sección con carga publicada suman un solo campo más,
+        # que nombra la sección 3.1 del contrato. Ningún otro error trae más que detail.
+        assert cuerpo["detail"] == detail
+        assert set(cuerpo) - {"detail"} <= CAMPOS_EXTRA_DE_UN_ERROR, cuerpo
     if e1 or e2:
         assert cuerpo["estado"] == (e1 or e2)
     if leidas is not None:
@@ -1066,3 +1106,171 @@ def _seccion_sin_carga_en_estado(ctx: Escenario, numero: str, estado: str) -> No
 @then(parsers.re(r'la sección (?P<numero>[0-9]+) no tiene ninguna carga'))
 def _seccion_sin_ninguna_carga(ctx: Escenario, numero: str) -> None:
     assert ctx.cuenta("carga", "seccion_id = %s", ctx.seccion_id(numero)) == 0
+
+
+# Spec 004, los pasos que repiten resultados.feature y alcance_y_privacidad.feature
+
+EXPORTS_DE_VARIAS = {
+    ("450002", "412"): "sintetico_20262_450002_412.xlsx",
+    ("450010", "410"): "sintetico_20262_450010_410.xlsx",
+    ("450010", "412"): "sintetico_20262_450010_412.xlsx",
+}
+ASIGNADAS = {
+    "docente410@example.invalid": {("450002", "410")},
+    "docente411@example.invalid": {("450002", "411")},
+    "docente.varias@example.invalid": set(EXPORTS_DE_VARIAS),
+}
+
+
+@given('acceso.docente_seccion asigna la sección 410 de "450002" a "docente410@example.invalid", la 411 de "450002" a '
+       '"docente411@example.invalid" y la 412 de "450002" y las secciones 410 y 412 de "450010" a '
+       '"docente.varias@example.invalid", y no tiene filas de "coordinacion@example.invalid"')
+def _asignaciones_de_la_spec_004(ctx: Escenario) -> None:
+    filas = ctx.filas("SELECT u.correo, a.codigo, s.numero FROM acceso.docente_seccion d"
+                      " JOIN acceso.usuario_autorizado u USING (usuario_id) JOIN abet.seccion s USING (seccion_id)"
+                      " JOIN abet.asignatura a USING (asignatura_id)")
+    asignadas: dict[str, set[tuple[str, str]]] = {}
+    for correo, asignatura, numero in filas:
+        asignadas.setdefault(correo, set()).add((asignatura, numero))
+    assert asignadas == ASIGNADAS, asignadas
+
+
+@given("ninguna de las cinco secciones de 2026-2 tiene cargas")
+def _cinco_secciones_sin_cargas(ctx: Escenario) -> None:
+    assert ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.periodo p USING (periodo_id)"
+                   " WHERE p.codigo = '2026-2'") == 5
+    assert ctx.cuenta("carga") == 0
+
+
+@given(parsers.re(r'que "(?P<correo>[^"]+)" tiene publicadas sus tres secciones'))
+def _tres_secciones_publicadas(ctx: Escenario, correo: str) -> None:
+    for (asignatura, numero), nombre in EXPORTS_DE_VARIAS.items():
+        respuesta = ctx.subir(correo, ctx.de_inventados(nombre), nombre, numero, asignatura)
+        assert respuesta.status_code == 201, respuesta.text
+        assert respuesta.json()["estado"] == "PUBLICADA", respuesta.json()["estado"]
+        ctx.extras.setdefault("cargas_de", {})[(asignatura, numero)] = respuesta.json()["carga_id"]
+
+
+@given(parsers.re(r'que la sección (?P<numero>[0-9]+) de "(?P<asignatura>[0-9]+)" tiene una carga PUBLICADA de '
+                  r'"(?P<nombre>[^"]+)", subida por "(?P<quien>[^"]+)"'))
+def _seccion_con_carga_publicada(ctx: Escenario, numero: str, asignatura: str, nombre: str, quien: str) -> None:
+    respuesta = ctx.subir(quien, ctx.de_inventados(nombre), nombre, numero, asignatura)
+    assert respuesta.status_code == 201, respuesta.text
+    assert respuesta.json()["estado"] == "PUBLICADA", respuesta.json()["estado"]
+    ctx.extras.setdefault("cargas_de", {})[(asignatura, numero)] = respuesta.json()["carga_id"]
+
+
+def pedir_resultados(ctx: Escenario, periodo: str, **parametros: Any) -> Any:
+    """GET /api/resultados con la cookie de quien inició la sesión al último, o sin cookie si el escenario lo pide."""
+    if ctx.extras.get("sin_cookie"):
+        cliente = ctx.api.cliente()
+    else:
+        assert "con_sesion" in ctx.extras, "el escenario todavía no inició ninguna sesión"
+        cliente = ctx.sesion(ctx.extras["con_sesion"])
+    ctx.respuesta = cliente.get("/api/resultados", params={"periodo": periodo, **parametros})
+    return ctx.respuesta
+
+
+@when(parsers.re(r'se envía GET /api/resultados\?periodo=(?P<periodo>[0-9]+-[0-9]+)'))
+def _pide_resultados(ctx: Escenario, periodo: str) -> None:
+    pedir_resultados(ctx, periodo)
+
+
+# Spec 006, los pasos que repiten programacion_docente.feature y secciones_sin_docente.feature
+
+ENCABEZADOS_006 = ("periodo", "asignatura", "seccion", "correo", "curso_blackboard")
+ARCHIVO_BASE_006 = (
+    ("2026-2", "450002", "410", "docente410@example.invalid", "SINTETICO_20262_450002_410"),
+    ("2026-2", "450002", "411", "docente411@example.invalid", "SINTETICO_20262_450002_411"),
+)
+NOMBRE_006 = "programacion_20262_inventada.csv"
+
+
+@dataclass
+class ArchivoDeProgramacion:
+    """Encabezados y filas de datos del archivo de un escenario de la spec 006. La fila 2 es la primera de datos."""
+
+    encabezados: list[str] = field(default_factory=lambda: list(ENCABEZADOS_006))
+    filas: list[list[str]] = field(default_factory=lambda: [list(fila) for fila in ARCHIVO_BASE_006])
+
+    def a_bytes(self) -> bytes:
+        salida = io.StringIO(newline="")
+        escritor = csv.writer(salida, lineterminator="\r\n")
+        escritor.writerow(self.encabezados)
+        escritor.writerows(self.filas)
+        return salida.getvalue().encode("utf-8")
+
+
+def archivo_006(ctx: Escenario) -> ArchivoDeProgramacion:
+    """Archivo del escenario, que nace como el archivo base y cambia con los pasos que lo describen."""
+    return ctx.extras.setdefault("archivo_006", ArchivoDeProgramacion())
+
+
+def escribir_archivo_006(ctx: Escenario, archivo: ArchivoDeProgramacion, carpeta: Path | None = None) -> Path:
+    """Escribe el archivo en tmp_path, o en carpeta, y nunca dentro de tests/datos_inventados/."""
+    destino = (carpeta or ctx.request.getfixturevalue("tmp_path")) / NOMBRE_006
+    destino.write_bytes(archivo.a_bytes())
+    return destino
+
+
+def tres_tablas_006(ctx: Escenario) -> dict[str, list[tuple[Any, ...]]]:
+    """Filas completas de abet.seccion, acceso.usuario_autorizado y acceso.docente_seccion, más las credenciales."""
+    return {
+        "seccion": ctx.filas("SELECT * FROM abet.seccion ORDER BY seccion_id"),
+        "usuario_autorizado": ctx.filas("SELECT * FROM acceso.usuario_autorizado ORDER BY usuario_id"),
+        "docente_seccion": ctx.filas("SELECT * FROM acceso.docente_seccion ORDER BY docente_seccion_id"),
+        "credencial": ctx.filas("SELECT usuario_id FROM acceso.credencial ORDER BY usuario_id"),
+    }
+
+
+def correr_guion_006(ctx: Escenario, *argumentos: str, aplicar: bool = False, entorno: dict[str, str] | None = None,
+                     guion: Path | None = None) -> Any:
+    """Corre el guion contra la copia del escenario y guarda su corrida y las tres tablas de antes.
+
+    Sin argumentos, el guion recibe --periodo 2026-2 y el archivo del escenario escrito en tmp_path. El entorno
+    sale de tests/cargas_de_prueba.entorno_de_programacion(), que fija PGHOST, PGPORT, PGUSER y PGDATABASE de la
+    copia y exige el clúster desechable, así que el guion nunca cae en localhost:5432.
+    """
+    if not argumentos:
+        argumentos = ("--periodo", "2026-2", "--archivo", str(escribir_archivo_006(ctx, archivo_006(ctx))))
+    if aplicar:
+        argumentos = (*argumentos, "--aplicar")
+    ctx.extras["antes_006"] = tres_tablas_006(ctx)
+    corrida = C.correr_programacion(entorno or C.entorno_de_programacion(ctx.api.base.nombre), *argumentos,
+                                    guion=guion or C.GUION_006)
+    ctx.extras["corrida_006"] = corrida
+    return corrida
+
+
+@given("una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_11, la "
+       "vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni profesores")
+def _base_de_partida_006(ctx: Escenario) -> None:
+    ctx.crear_base("programacion")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
+        "falta la migración V1_11"
+    assert ctx.filas("SELECT cv.codigo FROM abet.catalogo_vigencia v JOIN abet.catalogo_version cv"
+                     " USING (catalogo_version_id) JOIN abet.periodo pe ON pe.periodo_id = v.periodo_id"
+                     " WHERE pe.codigo = '2026-2'") == [("AMB-2026",)]
+    planes = ctx.filas("SELECT a.codigo, string_agg(p.codigo, ',' ORDER BY p.codigo) FROM abet.plan_medicion pm"
+                       " JOIN abet.asignatura a USING (asignatura_id) JOIN abet.pi p USING (pi_id)"
+                       " JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id WHERE pe.codigo = '2026-2'"
+                       " GROUP BY a.codigo ORDER BY a.codigo")
+    assert planes == [("450002", "5.1,5.2,5.3"), ("450010", "2.1,2.2,5.1")], planes
+    assert ctx.uno("SELECT count(*) FROM abet.seccion") == 0
+    assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE rol = 'PROFESOR'") == 0
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion") == 0
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" activo con rol "(?P<rol>[A-Z]+)" y sin secciones en acceso\.docente_seccion'))
+def _activo_sin_secciones_006(ctx: Escenario, correo: str, rol: str) -> None:
+    assert ctx.filas("SELECT rol, activo FROM acceso.usuario_autorizado WHERE correo = %s", correo) == [(rol, True)]
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE usuario_id = %s", ctx.usuario_id(correo)) == 0
+
+
+@given(parsers.re(r'que el administrador corrió el guion con el archivo base y con --aplicar'))
+def _guion_aplicado_006(ctx: Escenario) -> None:
+    corrida = correr_guion_006(ctx, "--periodo", "2026-2", "--archivo",
+                               str(escribir_archivo_006(ctx, ArchivoDeProgramacion())), aplicar=True)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines()[-1] == "Cambios guardados.", corrida.stdout

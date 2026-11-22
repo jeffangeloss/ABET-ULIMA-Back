@@ -4,11 +4,55 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-23
+
+### Agregado
+
+- `db/herramientas/cargar_programacion.py` carga la programación docente post-matrícula (secciones, profesores y asignaciones) en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor (spec 006, US-55 a US-58).
+- La decisión abierta D-38 de la spec 001, el nivel esperado según el estadio del curso en la malla (INICIAL, REFUERZO o LOGRADO), para la Coordinación de Ambiental. Mientras no se decida rige un solo NIVEL_ESPERADO, el 3 de R-2026-BORRADOR, para todos los cursos (`specs/001-mvp-carga-r17/spec.md`). Ningún código cambia.
+- La descripción del instrumento de medición sale de la base (spec 005, US-51, BR-R17-11). V1_11 agrega `abet.plan_medicion.descripcion_instrumento` varchar(400) nula con `ck_plan_medicion_descripcion`, que exige al menos un carácter visible y ningún blanco a los lados con los 29 blancos de `str.isspace()`, y el R-17 la escribe en G17, G18 y G19 y deja vacía la celda de un PI sin ella. `abet_app` la lee y no la escribe. El guion repetible `db/datos/descripcion_instrumento_2026_2.sql` carga textos de prueba distintos para 5.1, 5.2 y 5.3 de 450002 en 2026-2, y la consulta de solo lectura `db/plataforma/neon/pi_sin_descripcion_instrumento.sql` lista los PI del plan sin descripción. El contenido real espera a D-34.
+- Spec 005 «Oportunidades de mejora en la carga, con semáforo, declaración y R-17 desde la base» (EP-05), con 10 historias auditadas (US-45 a US-54) que salen de 15 candidatas, 65 escenarios y 90 casos en Gherkin en español, FR-001 a FR-017, SC-001 a SC-007, D-35 a D-37 y J-29 a J-37, aprobada por Jefferson en el chat el 2026-11-18 (`specs/005-oportunidades-de-mejora/`). Ningún código cambia.
+- `specs/004-reportes-docente/audit.md`, con las 8 historias, los 37 escenarios y los 45 casos de la spec 004 aprobados, 12 de ellos en Vitest del Front, y las líneas Verification del 2026-11-18 de `resultados`, `acceso`, `r17` y `periodo` (T050, T051 y T060).
+- Ruta `GET /api/resultados?periodo=2026-2` (ruta 12 del contrato del Front) con los logros por SO y PI de las secciones al alcance del usuario, leídos de `abet.v_r17_por_pi` en una sola transacción `READ ONLY` con `REPEATABLE READ`, con los porcentajes como números JSON de un decimal, `en_meta` con la regla del R-17, la marca provisional por sección y una lista cerrada de claves sin datos de personas (US-37 a US-44, BR-RESULTADOS-01 a BR-RESULTADOS-11, T032).
+- `abet_carga/resultados.py`, con `en_meta()` y `cifra()`, que también usa `_plan_de_accion` del R-17 (T031).
+- `db/plataforma/neon/revisar_permisos_resultados.sql`, revisión de solo lectura de los permisos de `abet_app` que usa la ruta 12, sin migración (T020 y T021).
+- Pasos de pytest-bdd de `resultados.feature` y `alcance_y_privacidad.feature`, pruebas de la ruta con 150 secciones, con una segunda versión de catálogo y con un PI 5.10, y el recorrido de las rutas registradas (T030 y T033 a T035).
+- Spec viva `resultados` (BR-RESULTADOS-01 a BR-RESULTADOS-11) y BR-ACCESO-10 de la spec 004, con los cambios fechados de BR-ACCESO-07, BR-ACCESO-08, BR-R17-02, BR-PERIODO-01 y BR-PERIODO-04, los dos `.feature` definitivos y la regla de copia «con la columna X.Y vacía en sus N filas» (T010 y T012).
+- Spec 004 «Los logros del profesor por SO, solo en sus secciones» (EP-04), con 8 historias auditadas (US-37 a US-44) que salen de 22 candidatas, 37 escenarios y 45 casos en Gherkin en español, FR-001 a FR-021, SC-001 a SC-008, D-32 a D-34 y J-21 a J-28, aprobada por Jefferson en el chat el 2026-11-18 (`specs/004-reportes-docente/`). Ningún código cambia.
+- Reemplazo de la carga publicada de una sección con `POST /api/secciones/{seccion_id}/cargas?reemplaza={carga_id}`, para el profesor en su sección y el coordinador en cualquiera de la carrera (`app/permisos.puede_reemplazar()`, valor provisional de D-11). La carga nueva entra con `reemplaza_carga_id`, la anterior pasa a REEMPLAZADA en la misma transacción y nada se borra; un reemplazo RECHAZADO deja la anterior publicada y su `reemplaza_carga_id` nulo, el mismo archivo responde 200 con un aviso y una carga que no es la publicada responde 409 (US-18, BR-CARGA-19, T081).
+- `GET /api/cargas?seccion_id=` con la lista resumida de las cargas al alcance del usuario, de la más reciente a la más antigua, con `sha256_corto`, `motivo`, `reemplaza_carga_id` y `reemplazada_por`, y sin `seccion_id`, las de las secciones del periodo vigente (US-19, BR-CARGA-20, T082).
+- Confirmación de la sección de un export que no la declara, con un 422 que pregunta «¿Confirma que es de la sección 410 de 450002 en 2026-2?» y trae `requiere_confirmacion`. Con el campo `confirmar_seccion=true` la carga se publica con el AVISO SECCION_SIN_DECLARAR (US-21, BR-CARGA-18, T084).
+- La constancia suma `reemplaza_carga_id` y `reemplazada_por`, y el 409 de la sección con carga publicada suma `carga_publicada` (contrato del Front, secciones 3.1, 6 y 7).
+- Pasos de `reemplazo_y_cargas.feature` y de US-21 ejecutables con pytest-bdd, y pruebas unitarias del reemplazo, la confirmación, la lista y el alcance (T087).
+
+### Cambiado
+
+- La spec 005 pasa a registrar por indicador una oportunidad de mejora o una buena práctica, fijada por el semáforo, y la spec 006 nueva carga la programación docente post-matrícula. Las dos quedan en borrador para la aprobación de Jefferson.
+- D-10 queda decidida el 2026-11-19: los datos reales de estudiantes entran a Neon y a Vercel. La guardia `ck_estudiante_codigo_inventado` sale de las dos ramas de Neon y la constitución, AGENTS.md, el README y la spec 001 lo registran. El repositorio sigue solo con datos inventados.
+- `specs/001-mvp-carga-r17/audit.md` aprueba el escenario «Prueba de humo de punta a punta con el export que trae el 5 en la fila 3» de US-17 con la corrida del 2026-11-18 contra la vista previa de `develop`, así que US-17 queda con 8 escenarios aprobados y 3 pendientes, y SC-001 vuelve a sumar los 107 escenarios del corte 1.
+- Los routers de `secciones` y `cargas` declaran la dependencia de sesión en `APIRouter(dependencies=…)`, como el de `resultados`, así que una ruta nueva de ellos no responde sin sesión (BR-ACCESO-10 y J-25).
+- BR-R17-02 de `specs/features/r17/r17.spec.md` y el apartado «Bloque II» de `plantillas/README.md` documentan que M24 a M26 del R-17 siguen el corte fijo de sus rótulos, los niveles 1 y 2 frente a los niveles 3 y 4, y no NIVEL_ESPERADO. Una prueba nueva de `tests/test_r17.py` lo fija con R-PRUEBA-APROBADO, de nivel esperado 2, y el R-17 que genera `r17.py` no cambia.
+- `plantillas/README.md` da G17:I19 como «desde la base» en lugar de «vacía y editable», y `r17_desde_la_base.feature` deja definitivos los escenarios de US-51 con los Antecedentes en V1_11, mientras V1_12 no existe (FR-017).
+- El export que no declara su sección en la hoja ni en el nombre recibe en los tres formatos la pregunta de US-21 en lugar del 422 del corte 1, el escenario del corte 1 que lo comprobaba sale de `carga.feature` y los dos de la spec 003 esperan la pregunta (D-02).
+- Los escenarios de US-20 siguen omitidos, ahora con la razón de T018, el dominio y la cuenta de Resend de Jefferson.
+- `spec.md` de la spec 001 cita el texto vigente del 422 sin sección, el de la spec 003, en US-13 y en D-02, y deja escrito que la pregunta de US-21 vale para los tres formatos, como el comentario de US-21 en `carga.feature` (FR-013 de la spec 003).
+- La spec 003 queda cerrada, salvo D-30 (T005). `specs/003-exports-blackboard/audit.md` registra la corrida final de T053 sobre `develop` y corrige lo que refutan tres verificadores, el escenario del `.xlsx` real de US-26 comprueba también `abet.v_r17_por_pi`, `carga-export.spec.md` y `r17.spec.md` reciben su línea del 2026-11-17, y la sección `[0.1.0]` suma la línea de US-30 que faltaba (T053, T060 y T061).
+- `.env.example` nombra las cinco variables sin valor y deja en su comentario el valor del piloto de `PERIODO_VIGENTE`, `CONJUNTO_REGLAS` y `GUARDIA_DATOS_INVENTADOS`, como pide el escenario «Las variables del Back están en Vercel y no en el repositorio» de US-17, que queda aprobado. Una copia tal cual ya no arranca la API y deja la guardia encendida (`tests/test_env_example.py`).
+- `specs/001-mvp-carga-r17/tasks.md` cierra T074, con las contraseñas de los tres usuarios de prueba en las dos ramas de Neon, y `audit.md` la saca de las tareas abiertas.
+- `specs/001-mvp-carga-r17/audit.md` registra la versión 0.1.0 en Production con su sección «Despliegue», y US-17 queda con 6 escenarios aprobados contra Vercel y Neon y 5 pendientes con su razón (T079).
+- fastapi 0.162.0, starlette 1.10.0, pydantic 2.14.2 y pillow 13.0.0 en `uv.lock` y `requirements.txt`, `uv_build` hasta 0.13 en `[build-system]` y setup-uv v10.3.3 en la CI, todos con al menos 14 días publicados, en un solo cambio que reemplaza los PR de Dependabot #5, #8, #15, #16, #19 y #20.
+
+### Seguridad
+
+- pillow 13.0.0 cierra los 12 avisos vigentes de pillow 12.3.0, entre ellos el crítico GHSA-5x8w-8jj5-q52h, y pydantic 2.14.2, con pydantic-core 2.50.2, cierra GHSA-qpmf-fgh3-ff25 y GHSA-3r8g-cqwr-jr29 (PR de Dependabot #8 y #20).
+- opentelemetry-api 1.45.2, que entra por fastapi y tiene 19 días publicada, cierra GHSA-mf5v-w3w3-f6cg de opentelemetry-api 1.45.1.
+
 ## [0.1.0] - 2026-11-17
 
 ### Agregado
 
 - Carga del export real de Blackboard en sus tres formatos, `.xlsx`, `.csv` (UTF-8 con BOM, comas y comillas) y `.xls` de texto (UTF-16 LE con BOM y tabuladores), con el lector elegido por el contenido (spec 003, US-27, US-28 y J-18).
+- La sección de un export de texto (`.csv` o `.xls`), que no tiene hoja, sale del nombre del archivo y se coteja con la sección y el periodo elegidos, con SECCION_NO_COINCIDE y PERIODO_NO_COINCIDE (spec 003, US-30 y BR-CARGA-11).
 - Reconocimiento de las columnas de PI con sus encabezados reales, como «ABET SO5.1 [Total Pts: 100 Score]» y «ABET SO 5.3 […]», en el lector y en la base, con `V1_10__encabezado_pi_con_prefijo.sql` (spec 003, US-26 y J-19).
 - El nivel «3.00», «3,00» o «4.0» que Blackboard escribe en el texto vale el entero (US-29, D-03).
 - Un export sin ningún nivel en los PI del plan queda RECHAZADO con SIN_CALIFICACIONES y deja libre la sección (US-36, D-31).

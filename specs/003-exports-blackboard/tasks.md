@@ -43,12 +43,12 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en la 
 - [x] T050 [Back] Pasos de `exports_blackboard.feature` en `tests/aceptacion/pasos/test_exports_blackboard_feature.py` [US-26..US-36] · Hecha el 2026-11-09; 104 casos aprobados
 - [x] T051 [Back] Regla 2 de `scripts/preflight.sh` por contenido y sus casos en `scripts/probar_preflight.sh` [US-35] · Hecha el 2026-11-09; 46 casos de `probar_preflight.sh`, con los nombres que no son ASCII de la revisión de seguridad
 - [x] T052 [Back] Revisión de seguridad del lector de texto con un subagente con el modelo de la sesión y esfuerzo alto, y corrección de lo que confirme [US-31] [US-32] · Hecha el 2026-11-09; 11 hallazgos, cuatro corregidos en el lector y uno en la revisión previa, y los demás anotados en `docs/devops.md` o aceptados
-- [ ] T053 [Back] [Front] Suite completa del Back y del Front, `correr_pruebas.sh` y la revisión previa [US-26..US-36]
+- [x] T053 [Back] [Front] Suite completa del Back y del Front, `correr_pruebas.sh` y la revisión previa [US-26..US-36] · Hecha el 2026-11-17 sobre `develop` (Back e981a31, Front 7f6c72b); pytest da 1187 passed y 19 skipped, `correr_pruebas.sh` «RESULTADO: todo pasó» con 65 de 65 rechazos, la revisión previa 46 y 28 casos bien y 0 mal, Vitest 85 de 85 y la compilación sin errores, y la CI de `develop` termina en verde en los dos commits
 
 ## Phase 6: Auditoría
 
-- [ ] T060 [Back] `specs/003-exports-blackboard/audit.md` y la Verification fechada de `carga-export.spec.md` y `r17.spec.md` [US-26..US-36]
-- [ ] T061 [Back] [Front] `MEMORIA.md` y `CHANGELOG.md` de cada repositorio, también en cada commit de las fases anteriores [US-26..US-36]
+- [x] T060 [Back] `specs/003-exports-blackboard/audit.md` y la Verification fechada de `carga-export.spec.md` y `r17.spec.md` [US-26..US-36] · Hecha el 2026-11-17; tres verificadores intentan refutar `audit.md`, que se corrige con sus hallazgos (omitidas, FR-012 a FR-015, criterios de éxito, revisión de seguridad y D-30), el escenario del `.xlsx` real de US-26 suma `abet.v_r17_por_pi` y las dos specs vivas reciben su línea fechada
+- [x] T061 [Back] [Front] `MEMORIA.md` y `CHANGELOG.md` de cada repositorio, también en cada commit de las fases anteriores [US-26..US-36] · Hecha el 2026-11-17; `MEMORIA.md` está en los 15 commits de la spec 003 y de su salida a `develop` y `CHANGELOG.md` en los 10 con cambio visible (FR-015 de `audit.md`), y `[0.1.0]` del Back suma la línea de US-30 que faltaba
 
 ## Phase 7: Despliegue
 

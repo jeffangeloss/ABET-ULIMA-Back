@@ -12,6 +12,10 @@
 respaldo/
 !tests/datos_inventados/
 !tests/datos_inventados/**
+# El archivo de la programación docente trae correos de profesores y nunca entra, tampoco a la carpeta de datos
+# inventados, porque sus pruebas lo arman en tmp_path (spec 006, FR-009). Va después de las negaciones para
+# seguir valiendo dentro de tests/datos_inventados/, como segunda barrera detrás de *.csv.
+programacion_*.csv
 # La plantilla del R-17 vaciada (T034) es la única planilla fuera de esa carpeta, y scripts/preflight.sh
 # la admite solo en esta ruta exacta (reglas 1 y 2).
 !plantillas/R017_ambiental_general.xlsx

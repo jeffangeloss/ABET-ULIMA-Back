@@ -403,7 +403,7 @@ Característica: Carga del export de Blackboard en la base
   # La sección la elige el profesor y el sistema la coteja con el nombre de hoja y, si la hoja no la
   # declara, con el nombre del archivo. El curso distinto usa SECCION_NO_COINCIDE y el periodo distinto
   # usa PERIODO_NO_COINCIDE, que agrega V1_09. Si ni la hoja ni el nombre del archivo declaran la sección,
-  # el corte 1 responde 422 sin rastro (valor provisional de D-02) y el corte 2 pide la confirmación de US-21.
+  # el corte 2 pide la confirmación de US-21 (valor del corte 2 de D-02), que reemplaza al 422 del corte 1.
   @US-13 @corte1
   Escenario: El export de la 411 subido en la 410 se rechaza
     Cuando el profesor sube "export_inventado_411.xlsx" a la sección 410
@@ -441,14 +441,9 @@ Característica: Carga del export de Blackboard en la base
     Cuando el profesor sube esa copia a la sección 410
     Entonces la respuesta es 201 y su cuerpo trae estado "PUBLICADA", filas_leidas 11, filas_aceptadas 11 y filas_rechazadas 0
 
-  # Rige solo en el corte 1. Al entrar US-21, el primer escenario de US-21 reemplaza a este.
-  @US-13 @corte1
-  Escenario: Un export que no declara su sección se detiene sin dejar rastro
-    Dado una copia de "sintetico_20262_450002_410.xlsx" con la hoja renombrada "Hoja1" y el nombre "notas.xlsx"
-    Cuando el profesor sube esa copia a la sección 410
-    Entonces la respuesta es 422 con detail "El archivo no indica su sección. Suba el export de Blackboard sin cambiar el nombre del archivo ni el de su hoja."
-    Y abet.archivo_origen, abet.carga, abet.rechazo_fila y abet.estudiante no ganan ninguna fila
-    Y ninguna carga queda en estado "EN_CURSO"
+  # El escenario del corte 1 «Un export que no declara su sección se detiene sin dejar rastro» se retira con
+  # T084, como anunciaba su comentario, porque el primer escenario de US-21 lo reemplaza con sus mismas
+  # comprobaciones de la base.
 
   # US-14: Descartar nombres y valores leídos
 
@@ -485,14 +480,18 @@ Característica: Carga del export de Blackboard en la base
   # «confirmar_seccion» igual a "true", y la carga registra en abet.rechazo_fila un AVISO con el motivo
   # SECCION_SIN_DECLARAR, que V1_09 agrega junto con COLUMNA_CODIGO_AUSENTE, PI_REPETIDO y
   # PERIODO_NO_COINCIDE. carga.subida_por dice quién confirma. La respuesta 422 a la espera de la
-  # confirmación y el campo requiere_confirmacion son (propuesta).
+  # confirmación y el campo requiere_confirmacion son (propuesta). La pregunta no nombra la hoja, así que vale
+  # para los tres formatos de la spec 003. Un .csv o un .xls no tiene hoja y su sección sale solo del nombre
+  # (US-30), y el ejemplo «notas 410.csv» de exports_blackboard.feature recibe la misma pregunta. Con eso, T084
+  # revisa el escenario 1 de US-21 que nombra FR-013 de la spec 003, sin cambiar su texto.
   @US-21 @corte2
   Escenario: Un export que no declara su sección espera la confirmación sin escribir nada
     Dado una copia de "sintetico_20262_450002_410.xlsx" con la hoja renombrada "Hoja1" y el nombre "notas.xlsx"
     Cuando el profesor sube esa copia a la sección 410
     Entonces la respuesta es 422 con detail "El archivo no indica su sección. ¿Confirma que es de la sección 410 de 450002 en 2026-2?"
     Y el cuerpo de la respuesta trae requiere_confirmacion verdadero
-    Y abet.archivo_origen, abet.carga y abet.estudiante no ganan ninguna fila
+    Y abet.archivo_origen, abet.carga, abet.rechazo_fila y abet.estudiante no ganan ninguna fila
+    Y ninguna carga queda en estado "EN_CURSO"
 
   @US-21 @corte2
   Escenario: La sección confirmada publica la carga y la constancia lo dice

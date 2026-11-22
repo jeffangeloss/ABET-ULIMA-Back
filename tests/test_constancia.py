@@ -44,7 +44,7 @@ CAMPOS = {
     "carga_id", "estado", "seccion", "nombre_archivo", "hoja", "sha256", "filas_de_datos", "filas_leidas",
     "filas_aceptadas", "filas_rechazadas", "mensaje", "columnas", "rechazos", "avisos", "conjunto_reglas",
     "conjunto_reglas_estado", "parametros_pendientes", "provisional", "programa_version", "subida_por",
-    "iniciada_en", "terminada_en",
+    "iniciada_en", "terminada_en", "reemplaza_carga_id", "reemplazada_por",
 }
 # Huellas de shasum -a 256 sobre los archivos de tests/datos_inventados/.
 HUELLA_CORRECTO = "c92c5056de54d0bb3500ce84bf3f991027741f32ec0e0432dc697ecabee5578f"
@@ -184,6 +184,8 @@ def test_br_r17_10_la_constancia_de_la_carga_publicada_trae_el_cuerpo_plano_del_
         "provisional": True,
         "programa_version": "v0.0.0-prueba",
         "subida_por": "docente410@example.invalid",
+        "reemplaza_carga_id": None,
+        "reemplazada_por": None,
     }
     # Un puntaje sin decimales viaja como entero, como en el ejemplo del contrato, y no como 4.0.
     assert json.dumps(cuerpo["columnas"]) == (
@@ -405,3 +407,70 @@ def test_br_r17_10_una_carga_que_no_existe_no_tiene_constancia(base_410: tuple[A
         _armar(base, max(ids.values()) + 1000)
     assert error.value.mensaje == "La carga no existe."
     assert error.value.codigo_http == 404
+
+
+
+# BR-R17-10 y BR-CARGA-20 (corte 2). Reemplazo en la constancia y lista resumida de cargas.
+
+CAMPOS_DE_LA_LISTA = {
+    "carga_id", "estado", "seccion", "nombre_archivo", "sha256_corto", "filas_leidas", "filas_aceptadas",
+    "filas_rechazadas", "motivo", "reemplaza_carga_id", "reemplazada_por", "subida_por", "iniciada_en", "terminada_en",
+}
+
+
+def _anterior(base: Any, carga_id: int) -> int:
+    return int(_fila_de_la_base(base, "SELECT reemplaza_carga_id FROM abet.carga WHERE carga_id = %s", carga_id)[0])
+
+
+def _resumenes(base: Any, *secciones: int) -> list[dict[str, Any]]:
+    with psycopg.connect(base.conexion_app) as conexion:
+        return constancia.resumenes(conexion, list(secciones))
+
+
+def test_br_r17_10_corte2_la_constancia_dice_a_cual_reemplaza_y_cual_la_reemplaza(
+    base_con_error: tuple[Any, int],
+) -> None:
+    base, vigente = base_con_error
+    anterior = _anterior(base, vigente)
+    cuerpo_vigente, cuerpo_anterior = _armar(base, vigente), _armar(base, anterior)
+    assert (cuerpo_vigente["estado"], cuerpo_vigente["reemplaza_carga_id"], cuerpo_vigente["reemplazada_por"]) == (
+        "PUBLICADA", anterior, None)
+    assert (cuerpo_anterior["estado"], cuerpo_anterior["reemplaza_carga_id"], cuerpo_anterior["reemplazada_por"]) == (
+        "REEMPLAZADA", None, vigente)
+
+
+def test_br_carga_20_la_lista_resumida_va_de_la_mas_reciente_a_la_mas_antigua(
+    base_con_error: tuple[Any, int],
+) -> None:
+    base, vigente = base_con_error
+    anterior = _anterior(base, vigente)
+    seccion_id = _fila_de_la_base(base, "SELECT seccion_id FROM abet.carga WHERE carga_id = %s", vigente)[0]
+    lista = _resumenes(base, seccion_id)
+
+    assert [item["carga_id"] for item in lista] == [vigente, anterior]
+    assert all(set(item) == CAMPOS_DE_LA_LISTA for item in lista)
+    primera = lista[0]
+    assert primera["seccion"] == {"seccion_id": seccion_id, "asignatura": "450002", "numero": "410",
+                                  "periodo": "2026-2"}
+    assert (primera["nombre_archivo"], primera["sha256_corto"]) == ("export_inventado_410_con_error.xlsx",
+                                                                    HUELLA_CON_ERROR[:12])
+    assert (primera["estado"], primera["filas_leidas"], primera["filas_aceptadas"], primera["filas_rechazadas"]) == (
+        "PUBLICADA", 11, 10, 1)
+    assert (primera["motivo"], primera["reemplaza_carga_id"], primera["reemplazada_por"]) == (None, anterior, None)
+    assert (lista[1]["estado"], lista[1]["reemplazada_por"]) == ("REEMPLAZADA", vigente)
+    for item in lista:
+        assert HORA_ISO_DE_LIMA.fullmatch(item["iniciada_en"]) and HORA_ISO_DE_LIMA.fullmatch(item["terminada_en"])
+    # Lo que no debe pasar: la huella completa no viaja en la lista, y una lista sin secciones queda vacía.
+    assert HUELLA_CON_ERROR not in json.dumps(lista)
+    assert _resumenes(base) == []
+
+
+def test_br_carga_20_la_lista_resumida_trae_el_motivo_de_la_carga_rechazada_entera(
+    base_410: tuple[Any, dict[str, int]],
+) -> None:
+    base, ids = base_410
+    seccion_id = _fila_de_la_base(base, "SELECT seccion_id FROM abet.carga WHERE carga_id = %s", ids["sin_5_2"])[0]
+    por_id = {item["carga_id"]: item for item in _resumenes(base, seccion_id)}
+    assert por_id[ids["sin_5_2"]]["motivo"] == "PI_DEL_PLAN_AUSENTE"
+    assert por_id[ids["correcta"]]["motivo"] is None
+    assert not _claves(list(por_id.values())) & {"valor", "valor_leido", "sha256", "hoja"}
