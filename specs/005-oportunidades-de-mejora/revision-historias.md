@@ -5,6 +5,7 @@
 **Entrada**: 15 historias candidatas (C-01 a C-15), escritas desde el pedido literal de Jefferson del 2026-11-18. Ese pedido incluye el semáforo de la sección en P4, la declaración de causas y acciones con su borrador, el R-17 solo con esa declaración, la descripción del instrumento desde la base y el botón atrás del navegador
 **Salida**: 10 historias (US-45 a US-54 de la spec), que absorben C-02, C-10, C-15, el punto (a) de C-14 y la parte A de C-09. C-08 y C-12 pasan a después, C-14 (b) pasa a después, y la parte B de C-09 queda sin escenario propio
 **Fuentes**: `ABET_SIS_MED/notas_spec005/contexto_y_candidatas.md`, `auditoria_necesidad.md`, `auditoria_solapamiento.md`, `auditoria_verificabilidad.md`, `critica_arquitectura.md` y `sintesis.md`, en la carpeta de notas de la sesión del plan (fuera del repositorio)
+**Cambio del 2026-11-21**: una segunda revisión, con 21 candidatas que salen de los correos de la carrera sobre las oportunidades de mejora y las buenas prácticas, está al final de este archivo, en «Revisión del cambio del 2026-11-21». Lo que sigue hasta esa sección es la revisión del 2026-11-18 sin cambios
 
 ## Método
 
@@ -119,3 +120,137 @@ El crítico anota además que los anchos de B a I que da el contexto no coincide
 
 - De la carrera, D-35 (valor de CORTE_ROJO), D-36 (declaración de una sección que alcanza la meta) y D-37 (corrección de la declaración después de descargar), con su valor provisional en la spec. D-34 de la spec 004 sigue abierta con su dueño.
 - De Jefferson, J-29 a J-37, con el valor que propone la spec.
+
+## Revisión del cambio del 2026-11-21
+
+**Fecha**: 2026-11-21
+**Entrada**: 21 candidatas, escritas desde tres ángulos por tres proponentes. C-P01 a C-P07 miran al profesor, C-C01 a C-C07 a la coordinación y C-B01 a C-B07 a la base. Las tres parten de tres correos de la carrera. Claudia León, secretaria académica de Ingeniería Ambiental, pide que el profesor registre en la plataforma las oportunidades de mejora (OM) y las buenas prácticas (BP), que el estado de cada acción nazca como «Propuesta» y que el responsable y el plazo queden para la coordinación y quizás para el R-18. Pide además «incluso cuando se supera el valor de referencia, deberíamos hacer el análisis de causas hasta llegar a la BP». Mechelle Prado resume la reunión del 18-11, en la que el docente completa las OM y las BP como paso previo para habilitar la descarga, y pide un nombre estándar para la actividad de Blackboard. Claudia recuerda también que la capacitación de los profesores es en la semana 14 y su registro en la semana 15, o en la 16 como máximo
+**Salida**: ninguna historia nueva en la spec 005. Cambian en su lugar US-45 a US-50 y US-52 a US-54 donde corresponde, y US-51 queda igual. C-C01 pasa a la spec 006 nueva (`specs/006-programacion-docente/`), desde US-55. Diez candidatas quedan fuera de alcance con su destino, y las otras diez se fusionan en las historias que cambian
+**Alcance**: el que Jefferson aprueba en el chat el 2026-11-21 («Sí, escríbelo»), que toma el alcance que recomienda el crítico de arquitectura con los cambios que registra la columna «Cómo queda». El cambio queda en borrador hasta que Jefferson lo reapruebe (T008 de `tasks.md`)
+**Fuentes**: `historias_spec005_om_bp_2026-11-21.json` (candidatas, veredictos de las tres lentes y crítico de arquitectura) e `insumos_spec005_2026-11-21.md` (transcripción de los correos, estructura de la propuesta de R-17 de Mechelle sin datos personales y estado del sistema), en la carpeta de notas de la sesión del plan (fuera del repositorio). Ningún código, nombre ni curso de la propuesta de Mechelle entra a este archivo
+
+### Método
+
+El método es el de la revisión del 2026-11-18. Cada candidata parte refutada, pasa por las lentes de necesidad, de solapamiento y tamaño y de verificabilidad, y queda en el sprint si a lo sumo una lente la marca REFUTADA o MOVER_A_DESPUES. Los tres proponentes y los cuatro auditores corren con Opus 5.5. La lente de verificabilidad coteja cada escenario con `develop` del Back (migraciones V1_01 a V1_11, `R__vista_r17_por_pi.sql`, `abet_carga/r17.py`, `resultados.py` y `lector.py`, `app/permisos.py`, `db/pruebas/pruebas.sql`, `crear_rol_app.sql`, `controles_neon.sql`, `plantillas/README.md` y `tests/aceptacion/pasos/conftest.py`) y con el contrato y `frontend.md` del Front. Ningún auditor escribe en los worktrees, abre una base, corre pruebas ni lee la propuesta de Mechelle. El crítico de arquitectura ataca 26 decisiones técnicas, que este archivo numera AD-31 a AD-56 para seguir la numeración de la primera revisión.
+
+### Veredictos por candidata
+
+| Candidata | Título de la candidata | Necesidad | Solapamiento y tamaño | Verificabilidad | Cómo queda |
+| --- | --- | --- | --- | --- | --- |
+| C-P01 | Registrar por indicador la OM o la BP en P4 | C | C | F con C-B01 | US-47 reescrita, con una causa y una acción por PI, el tipo fijado por el semáforo y la sección «Análisis por indicador» de P4. US-48 guarda los campos de cada PI con una sola versión por carga, y US-53 lleva sus CHECK a las tablas por PI. Absorbe C-B01, el tipo de C-P02, C-P03, el cuerpo cerrado de C-C03, la Q16 de C-B03 y C-B06 |
+| C-P02 | El hallazgo y el tipo de registro de cada PI salen del semáforo, también cuando supera la meta | F con C-P01 | F con C-P01 | C | US-45, con `hallazgo` y `tipo_registro` por PI en la ruta 13 y `tipo_de_registro()` en `abet_carga/resultados.py`, y US-47, con el hallazgo al comienzo del bloque de cada PI. D-39 fija el tipo y D-36 se propone cerrar con la frase de Claudia |
+| C-P03 | La descarga del R-17 se habilita solo con todos los PI registrados | F con C-P01 | F con C-P01 | F con C-B01 | US-49 conserva su regla, porque la ruta 16 acepta solo una declaración completa, y cambia sus textos a «cada indicador». La ruta 16 responde 422 «Complete la causa y la acción de cada indicador.» (propuesta), y Q17 vigila la completitud. El 422 que nombra los PI faltantes y el contador de avance no entran |
+| C-P06 | El R-17 escribe la OM o la BP de cada PI desde la base | C | F con C-B02 | F con C-B02 | Se fusiona con C-B02 en US-50. La hoja «Acciones por indicador» queda fuera (D-41) |
+| C-P04 | Ver la ficha del R-17 en P4 antes de descargarlo | M | M | C | Fuera de alcance, después de la semana 16. P4 mostrará los resultados por PI con el semáforo cuando se construya US-46 |
+| C-P05 | Ver la rúbrica de mi sección según su estadio | R | M | M | Fuera de alcance, después de la semana 16, con D-06 y D-38 |
+| C-P07 | Cada registro nace con estado Propuesta y sin responsable ni plazo | F con C-C03 | M | F con C-C03 | Se fusiona con C-C03. V1_12 no lleva columna de estado (AD-43) |
+| C-C01 | Cargar la programación docente del ciclo desde el archivo post-matrícula | C | C | C | Spec 006 nueva, desde US-55, sin migración y antes de la semana 14. Su escenario del correo se retitula «Un correo con mayúsculas o espacios se normaliza», y la contraseña sigue fuera del guion (D-45 de la spec 006) |
+| C-C02 | El R-17 lleva el nombre del docente de la sección desde la base | M | M | M | Fuera de alcance, con D-12 de la spec 001. La sección ya sale de la base en D11 del R-17 |
+| C-C03 | La acción declarada queda en estado Propuesta, sin responsable ni plazo en P4 | C | F con C-P01 | C | US-47. La ruta 14 deriva `estado` PROPUESTA en cada indicador declarado sin guardarlo, y las rutas 15 y 16 rechazan con 422 un cuerpo con `responsable`, `plazo` o `estado` |
+| C-C04 | Un aviso nombra la columna ABET que el lector no reconoce y el nombre estándar que espera | C | P | C | La regla de las lentes la deja en el sprint, pero el alcance aprobado la saca. El aviso de columna mal nombrada va después de la semana 16, y D-43 fija en su lugar el nombre estándar provisional «ABET SO4.1», que el lector ya acepta |
+| C-C05 | Coordinador de curso y coordinador de área como asignaciones con alcance propio | M | M | M | Fuera de alcance, en la spec del R-18 (D-42) |
+| C-C06 | El coordinador de curso incorpora la acción al R-18 con responsable y plazo y la deja Revisada | M | M | M | Fuera de alcance, en la spec del R-18, y absorbe C-B07 |
+| C-C07 | El coordinador de área aprueba o ajusta la acción y el R-18 de la asignatura sale con su estado | M | M | M | Fuera de alcance, en la spec del R-18, que espera la plantilla oficial |
+| C-B01 | V1_12 guarda un registro por PI con su tipo OM o BP en lugar de un texto por carga | F con C-P01 | F con C-P01 | C | Se fusiona con C-P01. V1_12 se rediseña con cuatro tablas (J-38), con los permisos exactos de `abet_app` sin DELETE y el escenario del INSERT directo con un PI ajeno |
+| C-B02 | El R-17 compone los recuadros A y B desde los registros por PI sin tocar la plantilla oficial | F con C-P06 | C | C | US-50 reescrita, con un párrafo por PI y un prefijo sin cifras en B29:I31 y B34:I36, la plantilla intacta y el tope de alto de fila validado en la ruta 16 (J-39) |
+| C-B03 | Consultas de control de la declaración por PI (Q16 ampliada, Q17 y Q18) | F con C-P01 | P | C | Q16 ampliada a las tablas por PI en US-53, y Q17 nueva de completitud en US-53, que US-49 cita. La comparación de la foto con la vista y Q18 no entran (AD-37) |
+| C-B04 | La muestra para el archivo ABET (Bajo, Medio y Alto) queda en la base sin texto | R | M | M | Fuera de alcance, después de la semana 16 |
+| C-B05 | La base no guarda texto libre por estudiante mientras la carrera no decida la observación del evaluador | R | R | C | Fuera de alcance. La observación por alumno no entra a la base, y Q19 no entra (AD-54) |
+| C-B06 | El reemplazo hereda el análisis por PI y recalcula su tipo con las cifras nuevas | F con C-P01 | M | C | US-54 reescrita por `pi_id`, solo para los PI que la carga nueva reconoce, con el tipo recalculado por su semáforo. El aviso del tipo anterior no entra, y la historia se construye al final (J-41) |
+| C-B07 | El estado de la acción de mejora (Propuesta, Revisada, Aprobada) se registra como eventos | F con C-C06 | F con C-C06 | F con C-C06 | Fuera de alcance, fusionada con C-C06 en la spec del R-18 |
+
+Cuentas por lente.
+
+| Lente | S | C | F | P | M | R |
+| --- | --- | --- | --- | --- | --- | --- |
+| Necesidad | 0 | 5 | 8 | 0 | 5 | 3 |
+| Solapamiento y tamaño | 0 | 3 | 6 | 2 | 9 | 1 |
+| Verificabilidad | 0 | 10 | 5 | 0 | 6 | 0 |
+
+Tres desacuerdos se resuelven con el alcance aprobado. El hallazgo de C-P02 entra, aunque las lentes de necesidad y de solapamiento lo sacan por repetir la tabla de P4, porque el crítico lo sostiene (AD-42) y la hoja «Acciones» de la propuesta de Mechelle trae un hallazgo automático por PI. La parte A de C-C04, que solo cambia el mensaje de PI_DEL_PLAN_AUSENTE, no entra, y el riesgo del nombre de la actividad lo cubre D-43 antes de la capacitación. C-B06 queda dentro de US-54, aunque la lente de solapamiento la mueve a después, porque la herencia por `pi_id` es la forma de US-54 con V1_12 rediseñada.
+
+### Choques de numeración y de diseño entre las candidatas
+
+| Choque | Lo reportan | Resolución |
+| --- | --- | --- |
+| Dos listas de decisiones con los mismos números y otro sentido (D-39 a D-45 y J-38 a J-42) | Solapamiento y verificabilidad | Una sola lista, en la tabla de renumeración de abajo |
+| Q17 en C-P03 y en C-B03 con reglas distintas, y Q18 a Q20 repartidas sin reservar | Solapamiento y verificabilidad | Q17 es solo la completitud (AD-37). Q18 a Q20 no se usan. La rama `docs/002-capstone`, sin fusionar, usa Q16 a Q20 con otro sentido y tendrá que renumerar al entrar, como su V1_10 |
+| P7 nombra a la vez la rúbrica y la revisión del coordinador | Solapamiento y verificabilidad | El cambio no agrega pantallas, y las dos quedan fuera de alcance |
+| SIN_DATO como OM obligatoria (C-P01, C-P02 y C-P03) frente a sin registro (C-B01 y C-B02) | Las tres lentes y el crítico | Sin registro obligatorio, y el R-17 escribe «5.3 · Sin calificaciones en esta carga.» (propuesta, D-40), con el número de cada PI |
+| Estado como columna con DEFAULT (C-P07) frente a estado derivado (C-C03 y C-B07) | Solapamiento, verificabilidad y crítico | Derivado en la ruta 14 y sin columna (AD-43) |
+| OM y BP frente a OPORTUNIDAD_MEJORA y BUENA_PRACTICA, causas frente a causa, y 700 frente a 800 | Necesidad y solapamiento | OPORTUNIDAD_MEJORA y BUENA_PRACTICA, `causa` y `accion` en singular, y 800 puntos de código (J-39) |
+| Foto del logro y la meta, que solo hace falta si el prefijo lleva cifras | Necesidad y solapamiento | El prefijo va sin cifras y la foto se guarda igual como evidencia del ciclo (J-40) |
+
+### Renumeración de las decisiones propuestas
+
+| En el JSON de la revisión | Sentido | Número final |
+| --- | --- | --- |
+| D-39 de las dos listas | Qué registra el profesor por PI y quién fija el tipo | D-39 |
+| D-43 de la primera lista y D-40 de la segunda | Si un PI SIN_DATO exige registro | D-40 |
+| D-41 de la primera lista | Dónde van las OM y las BP en el R-17 oficial | D-41 |
+| D-42 de la primera lista | Responsable, plazo y estados Revisado y Aprobado | D-42 |
+| D-45 de la primera lista y la pregunta sobre el nombre de la actividad | Nombre estándar de la actividad de Blackboard | D-43 |
+| D-36, ya abierta | Si la sección en la meta registra | D-36, que se propone cerrar |
+| D-08 de la spec 001, ya abierta | Los enunciados de B28 y B33 hablan de «no alcanzar el indicador» | D-08, sin cambio de la plantilla |
+| La pregunta sobre el archivo de la programación | Formato, dueño y fecha del archivo | D-44 de la spec 006 |
+| La pregunta sobre la cuenta del profesor | Si el guion crea la cuenta | D-45 de la spec 006 |
+| J-38 de las dos listas | Forma de V1_12 | J-38 |
+| J-39 de las dos listas | Tope por campo | J-39, con 800 |
+| J-40 de la segunda lista | Foto de logro, meta y semáforo | J-40 |
+| J-41 de la primera lista y J-42 de la segunda | Orden de construcción | J-41 |
+| D-40 y D-44 de la primera lista, D-41 y D-42 de la segunda, y J-40 y J-41 de la primera y la segunda | Rúbrica por estadio, ficha de la propuesta, muestra, observación por alumno, pantalla P7 y columnas reservadas | Sin número, porque quedan fuera de alcance |
+
+### Veredicto del crítico de arquitectura
+
+| N.º | Decisión | Veredicto | Lo que adopta el cambio |
+| --- | --- | --- | --- |
+| AD-31 | Un registro por PI, con cabecera por carga y una tabla hija por PI, en lugar de un par A y B por carga | SE_SOSTIENE | J-38 y US-47. Una columna jsonb perdería los CHECK por columna y la FK a `abet.carga_columna` |
+| AD-32 | Rediseñar V1_12 antes de construirla y dejarla solo con las tablas de mejora | SE_SOSTIENE | V1_12 no existe en el repositorio ni en Neon, así que se rediseña sin migración correctiva. Toda definición de datos ajena a la mejora va en V1_13 o después, y Jefferson reaprueba el cambio antes de construir (T008) |
+| AD-33 | Claves de `abet.mejora_declaracion_pi` y sus FK compuestas | SE_SOSTIENE | Clave primaria (`declaracion_id`, `pi_id`), `carga_id` no nulo, FK a la cabecera por (`declaracion_id`, `carga_id`) y FK (`carga_id`, `pi_id`) a `abet.carga_columna` por `uq_carga_columna_pi`. Los tipos usan los códigos largos OPORTUNIDAD_MEJORA y BUENA_PRACTICA |
+| AD-34 | El Back fija el tipo, y el CHECK de tipo lo ata a `logro_pct >= meta_pct` | CAMBIAR | `tipo_de_registro()` en `abet_carga/resultados.py` con el semáforo, la foto de semáforo, logro y meta con columnas nulas y un CHECK de coherencia entre tipo y semáforo. Si D-39 admite una OM en un PI VERDE, basta con quitar ese CHECK |
+| AD-35 | Qué PI cubre la declaración que habilita el R-17 | CAMBIAR | D-40. La declaración cubre cada PI de la carga con al menos una medición calificada, y un PI SIN_DATO no exige registro |
+| AD-36 | Foto del logro, la meta y el semáforo en cada fila de la declaración | SE_SOSTIENE | J-40. La foto conserva lo que vio el profesor, y un cambio posterior de la meta del conjunto BORRADOR no obliga a declarar otra vez. El hallazgo no se guarda, porque una función pura lo vuelve a armar |
+| AD-37 | Q17 que compara la foto con `abet.v_r17_por_pi` (C-B03) y Q17 de completitud (C-P03) | CAMBIAR | Q17 es solo la completitud, de 0 filas, igual en `pruebas.sql` y en `controles_neon.sql`. La comparación de la foto no es control, porque un cambio legítimo de la meta la pondría en rojo, y con J-40 tampoco pide una declaración nueva |
+| AD-38 | Una sola versión del borrador por carga en la cabecera `abet.mejora_borrador` | SE_SOSTIENE | US-48. Las rutas 15 y 16 llevan el arreglo `indicadores` y el PUT reemplaza el conjunto de los PI en la misma transacción que sube la versión |
+| AD-39 | Tope fijo de 700 u 800 puntos de código por campo | CAMBIAR | J-39. 800 puntos de código por campo, y la ruta 16 rechaza con 422 una declaración cuyos recuadros A o B compuestos no caben en el alto de fila, con la misma función de `r17.py` que fija el alto de las filas 31 y 36 |
+| AD-40 | A y B compuestos con un párrafo por PI y su prefijo de tipo, sin tocar la plantilla ni B28 ni B33 | SE_SOSTIENE | US-50 y D-41. El prefijo va sin cifras, como «5.2 · Oportunidad de mejora. …» (propuesta), porque las cifras ya salen en el bloque II |
+| AD-41 | Hoja nueva «Acciones por indicador» en el R-17 | DUDOSA | No entra. D-41 deja la hoja aparte para después |
+| AD-42 | Hallazgo automático y tipo de registro por indicador en la ruta 13 | SE_SOSTIENE | US-45. El hallazgo usa el logro sobre calificados y la meta, como «5.2: 63,6 % en Satisfactorio o más, meta 80,0 %» (propuesta), y el Front lo copia sin calcularlo. El promedio de nivel no entra |
+| AD-43 | Columna `estado` con DEFAULT 'PROPUESTA' y un CHECK con REVISADO y APROBADO | CAMBIAR | Sin columna de estado. La ruta 14 deriva PROPUESTA en cada indicador declarado, y la revisión futura irá en una tabla de eventos propia (D-42) |
+| AD-44 | Las rutas 15 y 16 rechazan con 422 un cuerpo con claves fuera del contrato | SE_SOSTIENE | US-47. Responsable, plazo y «Cómo sabremos que mejoró» tampoco entran como columnas nulas en V1_12 |
+| AD-45 | Roles nuevos de coordinador de curso y de área frente a asignaciones con alcance | CAMBIAR | Fuera de alcance, en la spec del R-18. La alternativa de asignaciones por periodo y asignatura queda como insumo de esa spec |
+| AD-46 | Registro en P4 con un bloque por PI frente a una pantalla nueva | SE_SOSTIENE | US-47. La sección «Análisis por indicador» va debajo de «Cómo va su sección», sin pantalla ni dirección nuevas, y lleva la nota de US-53 |
+| AD-47 | Pantalla P7 con la ruta 17 para la rúbrica de la sección | DUDOSA | Fuera de alcance |
+| AD-48 | Ficha del R-17 en la ruta 13, con estadio, meta y estudiantes evaluados | DUDOSA | Fuera de alcance. La ruta 13 no suma la descripción del PI ni el instrumento en este cambio |
+| AD-49 | Guion repetible de la programación docente, en seco por omisión y con `--aplicar` en una transacción | SE_SOSTIENE | Spec 006, sin migración, con la consulta de control de secciones sin docente |
+| AD-50 | Nombre del docente en `acceso.usuario_autorizado.nombre` | DUDOSA | Fuera de alcance, con D-12 de la spec 001 y nunca en V1_12 |
+| AD-51 | Motivo nuevo COLUMNA_ABET_NO_RECONOCIDA de tipo AVISO | CAMBIAR | Fuera de alcance. D-43 fija el nombre estándar antes de la capacitación |
+| AD-52 | Revisión del coordinador de curso, aprobación del área y R-18 | DUDOSA | Fuera de alcance, en la spec del R-18, con eventos de solo INSERT por (`declaracion_id`, `pi_id`) |
+| AD-53 | Muestra Bajo, Medio y Alto con DELETE para `abet_app` | CAMBIAR | Fuera de alcance |
+| AD-54 | Q19, que ninguna tabla de `abet` unida a un estudiante tenga texto libre | SE_SOSTIENE | No entra, porque el cambio no agrega texto por estudiante y la observación por alumno no entra a la base. Vuelve con la spec que agregue una tabla unida a estudiantes |
+| AD-55 | Herencia del análisis por `pi_id` en el reemplazo, con el tipo recalculado | SE_SOSTIENE | US-54 con prioridad P2, al final del orden de J-41, sin el aviso del tipo anterior |
+| AD-56 | Q16 ampliada, CHECK sin códigos ni correos por columna y permisos exactos | SE_SOSTIENE | US-53. `abet_app` recibe INSERT y UPDATE de columnas exactas en las dos tablas del borrador e INSERT en las dos de la declaración, sin DELETE. Un PI vaciado en el borrador queda con `causa` y `accion` nulas por UPDATE |
+
+### Hechos del código que corrigen supuestos de las candidatas
+
+- `abet.v_r17_por_pi` expone el código del PI y el número del SO, no `pi_id`, y no trae `n_calificados` ni CORTE_ROJO, que la ruta 13 lee aparte de `abet.parametro_valor`.
+- `uq_carga_columna_pi` es UNIQUE (`carga_id`, `pi_id`) en V1_07, así que sostiene la FK de las tablas por PI.
+- `crear_rol_app.sql` prohíbe DELETE en todas las tablas y fija listas exactas de INSERT por tabla y por columna.
+- `_franja()` de `r17.py` suma B7:I7 a las 45 celdas combinadas de la plantilla cuando la carga es provisional, y las filas 29 a 31 se comparten con la tabla K28:Q31.
+- El alto de fila de Excel llega a 409 puntos, así que un tope de 2000 por campo con saltos libres ya puede pasarlo, y 13 de las 47 asignaturas de `abet.asignatura_so` (61 filas en V1_03) tributan a más de un SO, con planes que pueden pasar de 3 PI.
+- `_ENCABEZADO_DE_PI` de `abet_carga/lector.py` exige el código N.M, así que no acepta «ABET-SO-PI» con guiones ni «ABET SO4 [» sin PI.
+- `_ALCANCE` de `app/permisos.py` da la sección por `acceso.docente_seccion` solo al rol PROFESOR, y `asignar_claves.py` vive en `ABET_SIS_MED/herramientas_neon`, fuera del repositorio.
+- La 412 de 450002 y `docente.varias@example.invalid` están en `db/datos/varias_secciones_2026_2_inventado.sql`, y sus cifras de 81,8 %, 54,5 % y 90,9 % coinciden con `semaforo.feature`. Con D-39, esa carga da BP, OM y BP, y es el ejemplo de un PI sobre el 80 % que pide Claudia.
+- Q16 y `puede_declarar()` todavía no existen, porque T039 y T032 siguen abiertas.
+
+### Respuestas para la carrera que son hechos y no historias
+
+- La sección ya sale sola de la base en D11 del R-17, y el nombre del docente espera D-12.
+- Las rúbricas maestras están en `abet.rubrica_nivel`, una por PI con niveles -1 a 5 y sin estadio.
+- La columna de la muestra para el archivo ABET de la propuesta es manual, y el sistema no elige muestras.
+
+### Decisiones que salen de la revisión del 2026-11-21
+
+- De la carrera, D-39 (tipo de registro fijado por el semáforo, con un registro por PI), D-40 (un PI SIN_DATO no exige registro), D-41 (dónde van las OM y las BP en el R-17 oficial), D-42 (responsable, plazo y estados Revisado y Aprobado, fuera de esta spec) y D-43 (nombre estándar de la actividad de Blackboard, urgente antes de la capacitación de la semana 14), con su valor provisional en la spec. D-36 se propone cerrar con la frase de Claudia, y D-08 sigue abierta con los enunciados de B28 y B33.
+- De Jefferson, J-38 (cuatro tablas en V1_12), J-39 (tope de 800), J-40 (foto de logro, meta y semáforo) y J-41 (orden de construcción), con el valor que propone la spec.
+- De la spec 006, D-44, D-45 y J-42.
