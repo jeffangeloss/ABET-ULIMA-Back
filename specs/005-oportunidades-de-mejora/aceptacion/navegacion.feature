@@ -5,6 +5,9 @@
 # botón atrás del navegador lleve a la pantalla anterior de la aplicación y no saque al usuario de la página
 # (C-09, parte A, de la síntesis de la auditoría).
 #
+# El cambio del 2026-11-21 (análisis por indicador en P4) no cambia US-52. Los registros de cada PI tampoco
+# viajan en history.state, porque viven en el borrador de la base (US-48), y P4 los vuelve a pedir al volver.
+#
 # Este archivo usa solo datos inventados, con correos del dominio reservado example.invalid. Ninguna
 # contraseña aparece escrita aquí, porque la prueba inicia las sesiones con una contraseña generada al azar,
 # sin guardarla en el repositorio.

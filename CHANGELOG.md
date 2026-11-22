@@ -24,6 +24,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Cambiado
 
+- La spec 005 pasa a registrar por indicador una oportunidad de mejora o una buena práctica, fijada por el semáforo, y la spec 006 nueva carga la programación docente post-matrícula. Las dos quedan en borrador para la aprobación de Jefferson.
 - D-10 queda decidida el 2026-11-19: los datos reales de estudiantes entran a Neon y a Vercel. La guardia `ck_estudiante_codigo_inventado` sale de las dos ramas de Neon y la constitución, AGENTS.md, el README y la spec 001 lo registran. El repositorio sigue solo con datos inventados.
 - `specs/001-mvp-carga-r17/audit.md` aprueba el escenario «Prueba de humo de punta a punta con el export que trae el 5 en la fila 3» de US-17 con la corrida del 2026-11-18 contra la vista previa de `develop`, así que US-17 queda con 8 escenarios aprobados y 3 pendientes, y SC-001 vuelve a sumar los 107 escenarios del corte 1.
 - Los routers de `secciones` y `cargas` declaran la dependencia de sesión en `APIRouter(dependencies=…)`, como el de `resultados`, así que una ruta nueva de ellos no responde sin sesión (BR-ACCESO-10 y J-25).
