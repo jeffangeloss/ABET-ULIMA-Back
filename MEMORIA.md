@@ -13,7 +13,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-22
-- **Rama de trabajo**: `docs/registro-version-0.2.0`, que registra la versión 0.2.0 en Production
+- **Rama de trabajo**: `docs/007-experiencia-por-cuenta`, con la spec 007 en borrador
 - **Versión publicada**: 0.2.0, con el tag `v0.2.0` sobre 138dd80 de `main` (PR #41) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.1.0 del 2026-11-17
 - **Último cambio**: la spec 006 queda construida: `db/herramientas/cargar_programacion.py` y su SQL cargan la programación docente post-matrícula en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor. Antes, el 2026-11-21, Jefferson aprueba el cambio de la spec 005 y la spec 006 (PR #38)
 - **En curso**: el PR de esta rama, que espera la CI y el permiso de Jefferson para fusionarlo (T060). Antes de la primera corrida en Neon (T063), Jefferson decide si el informe real, que trae correos de profesores, puede pasar por un agente, y qué se hace con las secciones 410 y 411 inventadas de 450002 que siguen en la rama principal. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
@@ -36,6 +36,26 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-22 18:27 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 aprobada
+- Quién: Jefferson aprueba en el chat la spec 007 («Sí, apruébala»). Claude Code, sin subagentes, registra la aprobación.
+- Qué cambió: el Status de la spec 007, `tasks.md`, `specs/README.md` y las notas de la documentación del Front pasan de borrador a aprobada.
+- Por qué: la aprobación es la fusión del PR o el «apruebo» explícito de Jefferson.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa en el commit.
+- Lo que no debe hacer, cómo se probó: el commit cambia solo líneas de estado y esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la fusión y la construcción de la etapa A (US-59 a US-63).
+
+### 2026-11-22 18:18 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 en borrador, lo importante para cada cuenta en cada momento
+- Quién: Jefferson pide en el chat mejorar la experiencia con specs en Gherkin que muestren lo importante para cada cuenta y en cada momento («también mejora la UX…», «Sí, sigue»). Claude Code arma un workflow de diez subagentes: tres proponen 18 candidatas (profesor, coordinación y lo transversal), tres lentes y un crítico de arquitectura las auditan, un redactor escribe la spec y un revisor y un corrector arreglan 13 problemas, uno bloqueante sobre el orden de construcción.
+- Qué cambió: en el Back, `specs/007-experiencia-por-cuenta/` (spec.md, revision-historias.md, plan.md, tasks.md y cinco .feature con 35 escenarios) y su línea en `specs/README.md`.
+- Por qué: la capacitación de los profesores empieza el 2026-11-23 y el registro va del 30-11 al 12-12, así que cada cuenta necesita ver qué le falta y qué hacer en cada pantalla.
+- Lo que debe hacer, cómo se probó: el analizador de Gherkin del Back lee los cinco .feature (5, 12, 8, 4 y 6 escenarios) y `bash scripts/preflight.sh` no encuentra fallas.
+- Lo que no debe hacer, cómo se probó: ningún código, escenario de otra spec ni la base cambian; la spec 007 cita la 005 y la 006 sin repetirlas.
+- Correcciones: el revisor encuentra que el orden de construcción no ponía primero la spec 006, y el corrector fija spec 006, etapa A de la 007, núcleo de la 005 y etapa B.
+- Cómo se reporta: esta entrada, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: la aprobación de Jefferson y las decisiones D-46 y D-47 de la carrera (a quién acude un profesor sin secciones y si la coordinación ve los correos de los profesores atrasados).
 
 ### 2026-11-22 17:30 (Lima) · docs/registro-version-0.2.0 · Versión 0.2.0 en Production
 - Quién: Jefferson autoriza publicar en el chat («Sí, publícala») después de correr la prueba final. Claude Code migra la rama principal de Neon a V1_11, abre y junta los PR «Versión 0.2.0» de los dos repositorios, comprueba Production y escribe este registro.
