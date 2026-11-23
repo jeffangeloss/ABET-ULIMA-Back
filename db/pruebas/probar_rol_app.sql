@@ -101,7 +101,7 @@ FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 JOIN acceso.usuario_autorizado u ON u.correo = 'docente411@example.invalid'
 WHERE s.numero = '411';
 
@@ -310,7 +310,7 @@ FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo IN ('rol_sin_5_2.xlsx', 'rol_5_1_repetido.xlsx')
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 JOIN acceso.usuario_autorizado u ON u.correo = 'docente410@example.invalid'
 WHERE s.numero = '410';
 
@@ -406,6 +406,7 @@ DECLARE
             || '|' || (SELECT string_agg(u.correo || ':' || u.rol || ':' || u.activo, ',' ORDER BY u.correo) FROM acceso.usuario_autorizado u)
             || '|' || (SELECT count(*) FROM acceso.docente_seccion) || '|' || (SELECT count(*) FROM acceso.credencial)
             || '|' || (SELECT count(*) FROM acceso.sesion) || '|' || (SELECT count(*) FROM acceso.intento_fallido)
+            || '|' || (SELECT count(*) FROM acceso.coordinacion_alcance)
     $f$;
 BEGIN
     EXECUTE v_foto INTO v_antes;
@@ -479,7 +480,13 @@ BEGIN
                    VALUES (repeat('b', 64), now() - interval '1 hour')$q$, 'intento_fallido'),
         ('P41', $q$UPDATE acceso.intento_fallido SET intentado_en = now() - interval '1 hour'$q$, 'intento_fallido'),
         ('P42', 'DELETE FROM acceso.intento_fallido', 'intento_fallido'),
-        ('P43', 'UPDATE abet.rechazo_fila SET pi_id = NULL', 'rechazo_fila')
+        ('P43', 'UPDATE abet.rechazo_fila SET pi_id = NULL', 'rechazo_fila'),
+        ('P44', $q$INSERT INTO acceso.coordinacion_alcance (usuario_id, carrera_id)
+                   SELECT usuario_id, (SELECT carrera_id FROM abet.carrera WHERE codigo = 'IND')
+                   FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'$q$, 'coordinacion_alcance'),
+        ('P45', $q$UPDATE acceso.coordinacion_alcance SET carrera_id = carrera_id$q$, 'coordinacion_alcance'),
+        ('P46', 'DELETE FROM acceso.coordinacion_alcance', 'coordinacion_alcance'),
+        ('P47', 'TRUNCATE acceso.coordinacion_alcance', 'coordinacion_alcance')
     ) AS t (id, sentencia, objeto) ORDER BY id LOOP
         v_total := v_total + 1;
         v_estado := NULL;
@@ -503,6 +510,29 @@ BEGIN
         RAISE EXCEPTION 'FALLA N08: la base cambió después de las sentencias denegadas';
     END IF;
     RAISE NOTICE 'ok N08 %/% sentencias denegadas al rol y la base sin cambios (la 410 sigue con 33 mediciones)', v_ok, v_total;
+END $$;
+ROLLBACK;
+
+-- N09 (spec 008, US-70). El rol lee acceso.coordinacion_alcance, con la fila de la carrera AMB de la coordinación de
+-- prueba, y SELECT es su único privilegio en esa tabla. P44 a P47 de N08 prueban que no la escribe.
+BEGIN;
+SET LOCAL ROLE :"rol_app";
+DO $$
+DECLARE
+    v_rol text := current_setting('prueba.rol_app');
+    v_privilegios text;
+BEGIN
+    IF (SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN abet.carrera c ON c.carrera_id = ca.carrera_id
+         WHERE c.codigo = 'AMB') <> 1 THEN
+        RAISE EXCEPTION 'FALLA N09: el rol debe leer la fila de la carrera AMB de la coordinación de prueba';
+    END IF;
+    SELECT string_agg(p, ',' ORDER BY p) INTO v_privilegios
+    FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS p
+    WHERE has_table_privilege(v_rol, 'acceso.coordinacion_alcance', p);
+    IF v_privilegios IS DISTINCT FROM 'SELECT' THEN
+        RAISE EXCEPTION 'FALLA N09: el rol tiene % en acceso.coordinacion_alcance y debe tener solo SELECT', v_privilegios;
+    END IF;
+    RAISE NOTICE 'ok N09 el rol solo lee acceso.coordinacion_alcance';
 END $$;
 ROLLBACK;
 

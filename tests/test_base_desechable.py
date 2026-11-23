@@ -195,7 +195,11 @@ def test_sin_rol_ni_datos_la_base_trae_solo_las_migraciones(crear_base_demo: Cal
     base = crear_base_demo(rol_app=False, datos_2026_2=False)
     assert (base.rol_app, base.conexion_app) == (None, None)
     with psycopg.connect(base.conexion) as conexion:
-        assert _uno(conexion, "SELECT count(*) FROM abet.pi") == 17
+        # AMB-2026 de V1_03 y, desde la spec 008, IND-2026 de V1_12, cada uno con sus PI.
+        assert _uno(conexion, "SELECT count(*) FROM abet.pi p JOIN abet.catalogo_version cv USING (catalogo_version_id)"
+                              " WHERE cv.codigo = 'AMB-2026'") == 17
+        assert _uno(conexion, "SELECT count(*) FROM abet.pi p JOIN abet.catalogo_version cv USING (catalogo_version_id)"
+                              " WHERE cv.codigo = 'IND-2026'") == 21
         assert _uno(conexion, "SELECT count(*) FROM abet.seccion WHERE curso_blackboard LIKE 'SINTETICO_20262_%'") == 0
         assert _uno(conexion, "SELECT count(*) FROM acceso.usuario_autorizado") == 0
 

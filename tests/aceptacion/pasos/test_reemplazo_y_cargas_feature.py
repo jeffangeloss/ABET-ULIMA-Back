@@ -148,7 +148,7 @@ def _carga_directa(ctx: Escenario, conexion: psycopg.Connection, numero: str, re
     carrera, reglas = ctx.filas(
         "SELECT (SELECT pm.carrera_id FROM abet.plan_medicion pm JOIN abet.seccion s"
         " ON s.asignatura_id = pm.asignatura_id AND s.periodo_id = pm.periodo_id WHERE s.seccion_id = %s LIMIT 1),"
-        " (SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s)", seccion, A.REGLAS)[0]
+        " (SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB'))", seccion, A.REGLAS)[0]
     archivo = conexion.execute(
         "INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)"
         " VALUES (%s, 'archivo_de_prueba.xlsx', 'Hoja_de_prueba', 11) RETURNING archivo_id",
@@ -515,7 +515,8 @@ def _r17_de_b(ctx: Escenario, p1: str, p2: str, p3: str) -> None:
 @then(parsers.re(r'cada una de las consultas de control (?P<lista>Q[0-9]{2}(?:, Q[0-9]{2})* y Q[0-9]{2}) devuelve 0 filas'))
 def _cada_control_en_cero(ctx: Escenario, lista: str) -> None:
     consultas = _consultas_de_control()
-    assert sorted(consultas) == [f"Q{n:02d}" for n in range(1, 15)]
+    # Q18 a Q21 llegan con la spec 008 (FR-021), y estos escenarios nombran solo consultas de Q01 a Q14.
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
     for nombre in lista.replace(" y ", ", ").split(", "):
         assert ctx.filas(consultas[nombre]) == [], f"{nombre} devuelve filas"
 

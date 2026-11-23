@@ -215,13 +215,16 @@ def test_la_base_de_la_spec_008_nombra_cada_pieza_que_falta_con_su_tarea(arnes: 
     assert arnes.piezas_que_faltan(piezas, tmp_path) == []
 
 
-def test_la_forma_del_catalogo_pide_la_referencia_y_su_generador(arnes: ModuleType) -> None:
+def test_la_forma_del_catalogo_pide_la_referencia_y_su_generador(arnes: ModuleType, tmp_path: Path) -> None:
     resto = ("con las migraciones V1_01 a V1_11 y la referencia db/referencia/industrial_2026.json de 7 SO, 21 PI y 53 "
              "asignaturas, 15 de ellas también en AMB-2026")
     variante, piezas = arnes.forma_de_la_base_008(resto)
     assert variante == "catalogo_industrial"
-    # La referencia ya está en el repositorio (T026), y el generador llega con T020.
-    assert arnes.piezas_que_faltan(piezas) == ["db/herramientas/generar_v1_12.py (T020)"]
+    # La referencia está en el repositorio desde T026 y el generador desde T020, así que no falta ninguna pieza, y en
+    # una raíz vacía faltan las dos con su tarea.
+    assert arnes.piezas_que_faltan(piezas) == []
+    assert arnes.piezas_que_faltan(piezas, tmp_path) == ["db/referencia/industrial_2026.json (T026)",
+                                                        "db/herramientas/generar_v1_12.py (T020)"]
 
 
 def test_la_variante_del_catalogo_aplica_solo_hasta_v1_11(modulo_base_desechable: ModuleType, arnes: ModuleType) -> None:

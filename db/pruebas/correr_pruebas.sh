@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Corre las pruebas de la base sin Flyway, sobre bases desechables.
-#   1. Regenera V1_03 desde la referencia y la compara con la versión guardada (salida determinista).
+#   1. Regenera V1_03 y V1_12 desde sus referencias y las compara con las versiones guardadas (salida determinista).
 #   2. Crea dos bases nuevas, crea los esquemas abet y acceso (lo que Flyway hace con createSchemas = true en una
 #      base vacía), aplica las V en orden de versión, cada una en su transacción, y luego las R en orden alfabético.
 #   3. Compara pg_dump --schema-only de las dos bases; deben ser idénticos. En la segunda base, el script de datos
 #      de 2026-2 debe detenerse y deshacer todo cuando un usuario de prueba ya existe con otro rol. El script de
 #      varias secciones debe detenerse antes de los datos de 2026-2, sin la asignación de la 410 de 450010 (en una
 #      copia del archivo), con la 412 de 450010 ya registrada sin curso de Blackboard, con una asignación de más y
-#      con un segundo profesor de prueba en la 410 de 450010, y después pasa dos veces sin duplicar.
+#      con un segundo profesor de prueba en la 410 de 450010, y después pasa dos veces sin duplicar. Sobre esa base
+#      corren, primero en seco y después dos veces con -v aplicar=1, el alcance de Ambiental, los datos inventados de
+#      Química y el plan de 5643 en 2026-1 (spec 008), con la misma huella de Ambiental antes y después.
 #   4. Carga en la primera base los datos sintéticos, dos veces los datos de 2026-2 y dos veces los de varias
 #      secciones, y corre pruebas/pruebas.sql.
 #   5. Ensaya en una tercera base el camino de Neon (T021 y T027). Aplica V1_01 a V1_08 y las R y carga los datos
@@ -78,6 +80,11 @@ paso "Generador de V1_03 determinista"
 diff -u "$RAIZ/migration/V1_03__cargar_referencia_ambiental.sql" "$TMP/V1_03.sql"
 echo "ok V1_03 regenerada es idéntica a la guardada"
 
+paso "Generador de V1_12 determinista (spec 008, T020)"
+"$PYTHON" -I "$RAIZ/herramientas/generar_v1_12.py" "$RAIZ/referencia/industrial_2026.json" "$TMP/V1_12.sql"
+diff -u "$RAIZ/migration/V1_12__cargar_referencia_industrial.sql" "$TMP/V1_12.sql"
+echo "ok V1_12 regenerada es idéntica a la guardada"
+
 # Versionadas en orden de versión (V1_01 < V1_02 < ... < V2_01) y repetibles en orden alfabético.
 VERSIONADAS=$(cd "$RAIZ/migration" && ls V*__*.sql | sort -t_ -k1,1V -k2,2n)
 REPETIBLES=$(cd "$RAIZ/migration" && ls R__*.sql 2>/dev/null | LC_ALL=C sort || true)
@@ -117,12 +124,12 @@ crear_rol() { env -u APP_DB_CLAVE "$PSQL" -X -q -v ON_ERROR_STOP=1 -v rol_app="$
 controles() {
     local salida
     if ! salida="$("$PSQL" -X -q -d "$1" -f "$RAIZ/plataforma/neon/controles_neon.sql" 2>&1)" \
-       || ! grep -qxF 'RESULTADO: Q01 a Q14 devuelven 0 filas.' <<<"$salida"; then
+       || ! grep -qxF 'RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.' <<<"$salida"; then
         printf '%s\n' "$salida"
         echo "FALLA controles_neon.sql en $1"
         return 1
     fi
-    echo "ok controles_neon.sql en $1  Q01 a Q14 devuelven 0 filas."
+    echo "ok controles_neon.sql en $1  Q01 a Q14 y Q18 a Q21 devuelven 0 filas."
 }
 
 # Un caso que debe fallar. Exige la salida 3 de psql, la de un error con ON_ERROR_STOP, y el texto esperado en la
@@ -253,6 +260,50 @@ if [ "$QUEDAN" != "6/5/4/5" ]; then
     exit 1
 fi
 echo "ok dos corridas del script de varias secciones dejan 6 filas de plan, 5 secciones, 4 usuarios y 5 asignaciones"
+controles "$BD_B"
+
+paso "Datos de Química General en ${BD_B} (spec 008, T022 a T025), con la huella de Ambiental antes y después"
+# Huella de Ambiental de db/plataforma/neon/huella_ambiental.sql, de solo lectura, sin correos ni códigos.
+huella() { "$PSQL" -X -q -At -v ON_ERROR_STOP=1 -d "$1" -f "$RAIZ/plataforma/neon/huella_ambiental.sql" | tail -n 1; }
+# Filas que escriben los guiones de Química, como «vigencias/planes/secciones/usuarios/asignaciones/alcances».
+quimica() { valor "$1" "SELECT (SELECT count(*) FROM abet.catalogo_vigencia) || '/' || (SELECT count(*) FROM abet.plan_medicion)
+                        || '/' || (SELECT count(*) FROM abet.seccion) || '/' || (SELECT count(*) FROM acceso.usuario_autorizado)
+                        || '/' || (SELECT count(*) FROM acceso.docente_seccion)
+                        || '/' || (SELECT count(*) FROM acceso.coordinacion_alcance)"; }
+HUELLA_ANTES="$(huella "$BD_B")"
+case "$HUELLA_ANTES" in
+    "HUELLA DE AMBIENTAL|"*) ;;
+    *) echo "FALLA huella_ambiental.sql no termina con la huella de Ambiental (${HUELLA_ANTES})"; exit 1 ;;
+esac
+ANTES="$(quimica "$BD_B")"
+correr "$BD_B" datos/alcance_coordinacion_ambiental.sql
+if [ "$(quimica "$BD_B")" != "$ANTES" ]; then
+    echo "FALLA alcance_coordinacion_ambiental.sql en seco escribió filas"
+    exit 1
+fi
+correr "$BD_B" datos/alcance_coordinacion_ambiental.sql -v aplicar=1
+correr "$BD_B" datos/alcance_coordinacion_ambiental.sql -v aplicar=1
+correr "$BD_B" datos/quimica_2026_1_inventado.sql
+correr "$BD_B" datos/quimica_2026_1_inventado.sql
+DESPUES_DE_LOS_DATOS="$(quimica "$BD_B")"
+DESCRIPCION_INSTRUMENTO="Texto de prueba del Portafolio 3" correr "$BD_B" datos/plan_quimica_2026_1.sql
+if [ "$(quimica "$BD_B")" != "$DESPUES_DE_LOS_DATOS" ]; then
+    echo "FALLA plan_quimica_2026_1.sql en seco escribió filas"
+    exit 1
+fi
+DESCRIPCION_INSTRUMENTO="Texto de prueba del Portafolio 3" correr "$BD_B" datos/plan_quimica_2026_1.sql -v aplicar=1
+DESCRIPCION_INSTRUMENTO="Texto de prueba del Portafolio 3" correr "$BD_B" datos/plan_quimica_2026_1.sql -v aplicar=1
+# Una vigencia y una fila de plan más que antes, cuatro secciones, cuatro usuarios, tres asignaciones y un alcance.
+if [ "$ANTES" != "1/6/5/4/5/1" ] || [ "$(quimica "$BD_B")" != "2/7/9/8/8/2" ]; then
+    echo "FALLA los guiones de Química dejan ${ANTES} antes y $(quimica "$BD_B") después (vigencias/planes/secciones/usuarios/asignaciones/alcances)"
+    exit 1
+fi
+echo "ok dos corridas de cada guion de Química dejan 1 vigencia, 1 fila de plan, 4 secciones, 4 usuarios, 3 asignaciones y 1 alcance más"
+if [ "$(huella "$BD_B")" != "$HUELLA_ANTES" ]; then
+    echo "FALLA la huella de Ambiental cambió con los guiones de Química"
+    exit 1
+fi
+echo "ok la huella de Ambiental es la misma antes y después de los guiones de Química"
 controles "$BD_B"
 
 paso "Datos sintéticos, datos de 2026-2 (dos veces) y datos de varias secciones (dos veces) en ${BD_A}"

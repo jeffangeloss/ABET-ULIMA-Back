@@ -1,7 +1,8 @@
 -- Datos operativos del periodo 2026-2 con datos inventados (script de datos, no migración; US-03, US-04, FR-006,
 -- D-09 y D-13). Siembra la vigencia del catálogo AMB-2026 en 2026-2, las secciones 410 y 411 de 450002, su plan de
--- medición con los PI 5.1, 5.2 y 5.3 del SO 5, un coordinador y dos profesores de prueba y la sección de cada
--- profesor. No asigna contraseñas, que el comando de US-05 guarda aparte como hash, ni crea estudiantes ni cargas.
+-- medición con los PI 5.1, 5.2 y 5.3 del SO 5, un coordinador y dos profesores de prueba, la sección de cada
+-- profesor y, desde V1_14, el alcance de la carrera AMB de la coordinación. No asigna contraseñas, que el comando de
+-- US-05 guarda aparte como hash, ni crea estudiantes ni cargas.
 -- Todo es inventado. Los correos terminan en @example.invalid y el archivo no trae códigos de estudiante.
 -- Se corre con el usuario dueño de la base y la conexión directa, después de V1_09, y se puede repetir. Cada INSERT
 -- usa ON CONFLICT DO NOTHING, así que otra corrida no duplica filas ni cambia las que ya existen, y la comprobación
@@ -61,6 +62,22 @@ JOIN abet.periodo pe ON pe.codigo = '2026-2'
 JOIN abet.asignatura a ON a.codigo = '450002'
 JOIN abet.seccion s ON s.periodo_id = pe.periodo_id AND s.asignatura_id = a.asignatura_id AND s.numero = v.numero
 ON CONFLICT DO NOTHING;
+
+-- Desde V1_14 (spec 008), la coordinación de prueba ve la carrera AMB por su fila de acceso.coordinacion_alcance, la
+-- misma que db/datos/alcance_coordinacion_ambiental.sql da en Neon a las coordinaciones de hoy. En una base anterior a
+-- V1_14 la tabla no existe y el bloque no hace nada.
+DO $$
+BEGIN
+    IF to_regclass('acceso.coordinacion_alcance') IS NOT NULL THEN
+        EXECUTE $q$
+            INSERT INTO acceso.coordinacion_alcance (usuario_id, carrera_id)
+            SELECT u.usuario_id, c.carrera_id
+            FROM acceso.usuario_autorizado u JOIN abet.carrera c ON c.codigo = 'AMB'
+            WHERE u.correo = 'coordinacion@example.invalid'
+            ON CONFLICT DO NOTHING$q$;
+    END IF;
+END
+$$;
 
 -- Comprobación final. Cada dato del periodo queda como lo describe la cabecera, aunque ya existiera antes.
 DO $$

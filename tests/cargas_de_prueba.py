@@ -159,13 +159,13 @@ def conjunto_aprobado(
     for clave, estado, numero, texto in valores:
         conexion.execute(
             "INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado, valor_numero, valor_texto) "
-            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
             (clave, estado, numero, texto, version),
         )
     for nivel, valor in ((1, 0.0), (2, 0.3333), (3, 0.6667), (4, 1.0)):
         conexion.execute(
             "INSERT INTO abet.conversion_nivel_0_1 (conjunto_reglas_id, nivel_original, valor_0_1) "
-            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
             (nivel, valor, version),
         )
 
@@ -180,7 +180,7 @@ def conjunto_pendiente(conexion: psycopg.Connection, version: str) -> None:
     conexion.execute(
         "INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado) "
         "SELECT cr.conjunto_reglas_id, p.clave, 'PENDIENTE' FROM abet.conjunto_reglas cr, abet.parametro p "
-        "WHERE cr.version = %s",
+        "WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
         (version,),
     )
 
@@ -213,7 +213,7 @@ def reemplazar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, reemplaza_carga_id, subida_por) "
         "SELECT c.seccion_id, %s, c.filas_de_datos, c.carrera_id, "
-        "coalesce((SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s), c.conjunto_reglas_id), "
+        "coalesce((SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')), c.conjunto_reglas_id), "
         "'v0.0.0-prueba', c.carga_id, c.subida_por FROM abet.carga c WHERE c.carga_id = %s RETURNING carga_id",
         (archivo_id, conjunto, anterior),
     ))
@@ -315,7 +315,7 @@ def publicar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, subida_por) "
         "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s "
-        "FROM abet.conjunto_reglas cr WHERE cr.version = %s RETURNING carga_id",
+        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') RETURNING carga_id",
         (seccion_id, archivo_id, filas_de_datos, autor, conjunto),
     ))
     columnas = _columnas(conexion, carga_id, seccion_id, pis, puntajes or {})
@@ -370,7 +370,7 @@ def rechazar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, subida_por) "
         "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s "
-        "FROM abet.conjunto_reglas cr WHERE cr.version = %s RETURNING carga_id",
+        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') RETURNING carga_id",
         (seccion_id, archivo_id, filas_de_datos, usuario(conexion, DOCENTE_410), conjunto),
     ))
     conexion.execute(

@@ -505,7 +505,7 @@ def _cifras_del_pi(ctx: Escenario, pi: str, pares: str) -> None:
 def _sin_pct_segun_regla(ctx: Escenario) -> None:
     assert ctx.uno("SELECT pv.estado FROM abet.parametro_valor pv"
                    " JOIN abet.conjunto_reglas cr USING (conjunto_reglas_id)"
-                   " WHERE cr.version = %s AND pv.clave = 'TRATO_SIN_EVIDENCIA'", A.REGLAS) == "PENDIENTE"
+                   " WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') AND pv.clave = 'TRATO_SIN_EVIDENCIA'", A.REGLAS) == "PENDIENTE"
     assert ctx.filas("SELECT pi, pct_logro_segun_regla FROM abet.v_r17_por_pi WHERE carga_id = %s ORDER BY pi",
                      ctx.carga_id) == [("5.1", None), ("5.2", None), ("5.3", None)]
 

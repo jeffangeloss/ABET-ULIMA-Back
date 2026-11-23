@@ -225,7 +225,7 @@ def _profesor_sin_secciones(ctx: Escenario, correo: str, rol: str) -> None:
                   r'de sus 4 niveles, como en el caso A03 de pruebas\.sql'))
 def _conjunto_aprobado(ctx: Escenario, version: str) -> None:
     _cargas_de_prueba().conjunto_aprobado(ctx.api.dueno, version)
-    assert ctx.filas("SELECT estado FROM abet.conjunto_reglas WHERE version = %s", version) == [("APROBADO",)]
+    assert ctx.filas("SELECT estado FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')", version) == [("APROBADO",)]
 
 
 @given(parsers.re(r'que la base tiene el conjunto "(?P<version>[^"]+)" de Ambiental en estado "APROBADO" con META_LOGRO 0,80 '
@@ -240,11 +240,11 @@ def _conjunto_aprobado_incompleto(ctx: Escenario, version: str) -> None:
                                          ("CONVERSION_NIVEL_0_1", "DEFINIDO", None, None),
                                          ("TRATO_SIN_EVIDENCIA", "PENDIENTE", None, None)):
         dueno.execute("INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado, valor_numero, valor_texto)"
-                      " SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+                      " SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
                       (clave, estado, numero, texto, version))
     for nivel, valor in ((1, 0.0), (2, 0.3333), (3, 0.6667), (4, 1.0)):
         dueno.execute("INSERT INTO abet.conversion_nivel_0_1 (conjunto_reglas_id, nivel_original, valor_0_1)"
-                      " SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+                      " SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
                       (nivel, valor, version))
     # Es el caso que vigila la consulta de control Q11, un conjunto aprobado con un parámetro de la vista en PENDIENTE.
     assert len(ctx.filas(_conftest(ctx).consultas_de_control()["Q11"])) == 1
@@ -519,8 +519,9 @@ def _conservan_filas(ctx: Escenario, lista: str) -> None:
 @then('las consultas de control Q01 a Q14 devuelven 0 filas')
 def _q01_a_q14(ctx: Escenario) -> None:
     consultas = _conftest(ctx).consultas_de_control()
-    assert sorted(consultas) == [f"Q{n:02d}" for n in range(1, 15)]
-    for nombre, consulta in consultas.items():
+    # Q18 a Q21 llegan con la spec 008 (FR-021), y este escenario nombra Q01 a Q14.
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    for nombre, consulta in ((n, c) for n, c in consultas.items() if n <= "Q14"):
         assert ctx.filas(consulta) == [], f"{nombre} devuelve filas"
 
 

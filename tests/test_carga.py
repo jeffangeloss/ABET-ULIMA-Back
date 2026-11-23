@@ -236,16 +236,17 @@ def _conteos(revision: psycopg.Connection) -> dict[str, int]:
 
 
 def _consultas_de_control() -> dict[str, str]:
-    """Q01 a Q14 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql que correr_pruebas.sh coteja."""
+    """Q01 a Q14 y Q18 a Q21 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql que correr_pruebas.sh
+    coteja (Q18 a Q21 desde la spec 008, FR-021)."""
     texto = CONTROLES.read_text(encoding="utf-8")
     bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
     return {nombre: consulta.strip() for nombre, consulta in bloques}
 
 
 def _controles_con_filas(revision: psycopg.Connection) -> dict[str, int]:
-    """Consultas de control que devuelven filas, con cuántas devuelve cada una. Vacío es Q01 a Q14 en cero."""
+    """Consultas de control que devuelven filas, con cuántas devuelve cada una. Vacío es Q01 a Q14 y Q18 a Q21 en cero."""
     consultas = _consultas_de_control()
-    assert sorted(consultas) == [f"Q{numero:02d}" for numero in range(1, 15)]
+    assert sorted(consultas) == [f"Q{numero:02d}" for numero in (*range(1, 15), *range(18, 22))]
     con_filas = {nombre: len(_valores(revision, consulta)) for nombre, consulta in consultas.items()}
     return {nombre: filas for nombre, filas in con_filas.items() if filas}
 

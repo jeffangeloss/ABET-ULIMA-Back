@@ -333,7 +333,9 @@ def test_br_r17_02_el_bloque_i_muestra_el_so_y_los_pi_del_plan(
     base, _ids = base_410
     hoja = _libro(r17_correcto)[HOJA]
     descripciones = dict(
-        _consulta(base, "SELECT codigo, descripcion FROM abet.pi WHERE codigo = ANY(%s)", (list(PIS_410),)))
+        _consulta(base, "SELECT p.codigo, p.descripcion FROM abet.pi p JOIN abet.catalogo_version cv"
+                        " USING (catalogo_version_id) WHERE cv.codigo = 'AMB-2026' AND p.codigo = ANY(%s)",
+                  (list(PIS_410),)))
     assert hoja["B15"].value == "Student Outcome (SO) 5"
     assert [hoja[f"B{fila}"].value for fila in (17, 18, 19)] == list(PIS_410)
     assert [hoja[f"C{fila}"].value for fila in (17, 18, 19)] == [descripciones[pi] for pi in PIS_410]

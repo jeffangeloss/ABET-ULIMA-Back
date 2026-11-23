@@ -96,7 +96,7 @@ Característica: Catálogo, reglas y plan de medición de Ingeniería Industrial
 
   @spec008 @corte1 @US-68
   Escenario: Una carga de 5643 toma las reglas de Industrial y la vista da la regla de la meta
-    Dado la base con V1_12 y V1_13 aplicadas y los datos de db/datos/quimica_2026_1_inventado.sql
+    Dado la base con V1_12 a V1_14 aplicadas, el plan de 5643 en 2026-1 y los datos de db/datos/quimica_2026_1_inventado.sql
     Cuando "docente701@example.invalid" sube a la 701 un export inventado con 10 estudiantes de niveles 1, 2, 2, 3, 3, 3, 4, 4, 1 y 3 en el PI "6.1"
     Entonces la carga queda PUBLICADA con la carrera "IND" y el conjunto R-2026-BORRADOR de "IND"
     Y abet.v_r17_por_pi da para el PI "6.1" n_esperado_o_superior 6 de 10 calificados
@@ -110,7 +110,7 @@ Característica: Catálogo, reglas y plan de medición de Ingeniería Industrial
 
   @spec008 @corte1 @US-68
   Escenario: Sin el conjunto de Industrial la biblioteca no guarda nada y la ruta responde el error interno
-    Dado la base con V1_12 y sin V1_13 y los datos de db/datos/quimica_2026_1_inventado.sql
+    Dado la base con V1_12 y V1_14 sin V1_13, el plan de 5643 en 2026-1 y los datos de db/datos/quimica_2026_1_inventado.sql
     Cuando la biblioteca carga en la 701 un export inventado válido
     Entonces cargar() lanza ConfiguracionInvalida con «CONJUNTO_REGLAS R-2026-BORRADOR no existe para la carrera IND.»
     Y abet.archivo_origen y abet.carga no ganan ninguna fila
