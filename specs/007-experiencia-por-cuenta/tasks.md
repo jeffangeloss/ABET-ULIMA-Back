@@ -56,6 +56,6 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 7: Despliegue
 
-- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/007-experiencia-por-cuenta` y fusionar sus PR con la integración continua en verde, primero la etapa A y después la etapa B [US-59..US-66]
-- [ ] T071 [Front] Correr el humo con Playwright contra la vista previa de `develop` de cada etapa, con `URL_FRONT` y sin escribir contraseñas en el repositorio [US-59] [US-60] [US-65]
-- [ ] T072 [Jefferson] Autorizar la publicación en Production de cada etapa, la A antes del registro del 30-11-2026 con al menos el mínimo de US-60, US-59 y US-61 (FR-016), si la estimación de las fases 3 a 5 lo sostiene, y la B en la semana 16, si cabe [US-59..US-66]
+- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/007-experiencia-por-cuenta` y fusionar sus PR con la integración continua en verde, primero la etapa A y después la etapa B [US-59..US-66] · Etapa A hecha el 2026-11-22 («Sí, júntala»), con el PR #44 del Back en 1c28f50 y jeffangeloss/ABET-ULIMA-Front#29 en bee0adc; falta la etapa B
+- [ ] T071 [Front] Correr el humo con Playwright contra la vista previa de `develop` de cada etapa, con `URL_FRONT` y sin escribir contraseñas en el repositorio [US-59] [US-60] [US-65] · Etapa A el 2026-11-22 con `ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh`, 14 de 14 en ok, que ingresa con las tres cuentas y espera la página de llegada de cada rol; las aserciones propias de P2 y P3 esperan a T052, y falta la etapa B
+- [ ] T072 [Jefferson] Autorizar la publicación en Production de cada etapa, la A antes del registro del 30-11-2026 con al menos el mínimo de US-60, US-59 y US-61 (FR-016), si la estimación de las fases 3 a 5 lo sostiene, y la B en la semana 16, si cabe [US-59..US-66] · Etapa A publicada el 2026-11-22 con la versión 0.3.0 (PR #46), antes del registro del 30-11 y sin migración en Neon; falta la etapa B

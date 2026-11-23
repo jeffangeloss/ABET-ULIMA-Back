@@ -13,13 +13,13 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-22
-- **Rama de trabajo**: `feat/007-experiencia-por-cuenta`, con la etapa A de la spec 007
-- **Versión publicada**: 0.2.0, con el tag `v0.2.0` sobre 138dd80 de `main` (PR #41) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.1.0 del 2026-11-17
-- **Último cambio**: la spec 006 queda construida: `db/herramientas/cargar_programacion.py` y su SQL cargan la programación docente post-matrícula en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor. Antes, el 2026-11-21, Jefferson aprueba el cambio de la spec 005 y la spec 006 (PR #38)
-- **En curso**: el PR de esta rama, que espera la CI y el permiso de Jefferson para fusionarlo (T060). Antes de la primera corrida en Neon (T063), Jefferson decide si el informe real, que trae correos de profesores, puede pasar por un agente, y qué se hace con las secciones 410 y 411 inventadas de 450002 que siguen en la rama principal. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
-- **Siguiente paso**: con la fusión, el respaldo de la rama principal (T061), el archivo real en el Windows por Jefferson (T062), la corrida en seco (T063), la corrida con `--aplicar` con su permiso (T064), las secciones sin docente (T065) y las contraseñas (T066). Después, la construcción de la spec 005 en el orden de J-41 y la prueba con los exports reales
+- **Rama de trabajo**: `docs/registro-version-0.3.0`, que registra la versión 0.3.0 en Production
+- **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
+- **Último cambio**: la versión 0.3.0 lleva a Production la etapa A de la spec 007 (PR #44 en el Back y jeffangeloss/ABET-ULIMA-Front#29), sin migraciones, con la rama principal de Neon en V1_11. Antes, el mismo día, la spec 006 queda construida y la spec 007 aprobada (PR #43)
+- **En curso**: el PR de esta rama, que solo registra la publicación. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
+- **Siguiente paso**: la lista de profesores con sus correos para la spec 006 (T062 a T066), la decisión sobre las secciones 410 y 411 inventadas de 450002 que siguen en la rama principal, el humo con Playwright de la etapa A (T052), la confirmación con la Coordinación de qué carrera mide en el piloto, la construcción de la spec 005 en el orden de J-41 y la etapa B de la spec 007
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`
-- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.1.0, con el tag `v0.1.0` sobre 0d693b9 de `main`, la documentación de las specs 004 y 005 fusionada en `develop` con sus PR #18 y #21 y la construcción de la spec 004 con el PR #20, en 778ae23) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
+- **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
 ## Plantilla de una entrada
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-22 23:14 (Lima) · docs/registro-version-0.3.0 · Versión 0.3.0 en Production
+- Quién: Jefferson autoriza publicar en el chat («Sí, publícala») después de la prueba final. Claude Code, sin subagentes, abre y junta los PR «Versión 0.3.0» de los dos repositorios, comprueba Production y escribe este registro.
+- Qué cambió: `main` recibe `develop` en el Back (PR #46, 3ff2c06) y en el Front (PR #31, 39ceeb0), y `release.yml` crea los tags `v0.3.0` y sus Release. T072 de la spec 007 queda hecha para la etapa A, y T070 y T071 quedan anotadas para la etapa A.
+- Por qué: la capacitación de los profesores empieza en la semana 14 (23 al 28-11-2026) y el registro el 30-11, así que Production lleva ya la etapa A de la spec 007, con lo que cada cuenta necesita en cada momento.
+- Lo que debe hacer, cómo se probó: `VERSION_ESPERADA=0.3.0 bash ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh` da 14 de 14 en ok contra la vista previa de `develop` (Back d4d821b y Front b878bbf). Después de publicar, Vercel da READY en Production con 3ff2c06 y 39ceeb0, `GET /` del Front oficial responde 200, `GET /api/sesion` sin cookie responde 401 en JSON y el paquete servido trae «Antes de subir», «Qué corregir», «Menú principal», «Secciones de la carrera» y «Esta carga no tiene R-17.».
+- Lo que no debe hacer, cómo se probó: la 0.3.0 no trae migraciones y la prueba final confirma que la huella de la rama principal de Neon no cambia; el paquete servido ya no trae el rótulo «piloto».
+- Correcciones: la última línea de `comprobar_version_020.sh` decía «0.2.0» fija y pasa a usar `VERSION_ESPERADA` (fuera del repositorio).
+- Cómo se reporta: esta entrada, los Release v0.3.0 y los PR #46 del Back y #31 del Front.
+- Pendiente y siguiente paso: los correos de los profesores para la spec 006, la decisión sobre las secciones 410 y 411 de la rama principal, T052 y la etapa B de la spec 007.
 
 ### 2026-11-22 19:34 (Lima) · chore/version-0.3.0 · Número de versión 0.3.0
 - Quién: Jefferson pide preparar la publicación de la etapa A de la spec 007 («Sí, prepárala»). Claude Code, sin subagentes, sube el número de versión.
