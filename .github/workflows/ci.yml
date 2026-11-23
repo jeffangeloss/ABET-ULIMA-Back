@@ -45,6 +45,8 @@ jobs:
           EVENTO: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           AUTOR: ${{ github.actor }}
+          # Huellas SHA-256 de los correos prohibidos (US-88 de la spec 008). Sin el secreto, el guion avisa y no falla.
+          HUELLAS_CORREOS_PROHIBIDOS: ${{ secrets.HUELLAS_CORREOS_PROHIBIDOS }}
         run: |
           if [ "$EVENTO" = "pull_request" ] && [ "$AUTOR" != "dependabot[bot]" ]; then
             bash scripts/preflight.sh --pr "origin/$BASE_REF"
