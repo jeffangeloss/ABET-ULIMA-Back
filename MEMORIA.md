@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-22 19:34 (Lima) · chore/version-0.3.0 · Número de versión 0.3.0
+- Quién: Jefferson pide preparar la publicación de la etapa A de la spec 007 («Sí, prepárala»). Claude Code, sin subagentes, sube el número de versión.
+- Qué cambió: el número de versión pasa a 0.3.0 y `CHANGELOG.md` abre «[0.3.0] - 2026-11-23» con lo que estaba en «Sin publicar».
+- Por qué: la 0.3.0 lleva a Production la etapa A de la spec 007 (P2 con el siguiente paso, «Antes de subir», «Qué corregir», textos ciertos y rótulos por rol), la spec 006 y las specs 005 y 007 aprobadas, antes del registro de los profesores del 30-11.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa y la CI del PR corre la suite.
+- Lo que no debe hacer, cómo se probó: el commit no cambia código ni escenarios; la 0.3.0 no trae migraciones nuevas, así que la rama principal de Neon sigue en V1_11.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la prueba final de Jefferson con `VERSION_ESPERADA=0.3.0 bash ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh` y los PR «Versión 0.3.0» con su permiso.
+
 ### 2026-11-22 19:12 (Lima) · feat/007-experiencia-por-cuenta · Etapa A de la spec 007
 - Quién: Jefferson pide construir la etapa A y juntarla con la versión de pruebas («Sí, apruébala», «Sí, júntala»). Codex (CLI con la cuenta de Jefferson) escribe las primeras 33 pruebas del Front y se detiene por el límite de uso; un workflow de Claude Code las revisa contra los .feature, suma 13, escribe el código, y un revisor y un corrector arreglan 6 detalles menores. Un subagente hace T013 y T030 en el Back. Claude Code revisa, corre las pruebas y escribe esta entrada.
 - Qué cambió: `tests/aceptacion/pasos/test_lectura_gherkin_es.py` fija el conteo de la spec 007 (35 escenarios, 70 casos, 29 delegados a Vitest) y `tests/aceptacion/pasos/test_experiencia_por_cuenta_feature.py` prueba el esquema del lector de `antes_de_subir.feature` sin base; T013 y T030 quedan hechas.
