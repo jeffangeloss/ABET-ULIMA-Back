@@ -18,6 +18,7 @@ import json
 import re
 import subprocess
 import sys
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,7 @@ import psycopg
 from pytest_bdd import given, parsers, scenario, then, when
 
 from abet_carga.carga import Configuracion, ConfiguracionInvalida, cargar
+from app.configuracion import ConfiguracionDeLaApi
 
 Escenario = Any
 A = sys.modules["api_de_prueba"]
@@ -69,6 +71,10 @@ def aplicar(ctx: Escenario, migracion: Path) -> None:
     """Aplica una migración como Flyway, en una sola transacción, y exige que termine bien."""
     corrida = psql(ctx, "-1", "-f", str(migracion), entorno={"PGOPTIONS": "-c client_min_messages=warning"})
     assert corrida.returncode == 0, f"{migracion.name}: {corrida.stderr.strip()}"
+    if migracion.name.startswith("V1_14__"):
+        # En Neon, crear_rol_app.sql corre otra vez después de V1_14 y da al rol de la aplicación el SELECT de la tabla
+        # de alcance, que app/permisos.py lee desde T030. Aquí el rol ya existe, así que el dueño da ese mismo SELECT.
+        ctx.api.dueno.execute(f'GRANT SELECT ON acceso.coordinacion_alcance TO "{ctx.api.base.rol_app}"')
 
 
 def generar(entrada: Path, salida: Path) -> subprocess.CompletedProcess[str]:
@@ -398,6 +404,8 @@ def parametros_de(ctx: Escenario, carrera: str) -> dict[str, tuple[str, Any]]:
 def _con_v1_13_y_la_410(ctx: Escenario, numero: str, asignatura: str, periodo: str) -> None:
     aplicar(ctx, V1_12)
     aplicar(ctx, V1_13)
+    # Desde T030 la API lee acceso.coordinacion_alcance, así que corre después de V1_14, como en el orden de FR-020.
+    aplicar(ctx, V1_14)
     assert ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
                    " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id WHERE s.numero = %s AND a.codigo = %s"
                    " AND pe.codigo = %s", numero, asignatura, periodo) == 1
@@ -466,6 +474,11 @@ def test_sin_el_conjunto_de_industrial_la_biblioteca_no_guarda_nada() -> None:
 @scenario(FEATURE, "Q19 lista una carrera con plan de medición sin conjunto de reglas")
 def test_q19_lista_una_carrera_con_plan_sin_conjunto_de_reglas() -> None:
     """T021."""
+
+
+@scenario(FEATURE, "El arranque de la API revisa el conjunto de reglas de cada carrera con plan")
+def test_el_arranque_revisa_el_conjunto_de_cada_carrera() -> None:
+    """T033."""
 
 
 # US-69. Escenarios de T022 y T025
@@ -602,7 +615,18 @@ def _quimica_con_reglas(ctx: Escenario) -> None:
 @given(parsers.re(r'la base con V1_12 y V1_14 sin V1_13, el plan de 5643 en 2026-1 y los datos de '
                   r'db/datos/quimica_2026_1_inventado\.sql'))
 def _quimica_sin_reglas(ctx: Escenario) -> None:
-    _quimica(ctx, V1_12, V1_14)
+    # Desde T033 la API no arranca sin el conjunto de cada carrera con plan, así que la sesión del profesor de la 701
+    # se abre con V1_13 aplicada y después se quita el conjunto de IND, el único efecto de V1_13. El escenario prueba la
+    # biblioteca y la ruta 5 con la API ya arrancada (cambio fechado del 2026-11-23 en spec.md).
+    _quimica(ctx, V1_12, V1_13, V1_14)
+    ctx.sesion("docente701@example.invalid")
+    dueno = ctx.api.dueno
+    dueno.execute("DELETE FROM abet.parametro_valor pv USING abet.conjunto_reglas cr, abet.carrera c"
+                  " WHERE cr.conjunto_reglas_id = pv.conjunto_reglas_id AND c.carrera_id = cr.carrera_id"
+                  " AND c.codigo = 'IND'")
+    borrados = dueno.execute("DELETE FROM abet.conjunto_reglas cr USING abet.carrera c WHERE c.carrera_id = cr.carrera_id"
+                             " AND c.codigo = 'IND'").rowcount
+    assert borrados == 1
 
 
 @given(parsers.re(r'la base con V1_12 y sin V1_13 y el plan de 5643 en 2026-1'))
@@ -856,3 +880,35 @@ def _q18_una_fila(ctx: Escenario, asignatura: str, periodo: str) -> None:
 def _sin_datos_personales(ctx: Escenario) -> None:
     texto = repr(ctx.extras["control"])
     assert "@" not in texto and not re.search(r"\b[0-9]{8}\b", texto)
+
+
+# US-68. Comprobación de arranque por carrera (T033)
+
+def _arrancar(ctx: Escenario, reglas: str) -> str | None:
+    """Arranca la API con ese CONJUNTO_REGLAS y devuelve el mensaje con que se detiene, o None si arranca."""
+    ajustes = replace(ctx.api.ajustes, carga=Configuracion(conjunto_reglas=reglas))
+    try:
+        ctx.api.cliente(ajustes)
+    except ConfiguracionDeLaApi as falla:
+        return str(falla)
+    return None
+
+
+@when(parsers.re(r'la API arranca con CONJUNTO_REGLAS "(?P<reglas>[^"]+)"'))
+def _la_api_arranca(ctx: Escenario, reglas: str) -> None:
+    ctx.extras["reglas"] = reglas
+    ctx.extras["arranque"] = _arrancar(ctx, reglas)
+
+
+@then(parsers.re(r'la API no arranca y el mensaje nombra la carrera "(?P<carrera>[A-Z]+)" sin la palabra «Ambiental» '
+                 r'\(propuesta\)'))
+def _no_arranca(ctx: Escenario, carrera: str) -> None:
+    mensaje = ctx.extras["arranque"]
+    assert mensaje == f"CONJUNTO_REGLAS {ctx.extras['reglas']} no existe para la carrera {carrera}.", mensaje
+    assert "Ambiental" not in mensaje
+
+
+@then(parsers.re(r'con V1_13 aplicada la API arranca'))
+def _arranca_con_v1_13(ctx: Escenario) -> None:
+    aplicar(ctx, V1_13)
+    assert _arrancar(ctx, ctx.extras["reglas"]) is None

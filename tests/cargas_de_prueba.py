@@ -450,8 +450,8 @@ def base_de_partida_006(conexion: psycopg.Connection) -> None:
     """Base de partida de la spec 006 sobre una base con las migraciones y sin los datos de 2026-2 (FR-012).
 
     Siembra la vigencia de AMB-2026 en 2026-2, el plan de 450002 (5.1, 5.2 y 5.3) y el de 450010 (2.1, 2.2 y
-    5.1) y a coordinacion@example.invalid con rol COORDINADOR, sin secciones ni profesores. Corre con la
-    conexión del dueño de la base y se puede repetir.
+    5.1) y a coordinacion@example.invalid con rol COORDINADOR y, desde V1_14, el alcance de la carrera AMB, sin
+    secciones ni profesores. Corre con la conexión del dueño de la base y se puede repetir.
     """
     conexion.execute(
         "INSERT INTO abet.catalogo_vigencia (periodo_id, carrera_id, catalogo_version_id) "
@@ -465,6 +465,15 @@ def base_de_partida_006(conexion: psycopg.Connection) -> None:
         "INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (%s, 'COORDINADOR') ON CONFLICT DO NOTHING",
         (COORDINACION,),
     )
+    # Desde V1_14 (spec 008, BR-ACCESO-13) la coordinación ve solo lo que le dan sus filas de alcance, así que recibe la
+    # carrera AMB, como en periodo_2026_2_inventado.sql y alcance_coordinacion_ambiental.sql.
+    if conexion.execute("SELECT to_regclass('acceso.coordinacion_alcance')").fetchone()[0] is not None:
+        conexion.execute(
+            "INSERT INTO acceso.coordinacion_alcance (usuario_id, carrera_id) SELECT u.usuario_id, c.carrera_id"
+            " FROM acceso.usuario_autorizado u, abet.carrera c WHERE u.correo = %s AND c.codigo = 'AMB'"
+            " ON CONFLICT DO NOTHING",
+            (COORDINACION,),
+        )
 
 
 def entorno_de_programacion(base: str, *, sin_servidor: Path | None = None) -> dict[str, str]:

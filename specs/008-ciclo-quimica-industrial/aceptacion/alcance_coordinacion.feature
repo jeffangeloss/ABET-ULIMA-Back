@@ -19,6 +19,8 @@
 # - La base de los escenarios del Back es una base desechable de la spec 008 con db/datos/periodo_2026_2_inventado.sql
 #   (las secciones 410 y 411 de 450002 en 2026-2) y db/datos/quimica_2026_1_inventado.sql (las secciones 701 a 704
 #   de 5643 en 2026-1, con docente701@example.invalid a docente703@example.invalid y la 704 sin profesor).
+#   Desde el 2026-11-23 (T030) suma el plan de 5643 en 2026-1 de db/datos/plan_quimica_2026_1.sql, con la vigencia
+#   de IND-2026, porque una carga PUBLICADA de Química lo exige.
 # - La respuesta de GET /api/sesion suma el campo aditivo alcance (propuesta), con tipo SECCIONES, CARRERA o
 #   CURSO, para que el Front rotule la pantalla sin un rol nuevo.
 # - Los escenarios de pantalla los prueba Vitest en el Front y llevan @delegado_a_vitest.
@@ -29,7 +31,7 @@ Característica: Alcance de la coordinación por carrera y por curso
   para seguir el registro sin leer lo que mide otra carrera u otro curso.
 
   Antecedentes:
-    Dado una base desechable de la spec 008 con los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
+    Dado una base desechable de la spec 008 con el plan de 5643 en 2026-1 y los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
     Y "coordinacion@example.invalid" con rol "COORDINADOR", activo y con alcance de la carrera "AMB"
     Y "coordinador.quimica@example.invalid" con rol "COORDINADOR", activo y con alcance de la asignatura "5643" en "2026-1"
 
@@ -251,7 +253,7 @@ Característica: Alcance de la coordinación por carrera y por curso
       | argumentos                            | motivo                                           |
       | --asignatura 9999 --periodo 2026-1    | la asignatura 9999                               |
       | --asignatura 5643 --periodo 2026-3    | el periodo 2026-3                                |
-      | --asignatura 5643 --periodo 2025-2    | el periodo 2025-2, que no existe en abet.periodo |
+      | --asignatura 5643 --periodo 2027-1    | el periodo 2027-1, que no existe en abet.periodo |
 
   @spec008 @corte1 @US-72
   Escenario: Sin la variable del correo el guion no adivina

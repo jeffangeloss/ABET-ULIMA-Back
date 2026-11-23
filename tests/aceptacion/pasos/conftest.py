@@ -341,6 +341,38 @@ class Escenario:
         """Archivo que describe una frase como «una copia de "X" con ...». Devuelve sus bytes y su nombre."""
         return armar_archivo(self, texto)
 
+    # Spec 008. Secciones, exports y peticiones de Química General (T030 a T033)
+
+    def seccion_de(self, numero: str, asignatura: str | None = None, periodo: str | None = None) -> int:
+        """Sección por su número. Sin asignatura, la 70N es de 5643 y las demás de 450002, y sin periodo, 5643 va en
+        2026-1 y 450002 en 2026-2, como en los datos inventados de la spec 008."""
+        asignatura = asignatura or ("5643" if numero.startswith("70") else ASIGNATURA)
+        periodo = periodo or ("2026-1" if asignatura == "5643" else "2026-2")
+        return int(self.uno("SELECT s.seccion_id FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                            " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
+                            " WHERE a.codigo = %s AND s.numero = %s AND pe.codigo = %s", asignatura, numero, periodo))
+
+    def export_de_quimica(self, numero: str, niveles: tuple[int, ...] = (3, 4, 2, 3), periodo: str = "20261",
+                          texto: bool = False) -> tuple[bytes, str]:
+        """Export inventado de una sección de 5643, con la hoja y el nombre que declaran su curso y la columna del PI
+        6.1, en .xlsx o como texto UTF-16 con tabuladores. Los códigos son del rango 99 y distintos en cada sección."""
+        g = self.generador
+        curso = f"SINTETICO_{periodo}_5643_{numero}"
+        filas = tuple((f"Inventado {n:02d}", "Estudiante", 99100000 + int(numero) * 100 + n, nivel)
+                      for n, nivel in enumerate(niveles, start=1))
+        export = g.Export(f"gc_{curso}_f", ("Last Name", "First Name", "Username",
+                                            "ABET SO6.1 [Total Pts: 4 Score] |9000061"), filas)
+        if texto:
+            return g.a_texto(export, separador="\t", codificacion="utf-16"), f"gc_{curso}_fullgc_2026-07-15-00-00-00.xls"
+        return bytes(g.a_bytes(export)), f"gc_{curso}_fullgc_2026-07-15-00-00-00.xlsx"
+
+    def pedir(self, ruta: str) -> Any:
+        """GET de la ruta con la sesión de quien la inició al último, o sin cookie si el escenario no inició ninguna."""
+        correo = self.extras.get("con_sesion")
+        cliente = self.sesion(correo) if correo else self.api.cliente()
+        self.respuesta = cliente.get(ruta)
+        return self.respuesta
+
 
 @pytest.fixture
 def ctx(request: pytest.FixtureRequest, plantillas: Plantillas, generador: ModuleType) -> Iterator[Escenario]:
@@ -1407,6 +1439,11 @@ _PIEZAS_DEL_CATALOGO = (("db/referencia/industrial_2026.json", "T026"), ("db/her
 FORMAS_DE_LA_BASE_008 = (
     (r"con los datos de periodo_2026_2_inventado\.sql y quimica_2026_1_inventado\.sql", "quimica", _PIEZAS_DE_QUIMICA),
     (r"con el plan de 5643 en 2026-1 y los datos de quimica_2026_1_inventado\.sql", "quimica_plan", _PIEZAS_DEL_PLAN),
+    # Cambio del 2026-11-23 (T030 y T033). Los Antecedentes de alcance_coordinacion.feature y periodo_elegido.feature
+    # suman el plan, porque una carga PUBLICADA de la 701 lo exige y sin la vigencia de IND-2026 en 2026-1 el escenario
+    # de la coordinación de Ambiental no probaría nada.
+    (r"con el plan de 5643 en 2026-1 y los datos de periodo_2026_2_inventado\.sql y quimica_2026_1_inventado\.sql",
+     "quimica_plan", _PIEZAS_DEL_PLAN),
     (rf'con el plan de 5643 en 2026-1 para "IND" con el PI 6\.1, el instrumento «Portafolio 3» y la descripción '
      rf'"{re.escape(DESCRIPCION_DE_PRUEBA)}"', "quimica_plan", _PIEZAS_DEL_PLAN),
     (r"con las migraciones V1_01 a V1_11 y la referencia db/referencia/industrial_2026\.json de 7 SO, 21 PI y 53 "

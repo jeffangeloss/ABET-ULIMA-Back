@@ -9,7 +9,8 @@
 # Vocabulario de los pasos.
 # - La API de los escenarios del Back corre con PERIODO_VIGENTE "2026-2", como la versión de prueba, y la base
 #   tiene db/datos/periodo_2026_2_inventado.sql (410 y 411 de 450002 en 2026-2) y
-#   db/datos/quimica_2026_1_inventado.sql (701 a 704 de 5643 en 2026-1).
+#   db/datos/quimica_2026_1_inventado.sql (701 a 704 de 5643 en 2026-1), con el plan de 5643 en 2026-1 desde el
+#   2026-11-23 (T033), porque la subida a la 701 lo exige.
 # - La ruta 18 responde vigente y la lista de periodos con al menos una sección al alcance del usuario, del más
 #   reciente al más antiguo (propuesta). Sin periodo, las rutas 4, 8, 12 y 17 usan PERIODO_VIGENTE, como hoy.
 # - El selector aparece en la cabecera solo con dos periodos o más, y el periodo elegido vive en el estado de
@@ -22,7 +23,7 @@ Característica: Cada cuenta elige el periodo que trabaja
   2026-2, para registrar y revisar la medición de un ciclo ya cerrado sin cambiar la configuración de la carrera.
 
   Antecedentes:
-    Dado una base desechable de la spec 008 con los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
+    Dado una base desechable de la spec 008 con el plan de 5643 en 2026-1 y los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2"
 
   @spec008 @corte1 @US-73
