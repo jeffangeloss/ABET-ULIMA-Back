@@ -76,7 +76,7 @@ Característica: Exports de capacitación generados desde la tabla maestra
   Escenario: El manifiesto resume cada export sin códigos
     Cuando el generador corre
     Entonces "manifiesto.json" trae una entrada por sección con la sección, el nombre del archivo, su huella SHA-256, las filas y el conteo de los niveles 1, 2, 3 y 4
-    Y el manifiesto no trae ningún número de ocho cifras ni ningún nombre
+    Y el manifiesto, sin contar el campo sha256, no trae ningún número de ocho cifras ni ningún nombre
 
   @spec008 @corte1 @US-74
   Escenario: Las filas de otro periodo, otra asignatura u otro PI se omiten y se cuentan

@@ -87,7 +87,7 @@ Característica: R-17 y logros de Química General con la carrera de su carga
   Escenario: El SO y el PI de la ruta 12 salen del catálogo de Industrial y no del de Ambiental
     Dado el PI 6.1 y el SO 6 en AMB-2026 y en IND-2026 con textos inventados distintos en cada catálogo
     Cuando el profesor pide GET /api/resultados?periodo=2026-1
-    Entonces el PI 6.1 trae el texto inventado de IND-2026
+    Entonces el PI 6.1 trae el instrumento «Portafolio 3» del plan de IND-2026 y la respuesta no repite ningún texto inventado de AMB-2026
     Y el SO 6 trae el texto inventado de IND-2026
     Y la 701 trae logrados 26, calificados 34, pct_sobre_calificados 76.5, meta_pct 80.0 y en_meta falso
 
