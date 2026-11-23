@@ -26,7 +26,7 @@
 
 [project]
 name = "abet-ulima-back"
-version = "0.2.0"
+version = "0.3.0"
 description = "Carga del export de Blackboard en PostgreSQL 18 y R-17 desde la base, para la medición ABET de Ingeniería Ambiental de la Universidad de Lima."
 requires-python = ">=3.12,<3.13"
 dependencies = [

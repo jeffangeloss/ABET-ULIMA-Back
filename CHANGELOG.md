@@ -4,6 +4,8 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-11-23
+
 ### Agregado
 
 - Pruebas de la etapa A de la spec 007: los cinco `.feature` entran al analizador con 35 escenarios y 70 casos, y el esquema del lector confirma que los nombres que propone P3 («ABET SO5.1» y los demás) se leen como columnas de PI (T013 y T030).
