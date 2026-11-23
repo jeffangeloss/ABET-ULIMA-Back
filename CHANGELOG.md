@@ -4,6 +4,10 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ## [Sin publicar]
 
+### Agregado
+
+- Spec 008 «Ciclo de punta a punta de Química General en Ingeniería Industrial» (EP-08, US-67 a US-90), en borrador para la aprobación de Jefferson, con catálogo IND-2026, coordinación por curso, periodo elegido, exports desde la tabla maestra, conciliación con los R-17 de los profesores, rediseño visual y guía de la capacitación, en doce `.feature` con 202 escenarios y 257 casos.
+
 ## [0.3.0] - 2026-11-23
 
 ### Agregado
