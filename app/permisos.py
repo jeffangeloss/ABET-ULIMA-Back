@@ -13,6 +13,8 @@ periodo (valor provisional de J-50 para un curso compartido), y una fila de asig
 asignatura en el periodo de la fila. _ALCANCE une las filas de la cuenta. puede_subir() no cambia, así que el
 coordinador sigue sin subir una carga nueva, y puede_reemplazar() sigue el alcance de la lectura (D-52).
 alcance_de() resume el alcance para GET /api/sesion y periodos_visibles() da los periodos de la ruta 18.
+puede_ver_avance() deja leer la ruta 17 solo a una cuenta activa con rol COORDINADOR (BR-ACCESO-12) y no da secciones
+nuevas, porque las del avance son las de secciones_visibles() (BR-AVANCE-02).
 
 Las rutas de secciones, cargas, constancia y R-17 y el comando python -m abet_carga preguntan aquí
 antes de leer o de escribir, y responden SIN_ALCANCE, el detail del 403 del contrato, cuando la
@@ -34,6 +36,8 @@ from psycopg import Connection
 from psycopg.rows import class_row
 
 SIN_ALCANCE = "La sección no está a su cargo."
+# El 403 de la ruta 17 para quien no es la coordinación (BR-ACCESO-12 y BR-AVANCE-01, propuesta).
+SOLO_COORDINACION = "Esta página es de la Coordinación."
 
 
 @dataclass(frozen=True)
@@ -86,6 +90,8 @@ LEFT JOIN abet.asignatura a ON a.asignatura_id = ca.asignatura_id
 WHERE u.usuario_id = %s
 GROUP BY u.rol
 """
+_COORDINACION_ACTIVA = ("SELECT 1 FROM acceso.usuario_autorizado"
+                        " WHERE usuario_id = %s AND activo AND rol = 'COORDINADOR'")
 
 
 @dataclass(frozen=True)
@@ -123,6 +129,12 @@ def alcance_de(conexion: Connection[Any], usuario_id: int) -> Alcance:
         return Alcance("SECCIONES", (), ())
     carreras, asignaturas = tuple(fila[1]), tuple(fila[2])
     return Alcance("CURSO" if asignaturas and not carreras else "CARRERA", carreras, asignaturas)
+
+
+def puede_ver_avance(conexion: Connection[Any], usuario_id: int) -> bool:
+    """Si el usuario lee el avance de la ruta 17, solo una cuenta activa con rol COORDINADOR (BR-ACCESO-12)."""
+    with conexion.transaction():
+        return conexion.execute(_COORDINACION_ACTIVA, (usuario_id,)).fetchone() is not None
 
 
 def puede_subir(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:

@@ -144,6 +144,8 @@ VARIANTES = {
     # Corrección del 2026-11-23 a T027. El alcance de Ambiental y el plan de 5643 en 2026-1, sin las secciones de
     # Química, para el escenario de la programación de capacitacion_en_develop.feature.
     "quimica_plan_sin_secciones": {},
+    # Spec 007, etapa B, construida en T038 de la spec 008. Los datos de 2026-2 con el plan de 450010 en 2026-2.
+    "avance": {},
 }
 
 
@@ -187,7 +189,7 @@ def sembrar_plan_sin_secciones(conexion: psycopg.Connection) -> None:
 
 # Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
 SIEMBRAS = {"programacion": C.base_de_partida_006, "quimica": sembrar_quimica, "quimica_plan": sembrar_quimica_con_plan,
-            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones}
+            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones, "avance": C.base_del_avance_007}
 
 
 class Plantillas:

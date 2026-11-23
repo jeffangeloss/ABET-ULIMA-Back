@@ -476,6 +476,16 @@ def base_de_partida_006(conexion: psycopg.Connection) -> None:
         )
 
 
+def base_del_avance_007(conexion: psycopg.Connection) -> None:
+    """Base del avance de la spec 007 (avance_del_registro.feature, T038 de la spec 008).
+
+    Sobre los datos de periodo_2026_2_inventado.sql, con la vigencia de AMB-2026 en 2026-2 y el plan de 450002, suma el
+    plan de 450010 en 2026-2 con los PI 2.1, 2.2 y 5.1, el mismo de la spec 006. 450020 queda sin plan, y las secciones,
+    las asignaciones y las cargas de cada escenario nacen en sus pasos. Corre con la conexión del dueño de la base.
+    """
+    plan(conexion, "450010", PLANES_006["450010"])
+
+
 def entorno_de_programacion(base: str, *, sin_servidor: Path | None = None) -> dict[str, str]:
     """Variables de libpq para correr el guion de la spec 006 contra la base desechable base.
 

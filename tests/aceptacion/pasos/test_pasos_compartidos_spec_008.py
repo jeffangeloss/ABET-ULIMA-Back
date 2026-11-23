@@ -187,7 +187,9 @@ def test_cada_forma_de_la_base_de_la_spec_008_tiene_su_variante(arnes: ModuleTyp
     formas = [paso for paso in _antecedentes_de_la_spec_008() if paso.startswith("una base desechable de la spec 008")]
     assert len(formas) == 7
     variantes = {arnes.forma_de_la_base_008(_argumentos("_base_de_la_spec_008", paso)["resto"])[0] for paso in formas}
-    assert variantes == {"quimica", "quimica_plan", "catalogo_industrial"}
+    # Cambio del 2026-11-23 (T038). Los Antecedentes de avance_del_curso.feature suman el plan de 5643, así que ningún
+    # .feature usa ya la variante sin el plan, que sigue en conftest.py para la forma que la nombra.
+    assert variantes == {"quimica_plan", "catalogo_industrial"}
 
 
 @pytest.mark.parametrize("resto", [

@@ -27,11 +27,11 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 ## Phase 3: Back
 
 - [x] T030 [Back] [A] Escribir primero el paso del esquema del lector de `antes_de_subir.feature`, sin base, y comprobar que pasa con `abet_carga/lector.py` sin cambios [US-60] · Hecha el 2026-11-22
-- [ ] T031 [Back] [B] Escribir primero los pasos de los escenarios de la ruta 17 y después `puede_ver_avance()` en `app/permisos.py`, con el 403 «Esta página es de la Coordinación.» y el orden 401, 403 y 422 [US-64]
-- [ ] T032 [Back] [B] Escribir primero el esquema de la precedencia y después `abet_carga/avance.py` con la consulta de la etapa de J-48, sin guardar nada, y `app/rutas/avance.py` con el conteo, `carga_id` y `PERIODO_VIGENTE` [US-64]
-- [ ] T033 [Back] [B] Sumar la ruta 17 a `tests/rutas_registradas.py` y comprobar `Cache-Control: no-store` y el 401 sin sesión [US-64]
+- [x] T031 [Back] [B] Escribir primero los pasos de los escenarios de la ruta 17 y después `puede_ver_avance()` en `app/permisos.py`, con el 403 «Esta página es de la Coordinación.» y el orden 401, 403 y 422 [US-64] · Hecha el 2026-11-23 con T038 de la spec 008, en `tests/aceptacion/pasos/test_avance_feature.py` y `tests/test_api_avance.py`
+- [x] T032 [Back] [B] Escribir primero el esquema de la precedencia y después `abet_carga/avance.py` con la consulta de la etapa de J-48, sin guardar nada, y `app/rutas/avance.py` con el conteo, `carga_id` y `PERIODO_VIGENTE` [US-64] · Hecha el 2026-11-23 con T038 de la spec 008, en `tests/aceptacion/pasos/test_avance_feature.py` y `tests/test_api_avance.py`
+- [x] T033 [Back] [B] Sumar la ruta 17 a `tests/rutas_registradas.py` y comprobar `Cache-Control: no-store` y el 401 sin sesión [US-64] · Hecha el 2026-11-23 con T038 de la spec 008, en `tests/aceptacion/pasos/test_avance_feature.py` y `tests/test_api_avance.py`. `tests/rutas_registradas.py` recorre las rutas que la aplicación registra, así que la ruta 17 entra sola y responde 401 sin cookie
 - [ ] T034 [Back] [B] Escribir primero el escenario del campo `profesores` y después su lectura, solo en CON_RECHAZO y SIN_CARGA, con los correos activos en orden alfabético y sin nombres, solo si D-47 dice que sí [US-66]
-- [ ] T035 [Back] [B] Medir la ruta 17 con 60 secciones inventadas en el clúster desechable, en menos de 1 s (SC-005) [US-64]
+- [x] T035 [Back] [B] Medir la ruta 17 con 60 secciones inventadas en el clúster desechable, en menos de 1 s (SC-005) [US-64] · Hecha el 2026-11-23 con T038 de la spec 008, en `tests/aceptacion/pasos/test_avance_feature.py` y `tests/test_api_avance.py`. La mediana de tres lecturas con 60 secciones queda por debajo de 1 s
 
 ## Phase 4: Front
 

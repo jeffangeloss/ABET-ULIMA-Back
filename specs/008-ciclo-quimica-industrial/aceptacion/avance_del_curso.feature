@@ -20,13 +20,15 @@
 #   NIVEL_ESPERADO y META_LOGRO de R-2026-BORRADOR de Industrial, nunca de constantes del código.
 # - Los escenarios de pantalla los prueba Vitest en el Front y llevan @delegado_a_vitest.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Cambio del 2026-11-23 (T038). Los Antecedentes suman el plan de 5643 en 2026-1, porque la carga PUBLICADA de la
+#   701 lo exige y sin él las cuatro secciones serían SIN_PLAN, como en alcance_coordinacion.feature (spec.md).
 
 Característica: Avance y cumplimiento del curso para su coordinación
   Como coordinación de Química General, quiero ver la etapa de cada sección de mi curso y, cuando se decida, el
   cumplimiento del curso frente a la meta, para cerrar el registro a tiempo y saber si el curso cumple el PI.
 
   Antecedentes:
-    Dado una base desechable de la spec 008 con los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
+    Dado una base desechable de la spec 008 con el plan de 5643 en 2026-1 y los datos de periodo_2026_2_inventado.sql y quimica_2026_1_inventado.sql
     Y "coordinador.quimica@example.invalid" con rol "COORDINADOR", activo y con alcance de la asignatura "5643" en "2026-1"
 
   @spec008 @corte1 @US-79
