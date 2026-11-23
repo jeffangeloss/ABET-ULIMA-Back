@@ -1,6 +1,6 @@
 # Tasks: Ciclo de punta a punta de Química General en Ingeniería Industrial
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-23**: spec en borrador para la aprobación de Jefferson, con la auditoría, la spec, el plan y los doce `.feature` (202 escenarios y 257 casos) en `docs/008-ciclo-quimica-industrial` del Back y del Front, sin commit. Cada tarea lleva su estimación en horas, que suma unas 130, y `plan.md` dice qué cabe antes del 30-11-2026
+**Input**: spec.md, plan.md · **Estado al 2026-11-23**: spec aprobada por Jefferson en el chat el 2026-11-23 («Sí, apruébala»), con la auditoría, la spec, el plan y los doce `.feature` (202 escenarios y 257 casos) en `docs/008-ciclo-quimica-industrial` del Back y del Front, sin commit. Cada tarea lleva su estimación en horas, que suma unas 130, y `plan.md` dice qué cabe antes del 30-11-2026
 
 Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs 001 y 003 a 007. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Base]` es la base como código de `db/` del Back con sus pruebas en el clúster desechable, y `[Jefferson]` marca lo que solo él decide, autoriza o corre desde su Windows. Ninguna tarea escribe en Neon ni en Vercel salvo las de la fase 7 y T054, que corren desde el Windows de Jefferson con su permiso. Cada tarea de código escribe primero la prueba de sus escenarios y la ve fallar.
 

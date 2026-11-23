@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/008-ciclo-quimica-industrial` del Back y del Front (PR a `develop`), con la implementación en `feat/008-ciclo-quimica-industrial` después de la aprobación
 **Created**: 2026-11-23
-**Status**: Borrador para la aprobación de Jefferson. Ninguna historia está construida, y D-48 a D-55 y J-49 a J-59 siguen abiertas con el valor que propone la spec
+**Status**: Aprobada por Jefferson en el chat el 2026-11-23 («Sí, apruébala»). Ninguna historia está construida, y D-48 a D-55 y J-49 a J-59 siguen abiertas con el valor que propone la spec
 **Input**: «haremos una capacitación del sistema. Para el curso de química se me otorgarán datos reales para tener una mejor representación del sistema. Hay que mejorarlo, visualmente se tiene que ver mejor. Quizá puedas usar alguna herramienta para mejorar la UX/UI del frontend, busca alguna skill. usa codex con cuidado y la API para optimizar costos. El objetivo es generar todo el ciclo de punta a punta. para eso deberá existir un coordinador del curso de química que tenga la capacidad de ver todas las secciones de dicho curso» (Jefferson, 2026-11-23). «con stefanny quedamos en lograr el flujo de punta a punta, que todas las historias y requerimientos se cumplan, construye specs y prueba usando BDD, TDD, ATDD de forma continua, escribe en Gherkin y no olvides nada. Al final la magia está entonces que se logre eso. está bien que los correos de los profes sean de ejemplo, solo será para capacitación» (Jefferson, 2026-11-23)
 
 ## Épica
