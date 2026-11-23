@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pytest_bdd import scenarios
@@ -38,6 +39,15 @@ RESULTADOS = "specs/004-reportes-docente/aceptacion/resultados.feature"
 ALCANCE = "specs/004-reportes-docente/aceptacion/alcance_y_privacidad.feature"
 PROGRAMACION = "specs/006-programacion-docente/aceptacion/programacion_docente.feature"
 SIN_DOCENTE = "specs/006-programacion-docente/aceptacion/secciones_sin_docente.feature"
+SIGUIENTE_PASO = "specs/007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+ANTES_DE_SUBIR = "specs/007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"
+QUE_CORREGIR = "specs/007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+ROTULOS = "specs/007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
+AVANCE = "specs/007-experiencia-por-cuenta/aceptacion/avance_del_registro.feature"
+SPEC_007 = (SIGUIENTE_PASO, ANTES_DE_SUBIR, QUE_CORREGIR, ROTULOS, AVANCE)
+# Archivos sin Antecedentes (spec 007, FR-017). El esquema del lector de antes_de_subir.feature corre sin base y
+# no hereda ninguna sesión, y cada escenario de rotulos_por_cuenta.feature escribe su propia sesión.
+SIN_ANTECEDENTES = frozenset({ANTES_DE_SUBIR, ROTULOS})
 
 
 class _EscenariosDeCarga:
@@ -82,12 +92,46 @@ class _EscenariosSinDocente:
     scenarios(SIN_DOCENTE)
 
 
+class _EscenariosDelSiguientePaso:
+    """Funciones que scenarios() arma para siguiente_paso.feature (spec 007) con la ruta relativa a la raíz."""
+
+    scenarios(SIGUIENTE_PASO)
+
+
+class _EscenariosDeAntesDeSubir:
+    """Funciones que scenarios() arma para antes_de_subir.feature (spec 007) con la ruta relativa a la raíz."""
+
+    scenarios(ANTES_DE_SUBIR)
+
+
+class _EscenariosDeQueCorregir:
+    """Funciones que scenarios() arma para que_corregir.feature (spec 007) con la ruta relativa a la raíz."""
+
+    scenarios(QUE_CORREGIR)
+
+
+class _EscenariosDeRotulos:
+    """Funciones que scenarios() arma para rotulos_por_cuenta.feature (spec 007) con la ruta relativa a la raíz."""
+
+    scenarios(ROTULOS)
+
+
+class _EscenariosDelAvance:
+    """Funciones que scenarios() arma para avance_del_registro.feature (spec 007) con la ruta relativa a la raíz."""
+
+    scenarios(AVANCE)
+
+
 _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports,
             RESULTADOS: _EscenariosDeResultados, ALCANCE: _EscenariosDeAlcance,
-            PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente}
-_POR_ARCHIVO = pytest.mark.parametrize("ruta", [CARGA, R17, EXPORTS, RESULTADOS, ALCANCE, PROGRAMACION, SIN_DOCENTE],
+            PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente,
+            SIGUIENTE_PASO: _EscenariosDelSiguientePaso, ANTES_DE_SUBIR: _EscenariosDeAntesDeSubir,
+            QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance}
+_POR_ARCHIVO = pytest.mark.parametrize("ruta", list(_ARMADAS),
                                        ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
-                                            "alcance_y_privacidad", "programacion_docente", "secciones_sin_docente"])
+                                            "alcance_y_privacidad", "programacion_docente", "secciones_sin_docente",
+                                            "siguiente_paso", "antes_de_subir", "que_corregir", "rotulos_por_cuenta",
+                                            "avance_del_registro"])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero
@@ -219,6 +263,10 @@ def test_la_caracteristica_y_sus_antecedentes_se_leen_como_en_el_texto(ruta: str
 
     assert feature.keyword == "Característica"
     assert feature.name == _titulo(ruta)
+    if ruta in SIN_ANTECEDENTES:
+        assert feature.background is None and not pasos
+        assert "Antecedentes:" not in [linea.strip() for linea in _texto(ruta).splitlines()]
+        return
     assert feature.background is not None and pasos
     assert _texto(ruta).splitlines()[feature.background.line_number - 1].strip() == "Antecedentes:"
     assert [(p.keyword.strip(), p.type) for p in feature.background.steps] == pasos
@@ -288,3 +336,47 @@ def test_la_spec_006_trae_19_escenarios_con_29_casos_y_ninguno_va_a_vitest() -> 
             assert {"spec006", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
             assert "delegado_a_vitest" not in escenario.tags, escenario.name
     assert (escenarios, casos) == (19, 29)
+
+
+_PANTALLA = re.compile(r"\bP[1-7]\b")
+_ETAPAS = ("etapa_a", "etapa_b")
+
+
+def _casos_por_etapa(escenario: Any) -> list[tuple[str, list[str]]]:
+    """Etapa y pasos de cada caso del escenario, con los Antecedentes, y cada fila de Ejemplos ya escrita en ellos."""
+    propias = [t for t in escenario.tags if t in _ETAPAS]
+    if not escenario.templated:
+        [etapa] = propias
+        return [(etapa, [paso.name for paso in escenario.steps])]
+    casos = []
+    for tabla in escenario.examples:
+        [etapa] = propias or [t for t in tabla.tags if t in _ETAPAS]
+        casos += [(etapa, [paso.name for paso in escenario.render(fila).steps]) for fila in tabla.as_contexts()]
+    return casos
+
+
+def test_la_spec_007_trae_35_escenarios_con_70_casos_y_29_van_a_vitest() -> None:
+    # T003 y T013 de specs/007-experiencia-por-cuenta/tasks.md. Cada escenario lleva @spec007 y @corte1, y una sola
+    # etapa, en el escenario o, si no la lleva, en cada bloque de Ejemplos, como el esquema del menú de US-63, cuya
+    # fila de P7 es de la etapa B. Un escenario que nombra una pantalla, de P1 a P7, lleva @delegado_a_vitest y
+    # ninguno más, y en la etapa A el Back prueba solo el esquema del lector de US-60 (FR-001).
+    escenarios, casos, delegados = 0, {"etapa_a": 0, "etapa_b": 0}, 0
+    del_back_en_la_etapa_a = []
+    for ruta in SPEC_007:
+        for escenario in _feature(ruta).scenarios.values():
+            escenarios += 1
+            assert {"spec007", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            assert len([t for t in escenario.tags if t in _ETAPAS]) <= 1, f"{escenario.name}: {sorted(escenario.tags)}"
+            de_cada_caso = _casos_por_etapa(escenario)
+            for etapa, _ in de_cada_caso:
+                casos[etapa] += 1
+            pantalla = any(_PANTALLA.search(paso) for _, pasos in de_cada_caso for paso in pasos)
+            assert pantalla == ("delegado_a_vitest" in escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            delegados += pantalla
+            if not pantalla and any(etapa == "etapa_a" for etapa, _ in de_cada_caso):
+                del_back_en_la_etapa_a.append((ruta, escenario.name))
+    assert (escenarios, sum(casos.values())) == (35, 70)
+    assert casos == {"etapa_a": 50, "etapa_b": 20}
+    assert delegados == 29
+    assert del_back_en_la_etapa_a == [
+        (ANTES_DE_SUBIR, "El lector de exports reconoce el nombre que propone P3 y no el que lleva guiones")]
