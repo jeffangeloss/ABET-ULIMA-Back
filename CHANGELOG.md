@@ -7,6 +7,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 ### Agregado
 
 - Spec 008 «Ciclo de punta a punta de Química General en Ingeniería Industrial» (EP-08, US-67 a US-90), aprobada por Jefferson en el chat el 2026-11-23 («Sí, apruébala»), con catálogo IND-2026, coordinación por curso, periodo elegido, exports desde la tabla maestra, conciliación con los R-17 de los profesores, rediseño visual y guía de la capacitación, en doce `.feature` con 202 escenarios y 257 casos.
+- Fase 1 de contrato de la spec 008 en el Back (T010, T012 y T013). Reglas BR-PERIODO-05 y 06, BR-ACCESO-12 a 14 y BR-R17-13, cambios fechados en BR-PERIODO-02, BR-ACCESO-07, BR-ACCESO-08 y BR-CARGA-20, la spec viva `avance` con BR-AVANCE-01 a 05, el paso de V1_12 a V1_15 de la spec 005 y el texto nuevo de la carga sin filas aceptadas de la spec 007. Las pruebas leen los doce `.feature` de la spec 008 con 202 escenarios, 257 casos, 41 a Vitest y 14 a Playwright, y `conftest.py` admite V1_12 a V1_15, tablas de `acceso`, rangos de consultas de control y la base desechable de la spec 008. Entra `db/referencia/industrial_2026.json`, solo curricular, y la cifra de US-67 pasa a 38 asignaturas nuevas y 15 reutilizadas.
 
 ## [0.3.0] - 2026-11-23
 

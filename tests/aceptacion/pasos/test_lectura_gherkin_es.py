@@ -45,9 +45,21 @@ QUE_CORREGIR = "specs/007-experiencia-por-cuenta/aceptacion/que_corregir.feature
 ROTULOS = "specs/007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
 AVANCE = "specs/007-experiencia-por-cuenta/aceptacion/avance_del_registro.feature"
 SPEC_007 = (SIGUIENTE_PASO, ANTES_DE_SUBIR, QUE_CORREGIR, ROTULOS, AVANCE)
+# Los doce archivos de la spec 008, con las historias que spec.md asigna a cada uno (T013 de su tasks.md).
+HISTORIAS_DE_LA_SPEC_008 = {
+    "catalogo_industrial": (67, 68, 69), "alcance_coordinacion": (70, 71, 72), "periodo_elegido": (73,),
+    "exports_capacitacion": (74,), "carga_quimica": (75, 76, 77), "r17_industrial": (78,),
+    "avance_del_curso": (79, 80), "sistema_visual": (81, 82), "ensayo_y_conciliacion": (83, 84),
+    "capacitacion_en_develop": (85, 86, 89), "guia_y_privacidad": (87, 88), "matriz_cumplimiento": (90,),
+}
+SPEC_008_DIR = "specs/008-ciclo-quimica-industrial/aceptacion"
+SPEC_008 = tuple(f"{SPEC_008_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_008)
 # Archivos sin Antecedentes (spec 007, FR-017). El esquema del lector de antes_de_subir.feature corre sin base y
-# no hereda ninguna sesión, y cada escenario de rotulos_por_cuenta.feature escribe su propia sesión.
-SIN_ANTECEDENTES = frozenset({ANTES_DE_SUBIR, ROTULOS})
+# no hereda ninguna sesión, y cada escenario de rotulos_por_cuenta.feature escribe su propia sesión. En la spec 008,
+# los escenarios de la siembra, la guía, la privacidad, la matriz y el sistema visual arman cada uno lo suyo.
+SIN_ANTECEDENTES = frozenset({ANTES_DE_SUBIR, ROTULOS, *(ruta for ruta in SPEC_008 if any(
+    nombre in ruta for nombre in ("capacitacion_en_develop", "guia_y_privacidad", "matriz_cumplimiento",
+                                  "sistema_visual")))})
 
 
 class _EscenariosDeCarga:
@@ -122,16 +134,89 @@ class _EscenariosDelAvance:
     scenarios(AVANCE)
 
 
+class _EscenariosDeCatalogoIndustrial:
+    """Funciones que scenarios() arma para catalogo_industrial.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/catalogo_industrial.feature")
+
+
+class _EscenariosDeAlcanceCoordinacion:
+    """Funciones que scenarios() arma para alcance_coordinacion.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/alcance_coordinacion.feature")
+
+
+class _EscenariosDePeriodoElegido:
+    """Funciones que scenarios() arma para periodo_elegido.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/periodo_elegido.feature")
+
+
+class _EscenariosDeExportsCapacitacion:
+    """Funciones que scenarios() arma para exports_capacitacion.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/exports_capacitacion.feature")
+
+
+class _EscenariosDeCargaQuimica:
+    """Funciones que scenarios() arma para carga_quimica.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/carga_quimica.feature")
+
+
+class _EscenariosDeR17Industrial:
+    """Funciones que scenarios() arma para r17_industrial.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/r17_industrial.feature")
+
+
+class _EscenariosDeAvanceDelCurso:
+    """Funciones que scenarios() arma para avance_del_curso.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/avance_del_curso.feature")
+
+
+class _EscenariosDeSistemaVisual:
+    """Funciones que scenarios() arma para sistema_visual.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/sistema_visual.feature")
+
+
+class _EscenariosDeEnsayoYConciliacion:
+    """Funciones que scenarios() arma para ensayo_y_conciliacion.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/ensayo_y_conciliacion.feature")
+
+
+class _EscenariosDeCapacitacionEnDevelop:
+    """Funciones que scenarios() arma para capacitacion_en_develop.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/capacitacion_en_develop.feature")
+
+
+class _EscenariosDeGuiaYPrivacidad:
+    """Funciones que scenarios() arma para guia_y_privacidad.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/guia_y_privacidad.feature")
+
+
+class _EscenariosDeMatrizCumplimiento:
+    """Funciones que scenarios() arma para matriz_cumplimiento.feature (spec 008) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_008_DIR}/matriz_cumplimiento.feature")
+
+
 _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports,
             RESULTADOS: _EscenariosDeResultados, ALCANCE: _EscenariosDeAlcance,
             PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente,
             SIGUIENTE_PASO: _EscenariosDelSiguientePaso, ANTES_DE_SUBIR: _EscenariosDeAntesDeSubir,
-            QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance}
+            QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance,
+            **{ruta: clase for ruta, clase in zip(SPEC_008, (_EscenariosDeCatalogoIndustrial, _EscenariosDeAlcanceCoordinacion, _EscenariosDePeriodoElegido, _EscenariosDeExportsCapacitacion, _EscenariosDeCargaQuimica, _EscenariosDeR17Industrial, _EscenariosDeAvanceDelCurso, _EscenariosDeSistemaVisual, _EscenariosDeEnsayoYConciliacion, _EscenariosDeCapacitacionEnDevelop, _EscenariosDeGuiaYPrivacidad, _EscenariosDeMatrizCumplimiento), strict=True)}}
 _POR_ARCHIVO = pytest.mark.parametrize("ruta", list(_ARMADAS),
                                        ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
                                             "alcance_y_privacidad", "programacion_docente", "secciones_sin_docente",
                                             "siguiente_paso", "antes_de_subir", "que_corregir", "rotulos_por_cuenta",
-                                            "avance_del_registro"])
+                                            "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero
@@ -380,3 +465,26 @@ def test_la_spec_007_trae_35_escenarios_con_70_casos_y_29_van_a_vitest() -> None
     assert delegados == 29
     assert del_back_en_la_etapa_a == [
         (ANTES_DE_SUBIR, "El lector de exports reconoce el nombre que propone P3 y no el que lleva guiones")]
+
+
+def test_la_spec_008_trae_202_escenarios_con_257_casos_41_van_a_vitest_y_14_a_playwright() -> None:
+    # T003 y T013 de specs/008-ciclo-quimica-industrial/tasks.md. Cada escenario lleva @spec008, @corte1 y una sola
+    # historia de las que spec.md asigna a su archivo, y ninguno va a la vez a Vitest y a Playwright. Las 24 historias,
+    # de US-67 a US-90, tienen al menos un escenario.
+    escenarios, casos, delegados, del_navegador, historias = 0, 0, 0, 0, set()
+    for nombre, ruta in zip(HISTORIAS_DE_LA_SPEC_008, SPEC_008, strict=True):
+        propias = {f"US-{n}" for n in HISTORIAS_DE_LA_SPEC_008[nombre]}
+        for escenario in _feature(ruta).scenarios.values():
+            escenarios += 1
+            casos += sum(len(t.examples) for t in escenario.examples) if escenario.templated else 1
+            assert {"spec008", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            [historia] = [t for t in escenario.tags if re.fullmatch(r"US-\d{2}", t)]
+            assert historia in propias, f"{nombre}: «{escenario.name}» lleva {historia}"
+            historias.add(historia)
+            a_vitest, a_playwright = "delegado_a_vitest" in escenario.tags, "playwright" in escenario.tags
+            assert not (a_vitest and a_playwright), f"{escenario.name}: {sorted(escenario.tags)}"
+            delegados += a_vitest
+            del_navegador += a_playwright
+    assert (escenarios, casos) == (202, 257)
+    assert (delegados, del_navegador) == (41, 14)
+    assert historias == {f"US-{n}" for n in range(67, 91)}

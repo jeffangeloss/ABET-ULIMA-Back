@@ -29,7 +29,7 @@ Característica: La capacitación de Química General corre en la versión de pr
   completo antes de la sala y cerrar la capacitación sin perder evidencia, para que los 18 profesores registren su
   medición sin sorpresas y sin cambiar Ambiental.
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: La siembra completa deja la misma huella de Ambiental y los controles limpios
     Dado una base desechable que imita la rama develop, con V1_01 a V1_11, la 410 y la 411 de 450002 y una carga PUBLICADA inventada de la 410
     Y la huella de Ambiental tomada con db/plataforma/neon/huella_ambiental.sql
@@ -38,14 +38,14 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y controles_neon.sql termina con «RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.» (propuesta)
     Y el R-17 de la carga de la 410 sale con las mismas celdas que antes, comparadas una por una
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: El alcance de Ambiental queda antes que la vigencia de Industrial
     Dado la lista ordenada de pasos de la siembra
     Cuando se revisa el orden
     Entonces V1_14 y alcance_coordinacion_ambiental.sql corren antes del despliegue del Back con el _ALCANCE nuevo
     Y el despliegue corre antes de plan_quimica_2026_1.sql, que registra la vigencia de IND-2026 en 2026-1
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: La programación de Química acepta 2026-1 y una asignatura de cuatro cifras
     Dado el CSV inventado de la programación con la 701, la 702 y la 703 de "5643" en "2026-1" y su curso_blackboard
     Cuando cargar_programacion.py corre con --periodo 2026-1 y --aplicar
@@ -53,14 +53,14 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y "docente701@example.invalid" recibe solo la 701 en GET /api/secciones?periodo=2026-1
     Y la consulta de control Q21 devuelve 0 filas
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: Una segunda siembra completa no suma filas
     Dado que la siembra completa ya corrió
     Cuando corre otra vez con los mismos archivos
     Entonces cada informe resume 0 filas nuevas
     Y el número de filas de cada tabla de abet y de acceso es el mismo que antes
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: Un paso que falla deja la base como estaba en ese paso y detiene los siguientes
     Dado un CSV de programación con una fila de sección "0701"
     Cuando la siembra llega a la programación con --aplicar
@@ -68,18 +68,18 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y abet.seccion no gana ninguna fila
     Y la coordinación y las contraseñas no corren
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: La rama principal exige una confirmación aparte
     Cuando un paso que escribe recibe --rama principal sin --confirmo-principal
     Entonces termina con código 2 antes de conectarse
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: Ninguna salida de la siembra repite el correo de la coordinación
     Dado la variable CORREO_COORDINACION con "real.inventado@example.invalid"
     Cuando la siembra corre el registro de la coordinación con en_windows.py
     Entonces ni los informes ni la salida de en_windows.py muestran el valor de esa variable
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: La versión de prueba acepta los códigos que no empiezan con 99
     Dado la API de la versión de prueba con GUARDIA_DATOS_INVENTADOS "0", como fija D-10
     Cuando la comprobación previa de la siembra pide la configuración de la API
@@ -87,14 +87,14 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y con GUARDIA_DATOS_INVENTADOS "1" la comprobación se detiene antes de sembrar con «La guardia de datos inventados está encendida y rechazaría los códigos de la capacitación.» (propuesta)
     Y la comprobación informa que abet.estudiante no tiene ck_estudiante_codigo_inventado en la rama develop, y se detiene si la tiene, con «La base conserva la guardia de datos inventados.» (propuesta)
 
-  @spec008 @US-86
+  @spec008 @corte1 @US-86
   Escenario: Después de la siembra de la capacitación, una lectura sin correos confirma el alcance
     Dado la rama develop con la siembra de la capacitación
     Cuando lectura_neon.sh corre desde el Windows la consulta de comprobación (propuesta)
     Entonces cuenta 18 secciones de 5643 en 2026-1 con plan, 18 filas de acceso.docente_seccion con 18 profesores distintos y 1 fila de alcance de 5643 en 2026-1 que cubre las 18
     Y la salida no trae correos ni códigos
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: El profesor sube su export y descarga su R-17 en la vista previa
     Dado la vista previa de develop con la siembra inventada y la clave de omisión de la protección leída sin mostrarla
     Y el export inventado "gc_SINTETICO_20261_5643_701_fullgc_2026-07-15-00-00-00.xlsx" generado con US-74
@@ -106,7 +106,7 @@ Característica: La capacitación de Química General corre en la versión de pr
     Entonces P4 muestra la carga PUBLICADA con 0 filas rechazadas y ofrece «Descargar R-17»
     Y el R-17 descargado dice «Carrera de Ingeniería Industrial» en B6
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: El profesor no alcanza otra sección del curso
     Dado "docente702@example.invalid" sube en la vista previa el export inventado de la 702 generado con US-74
     Y la sesión de "docente701@example.invalid" en la vista previa
@@ -114,7 +114,7 @@ Característica: La capacitación de Química General corre en la versión de pr
     Entonces la ruta 4 trae solo la 701
     Y la ruta 7 responde 403 con «La sección no está a su cargo.»
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: La coordinación del curso ve las secciones del curso y el avance
     Dado la carga PUBLICADA de la 701 del primer escenario y la de la 702 del segundo
     Cuando "coordinador.quimica@example.invalid" ingresa en la vista previa
@@ -123,13 +123,13 @@ Característica: La capacitación de Química General corre en la versión de pr
     Cuando pulsa «Ver la carga» en la 701
     Entonces P4 ofrece «Descargar R-17» y el R-17 tiene las mismas celdas que el que descargó el profesor
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: Sin la etapa B, la coordinación del curso se comprueba en P2
     Dado la vista previa sin P7
     Cuando "coordinador.quimica@example.invalid" ingresa en la vista previa
     Entonces llega a «Secciones del curso» con 4 secciones de "5643" y ningún botón «Subir export»
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: La coordinación del curso no sube en una sección ni ve otro curso
     Dado la sesión de "coordinador.quimica@example.invalid" en la vista previa
     Cuando pide la ruta 5 con el export inventado de la 703 y la ruta 4 de 2026-2
@@ -137,26 +137,26 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y la ruta 4 de 2026-2 no trae la 410 ni la 411 de "450002"
     Y lectura_neon.sh desde el Windows cuenta en abet.carga las mismas filas que antes de la ruta 5
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: Las capturas y los resultados no guardan nada sensible
     Cuando termina la prueba de humo
     Entonces la carpeta temporal de resultados de Playwright y el archivo temporal de contraseñas ya no existen
     Y las capturas quedan fuera de los dos repositorios
     Y ninguna captura muestra un campo de contraseña con texto
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: Una vista previa ya usada se detiene antes de subir
     Dado la 701 con una carga PUBLICADA de una corrida anterior
     Cuando empieza la prueba de humo
     Entonces se detiene antes de la ruta 5 con «La 701 ya tiene una carga publicada. Restablezca la rama develop de Neon antes de otra corrida.» (propuesta)
 
-  @spec008 @US-85 @playwright
+  @spec008 @corte1 @US-85 @playwright
   Escenario: Con la siembra de la capacitación el humo no corre
     Dado la rama develop marcada con la siembra de la capacitación (propuesta)
     Cuando empieza la prueba de humo
     Entonces se detiene antes de ingresar con «develop tiene la siembra de la capacitación y está congelada hasta el 12-12-2026 (J-56).» (propuesta)
 
-  @spec008 @US-89
+  @spec008 @corte1 @US-89
   Escenario: Las cuentas de ejemplo se dan de baja en seco primero y pierden su sesión
     Dado una base desechable con la siembra inventada, la sesión vigente de "docente701@example.invalid" y una carga PUBLICADA de la 701
     Cuando db/herramientas/cerrar_capacitacion.py corre con el CSV de la programación sin --aplicar (propuesta)
@@ -168,7 +168,7 @@ Característica: La capacitación de Química General corre en la versión de pr
     Y la ruta 1 con su correo responde el mismo 401 que un correo desconocido
     Y la carga PUBLICADA de la 701 sigue PUBLICADA
 
-  @spec008 @US-89
+  @spec008 @corte1 @US-89
   Escenario: El cierre comprueba el respaldo por huella y no borra nada
     Dado una carpeta inventada de la capacitación en tmp_path con 3 exports y su manifiesto
     Y un respaldo inventado cuyas huellas coinciden con el manifiesto
@@ -176,21 +176,21 @@ Característica: La capacitación de Química General corre en la versión de pr
     Entonces dice «3 de 3 archivos respaldados y comprobados por su huella. Se pueden borrar de la Mac.» (propuesta)
     Y los 3 exports siguen en la carpeta
 
-  @spec008 @US-89
+  @spec008 @corte1 @US-89
   Escenario: Un respaldo incompleto se informa y no se recomienda borrar
     Dado un respaldo inventado al que le falta un export del manifiesto
     Cuando el cierre comprueba el respaldo
     Entonces dice «El respaldo no trae 1 archivo del manifiesto. No borre nada todavía.» (propuesta)
     Y termina con código 1
 
-  @spec008 @US-89
+  @spec008 @corte1 @US-89
   Escenario: Sin decisión sobre el destino de las cargas, el cierre no toca develop ni main
     Dado D-55 sin respuesta
     Cuando el cierre corre con --aplicar
     Entonces no restablece develop ni escribe en main
     Y dice «Destino de las cargas de Química General pendiente de decisión (D-55).» (propuesta)
 
-  @spec008 @US-89
+  @spec008 @corte1 @US-89
   Escenario: Después del cierre la conciliación de develop sigue disponible
     Dado el cierre ya corrido con --aplicar
     Cuando el conciliador de US-83 corre sobre develop con el rol abet_respaldo

@@ -6,11 +6,15 @@ targets:
   - ../../../app/rutas/secciones.py
   - ../../../app/rutas/resultados.py
   - ../../../db/datos/periodo_2026_2_inventado.sql
+  - ../../../app/rutas/periodos.py
+  - ../../../app/configuracion.py
+  - ../../../db/migration/V1_13__cargar_reglas_industrial.sql
+  - ../../../db/datos/plan_quimica_2026_1.sql
 ---
 
 # Periodo y secciones
 
-> **Estado al 2026-11-18.** BR-PERIODO-01 y BR-PERIODO-04 suman los cambios fechados de la spec 004 (T010), escritos antes de su código. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
+> **Estado al 2026-11-23.** BR-PERIODO-05 y BR-PERIODO-06 llegan con la fase 1 de la spec 008 (T010), escritas antes de su código, y BR-PERIODO-02 suma su cambio fechado. Los archivos nuevos de `targets` nacen con T021, T022 y T033 de esa spec. **Estado al 2026-11-18.** BR-PERIODO-01 y BR-PERIODO-04 suman los cambios fechados de la spec 004 (T010), escritos antes de su código. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T014), escritas antes del código. Los archivos de `targets` nacen en las fases 2 y 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones (application programming interface, API) el periodo vigente y el conjunto de reglas de una carga nueva, qué datos del periodo 2026-2 siembra el script de datos y qué devuelve la lista de secciones. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR) o decisiones abiertas (D). Cada regla nombra también la restricción o la consulta de control de la base que la respalda y el escenario que la prueba, citado por su título. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Los ejemplos usan solo datos inventados.
 
@@ -20,6 +24,8 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 | --- | --- | --- |
 | US-03 | Preparar el periodo 2026-2 con datos inventados | 1 |
 | US-06 | Ver solo las secciones propias del periodo (la lista de secciones) | 1 |
+| US-68 | Reglas de Industrial y comprobación de arranque por carrera (spec 008) | spec 008 |
+| US-73 | Cada cuenta elige el periodo que trabaja (spec 008) | spec 008 |
 
 ## Business Rules
 
@@ -38,6 +44,7 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 - Los parámetros de la medición viven en `abet.conjunto_reglas` y `abet.parametro_valor`, nunca en constantes del código. R-2026-BORRADOR define META_LOGRO en 0,80 y NIVEL_ESPERADO en 3 y deja CORTE_ROJO, CONVERSION_NIVEL_0_1 y TRATO_SIN_EVIDENCIA en PENDIENTE (V1_06).
 - **Fuente**: FR-007, US-03 (escenario 4), Principios I y IV de la constitución, `fk_carga_reglas`, `uq_conjunto_reglas` y V1_06.
 - **Prueba**: «La API no arranca con un periodo o un conjunto de reglas que la base no conoce» y «abet_app solo actualiza el estado y los conteos de una carga» (`base_neon.feature`), «El export correcto queda publicado entero» (`carga.feature`) y «Con reglas aprobadas el R-17 sale sin franja» (`r17_constancia.feature`).
+- **Cambio del 2026-11-23 (spec 008, US-68).** La comprobación de arranque deja de mirar solo Ambiental y revisa el conjunto de cada carrera con plan de medición (BR-PERIODO-06). Cada carga sigue tomando el conjunto de la carrera de su plan, así que una carga de 5643 en 2026-1 guarda el R-2026-BORRADOR de IND que siembra V1_13. **Prueba**: «Una carga de 5643 toma las reglas de Industrial y la vista da la regla de la meta» y «Una carga de 450002 sigue con las reglas de Ambiental» (`specs/008-ciclo-quimica-industrial/aceptacion/catalogo_industrial.feature`).
 
 ### BR-PERIODO-03: Datos del periodo por script y solo inventados
 - La vigencia del catálogo, las secciones y el plan de medición son datos operativos de `db/datos/periodo_2026_2_inventado.sql` y nunca entran en una migración.
@@ -59,6 +66,23 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 - **Fuente**: FR-011, US-06 (escenarios 1, 2, 3, 5 y 6), `uq_carga_publicada_por_seccion` y `ck_periodo_codigo`.
 - **Prueba** (`acceso.feature`): «El profesor ve únicamente su sección», «El coordinador ve todas las secciones de la carrera», «El estado refleja la carga publicada», «Sin sesión no hay lista» y «Sección de una asignatura sin plan de medición»; en el piloto, «La API se conecta a Neon por el pooler con el rol abet_app» (`despliegue.feature`).
 - **Cambio del 2026-11-18 (spec 004, US-38 y US-39).** `GET /api/resultados` valida el periodo con esta misma forma y responde 422 con «El periodo no tiene la forma AAAA-C.» (propuesta) a otra forma que `AAAA-C`, y 200 con `so` y `secciones` vacíos a un periodo sin secciones del usuario. Su `estado` «SIN_CARGA» y su lista `pi` siguen la regla de esta lista de secciones (BR-RESULTADOS-07). **Prueba**: «Un periodo mal formado responde 422» (`specs/004-reportes-docente/aceptacion/alcance_y_privacidad.feature`), y «Sin secciones en el periodo, la respuesta es una lista vacía y no un error» y «Una sección sin carga publicada no trae cifras» (`specs/004-reportes-docente/aceptacion/resultados.feature`).
+
+### BR-PERIODO-05: Periodo elegido por cada cuenta (spec 008) (propuesta)
+- `GET /api/periodos`, la ruta 18 del contrato, exige la sesión y responde `vigente`, con el valor de `PERIODO_VIGENTE`, y `periodos`, con los códigos de los periodos que tienen al menos una sección al alcance del usuario según `app/permisos.secciones_visibles()` (BR-ACCESO-07 y BR-ACCESO-13), del más reciente al más antiguo. Lleva `Cache-Control: no-store`, como toda `/api`, y figura en `tests/rutas_registradas.py`. Sin sesión responde 401 con «La sesión venció. Ingrese otra vez.» y sin datos (BR-ACCESO-10).
+- Un profesor con secciones solo en 2026-1 recibe `periodos` ["2026-1"] aunque `PERIODO_VIGENTE` sea 2026-2. La coordinación de una carrera recibe los periodos en que su carrera tiene catálogo vigente con secciones, y la de un curso, los periodos de sus filas de alcance con secciones de esa asignatura.
+- Las rutas que aceptan `periodo` (4, 8, 12 y 17) validan la forma `AAAA-C` de `ck_periodo_codigo` con el mismo 422 «El periodo no tiene la forma AAAA-C.», y un periodo sin secciones del usuario da una lista vacía y no un 403. Pedir otro periodo nunca agrega secciones fuera del alcance.
+- La subida no exige el periodo vigente. Una sección de 2026-1 recibe su export aunque `PERIODO_VIGENTE` sea 2026-2, y el periodo que declara el export sigue BR-CARGA-12, con PERIODO_NO_COINCIDE ante otro periodo.
+- El Front guarda el periodo elegido solo en el estado de `App.tsx`, sin almacenamiento del navegador, lo pasa a las rutas 4, 8, 12 y 17, ofrece el selector solo con dos periodos o más y, si la ruta 18 falla, sigue con el periodo vigente sin mostrar un error (sección 12 de `docs/01-arquitectura/frontend.md` del Front).
+- **Fuente**: US-73 y FR-011 de la spec 008, y el veredicto del crítico que sostiene el selector frente a cambiar `PERIODO_VIGENTE` en develop, que escondería 450002 de 2026-2 (`specs/008-ciclo-quimica-industrial/revision-historias.md`).
+- **Prueba** (`specs/008-ciclo-quimica-industrial/aceptacion/periodo_elegido.feature`): «La ruta 18 lista solo los periodos con secciones al alcance de cada cuenta», «Con secciones en los dos periodos los recibe del más reciente al más antiguo», «Sin sesión la ruta 18 responde 401 y figura en la prueba de rutas registradas», «Un periodo mal formado responde 422 en las rutas que lo aceptan», «Un periodo sin secciones del usuario da una lista vacía y no un 403», «Pedir otro periodo no agrega secciones ajenas», «La subida en una sección de 2026-1 no exige el periodo vigente» y «Un export de otro periodo se rechaza con el texto de la API». Los escenarios de pantalla los prueba Vitest en el Front.
+
+### BR-PERIODO-06: Comprobación de arranque por carrera (spec 008) (propuesta)
+- Al arrancar, `app/configuracion.py` exige en `abet.conjunto_reglas` la versión de `CONJUNTO_REGLAS` para cada carrera con plan de medición en un periodo con secciones, y no solo para Ambiental (`uq_conjunto_reglas`). Si una carrera no la tiene, el arranque se detiene con un mensaje que nombra la carrera, como «CONJUNTO_REGLAS R-2026-BORRADOR no existe para la carrera IND.» (propuesta), sin la palabra «Ambiental».
+- V1_13 siembra, solo con datos, R-2026-BORRADOR para IND con los parámetros de Ambiental, META_LOGRO en 0,80 y NIVEL_ESPERADO en 3 definidos y CORTE_ROJO, CONVERSION_NIVEL_0_1 y TRATO_SIN_EVIDENCIA en PENDIENTE.
+- Sin el conjunto de la carrera del plan, `cargar()` lanza ConfiguracionInvalida sin escribir en `archivo_origen` ni en `carga`, y la ruta 5 responde el 500 de ERROR_INTERNO, «Ocurrió un error interno. Intente de nuevo.», sin nombrar la variable, porque la falta es un defecto del despliegue y no del archivo.
+- La consulta de control Q19 lista cada carrera con plan de medición sin conjunto de reglas, con su carrera y su periodo, y devuelve 0 filas con V1_13 aplicada. Vive en `db/pruebas/pruebas.sql` con su caso que falla y, como copia literal, en `db/plataforma/neon/controles_neon.sql`.
+- **Fuente**: US-68, FR-005, FR-007 y FR-021 de la spec 008, `uq_conjunto_reglas` y `fk_carga_reglas`.
+- **Prueba** (`specs/008-ciclo-quimica-industrial/aceptacion/catalogo_industrial.feature`): «La migración V1_13 siembra el conjunto de reglas de Industrial», «Una carga de 5643 toma las reglas de Industrial y la vista da la regla de la meta», «Una carga de 450002 sigue con las reglas de Ambiental», «Sin el conjunto de Industrial la biblioteca no guarda nada y la ruta responde el error interno», «El arranque de la API revisa el conjunto de reglas de cada carrera con plan» y «Q19 lista una carrera con plan de medición sin conjunto de reglas».
 
 ## Verification
 

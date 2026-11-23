@@ -10,7 +10,7 @@ targets:
 
 # Carga del export
 
-> **Estado al 2026-11-17.** Las reglas BR-CARGA-18 a 20 quedan definitivas para el corte 2 (T080), con los cambios que traen a BR-CARGA-01, 03, 10 y 11, escritos antes de su código en la rama `feat/001-corte-2`, y la sección Verification recibe su corrida (T088). **Estado al 2026-11-09.** Las reglas BR-CARGA-03, 05 a 08, 11 y 14 a 17 suman el bloque fechado de la spec 003 (`specs/003-exports-blackboard/`), escrito antes del código, con los tres formatos del export de Blackboard. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T011), escritas antes del código. Los archivos de `targets` nacen en la fase 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
+> **Estado al 2026-11-23.** BR-CARGA-20 suma el cambio fechado de la spec 008 (T010), el periodo de la lista de cargas, escrito antes de su código. **Estado al 2026-11-17.** Las reglas BR-CARGA-18 a 20 quedan definitivas para el corte 2 (T080), con los cambios que traen a BR-CARGA-01, 03, 10 y 11, escritos antes de su código en la rama `feat/001-corte-2`, y la sección Verification recibe su corrida (T088). **Estado al 2026-11-09.** Las reglas BR-CARGA-03, 05 a 08, 11 y 14 a 17 suman el bloque fechado de la spec 003 (`specs/003-exports-blackboard/`), escrito antes del código, con los tres formatos del export de Blackboard. **Estado al 2026-10-30.** Reglas de la fase 1 de contrato (T011), escritas antes del código. Los archivos de `targets` nacen en la fase 3, y la sección Verification se llenó el 2026-10-30 con la corrida del corte 1 (T061); las reglas del corte 2 la reciben con T088.
 
 Esta spec viva fija cómo la interfaz de programación de aplicaciones (application programming interface, API) recibe el export de una sección, que es el archivo de calificaciones que exporta Blackboard, lo valida y lo guarda en el esquema `abet`. Cada regla de negocio (business rule, BR) nombra su fuente en `specs/001-mvp-carga-r17/spec.md`, sean historias de usuario (user stories, US), requisitos funcionales (functional requirements, FR), criterios de éxito (success criteria, SC) o decisiones abiertas (D). Cada regla nombra también la restricción o la consulta de control de la base que la respalda y el escenario de `specs/001-mvp-carga-r17/aceptacion/carga.feature` que la prueba, citado por su título. Los textos entre «» son literales, y lo marcado «(propuesta)» no está fijado en las decisiones de la spec, como en los `.feature`, aunque algún escenario ya lo compruebe. Las reglas del corte 2 llevan esa marca en su título. La forma de cada respuesta está en `docs/03-api/contrato.md` del Front, y los ejemplos usan solo datos inventados.
 
@@ -30,6 +30,7 @@ Esta spec viva fija cómo la interfaz de programación de aplicaciones (applicat
 | US-19 | Ver las cargas al alcance del usuario | 2 |
 | US-21 | Confirmar la sección cuando el archivo no la declara | 2 |
 | US-26 a US-32, US-34 y US-36 | Exports de Blackboard en .xlsx, .csv y .xls, encabezados reales y export sin niveles (spec 003) | 1 |
+| US-73 | Cada cuenta elige el periodo que trabaja, en la lista de cargas (spec 008) | spec 008 |
 
 ## Business Rules
 
@@ -238,6 +239,7 @@ Esta spec viva fija cómo la interfaz de programación de aplicaciones (applicat
 - La lista no trae nombres de estudiantes, valores leídos ni rutas locales, porque la base no los guarda (BR-CARGA-17).
 - **Fuente**: US-19 y FR-026.
 - **Prueba** (`reemplazo_y_cargas.feature`): «El coordinador ve las cargas de todas las secciones», «El coordinador filtra por sección», «El profesor ve solo las cargas de su sección», «La constancia de una carga reemplazada sigue disponible» y «La lista no expone datos que la base no guarda».
+- **Cambio del 2026-11-23 (spec 008, US-73).** Sin `seccion_id`, la ruta acepta el parámetro aditivo `periodo` y lista las cargas de las secciones que el usuario ve en ese periodo. Lo valida como la lista de secciones, con 422 y «El periodo no tiene la forma AAAA-C.» ante otra forma que `AAAA-C`, y da una lista vacía, no un 403, en un periodo sin secciones del usuario. Sin `periodo` sigue con `PERIODO_VIGENTE`, como hoy (BR-PERIODO-05). Con el periodo elegido, P2 marca la última carga rechazada de cada sección y P5 lista las cargas de ese periodo. **Prueba**: «La ruta 8 con periodo lista solo las cargas de ese periodo y sin periodo sigue como hoy», «Un periodo mal formado responde 422 en las rutas que lo aceptan» y «Un periodo sin secciones del usuario da una lista vacía y no un 403» (`specs/008-ciclo-quimica-industrial/aceptacion/periodo_elegido.feature`).
 
 ## Verification
 

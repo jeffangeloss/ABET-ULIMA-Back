@@ -65,7 +65,7 @@ Las tres lentes coinciden en que el flujo de punta a punta necesita el catálogo
 | Las cifras del R-17 se comprueban en M24 a M26, E24 vale 0,765 con el formato 0.0 % y el nombre lleva siempre _PROVISIONAL con R-2026-BORRADOR | Verificabilidad | US-78 |
 | La vista da `pct_logro_sobre_calificados` 60,0 y `meta_logro_pct` 80,0 en escala de 0 a 100 | Verificabilidad | US-68, escenario 2 |
 | La falta del conjunto de reglas de Industrial se prueba en `cargar()` y, por la ruta 5, como el 500 genérico, y la comprobación de arranque revisa cada carrera con plan | Verificabilidad y crítico | US-68 y FR-007 |
-| La sección 1 de `db/pruebas/pruebas.sql` cuenta por catálogo y `abet.asignatura` queda con 96 filas | Verificabilidad | US-67, escenario 3 |
+| La sección 1 de `db/pruebas/pruebas.sql` cuenta por catálogo y `abet.asignatura` queda con 91 filas (96 hasta el cambio del 2026-11-23, porque V1_03 ya tiene 15 de las 53 asignaturas y no 10) | Verificabilidad | US-67, escenario 3 |
 | El generador filtra por `--periodo`, `--asignatura` y `--pi`, cuenta lo omitido en el manifiesto y toma el curso de Blackboard del CSV de la programación | Solapamiento, verificabilidad y crítico | US-74 |
 | El código con cero a la izquierda se arma en la prueba y no se escribe en el `.feature`, porque una cifra de ocho dígitos que no empieza con 99 haría fallar el barrido de US-88 | Redacción, por la regla de US-88 | US-74, escenario 4 |
 | El consejo de CODIGO_VACIO y CODIGO_INVALIDO nombra Username o Student ID, y el de la carga sin filas aceptadas deja de decir «Corrija en Blackboard» | Verificabilidad, necesidad y crítico | US-77 y FR-012 |

@@ -23,6 +23,9 @@
 # - permisos.puede_subir() no deja al coordinador una carga nueva, así que el consejo de SECCION_NO_COINCIDE que
 #   él lee lo remite al profesor de la sección (propuesta, J-43).
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Cambio del 2026-11-23 (FR-012 y FR-019 de la spec 008). El texto de la carga sin filas aceptadas deja de
+#   decir «Corrija en Blackboard», porque los profesores de Química General suben un export que genera la Oficina
+#   de Calidad. Los consejos por motivo RECHAZA_CARGA de esta spec no cambian.
 
 Característica: P4 de una carga rechazada dice qué corregir y no afirma nada falso
   Como profesor, quiero que P4 de una carga rechazada me diga qué corregir en Blackboard y que no me haga creer
@@ -56,7 +59,7 @@ Característica: P4 de una carga rechazada dice qué corregir y no afirma nada f
     Dado que la ruta 6 responde la carga 8 en estado "RECHAZADA" con 11 filas leídas, 0 aceptadas y 11 rechazadas por NIVEL_FUERA_DE_ESCALA y sin ningún rechazo RECHAZA_CARGA
     Cuando el profesor abre P4 de la carga 8
     Entonces P4 muestra «11 filas leídas, 0 aceptadas y 11 rechazadas»
-    Y muestra «Qué corregir. Corrija en Blackboard cada fila de la tabla de rechazos, exporte otra vez y suba el archivo nuevo.» (propuesta, J-43)
+    Y muestra «Qué corregir. Corrija el archivo en cada fila de la tabla de rechazos y suba el archivo nuevo. Si recibió el export de la Oficina de Calidad, pídale uno corregido.» (propuesta, J-43, cambio del 2026-11-23)
 
   @US-61 @spec007 @corte1 @etapa_a @delegado_a_vitest
   Escenario: Un motivo que el Front no conoce muestra solo el mensaje de la API

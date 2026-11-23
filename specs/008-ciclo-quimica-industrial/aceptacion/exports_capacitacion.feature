@@ -29,7 +29,7 @@ Característica: Exports de capacitación generados desde la tabla maestra
     Y la programación inventada con el curso_blackboard "SINTETICO_20261_5643_701", "SINTETICO_20261_5643_702" y "SINTETICO_20261_5643_703"
     Y una carpeta de salida fuera de todo repositorio git
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Cada sección da un export que el lector y la validación aceptan sin rechazos
     Cuando el generador corre con --periodo 2026-1 --asignatura 5643 --pi 6.1 --fecha 2026-07-15-00-00-00
     Entonces la carpeta de salida tiene 3 archivos .xlsx y "manifiesto.json"
@@ -38,7 +38,7 @@ Característica: Exports de capacitación generados desde la tabla maestra
     Y el lector clasifica la columna "ABET SO6.1 [Total Pts: 4 Score] |9000061" como la columna del PI 6.1
     Y validar() acepta todas las filas de la 701 sin rechazos
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: La ida y vuelta por el lector da los mismos códigos y niveles que la tabla maestra
     Dado en la tabla maestra la 702 con "99000004" en 1, "99000005" en 3 y "99000006" en 4
     Cuando el generador corre y el lector lee el archivo de la 702
@@ -46,7 +46,7 @@ Característica: Exports de capacitación generados desde la tabla maestra
     Y el conteo por nivel de lo leído es igual al de la tabla maestra para la 702
     Y ningún código de la 701 ni de la 703 aparece en el archivo de la 702
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: El export trae solo el código y la columna del PI, sin nombres ni el profesor
     Dado en la tabla maestra la columna PROFESOR con "Docente Inventado Uno" en la 701
     Cuando el generador corre
@@ -54,45 +54,45 @@ Característica: Exports de capacitación generados desde la tabla maestra
     Y ninguna columna se llama como las que busca la consulta de control Q04
     Y ninguna celda repite "Docente Inventado Uno" ni un valor de la columna ARCHIVO de la tabla maestra
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Un código con cero a la izquierda se escribe como texto
     Dado una fila de la 701 con un código de ocho cifras que empieza con cero, armado por la prueba
     Cuando el generador corre
     Entonces la celda del código es texto y el lector lee las mismas ocho cifras, con el cero
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: El curso de cada archivo es el de la programación y no uno armado por el generador
     Dado la programación inventada con el curso_blackboard "SINTETICO_20261_5643_701" de la 701
     Cuando el generador corre
     Entonces el nombre y la hoja del archivo de la 701 llevan exactamente ese curso
     Y una sección de la tabla maestra sin fila en la programación detiene el generador con «Fila 5. La sección no está en la programación del curso.» (propuesta)
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Dos corridas dan los mismos archivos byte a byte
     Cuando el generador corre dos veces con los mismos parámetros sobre la misma tabla maestra
     Entonces cada archivo tiene la misma huella SHA-256 en las dos corridas
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: El manifiesto resume cada export sin códigos
     Cuando el generador corre
     Entonces "manifiesto.json" trae una entrada por sección con la sección, el nombre del archivo, su huella SHA-256, las filas y el conteo de los niveles 1, 2, 3 y 4
     Y el manifiesto no trae ningún número de ocho cifras ni ningún nombre
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Las filas de otro periodo, otra asignatura u otro PI se omiten y se cuentan
     Dado 5 filas de 2025 ciclo 2, 2 filas de la asignatura "450002" y 3 filas del PI "6.2" en la tabla maestra
     Cuando el generador corre con --periodo 2026-1 --asignatura 5643 --pi 6.1
     Entonces esas 10 filas no entran a ningún archivo
     Y el manifiesto las cuenta como 5 omitidas por periodo, 2 por asignatura y 3 por PI (propuesta)
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: El PI llega por parámetro para la decisión abierta D-48
     Dado la tabla maestra con todas sus filas en el PI "6.2"
     Cuando el generador corre con --pi 6.2
     Entonces los archivos llevan la columna "ABET SO6.2 [Total Pts: 4 Score] |9000062"
     Y con --pi 6.1 el generador termina con código 1 y dice «Ninguna fila es del PI 6.1.» (propuesta)
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Esquema del escenario: Una fila defectuosa detiene la generación entera sin mostrar el valor
     Dado en la tabla maestra la fila 5 con <defecto>
     Cuando el generador corre
@@ -110,26 +110,26 @@ Característica: Exports de capacitación generados desde la tabla maestra
       | el código "99000001" que también está en la 702           | El estudiante aparece en dos secciones del curso. |
       | el código "99000002" repetido en la 701                   | El estudiante aparece dos veces en la sección.    |
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Sin la columna CALIFICACIÓN el generador no adivina
     Dado una tabla maestra sin la columna CALIFICACIÓN
     Cuando el generador corre
     Entonces termina con código 1 y dice «Falta la columna CALIFICACIÓN de la tabla maestra.» (propuesta)
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: La carpeta de salida dentro de un repositorio se rechaza
     Dado una carpeta de salida dentro de la copia de trabajo del Back
     Cuando el generador corre
     Entonces termina con código 2 sin escribir nada
     Y dice «La carpeta de salida está dentro de un repositorio git. Elija una carpeta fuera de los repositorios.» (propuesta)
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: La salida del generador no muestra códigos ni nombres
     Cuando el generador corre
     Entonces la salida dice por sección el número de filas y el conteo por nivel
     Y la salida no contiene ningún número de ocho cifras
 
-  @spec008 @US-74
+  @spec008 @corte1 @US-74
   Escenario: Un archivo de ejercicio por profesor tiene su propia huella
     Cuando el generador corre con --ejercicio 3 sobre una tabla maestra inventada de la sección ficticia "799" (propuesta)
     Entonces la carpeta de salida tiene 3 archivos de ejercicio de la 799 con códigos 99 distintos
