@@ -11,16 +11,25 @@ alcanza el clúster desechable, que escucha solo en un socket de Unix, así que 
 aplica las migraciones pendientes con psql -1, como tests/base_desechable.py, y después
 db/callbacks/afterMigrate__permisos_lectura.sql, como Flyway al final de cada migrate. El rol de la aplicación nace en
 V1_11, como abet_app en Neon, así que la siembra prueba también el SELECT de acceso.coordinacion_alcance que le da el
-callback. La lectura de la siembra real espera al Windows de Jefferson (T071), y los de Playwright y el cierre llegan
-con T053 y T056.
+callback. La lectura de la siembra real espera al Windows de Jefferson (T071), y los de Playwright llegan con T053.
+
+Los cinco escenarios de US-89 (T056) corren db/herramientas/cerrar_capacitacion.py como proceso aparte. La baja de
+las cuentas corre sobre una copia desechable con la siembra inventada y el plan de 5643, y la comprobación del
+respaldo sobre carpetas inventadas en tmp_path, con PGHOST en una carpeta que no existe, así que ninguna conexión llega
+a un PostgreSQL de la Mac. El escenario de D-55 pone primero en el PATH unos dobles de neonctl, neon, flyway, git y
+vercel que dejan una marca si alguien los llama, y compara el contenido de cada tabla de abet antes y después.
 """
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
+import json
 import os
 import re
+import secrets
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -28,7 +37,7 @@ from types import ModuleType
 from typing import Any
 
 import psycopg
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from psycopg import sql
 from pytest_bdd import given, parsers, scenario, then, when
 
@@ -42,6 +51,16 @@ FEATURE = "specs/008-ciclo-quimica-industrial/aceptacion/capacitacion_en_develop
 SEMBRAR = RAIZ / "db" / "herramientas" / "sembrar_quimica.py"
 PROGRAMACION = RAIZ / "db" / "herramientas" / "cargar_programacion.py"
 HUELLA = RAIZ / "db" / "plataforma" / "neon" / "huella_ambiental.sql"
+CERRAR = RAIZ / "db" / "herramientas" / "cerrar_capacitacion.py"
+CONCILIADOR = RAIZ / "db" / "herramientas" / "conciliar_tabla_maestra.py"
+ROLES_DE_LECTURA = RAIZ / "db" / "plataforma" / "neon" / "crear_roles_lectura.sql"
+# Las cuatro cuentas de la siembra inventada que el cierre da de baja (US-89).
+CUENTAS_DE_LA_CAPACITACION = ("docente701@example.invalid", "docente702@example.invalid", "docente703@example.invalid",
+                              "coordinador.quimica@example.invalid")
+D_55 = "Destino de las cargas de Química General pendiente de decisión (D-55)."
+# Programas que restablecen una rama de Neon, despliegan o escriben en un repositorio. El cierre no llama a ninguno.
+DOBLES_PROHIBIDOS = ("neonctl", "neon", "flyway", "git", "vercel")
+OCHO_CIFRAS = re.compile(r"(?<![0-9])[0-9]{8}(?![0-9])")
 CORREO_COORDINACION = "real.inventado@example.invalid"
 # Valores inventados que el entorno de la siembra lleva y que ninguna salida debe repetir.
 OTRAS_VARIABLES = {"PGPASSWORD": "clave-inventada-de-prueba", "CORREO_COORDINACION": CORREO_COORDINACION,
@@ -550,3 +569,394 @@ def _sin_el_correo(ctx: Escenario) -> None:
         _sin_otras_variables(corrida)
     assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s AND rol = 'COORDINADOR'",
                    CORREO_COORDINACION) == 1
+
+
+# US-89, el cierre de la capacitación (T056)
+
+@scenario(FEATURE, "Las cuentas de ejemplo se dan de baja en seco primero y pierden su sesión")
+def test_las_cuentas_de_ejemplo_se_dan_de_baja() -> None:
+    """T056."""
+
+
+@scenario(FEATURE, "El cierre comprueba el respaldo por huella y no borra nada")
+def test_el_cierre_comprueba_el_respaldo() -> None:
+    """T056."""
+
+
+@scenario(FEATURE, "Un respaldo incompleto se informa y no se recomienda borrar")
+def test_un_respaldo_incompleto_se_informa() -> None:
+    """T056."""
+
+
+@scenario(FEATURE, "Sin decisión sobre el destino de las cargas, el cierre no toca develop ni main")
+def test_sin_d_55_el_cierre_no_toca_develop_ni_main() -> None:
+    """T056."""
+
+
+@scenario(FEATURE, "Después del cierre la conciliación de develop sigue disponible")
+def test_despues_del_cierre_la_conciliacion_sigue() -> None:
+    """T056."""
+
+
+def cerrar(ctx: Escenario, *argumentos: str, base: bool = True,
+           camino: Path | None = None) -> subprocess.CompletedProcess[str]:
+    """El cierre como proceso aparte con python -I. Con base, las variables de libpq apuntan a la copia del escenario,
+    y sin base PGHOST nombra una carpeta que no existe, así ninguna conexión llega a un PostgreSQL de la Mac."""
+    assert CERRAR.exists(), "falta db/herramientas/cerrar_capacitacion.py (T056)"
+    if base:
+        entorno = {**_bd(ctx)._entorno(), "PGDATABASE": ctx.api.base.nombre}
+    else:
+        entorno = {"PATH": os.environ["PATH"], "PGHOST": str(_tmp(ctx) / "sin_servidor"), "PGDATABASE": "ninguna"}
+    if camino is not None:
+        entorno["PATH"] = f"{camino}{os.pathsep}{entorno['PATH']}"
+    corrida = subprocess.run([sys.executable, "-I", str(CERRAR), *argumentos], env=entorno, capture_output=True,
+                             text=True, encoding="utf-8", check=False, cwd=_tmp(ctx))
+    salida = corrida.stdout + corrida.stderr
+    assert "@" not in salida, "la salida del cierre repite un correo"
+    assert not OCHO_CIFRAS.search(salida), "la salida del cierre trae un número de ocho cifras"
+    ctx.extras["cierre"] = corrida
+    return corrida
+
+
+def cuentas(ctx: Escenario) -> list[tuple[Any, ...]]:
+    return ctx.filas("SELECT correo, rol, activo FROM acceso.usuario_autorizado ORDER BY correo")
+
+
+def sesiones(ctx: Escenario) -> list[tuple[Any, ...]]:
+    return ctx.filas("SELECT sesion_id, usuario_id, expira_en FROM acceso.sesion ORDER BY sesion_id")
+
+
+def contenido_de_abet(ctx: Escenario) -> dict[str, str]:
+    """La huella del contenido de cada tabla de abet, fila por fila."""
+    tablas = ctx.filas("SELECT table_name FROM information_schema.tables WHERE table_schema = 'abet'"
+                       " AND table_type = 'BASE TABLE' ORDER BY 1")
+    return {tabla: ctx.uno(sql.SQL("SELECT coalesce(md5(string_agg(t::text, '|' ORDER BY t::text)), '') FROM abet.{} t")
+                           .format(sql.Identifier(tabla))) for (tabla,) in tablas}
+
+
+def con_cuentas_de_la_capacitacion(ctx: Escenario) -> None:
+    """La siembra inventada con el plan de 5643, la sesión de docente701 y su carga PUBLICADA de la 701."""
+    ctx.crear_base("quimica_plan")
+    contenido, nombre = ctx.export_de_quimica("701")
+    respuesta = A.subir(ctx.sesion("docente701@example.invalid"), ctx.seccion_de("701"), contenido, nombre)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    ctx.carga_id = respuesta.json()["carga_id"]
+    assert ctx.sesion("docente701@example.invalid").get("/api/sesion").status_code == 200
+    escribir_programacion(ctx)
+    activas = dict((correo, activo) for correo, _, activo in cuentas(ctx))
+    assert all(activas[correo] for correo in CUENTAS_DE_LA_CAPACITACION)
+
+
+def carpeta_de_la_capacitacion(ctx: Escenario) -> Path:
+    """Tres exports inventados de la 701, la 702 y la 703 y su manifiesto, con la forma que escribe el generador."""
+    if "capacitacion" in ctx.extras:
+        return ctx.extras["capacitacion"]
+    carpeta = _tmp(ctx) / "capacitacion_inventada"
+    carpeta.mkdir()
+    entradas = []
+    for numero in ("701", "702", "703"):
+        contenido, nombre = ctx.export_de_quimica(numero)
+        (carpeta / nombre).write_bytes(contenido)
+        entradas.append({"seccion": numero, "archivo": nombre, "sha256": hashlib.sha256(contenido).hexdigest(),
+                         "filas": 4})
+    manifiesto = {"periodo": "2026-1", "asignatura": "5643", "pi": "6.1", "exports": entradas}
+    (carpeta / "manifiesto.json").write_text(json.dumps(manifiesto, ensure_ascii=False, indent=2) + "\n",
+                                             encoding="utf-8")
+    ctx.extras["capacitacion"] = carpeta
+    ctx.extras["huellas"] = huellas_de(carpeta)
+    return carpeta
+
+
+def huellas_de(carpeta: Path) -> dict[str, str]:
+    return {ruta.name: hashlib.sha256(ruta.read_bytes()).hexdigest() for ruta in sorted(carpeta.iterdir())}
+
+
+def respaldo_de(ctx: Escenario, sin: int = 0) -> Path:
+    """Copia inventada de la carpeta de la capacitación, como la que restaura el respaldo, sin los últimos exports."""
+    carpeta = carpeta_de_la_capacitacion(ctx)
+    respaldo = _tmp(ctx) / "respaldo_restaurado"
+    shutil.copytree(carpeta, respaldo)
+    exports = sorted(ruta for ruta in respaldo.iterdir() if ruta.suffix == ".xlsx")
+    for ruta in exports[len(exports) - sin:] if sin else []:
+        ruta.unlink()
+    ctx.extras["respaldo"] = respaldo
+    ctx.extras["huellas_respaldo"] = huellas_de(respaldo)
+    return respaldo
+
+
+def _maestra_inventada(ctx: Escenario) -> Path:
+    """Tabla maestra inventada en tmp_path con los mismos niveles que los exports de export_de_quimica()."""
+    columnas = ("AÑO", "CICLO", "CÓDIGO DEL CURSO", "CURSO", "CICLO DEL CURSO", "SO", "PI", "PROFESOR",
+                "CÓDIGO DEL ESTUDIANTE", "SECCIÓN", "CALIFICACIÓN", "ARCHIVO")
+    libro = Workbook()
+    hoja = libro.active
+    hoja.title = "Tabla maestra"
+    hoja.append(list(columnas))
+    for numero in ("701", "702", "703"):
+        for n, nivel in enumerate((3, 4, 2, 3), start=1):
+            hoja.append([2026, 1, "5643", "QUÍMICA GENERAL", 1, "6", "6.1", f"Docente Inventado {numero}",
+                         str(99100000 + int(numero) * 100 + n), numero, nivel, f"R017_inventado_{numero}.xlsx"])
+    ruta = _tmp(ctx) / "entrada" / "tabla_maestra_inventada.xlsx"
+    ruta.parent.mkdir(exist_ok=True)
+    libro.save(ruta)
+    return ruta
+
+
+def conciliar(ctx: Escenario) -> subprocess.CompletedProcess[str]:
+    """El conciliador de US-83 con el rol abet_respaldo, que crea crear_roles_lectura.sql en la copia del escenario."""
+    if not ctx.extras.get("roles"):
+        for plugin in ctx.request.config.pluginmanager.get_plugins():
+            if (getattr(plugin, "__file__", "") or "").endswith("aceptacion/pasos/conftest.py"):
+                plugin.correr_guion(ctx.api.dueno, ROLES_DE_LECTURA, {})
+                ctx.extras["roles"] = True
+        assert ctx.extras.get("roles"), "no se encuentra tests/aceptacion/pasos/conftest.py"
+    entorno = {**_bd(ctx)._entorno(), "PGDATABASE": ctx.api.base.nombre, "PGUSER": "abet_respaldo"}
+    return subprocess.run([sys.executable, "-I", str(CONCILIADOR), "--maestra", str(ctx.extras["maestra"]), "--periodo",
+                           "2026-1", "--asignatura", "5643", "--pi", "6.1"], env=entorno, capture_output=True,
+                          text=True, encoding="utf-8", check=False, cwd=_tmp(ctx))
+
+
+def dobles_prohibidos(ctx: Escenario) -> Path:
+    """Dobles de los programas que restablecen develop, despliegan o escriben en main, que dejan una marca."""
+    carpeta = _tmp(ctx) / "dobles_prohibidos"
+    carpeta.mkdir()
+    marca = _tmp(ctx) / "llamadas_prohibidas.txt"
+    for nombre in DOBLES_PROHIBIDOS:
+        doble = carpeta / nombre
+        doble.write_text(f"#!/bin/sh\necho {nombre} >> '{marca}'\nexit 1\n", encoding="utf-8")
+        doble.chmod(0o755)
+    ctx.extras["marca"] = marca
+    return carpeta
+
+
+# Dado
+
+@given(parsers.re(r'una base desechable con la siembra inventada, la sesión vigente de "(?P<correo>[^"]+)" y una carga '
+                  r'PUBLICADA de la 701'))
+def _siembra_con_sesion(ctx: Escenario, correo: str) -> None:
+    assert correo == "docente701@example.invalid"
+    con_cuentas_de_la_capacitacion(ctx)
+
+
+@given(parsers.re(r'una carpeta inventada de la capacitación en tmp_path con 3 exports y su manifiesto'))
+def _carpeta_inventada(ctx: Escenario) -> None:
+    carpeta = carpeta_de_la_capacitacion(ctx)
+    assert len([r for r in carpeta.iterdir() if r.suffix == ".xlsx"]) == 3
+
+
+@given(parsers.re(r'un respaldo inventado cuyas huellas coinciden con el manifiesto'))
+def _respaldo_completo(ctx: Escenario) -> None:
+    respaldo_de(ctx)
+    assert ctx.extras["huellas_respaldo"] == ctx.extras["huellas"]
+
+
+@given(parsers.re(r'un respaldo inventado al que le falta un export del manifiesto'))
+def _respaldo_incompleto(ctx: Escenario) -> None:
+    respaldo_de(ctx, sin=1)
+    assert len(ctx.extras["huellas_respaldo"]) == len(ctx.extras["huellas"]) - 1
+
+
+@given(parsers.re(r'D-55 sin respuesta'))
+def _d_55_sin_respuesta(ctx: Escenario) -> None:
+    spec = (RAIZ / "specs" / "008-ciclo-quimica-industrial" / "spec.md").read_text(encoding="utf-8")
+    fila = next(linea for linea in spec.splitlines() if linea.startswith("| D-55 |"))
+    assert "Quedan en develop, sin pasar a main" in fila
+    con_cuentas_de_la_capacitacion(ctx)
+    ctx.extras["abet_antes"] = contenido_de_abet(ctx)
+
+
+@given(parsers.re(r'el cierre ya corrido con --aplicar'))
+def _cierre_ya_corrido(ctx: Escenario) -> None:
+    con_cuentas_de_la_capacitacion(ctx)
+    for numero in ("702", "703"):
+        contenido, nombre = ctx.export_de_quimica(numero)
+        respuesta = A.subir(ctx.sesion(f"docente{numero}@example.invalid"), ctx.seccion_de(numero), contenido, nombre)
+        assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    ctx.extras["maestra"] = _maestra_inventada(ctx)
+    antes = conciliar(ctx)
+    assert antes.returncode == 0 and "3 de 3 secciones iguales." in antes.stdout, antes.stdout + antes.stderr
+    ctx.extras["conciliacion_antes"] = antes.stdout
+    corrida = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1", "--aplicar")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    activas = dict((correo, activo) for correo, _, activo in cuentas(ctx))
+    assert not any(activas[correo] for correo in CUENTAS_DE_LA_CAPACITACION)
+
+
+# Cuando
+
+@when(parsers.re(r'db/herramientas/cerrar_capacitacion\.py corre con el CSV de la programación sin --aplicar'
+                 r'(?: \(propuesta\))?'))
+def _cierre_en_seco(ctx: Escenario) -> None:
+    ctx.extras["cuentas_antes"], ctx.extras["sesiones_antes"] = cuentas(ctx), sesiones(ctx)
+    corrida = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    ctx.extras["seco"] = corrida
+
+
+@when(parsers.re(r'corre con --aplicar'))
+def _cierre_aplicado(ctx: Escenario) -> None:
+    ctx.extras["cuentas_antes"] = cuentas(ctx)
+    corrida = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1", "--aplicar")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+
+
+@when(parsers.re(r'el cierre comprueba el respaldo'))
+def _comprueba_el_respaldo(ctx: Escenario) -> None:
+    cerrar(ctx, "--capacitacion", str(carpeta_de_la_capacitacion(ctx)), "--respaldo", str(ctx.extras["respaldo"]),
+           base=False)
+
+
+@when(parsers.re(r'el cierre corre con --aplicar'))
+def _cierre_con_aplicar(ctx: Escenario) -> None:
+    respaldo_de(ctx)
+    corrida = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1", "--capacitacion",
+                     str(carpeta_de_la_capacitacion(ctx)), "--respaldo", str(ctx.extras["respaldo"]), "--aplicar",
+                     camino=dobles_prohibidos(ctx))
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+
+
+@when(parsers.re(r'el conciliador de US-83 corre sobre develop con el rol abet_respaldo'))
+def _concilia_despues(ctx: Escenario) -> None:
+    ctx.extras["conciliacion"] = conciliar(ctx)
+
+
+# Entonces
+
+@then(parsers.re(r'el informe dice que daría de baja 3 cuentas de profesor y 1 de coordinación, sin repetir los '
+                 r'correos'))
+def _informe_en_seco(ctx: Escenario) -> None:
+    salida = ctx.extras["seco"].stdout
+    assert "Daría de baja 3 cuentas de profesor y 1 de coordinación" in salida, salida
+    assert "No se guardó nada, y --aplicar lo guarda." in salida, salida
+    for correo in CUENTAS_DE_LA_CAPACITACION:
+        assert correo.split("@")[0] not in salida
+
+
+@then(parsers.re(r'ninguna cuenta cambia'))
+def _ninguna_cambia(ctx: Escenario) -> None:
+    assert cuentas(ctx) == ctx.extras["cuentas_antes"]
+    assert sesiones(ctx) == ctx.extras["sesiones_antes"]
+
+
+@then(parsers.re(r'las 4 cuentas quedan con activo falso'))
+def _cuatro_de_baja(ctx: Escenario) -> None:
+    antes = {correo: (rol, activo) for correo, rol, activo in ctx.extras["cuentas_antes"]}
+    despues = {correo: (rol, activo) for correo, rol, activo in cuentas(ctx)}
+    assert sorted(despues) == sorted(antes)
+    for correo, (rol, activo) in despues.items():
+        esperado = False if correo in CUENTAS_DE_LA_CAPACITACION else antes[correo][1]
+        assert (rol, activo) == (antes[correo][0], esperado), correo
+    assert any(activo for correo, (_, activo) in despues.items()), "el cierre dio de baja otras cuentas"
+    assert "Dio de baja 3 cuentas de profesor y 1 de coordinación" in ctx.extras["cierre"].stdout
+
+
+@then(parsers.re(r'la ruta 2 con la cookie de "(?P<correo>[^"]+)" responde 401'))
+def _sin_sesion(ctx: Escenario, correo: str) -> None:
+    assert ctx.sesiones[correo].get("/api/sesion").status_code == 401
+    assert ctx.uno("SELECT count(*) FROM acceso.sesion s JOIN acceso.usuario_autorizado u USING (usuario_id)"
+                   " WHERE u.correo = %s AND s.expira_en > now()", correo) == 0
+
+
+@then(parsers.re(r'la ruta 1 con su correo responde el mismo 401 que un correo desconocido'))
+def _ingreso_como_desconocido(ctx: Escenario) -> None:
+    correo = "docente701@example.invalid"
+    propio = ctx.api.cliente().post("/api/sesion", json={"correo": correo, "contrasena": ctx.api.claves[correo]})
+    desconocido = ctx.api.cliente().post("/api/sesion", json={"correo": "desconocido@example.invalid",
+                                                               "contrasena": secrets.token_urlsafe(18)})
+    assert propio.status_code == desconocido.status_code == 401
+    assert propio.json() == desconocido.json()
+    assert "set-cookie" not in propio.headers
+
+
+@then(parsers.re(r'la carga PUBLICADA de la 701 sigue PUBLICADA'))
+def _carga_sigue(ctx: Escenario) -> None:
+    assert ctx.uno("SELECT estado FROM abet.carga WHERE carga_id = %s", ctx.carga_id) == "PUBLICADA"
+
+
+@then(parsers.re(r'dice «(?P<mensaje>[^»]+)»(?: \(propuesta\))?'))
+def _dice(ctx: Escenario, mensaje: str) -> None:
+    corrida = ctx.extras["cierre"]
+    assert mensaje in corrida.stdout.splitlines(), corrida.stdout + corrida.stderr
+
+
+@then(parsers.re(r'los 3 exports siguen en la carpeta'))
+def _siguen(ctx: Escenario) -> None:
+    assert ctx.extras["cierre"].returncode == 0
+    assert huellas_de(ctx.extras["capacitacion"]) == ctx.extras["huellas"]
+    assert huellas_de(ctx.extras["respaldo"]) == ctx.extras["huellas_respaldo"]
+
+
+@then(parsers.re(r'termina con código 1'))
+def _codigo_1(ctx: Escenario) -> None:
+    corrida = ctx.extras["cierre"]
+    assert corrida.returncode == 1, corrida.stdout + corrida.stderr
+    assert "Se pueden borrar de la Mac." not in corrida.stdout
+    assert huellas_de(ctx.extras["capacitacion"]) == ctx.extras["huellas"]
+
+
+@then(parsers.re(r'no restablece develop ni escribe en main'))
+def _no_toca_develop_ni_main(ctx: Escenario) -> None:
+    assert not ctx.extras["marca"].exists(), ctx.extras["marca"].read_text(encoding="utf-8")
+    assert contenido_de_abet(ctx) == ctx.extras["abet_antes"]
+    assert ctx.uno("SELECT estado FROM abet.carga WHERE carga_id = %s", ctx.carga_id) == "PUBLICADA"
+    assert "Dio de baja 3 cuentas de profesor y 1 de coordinación" in ctx.extras["cierre"].stdout
+
+
+@then(parsers.re(r'lee las cargas PUBLICADA de 5643 en 2026-1 como antes del cierre'))
+def _lee_como_antes(ctx: Escenario) -> None:
+    corrida = ctx.extras["conciliacion"]
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout == ctx.extras["conciliacion_antes"]
+    assert "3 de 3 secciones iguales." in corrida.stdout
+
+
+# Pruebas del cierre fuera del .feature (T056). Lo que el cierre no debe dar de baja.
+
+def test_el_cierre_no_da_de_baja_una_cuenta_con_algo_fuera_de_la_capacitacion(ctx: Escenario) -> None:
+    """Un profesor del CSV que dicta también la 410 de 2026-2, una coordinación con otro curso y la coordinación de
+    Ambiental, que suma el alcance de 5643 a su carrera, quedan activos, los profesores de 2026-2 no cambian, y una
+    segunda corrida no da de baja a nadie."""
+    con_cuentas_de_la_capacitacion(ctx)
+    ctx.filas("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) VALUES (%s, %s) RETURNING 1",
+              ctx.usuario_id("docente702@example.invalid"), ctx.seccion_de("410"))
+    ctx.filas("INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('coordinador.doble@example.invalid',"
+              " 'COORDINADOR') RETURNING 1")
+    ctx.filas("INSERT INTO acceso.coordinacion_alcance (usuario_id, asignatura_id, periodo_id)"
+              " SELECT u.usuario_id, a.asignatura_id, pe.periodo_id FROM acceso.usuario_autorizado u,"
+              " abet.asignatura a, abet.periodo pe WHERE u.correo = 'coordinador.doble@example.invalid'"
+              " AND a.codigo IN ('5643', '450002') AND pe.codigo = '2026-1' RETURNING 1")
+    ambiental = ctx.uno("SELECT u.correo FROM acceso.usuario_autorizado u JOIN acceso.coordinacion_alcance ca"
+                        " USING (usuario_id) WHERE ca.carrera_id IS NOT NULL")
+    ctx.filas("INSERT INTO acceso.coordinacion_alcance (usuario_id, asignatura_id, periodo_id)"
+              " SELECT u.usuario_id, a.asignatura_id, pe.periodo_id FROM acceso.usuario_autorizado u,"
+              " abet.asignatura a, abet.periodo pe WHERE u.correo = %s AND a.codigo = '5643' AND pe.codigo = '2026-1'"
+              " RETURNING 1", ambiental)
+    antes = {correo: activo for correo, _, activo in cuentas(ctx)}
+    corrida = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1", "--aplicar")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert "Dio de baja 2 cuentas de profesor y 1 de coordinación" in corrida.stdout
+    assert ("3 cuentas tienen secciones o alcance fuera de 5643 en 2026-1 y quedan activas."
+            in corrida.stdout.splitlines())
+    despues = {correo: activo for correo, _, activo in cuentas(ctx)}
+    dadas_de_baja = {"docente701@example.invalid", "docente703@example.invalid", "coordinador.quimica@example.invalid"}
+    assert {correo for correo, activo in despues.items() if antes[correo] and not activo} == dadas_de_baja
+    assert despues["docente702@example.invalid"] and despues["coordinador.doble@example.invalid"] and despues[ambiental]
+    otra = cerrar(ctx, "--programacion", str(ctx.extras["csv"]), "--periodo", "2026-1", "--aplicar")
+    assert otra.returncode == 0, otra.stdout + otra.stderr
+    assert "Dio de baja 0 cuentas de profesor y 0 de coordinación" in otra.stdout
+    assert "3 cuentas ya estaban dadas de baja." in otra.stdout.splitlines()
+    assert {correo: activo for correo, _, activo in cuentas(ctx)} == despues
+
+
+def test_el_cierre_cuenta_los_correos_sin_cuenta_y_no_crea_ninguna(ctx: Escenario) -> None:
+    """Un correo de la programación sin cuenta de profesor se cuenta sin mostrarlo, y la base no gana filas."""
+    con_cuentas_de_la_capacitacion(ctx)
+    ruta = escribir_programacion(ctx, ("701", "702", "703", "704"))
+    filas = ruta.read_text(encoding="utf-8").replace("docente704@", "ausente704@")
+    ruta.write_text(filas, encoding="utf-8")
+    antes = filas_por_tabla(ctx)
+    corrida = cerrar(ctx, "--programacion", str(ruta), "--periodo", "2026-1")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert "1 correo de la programación no tiene una cuenta de profesor." in corrida.stdout.splitlines()
+    assert "Daría de baja 3 cuentas de profesor y 1 de coordinación" in corrida.stdout
+    assert filas_por_tabla(ctx) == antes
