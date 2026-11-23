@@ -18,7 +18,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 - [ ] T010 [Front] [A] Escribir en `frontend.md` los textos definitivos de la etapa A, con su marca «(propuesta)» hasta la revisión, y la lista de pruebas de Vitest que cambian (FR-006 y SC-002). Al aprobar, cambian también la sección 3 («con sesión muestra P2», que pasa a la página de llegada de J-46 en la etapa B) y la sección 4 («No hay una carga publicada para esta sección», que pasa a «Esta carga no tiene R-17.») [US-59..US-63]
 - [ ] T011 [Back] [B] Abrir la spec viva `specs/features/avance/avance.spec.md` con BR-AVANCE-01 a BR-AVANCE-NN y sus `targets`, sumar BR-ACCESO-12 a `acceso` y su fila a `specs/README.md` [US-64..US-66]
 - [ ] T012 [Front] [B] Dejar definitiva la sección 14 del contrato con la ruta 17, sumar su camino a la sección 10 y su fila a `docs/specs/api-contracts.md` [US-64..US-66]
-- [ ] T013 [Back] Dejar definitivos los cinco `.feature` con el analizador de pytest-bdd y fijar en `test_lectura_gherkin_es.py` el conteo de 35 escenarios y 70 casos, con `@spec007`, `@corte1`, una etapa por escenario o por bloque de Ejemplos y `@delegado_a_vitest` en los de pantalla. En `test_experiencia_por_cuenta_feature.py`, el paso `_pantalla_dada` atiende «una sesión de "…" con rol "…"» y «la cuenta "…" con rol "…"» y solo llama a `_delegar()`, sin abrir la base, y la prueba comprueba que ninguno de esos pasos coincide con la expresión `_sesion_iniciada` de `conftest.py` [US-59..US-66]
+- [x] T013 [Back] Dejar definitivos los cinco `.feature` con el analizador de pytest-bdd y fijar en `test_lectura_gherkin_es.py` el conteo de 35 escenarios y 70 casos, con `@spec007`, `@corte1`, una etapa por escenario o por bloque de Ejemplos y `@delegado_a_vitest` en los de pantalla. En `test_experiencia_por_cuenta_feature.py`, el paso `_pantalla_dada` atiende «una sesión de "…" con rol "…"» y «la cuenta "…" con rol "…"» y solo llama a `_delegar()`, sin abrir la base, y la prueba comprueba que ninguno de esos pasos coincide con la expresión `_sesion_iniciada` de `conftest.py` [US-59..US-66] · Hecha el 2026-11-22
 
 ## Phase 2: Base
 
@@ -26,7 +26,7 @@ Cada tarea lleva al comienzo el repositorio o el lugar donde ocurre, como en las
 
 ## Phase 3: Back
 
-- [ ] T030 [Back] [A] Escribir primero el paso del esquema del lector de `antes_de_subir.feature`, sin base, y comprobar que pasa con `abet_carga/lector.py` sin cambios [US-60]
+- [x] T030 [Back] [A] Escribir primero el paso del esquema del lector de `antes_de_subir.feature`, sin base, y comprobar que pasa con `abet_carga/lector.py` sin cambios [US-60] · Hecha el 2026-11-22
 - [ ] T031 [Back] [B] Escribir primero los pasos de los escenarios de la ruta 17 y después `puede_ver_avance()` en `app/permisos.py`, con el 403 «Esta página es de la Coordinación.» y el orden 401, 403 y 422 [US-64]
 - [ ] T032 [Back] [B] Escribir primero el esquema de la precedencia y después `abet_carga/avance.py` con la consulta de la etapa de J-48, sin guardar nada, y `app/rutas/avance.py` con el conteo, `carga_id` y `PERIODO_VIGENTE` [US-64]
 - [ ] T033 [Back] [B] Sumar la ruta 17 a `tests/rutas_registradas.py` y comprobar `Cache-Control: no-store` y el 401 sin sesión [US-64]
