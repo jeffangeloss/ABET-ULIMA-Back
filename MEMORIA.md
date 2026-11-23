@@ -13,8 +13,8 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-22
-- **Rama de trabajo**: `feat/006-programacion-docente`, que sale de `develop` (7fc19a9) y construye la spec 006
-- **Versión publicada**: 0.1.0, con el tag `v0.1.0` sobre 7325231 de `main` y su Release, en Production de Vercel desde el 2026-11-17
+- **Rama de trabajo**: `feat/007-experiencia-por-cuenta`, con la etapa A de la spec 007
+- **Versión publicada**: 0.2.0, con el tag `v0.2.0` sobre 138dd80 de `main` (PR #41) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.1.0 del 2026-11-17
 - **Último cambio**: la spec 006 queda construida: `db/herramientas/cargar_programacion.py` y su SQL cargan la programación docente post-matrícula en seco por omisión y con `--aplicar` en una sola transacción, y `db/plataforma/neon/secciones_sin_docente.sql` lista las secciones sin profesor. Antes, el 2026-11-21, Jefferson aprueba el cambio de la spec 005 y la spec 006 (PR #38)
 - **En curso**: el PR de esta rama, que espera la CI y el permiso de Jefferson para fusionarlo (T060). Antes de la primera corrida en Neon (T063), Jefferson decide si el informe real, que trae correos de profesores, puede pasar por un agente, y qué se hace con las secciones 410 y 411 inventadas de 450002 que siguen en la rama principal. La carrera debe responder D-43 y D-44 antes de la capacitación de la semana 14. Desde el 2026-11-19 se trabaja una sola línea a la vez, en una sola sesión
 - **Siguiente paso**: con la fusión, el respaldo de la rama principal (T061), el archivo real en el Windows por Jefferson (T062), la corrida en seco (T063), la corrida con `--aplicar` con su permiso (T064), las secciones sin docente (T065) y las contraseñas (T066). Después, la construcción de la spec 005 en el orden de J-41 y la prueba con los exports reales
@@ -36,6 +36,56 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-22 19:34 (Lima) · chore/version-0.3.0 · Número de versión 0.3.0
+- Quién: Jefferson pide preparar la publicación de la etapa A de la spec 007 («Sí, prepárala»). Claude Code, sin subagentes, sube el número de versión.
+- Qué cambió: el número de versión pasa a 0.3.0 y `CHANGELOG.md` abre «[0.3.0] - 2026-11-23» con lo que estaba en «Sin publicar».
+- Por qué: la 0.3.0 lleva a Production la etapa A de la spec 007 (P2 con el siguiente paso, «Antes de subir», «Qué corregir», textos ciertos y rótulos por rol), la spec 006 y las specs 005 y 007 aprobadas, antes del registro de los profesores del 30-11.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa y la CI del PR corre la suite.
+- Lo que no debe hacer, cómo se probó: el commit no cambia código ni escenarios; la 0.3.0 no trae migraciones nuevas, así que la rama principal de Neon sigue en V1_11.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la prueba final de Jefferson con `VERSION_ESPERADA=0.3.0 bash ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh` y los PR «Versión 0.3.0» con su permiso.
+
+### 2026-11-22 19:12 (Lima) · feat/007-experiencia-por-cuenta · Etapa A de la spec 007
+- Quién: Jefferson pide construir la etapa A y juntarla con la versión de pruebas («Sí, apruébala», «Sí, júntala»). Codex (CLI con la cuenta de Jefferson) escribe las primeras 33 pruebas del Front y se detiene por el límite de uso; un workflow de Claude Code las revisa contra los .feature, suma 13, escribe el código, y un revisor y un corrector arreglan 6 detalles menores. Un subagente hace T013 y T030 en el Back. Claude Code revisa, corre las pruebas y escribe esta entrada.
+- Qué cambió: `tests/aceptacion/pasos/test_lectura_gherkin_es.py` fija el conteo de la spec 007 (35 escenarios, 70 casos, 29 delegados a Vitest) y `tests/aceptacion/pasos/test_experiencia_por_cuenta_feature.py` prueba el esquema del lector de `antes_de_subir.feature` sin base; T013 y T030 quedan hechas.
+- Por qué: la capacitación de los profesores empieza el 2026-11-23 y el registro va del 30-11 al 12-12, así que cada pantalla debe decir qué falta y qué hacer.
+- Lo que debe hacer, cómo se probó: la suite completa da 1717 passed y 15 skipped en el clúster desechable, y `bash scripts/preflight.sh` no encuentra fallas.
+- Lo que no debe hacer, cómo se probó: la etapa B (ruta 17 y P7) y la parte de P4 de la spec 005 no cambian, y ninguna ruta del Back cambia.
+- Correcciones: el revisor del Front encuentra un nav dentro de un span y el mismo fondo para la pantalla actual y el paso del ratón, y el corrector los arregla con prueba primero.
+- Cómo se reporta: esta entrada, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: la prueba de humo con Playwright de la etapa A (T052), su publicación antes del 30-11 con el permiso de Jefferson y la decisión menor sobre una sección sin plan con una carga rechazada.
+
+### 2026-11-22 18:27 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 aprobada
+- Quién: Jefferson aprueba en el chat la spec 007 («Sí, apruébala»). Claude Code, sin subagentes, registra la aprobación.
+- Qué cambió: el Status de la spec 007, `tasks.md`, `specs/README.md` y las notas de la documentación del Front pasan de borrador a aprobada.
+- Por qué: la aprobación es la fusión del PR o el «apruebo» explícito de Jefferson.
+- Lo que debe hacer, cómo se probó: `bash scripts/preflight.sh --staged` pasa en el commit.
+- Lo que no debe hacer, cómo se probó: el commit cambia solo líneas de estado y esta memoria.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de esta rama.
+- Pendiente y siguiente paso: la fusión y la construcción de la etapa A (US-59 a US-63).
+
+### 2026-11-22 18:18 (Lima) · docs/007-experiencia-por-cuenta · Spec 007 en borrador, lo importante para cada cuenta en cada momento
+- Quién: Jefferson pide en el chat mejorar la experiencia con specs en Gherkin que muestren lo importante para cada cuenta y en cada momento («también mejora la UX…», «Sí, sigue»). Claude Code arma un workflow de diez subagentes: tres proponen 18 candidatas (profesor, coordinación y lo transversal), tres lentes y un crítico de arquitectura las auditan, un redactor escribe la spec y un revisor y un corrector arreglan 13 problemas, uno bloqueante sobre el orden de construcción.
+- Qué cambió: en el Back, `specs/007-experiencia-por-cuenta/` (spec.md, revision-historias.md, plan.md, tasks.md y cinco .feature con 35 escenarios) y su línea en `specs/README.md`.
+- Por qué: la capacitación de los profesores empieza el 2026-11-23 y el registro va del 30-11 al 12-12, así que cada cuenta necesita ver qué le falta y qué hacer en cada pantalla.
+- Lo que debe hacer, cómo se probó: el analizador de Gherkin del Back lee los cinco .feature (5, 12, 8, 4 y 6 escenarios) y `bash scripts/preflight.sh` no encuentra fallas.
+- Lo que no debe hacer, cómo se probó: ningún código, escenario de otra spec ni la base cambian; la spec 007 cita la 005 y la 006 sin repetirlas.
+- Correcciones: el revisor encuentra que el orden de construcción no ponía primero la spec 006, y el corrector fija spec 006, etapa A de la 007, núcleo de la 005 y etapa B.
+- Cómo se reporta: esta entrada, el CHANGELOG y el PR de esta rama.
+- Pendiente y siguiente paso: la aprobación de Jefferson y las decisiones D-46 y D-47 de la carrera (a quién acude un profesor sin secciones y si la coordinación ve los correos de los profesores atrasados).
+
+### 2026-11-22 17:30 (Lima) · docs/registro-version-0.2.0 · Versión 0.2.0 en Production
+- Quién: Jefferson autoriza publicar en el chat («Sí, publícala») después de correr la prueba final. Claude Code migra la rama principal de Neon a V1_11, abre y junta los PR «Versión 0.2.0» de los dos repositorios, comprueba Production y escribe este registro.
+- Qué cambió: la rama principal de Neon pasa a V1_11 con `migrar_neon.sh principal … --confirmo-principal`, con la descripción del instrumento vacía y Q01 a Q14 en 0. `main` recibe `develop` en el Back (PR #41, 138dd80) y en el Front (PR #26, 6eb421c), y `release.yml` crea los tags `v0.2.0` y sus Release. T071 y T072 de la spec 004 quedan hechas.
+- Por qué: la capacitación de los profesores empieza en la semana 14 (23 al 28-11-2026), y Production lleva ahora el reemplazo, P5, P6, los exports .csv y .xls, la descripción del instrumento y las pantallas sin el aviso de códigos inventados.
+- Lo que debe hacer, cómo se probó: `ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh` da 14 de 14 en ok contra la vista previa de `develop` (Back ec33606 y Front 8b11436). Después de publicar, Vercel da READY en Production con 138dd80 y 6eb421c, `GET /` del Front oficial responde 200 y `GET /api/sesion` sin cookie responde 401 en JSON con `Cache-Control: no-store`.
+- Lo que no debe hacer, cómo se probó: durante la prueba final la huella de la rama principal no cambia, y los textos de prueba de la descripción no van a Production.
+- Correcciones: la primera corrida de la prueba final se detiene antes de escribir por una variable pegada a «»» en el guion, que se corrige con ${MARCA}.
+- Cómo se reporta: esta entrada, los Release v0.2.0 y los PR #41 y #26.
+- Pendiente y siguiente paso: el análisis de SonarCloud del PR #41 falla sin ser obligatorio y queda por revisar. Siguen la lista de profesores con sus correos para la spec 006, la construcción de la spec 005 y la spec de experiencia por cuenta.
 
 ### 2026-11-22 13:40 (Lima) · chore/version-0.2.0 · Número de versión 0.2.0
 - Quién: Jefferson pide publicar la versión nueva («si por favor»). Claude Code, sin subagentes, sube el número de versión. Antes, un workflow de tres subagentes arma y prueba en local `ABET_SIS_MED/herramientas_neon/comprobar_version_020.sh`, la prueba final de la vista previa, que exige VERSION 0.2.0 en `develop`.
