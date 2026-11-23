@@ -141,6 +141,9 @@ VARIANTES = {
     "quimica": {},
     "quimica_plan": {},
     "catalogo_industrial": {"hasta": (1, 11)},
+    # Corrección del 2026-11-23 a T027. El alcance de Ambiental y el plan de 5643 en 2026-1, sin las secciones de
+    # Química, para el escenario de la programación de capacitacion_en_develop.feature.
+    "quimica_plan_sin_secciones": {},
 }
 
 
@@ -174,8 +177,17 @@ def sembrar_quimica_con_plan(conexion: psycopg.Connection) -> None:
                  {"DESCRIPCION_INSTRUMENTO": DESCRIPCION_DE_PRUEBA})
 
 
+def sembrar_plan_sin_secciones(conexion: psycopg.Connection) -> None:
+    """Alcance de Ambiental y plan de 5643 en 2026-1 con el PI 6.1, sin quimica_2026_1_inventado.sql, así la
+    programación de la siembra trae las secciones de Química (capacitacion_en_develop.feature, US-86)."""
+    correr_guion(conexion, ALCANCE_AMB_SQL, {"aplicar": "1"})
+    correr_guion(conexion, PLAN_QUIMICA_SQL, {"aplicar": "1", "pi": "6.1"},
+                 {"DESCRIPCION_INSTRUMENTO": DESCRIPCION_DE_PRUEBA})
+
+
 # Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
-SIEMBRAS = {"programacion": C.base_de_partida_006, "quimica": sembrar_quimica, "quimica_plan": sembrar_quimica_con_plan}
+SIEMBRAS = {"programacion": C.base_de_partida_006, "quimica": sembrar_quimica, "quimica_plan": sembrar_quimica_con_plan,
+            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones}
 
 
 class Plantillas:

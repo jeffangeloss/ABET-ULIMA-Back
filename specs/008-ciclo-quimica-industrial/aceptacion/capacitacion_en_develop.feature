@@ -76,8 +76,8 @@ Característica: La capacitación de Química General corre en la versión de pr
   @spec008 @corte1 @US-86
   Escenario: Ninguna salida de la siembra repite el correo de la coordinación
     Dado la variable CORREO_COORDINACION con "real.inventado@example.invalid"
-    Cuando la siembra corre el registro de la coordinación con en_windows.py
-    Entonces ni los informes ni la salida de en_windows.py muestran el valor de esa variable
+    Cuando la siembra corre el registro de la coordinación con la variable en su entorno, como la deja en_windows.py
+    Entonces ni los informes ni la salida de la siembra muestran el valor de esa variable
 
   @spec008 @corte1 @US-86
   Escenario: La versión de prueba acepta los códigos que no empiezan con 99

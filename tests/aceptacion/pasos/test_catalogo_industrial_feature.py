@@ -40,6 +40,7 @@ V1_12 = MIGRACIONES / "V1_12__cargar_referencia_industrial.sql"
 V1_13 = MIGRACIONES / "V1_13__cargar_reglas_industrial.sql"
 V1_14 = MIGRACIONES / "V1_14__crear_coordinacion_alcance.sql"
 CORRER_PRUEBAS = RAIZ / "db" / "pruebas" / "correr_pruebas.sh"
+CALLBACK = RAIZ / "db" / "callbacks" / "afterMigrate__permisos_lectura.sql"
 # Tablas del catálogo de AMB-2026 que V1_12 no debe tocar, con la columna que las ata a la versión.
 TABLAS_DE_AMB = {
     "so": "SELECT so_id, numero, descripcion FROM abet.so WHERE catalogo_version_id = %s ORDER BY 1",
@@ -72,9 +73,11 @@ def aplicar(ctx: Escenario, migracion: Path) -> None:
     corrida = psql(ctx, "-1", "-f", str(migracion), entorno={"PGOPTIONS": "-c client_min_messages=warning"})
     assert corrida.returncode == 0, f"{migracion.name}: {corrida.stderr.strip()}"
     if migracion.name.startswith("V1_14__"):
-        # En Neon, crear_rol_app.sql corre otra vez después de V1_14 y da al rol de la aplicación el SELECT de la tabla
-        # de alcance, que app/permisos.py lee desde T030. Aquí el rol ya existe, así que el dueño da ese mismo SELECT.
-        ctx.api.dueno.execute(f'GRANT SELECT ON acceso.coordinacion_alcance TO "{ctx.api.base.rol_app}"')
+        # Flyway corre el callback afterMigrate al final del migrate que aplica V1_14, y el callback da al rol de la
+        # aplicación, que ya existe, el SELECT de la tabla de alcance que app/permisos.py lee desde T030 (corrección
+        # del 2026-11-23). crear_rol_app.sql no vuelve a correr en Neon.
+        callback = psql(ctx, "-f", str(CALLBACK), entorno={"PGOPTIONS": "-c client_min_messages=warning"})
+        assert callback.returncode == 0, callback.stderr.strip()
 
 
 def generar(entrada: Path, salida: Path) -> subprocess.CompletedProcess[str]:
