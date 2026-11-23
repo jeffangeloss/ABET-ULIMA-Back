@@ -1,0 +1,82 @@
+# Tasks: Ciclo de punta a punta de Química General en Ingeniería Industrial
+
+**Input**: spec.md, plan.md · **Estado al 2026-11-23**: spec aprobada por Jefferson en el chat el 2026-11-23 («Sí, apruébala»), con la auditoría, la spec, el plan y los doce `.feature` (202 escenarios y 257 casos) en `docs/008-ciclo-quimica-industrial` del Back y del Front, sin commit. Cada tarea lleva su estimación en horas, que suma unas 130, y `plan.md` dice qué cabe antes del 30-11-2026
+
+Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs 001 y 003 a 007. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Base]` es la base como código de `db/` del Back con sus pruebas en el clúster desechable, y `[Jefferson]` marca lo que solo él decide, autoriza o corre desde su Windows. Ninguna tarea escribe en Neon ni en Vercel salvo las de la fase 7 y T054, que corren desde el Windows de Jefferson con su permiso. Cada tarea de código escribe primero la prueba de sus escenarios y la ve fallar.
+
+## Phase 0: Descubrimiento
+
+- [x] T001 [Back] Escribir 37 candidatas desde el profesor, la coordinación, la base y la capacitación, con su pantalla, sus rutas y tablas y su Gherkin, sobre el código de `wt/back-008` y `wt/front-008` [US-67..US-90] · 2026-11-23
+- [x] T002 [Back] Auditar las candidatas con las lentes de necesidad, tamaño y verificabilidad y con el crítico de arquitectura, y dejar el resultado en `revision-historias.md` [US-67..US-90] · 2026-11-23
+- [x] T003 [Back] Redactar `spec.md`, `plan.md`, `tasks.md` y los doce `.feature`, que el analizador de pytest-bdd 9 lee con 202 escenarios y 257 casos, y sumar la spec a `specs/README.md` [US-67..US-90] · 2026-11-23
+- [x] T004 [Front] Anotar la sección 15 de `docs/03-api/contrato.md` (propuesta) y su entrada en `docs/specs/api-contracts.md` y `docs/specs/feature-index.md` [US-70..US-80] · 2026-11-23
+- [ ] T005 [Jefferson] Aprobar la spec, con la fusión de los PR de `docs/008-ciclo-quimica-industrial` o con su «apruebo» en el chat, decidir J-49 a J-59 y aprobar el cambio de V1_12 a V1_15 de la spec 005 [US-67..US-90] · 0,5 h
+- [ ] T006 [Jefferson] Pedir a Stefanny D-48 a D-55, la «Plantilla Base - Final» y la «Base cursos - Nivel» de Industrial, y confirmar la fecha de la capacitación (J-56) y si la coordinación real dicta una sección (J-51) [US-67] [US-69] [US-71] [US-87] · 0,5 h
+
+## Phase 1: Contrato
+
+- [ ] T010 [Back] Escribir BR-PERIODO-05, BR-PERIODO-06, BR-ACCESO-13, BR-ACCESO-14 y BR-R17-13 con sus `targets` y los cambios fechados de BR-ACCESO-07, BR-ACCESO-08 y BR-CARGA-20, y abrir la spec viva `avance` de la spec 007 con el alcance nuevo [US-68] [US-70..US-73] [US-78] [US-79] · 2 h
+- [ ] T011 [Front] Dejar definitiva la sección 15 del contrato, quitar la marca (propuesta) de las rutas 17 y 18 en la tabla de la sección 2, sumarlas a la sección 10, dejar definitiva la sección 12 de `docs/01-arquitectura/frontend.md` y su fila a `docs/specs/api-contracts.md` [US-71] [US-73] [US-79] [US-80] · 1 h
+- [ ] T012 [Back] Registrar el cambio fechado de V1_12 a V1_15 en `specs/005-oportunidades-de-mejora/tasks.md` y su FR-017, y el de los textos de FR-019 en `specs/007-experiencia-por-cuenta/aceptacion/que_corregir.feature` [US-67] [US-77] · 1 h
+- [ ] T013 [Back] Fijar en `test_lectura_gherkin_es.py` el conteo de la spec 008 (202 escenarios y 257 casos) y ampliar `conftest.py` con la base desechable de la spec 008, el rol con `[A-Z_]+`, las tablas de `acceso` en LISTA, los rangos de consultas, la expresión de migraciones que admite V1_12 a V1_15 y los pasos `@playwright` que registran su prueba de `e2e/` [US-67..US-90] · 3 h
+
+## Phase 2: Base
+
+- [ ] T020 [Base] Escribir primero los escenarios de US-67 y después `db/herramientas/generar_v1_12.py`, `db/migration/V1_12__cargar_referencia_industrial.sql` con su bloque DO de conteos y la sección 1 de `db/pruebas/pruebas.sql` por catálogo, con la aserción nueva de IND-2026 [US-67] · 6 h
+- [ ] T021 [Base] Escribir primero los escenarios de V1_13 y de Q19 y después `V1_13__cargar_reglas_industrial.sql` y Q19 en `pruebas.sql` y `controles_neon.sql` [US-68] · 2 h
+- [ ] T022 [Base] Escribir primero los escenarios de US-69 y después `db/datos/plan_quimica_2026_1.sql` con `-v aplicar`, `-v pi` y `\getenv`, y Q18 con su caso que falla [US-69] · 2,5 h
+- [ ] T023 [Base] Escribir primero los escenarios de la base de US-70 y después `V1_14__crear_coordinacion_alcance.sql`, el SELECT de `abet_app` en `crear_rol_app.sql`, las listas de `probar_rol_app.sql`, la nueva corrida de `crear_roles_lectura.sql`, `db/datos/alcance_coordinacion_ambiental.sql` y Q20 [US-70] [US-71] · 3 h
+- [ ] T024 [Base] Escribir `db/datos/quimica_2026_1_inventado.sql` con la 701 a la 704, sus profesores, la coordinación del curso y su alcance, aplicarlo dos veces en `correr_pruebas.sh` y sumar Q21 con su caso que falla [US-75] [US-86] · 2 h
+- [ ] T025 [Base] Escribir `db/plataforma/neon/huella_ambiental.sql`, de solo lectura, con su prueba antes y después de la siembra inventada [US-69] [US-86] · 1,5 h
+- [ ] T026 [Jefferson] Correr fuera del repositorio el extractor que lee solo la hoja «Información por Asignatura» de un R-17 de profesor y revisar que `db/referencia/industrial_2026.json` traiga solo SO, PI, asignaturas y niveles [US-67] · 1 h
+- [ ] T027 [Base] Escribir primero los escenarios de US-86 en el clúster desechable y después `db/herramientas/sembrar_quimica.py`, que corre en orden los pasos de FR-020, en seco por omisión, se detiene en el primer paso con código distinto de 0, exige `--confirmo-principal` con `--rama principal` y hace la comprobación previa de la guardia [US-86] · 4 h
+
+## Phase 3: Back
+
+- [ ] T030 [Back] Escribir primero los escenarios del Back de US-70 y US-71 y después `_ALCANCE`, `secciones_visibles()`, `puede_leer()` y `puede_reemplazar()` por `acceso.coordinacion_alcance`, con `puede_subir()` sin cambios [US-70] [US-71] · 4 h
+- [ ] T031 [Back] Escribir primero el escenario de la sesión y después el campo `alcance` de `GET /api/sesion` [US-71] · 1 h
+- [ ] T032 [Back] Escribir primero los escenarios de US-72 y después `db/herramientas/registrar_coordinacion.py` [US-72] · 3 h
+- [ ] T033 [Back] Escribir primero los escenarios del Back de US-73 y de la comprobación de arranque de US-68, y después `app/rutas/periodos.py` (ruta 18) en `tests/rutas_registradas.py`, el parámetro `periodo` de la ruta 8 y la comprobación por carrera de `app/configuracion.py` [US-73] [US-68] · 3,5 h
+- [ ] T034 [Back] Escribir primero los escenarios de US-74 sobre una tabla maestra inventada y después `scripts/generar_exports_desde_maestra.py`, con el manifiesto y `--ejercicio`, con la opción `--tarjetas` y su escenario de US-87 [US-74] [US-87] · 5 h
+- [ ] T035 [Back] Escribir los pasos de US-75 y US-76 y comprobar que pasan con `abet_carga/` sin cambios, o corregir lo que falle con su prueba [US-75] [US-76] · 2,5 h
+- [ ] T036 [Back] Escribir primero los escenarios del Back de US-78 y después B6 en `_cabecera()` de `abet_carga/r17.py` [US-78] · 1,5 h
+- [ ] T037 [Back] Escribir primero los escenarios de US-83 y después `db/herramientas/conciliar_tabla_maestra.py`, con openpyxl, `abet_respaldo` en READ ONLY y la opción de datos reales [US-83] · 4 h
+- [ ] T038 [Back] Construir la ruta 17 de la spec 007 (sus T031 a T035) con el alcance de `secciones_visibles()` y los escenarios del Back de US-79 [US-79] · 6 h
+- [ ] T039 [Back] Solo si D-32 se responde (J-54), escribir primero los escenarios del Back de US-80 y después el campo `agregados` de la ruta 12 [US-80] · 3 h
+
+## Phase 4: Front
+
+- [ ] T040 [Front] Escribir primero la prueba de contraste y los escenarios de estados, rótulos fijados, movimiento reducido y recursos de terceros, y después los tokens de `src/index.css` y los componentes con la skill frontend-design [US-81] · 6 h
+- [ ] T041 [Front] Escribir primero los escenarios de la tarjeta de P2 y después el camino, el paso actual con `aria-current="step"` y el botón principal [US-81] · 3 h
+- [ ] T042 [Front] Escribir primero los escenarios de Vitest de US-73 y después el periodo en `App.tsx`, `api.ts` y `secciones_del_profesor.ts`, sin almacenamiento del navegador [US-73] · 4 h
+- [ ] T043 [Front] Escribir primero los escenarios de Vitest de US-71 y después los rótulos por `alcance.tipo` en `rotulos.ts` y el tipo de la sesión en `tipos.ts` [US-71] · 2 h
+- [ ] T044 [Front] Escribir primero los escenarios de US-77, con la prueba que recorre los motivos RECHAZA_FILA del contrato, y después la tabla de J-43, `queCorregir()` y el texto neutro [US-77] · 2,5 h
+- [ ] T045 [Front] Escribir primero los escenarios de P6 de US-78 y después la fila y la barra con su aria-label, y llevar el sistema visual a P3, P4, P5 y Ingreso [US-78] [US-81] · 3 h
+- [ ] T046 [Front] Construir P7 de la spec 007 (su T045) con el título por alcance y `pantallaDeLlegada()`, y los escenarios de Vitest de US-79 [US-79] · 5 h
+- [ ] T047 [Front] Solo si T039 entra, escribir primero el escenario de P6 de US-80 y después la fila del curso [US-80] · 2 h
+- [ ] T048 [Front] Escribir en `e2e/visual.spec.ts` los escenarios `@playwright` de US-82 con la API simulada y corregir lo que falle [US-82] · 3 h
+- [ ] T049 [Front] Escribir primero la prueba de cotejo de la guía y después `docs/capacitacion/guia_quimica.md` por rol, con el ejercicio de error y «Fecha por confirmar» [US-87] · 4 h
+
+## Phase 5: Pruebas y humo
+
+- [ ] T050 [Back] Suite completa con `uv run --frozen --no-build pytest -q`, `bash scripts/preflight.sh` y `bash db/pruebas/correr_pruebas.sh` con Q01 a Q15 y Q18 a Q21 en 0 [US-67..US-90] · 1 h
+- [ ] T051 [Front] Suite de Vitest, `npm run build` y `bash scripts/preflight.sh` del Front [US-71] [US-73] [US-77..US-82] [US-87] · 0,5 h
+- [ ] T052 [Back] [Front] Escribir primero los escenarios de US-88 sobre copias en tmp_path y después las reglas nuevas de `scripts/preflight.sh` de los dos repositorios, con la lista cerrada CODIGOS_DE_PRUEBA y la regla de ocho cifras solo sobre las líneas que agrega un cambio (`--staged` o `--pr`), correrlas sobre el contenido actual y barrer una vez el historial con la huella del correo real que Jefferson pone en `HUELLAS_CORREOS_PROHIBIDOS` [US-88] · 3 h
+- [ ] T053 [Front] Prueba de humo con Playwright de punta a punta en `e2e/humo_quimica.spec.ts`, contra la vista previa de develop con la siembra inventada, en la que `docente701@example.invalid` ingresa, ve «Periodo 2026-1», sube el export inventado que arma el generador, ve la carga publicada y descarga un R-17 con «Carrera de Ingeniería Industrial», `docente702@example.invalid` sube el export inventado de la 702, y `coordinador.quimica@example.invalid` llega a P7 o a P2 con las cuatro secciones del curso y no puede subir, con los escenarios `@playwright` de US-85 y US-87 [US-85] [US-87] · 4 h
+- [ ] T057 [Back] Escribir primero los escenarios de US-84 en el clúster desechable y después `db/herramientas/ensayar_capacitacion.py` [US-84] · 3 h
+- [ ] T059 [Jefferson] Armar fuera del repositorio el CSV de la programación de 2026-1 con las 18 secciones, un correo docenteNNN@example.invalid por sección y el curso_blackboard CAPACITACION_20261_5643_NNN de FR-013, y correr `cargar_programacion.py` en seco sobre una base desechable [US-74] [US-86] · 1 h
+- [ ] T054 [Jefferson] Ensayo con los datos reales en una rama hija de develop (J-52). Correr el generador fuera del repositorio sobre la tabla maestra y la programación real, sembrar la rama hija en el orden de FR-020, correr `ensayar_capacitacion.py` de T057, que sube los 18 exports con la biblioteca, descarga los 18 R-17 y corre el conciliador hasta «18 de 18 secciones iguales.», revisar a ojo una sección contra su R-17 a mano, armar las tarjetas fuera del repositorio y borrar la rama hija [US-74] [US-83] [US-84] · 4 h
+- [ ] T055 [Back] Escribir primero los escenarios de US-90 y después `scripts/matriz_cumplimiento.py` y `cumplimiento.md`, con la corrida en la integración continua [US-90] · 3 h
+- [ ] T056 [Back] Escribir primero los escenarios de US-89 sobre tmp_path y después `db/herramientas/cerrar_capacitacion.py`, que no borra archivos [US-89] · 2 h
+- [ ] T058 [Jefferson] Sumar a `herramientas_neon/asignar_claves.py` el modo de J-58, que lee el correo de `CORREO_COORDINACION` por `en_windows.py`, lo oculta en la salida y pide la contraseña con getpass, con su prueba en un clúster desechable y un correo de example.invalid [US-72] [US-86] · 1,5 h
+
+## Phase 6: Auditoría
+
+- [ ] T060 [Back] `specs/008-ciclo-quimica-industrial/audit.md` con el cruce de historia, escenario, prueba y resultado y la matriz de T055, la línea Verification fechada en `acceso`, `periodo`, `carga-export`, `r17`, `resultados` y `avance`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios [US-67..US-90] · 2 h
+
+## Phase 7: Despliegue
+
+- [ ] T069 [Jefferson] Desde el Windows, respaldar develop y aplicar en la rama develop de Neon V1_12, V1_13 y V1_14 con `alcance_coordinacion_ambiental.sql`, cada paso primero en seco, con la huella de Ambiental antes y después [US-70] [US-86] · 1 h
+- [ ] T070 [Jefferson] Autorizar empujar las ramas `feat/008-ciclo-quimica-industrial` y fusionar sus PR en `develop` con la integración continua en verde, para que la vista previa de develop tenga el código de la spec [US-67..US-90] · 0,5 h
+- [ ] T071 [Jefferson] Desde el Windows y con `db/herramientas/sembrar_quimica.py` de T027, sembrar la siembra inventada, correr el humo de T053 una sola vez, restablecer develop, volver a correr el orden completo de FR-020 desde el respaldo y V1_12, con la huella de Ambiental tomada después del restablecimiento, sembrar Química con la programación de T059 y la coordinación por `CORREO_COORDINACION`, asignar las contraseñas con getpass (con el modo de J-58 de T058 para la coordinación), entregarlas fuera de banda con las tarjetas, confirmar el alcance de las 18 secciones con la lectura sin correos de US-86 y congelar develop hasta el 12-12-2026 (J-56) [US-72] [US-85] [US-86] · 3 h
+- [ ] T072 [Jefferson] Dar la capacitación con la guía, correr el conciliador sobre develop al terminar el registro (SC-003), correr el cierre de T056 en seco y después con `--aplicar`, y decidir aparte la publicación en Production y D-55 [US-83] [US-87] [US-89] · 2 h
