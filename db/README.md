@@ -7,7 +7,7 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 | Ruta | Para qué sirve |
 | --- | --- |
 | `flyway.toml` | Configuración de Flyway, con los esquemas `abet` y `acceso`, el entorno local `dev`, el entorno `neon` y las credenciales tomadas de variables de entorno |
-| `migration/` | Migraciones versionadas `V1_01` a `V1_14` y repetibles `R__` con las vistas |
+| `migration/` | Migraciones versionadas `V1_01` a `V1_15` y repetibles `R__` con las vistas |
 | `callbacks/afterMigrate__permisos_lectura.sql` | Callback de Flyway que, al final de cada migrate, repone los permisos de los roles de lectura y del respaldo y el SELECT de las dos vistas de `abet_app` |
 | `plataforma/neon/crear_roles_lectura.sql` | Script que se corre en Neon para crear los roles de solo lectura de Power BI y del respaldo |
 | `referencia/ambiental_2026.json` | Datos curriculares de Ambiental, con los resultados del estudiante (student outcomes, SO), los indicadores de desempeño (performance indicators, PI), la rúbrica, las competencias y las asignaturas, sin datos personales |
@@ -74,6 +74,14 @@ La vista del R-17 muestra dos porcentajes con nombres explícitos, uno sobre los
 | `V1_14__crear_coordinacion_alcance.sql` | DDL | Tabla `acceso.coordinacion_alcance` con una fila por carrera o por asignatura en un periodo (`ck_coordinacion_alcance_uno`), el periodo obligatorio en la fila de asignatura y nulo en la de carrera (`ck_coordinacion_alcance_periodo`, J-49) y `uq_coordinacion_alcance` con NULLS NOT DISTINCT. El rol COORDINADOR no cambia, y una cuenta COORDINADOR sin filas no ve nada desde el código de T030 |
 
 `generar_v1_12.py` compara el nombre en mayúsculas de cada asignatura reutilizada con el de `V1_03` sin distinguir mayúsculas y con las tildes, así «QUÍMICA GENERAL» es «Química General» y «Quimica general» no lo es. Dos nombres de la hoja dicen la misma asignatura con otras palabras, 560044 («FUNDAMENTOS DE LA PROGRAMACIÓN») y 6508 («METODOLOGÍA DE INVESTIGACIÓN»), y entran por la lista `EQUIVALENCIAS` del generador. 560071 aparece escrita de dos formas en la hoja, y el generador usa la primera, «PROYECTO DE INGENIERÍA APLICADA I», como declara `inconsistencias_de_la_fuente`. El nombre de cada asignatura nueva pasa de mayúsculas a la forma de `V1_03`, con los conectores en minúscula y los números romanos en mayúscula. Desde `V1_12` la base tiene dos catálogos, así que la sección 1 de `pruebas/pruebas.sql` cuenta cada tabla del catálogo por versión (C01 para AMB-2026 y C02 para IND-2026), y las pruebas que buscan un PI o un conjunto de reglas de Ambiental filtran por la carrera AMB.
+
+## Qué agrega V1_15 (spec 005)
+
+| Archivo | Tipo | Qué hace |
+|---|---|---|
+| `V1_15__mejora_borrador_y_declaracion.sql` | DDL | Cuatro tablas del análisis por indicador (J-38). `abet.mejora_borrador` guarda una sola versión del borrador por carga, desde 1 (`ck_mejora_borrador_version`), y `abet.mejora_borrador_pi` la causa y la acción de cada PI, nulas mientras el profesor no las escribe. `abet.mejora_declaracion` es la cabecera de solo INSERT de cada declaración, y `abet.mejora_declaracion_pi` guarda por PI el tipo, la causa, la acción y la foto del logro, la meta y el semáforo (J-40). Las dos hijas tienen su FK (`carga_id`, `pi_id`) a `abet.carga_columna`, los CHECK sin códigos de 8 dígitos ni correos y causas y acciones de hasta 800 caracteres. La declaración exige además texto no en blanco (`ck_mejora_declaracion_pi_texto`), el tipo de su lista (`ck_mejora_declaracion_pi_tipo`), el semáforo de la suya (`ck_mejora_declaracion_pi_semaforo`) y la coherencia entre los dos (`ck_mejora_declaracion_pi_coherencia`). Ninguna tabla tiene estado, responsable ni plazo |
+
+La spec 005 la llamaba V1_12, y pasa a V1_15 porque la spec 008 toma V1_12 a V1_14 (FR-004 de la spec 008). Desde V1_15, `crear_rol_app.sql` da a `abet_app`, solo si las tablas existen, el SELECT de las cuatro, el INSERT y el UPDATE por columnas exactas del borrador y el INSERT de tabla completa de la declaración, sin DELETE, y su comprobación final suma esos permisos a sus listas exactas. En Neon el orden es migrar, correr `crear_rol_app.sql` sin APP_DB_CLAVE, comprobar los permisos y recién después desplegar el código de las rutas 14 a 16 (J-37). El callback de Flyway no da estos permisos, porque ningún código anterior a la spec 005 lee las tablas. `pruebas/probar_rol_app.sql` lo comprueba en N10, y `tests/test_mejora_base.py` prueba cada restricción y cada permiso en una base desechable.
 
 ## Qué agrega V1_09 (corte 1 del MVP)
 

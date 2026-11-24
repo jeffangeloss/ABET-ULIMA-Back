@@ -536,4 +536,47 @@ BEGIN
 END $$;
 ROLLBACK;
 
+-- N10 (spec 005, BR-MEJORA-12). Desde V1_15 el rol lee las cuatro tablas del análisis por indicador, escribe el
+-- borrador por columnas exactas y solo inserta la declaración. Ninguna sentencia que borra o corrige pasa, y cada una
+-- recibe 42501 con el nombre de su tabla.
+BEGIN;
+SET LOCAL ROLE :"rol_app";
+DO $$
+DECLARE
+    v_rol         text := current_setting('prueba.rol_app');
+    v_privilegios text;
+    c             record;
+    v_estado      text;
+    v_mensaje     text;
+BEGIN
+    SELECT string_agg(tabla || '=' || privilegios, ' ' ORDER BY tabla) INTO v_privilegios
+    FROM (SELECT tabla, string_agg(p, ',' ORDER BY p) AS privilegios
+          FROM unnest(ARRAY['mejora_borrador', 'mejora_borrador_pi', 'mejora_declaracion', 'mejora_declaracion_pi']) AS tabla,
+               unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) AS p
+          WHERE has_table_privilege(v_rol, 'abet.' || tabla, p) GROUP BY tabla) AS t;
+    IF v_privilegios IS DISTINCT FROM 'mejora_borrador=SELECT mejora_borrador_pi=SELECT '
+                                      || 'mejora_declaracion=INSERT,SELECT mejora_declaracion_pi=INSERT,SELECT' THEN
+        RAISE EXCEPTION 'FALLA N10: el rol tiene % en las tablas de V1_15', v_privilegios;
+    END IF;
+    FOR c IN SELECT * FROM (VALUES
+        ('Q01', 'DELETE FROM abet.mejora_borrador_pi', 'mejora_borrador_pi'),
+        ('Q02', 'DELETE FROM abet.mejora_declaracion', 'mejora_declaracion'),
+        ('Q03', 'TRUNCATE abet.mejora_declaracion_pi', 'mejora_declaracion_pi'),
+        ('Q04', $q$UPDATE abet.mejora_declaracion_pi SET causa = 'Otra causa.'$q$, 'mejora_declaracion_pi'),
+        ('Q05', 'UPDATE abet.mejora_borrador_pi SET pi_id = pi_id', 'mejora_borrador_pi')
+    ) AS t (id, sentencia, objeto) ORDER BY id LOOP
+        v_estado := NULL;
+        BEGIN
+            EXECUTE c.sentencia;
+        EXCEPTION WHEN others THEN
+            GET STACKED DIAGNOSTICS v_estado = RETURNED_SQLSTATE, v_mensaje = MESSAGE_TEXT;
+        END;
+        IF v_estado IS DISTINCT FROM '42501' OR position(c.objeto IN v_mensaje) = 0 THEN
+            RAISE EXCEPTION 'FALLA N10 %: se esperaba permission denied sobre % y llegó % (%)', c.id, c.objeto, v_estado, v_mensaje;
+        END IF;
+    END LOOP;
+    RAISE NOTICE 'ok N10 el rol lee las tablas de V1_15, solo inserta la declaración y no borra ni corrige';
+END $$;
+ROLLBACK;
+
 \echo 'ROL DE LA APLICACIÓN: TODAS LAS PRUEBAS PASARON'
