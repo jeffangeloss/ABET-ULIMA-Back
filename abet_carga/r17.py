@@ -269,13 +269,16 @@ def componer_recuadros(pis: list[tuple[str, str | None, str, str]]) -> tuple[str
     """Compone un párrafo por PI para el recuadro de causas y el de acciones."""
     causas = []
     acciones = []
-    rotulos = {"OM": "Oportunidad de mejora.", "BP": "Buena práctica."}
+    # El tipo usa el vocabulario de tipo_de_registro(), de la ruta 13 y de ck_mejora_declaracion_pi_tipo (BR-MEJORA-03).
+    rotulos = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora.", "BUENA_PRACTICA": "Buena práctica."}
     for pi, tipo, causa, accion in pis:
         if tipo is None:
             parrafo = f"{pi} · Sin calificaciones en esta carga."
             causas.append(parrafo)
             acciones.append(parrafo)
         else:
+            if tipo not in rotulos:
+                raise ValueError(f"Tipo de registro desconocido para el PI {pi}: {tipo!r}.")
             prefijo = f"{pi} · {rotulos[tipo]} "
             causas.append(prefijo + causa)
             acciones.append(prefijo + accion)

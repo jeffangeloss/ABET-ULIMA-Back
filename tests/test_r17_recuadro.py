@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from openpyxl import load_workbook
 
-from abet_carga import r17
+from abet_carga import r17, resultados
 
 
 PLANTILLA = Path(__file__).resolve().parents[1] / "plantillas" / "R017_ambiental_general.xlsx"
@@ -20,9 +20,9 @@ def hoja():
 
 def test_ejemplo_410_con_tres_oportunidades():
     pis = [
-        ("5.1", "OM", "Falta justificar el método.", "Solicitar la justificación."),
-        ("5.2", "OM", "Falta contrastar los resultados.", "Incluir una comparación."),
-        ("5.3", "OM", "Falta sustentar la conclusión.", "Vincularla con la evidencia."),
+        ("5.1", "OPORTUNIDAD_MEJORA", "Falta justificar el método.", "Solicitar la justificación."),
+        ("5.2", "OPORTUNIDAD_MEJORA", "Falta contrastar los resultados.", "Incluir una comparación."),
+        ("5.3", "OPORTUNIDAD_MEJORA", "Falta sustentar la conclusión.", "Vincularla con la evidencia."),
     ]
 
     assert r17.componer_recuadros(pis) == (
@@ -37,7 +37,7 @@ def test_ejemplo_410_con_tres_oportunidades():
 
 def test_buena_practica_y_pi_sin_calificaciones():
     pis = [
-        ("5.1", "BP", "Se justificó el método.", "Compartir el ejemplo."),
+        ("5.1", "BUENA_PRACTICA", "Se justificó el método.", "Compartir el ejemplo."),
         ("5.3", None, "Causa que debe omitirse.", "Acción que debe omitirse."),
     ]
 
@@ -47,6 +47,28 @@ def test_buena_practica_y_pi_sin_calificaciones():
         "5.1 · Buena práctica. Compartir el ejemplo.\n"
         "5.3 · Sin calificaciones en esta carga.",
     )
+
+
+@pytest.mark.parametrize(("semaforo", "rotulo"), [
+    ("VERDE", "Buena práctica."),
+    ("AMBAR", "Oportunidad de mejora."),
+    ("ROJO", "Oportunidad de mejora."),
+    ("SIN_DATO", None),
+])
+def test_acepta_el_tipo_que_da_tipo_de_registro(semaforo, rotulo):
+    """El recuadro recibe el vocabulario de tipo_de_registro(), de la ruta 13 y del CHECK de la base."""
+    tipo = resultados.tipo_de_registro(semaforo)
+    causa, accion = r17.componer_recuadros([("5.1", tipo, "La causa.", "La acción.")])
+    if rotulo is None:
+        assert causa == accion == "5.1 · Sin calificaciones en esta carga."
+    else:
+        assert causa == f"5.1 · {rotulo} La causa."
+        assert accion == f"5.1 · {rotulo} La acción."
+
+
+def test_tipo_fuera_del_vocabulario_se_rechaza():
+    with pytest.raises(ValueError, match="OM"):
+        r17.componer_recuadros([("5.1", "OM", "c", "a")])
 
 
 def test_lista_de_pi_vacia():
@@ -100,7 +122,7 @@ def _estado_del_bloque_derecho(hoja):
 
 
 def test_textos_largos_conservan_la_plantilla(hoja):
-    pis = [(pi, "OM", "c" * 800, "a" * 800) for pi in ("5.1", "5.2", "5.3")]
+    pis = [(pi, "OPORTUNIDAD_MEJORA", "c" * 800, "a" * 800) for pi in ("5.1", "5.2", "5.3")]
     texto_a, texto_b = r17.componer_recuadros(pis)
     combinaciones = set(hoja.merged_cells.ranges)
     assert len(combinaciones) == 45
