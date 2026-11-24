@@ -4,8 +4,8 @@
 # (BP) de cada PI, de las historias de usuario (user stories, US) US-47, US-48, US-49, US-53 y US-54 de la spec
 # 005-oportunidades-de-mejora (épica EP-05, propuesta). Jefferson pide el 2026-11-18 que el profesor complete
 # en el sistema los recuadros A (causas) y B (acciones) del R-17, que hoy salen vacíos y editables, y que
-# ningún R-17 llegue a la acreditación sin ellos. El cambio del 2026-11-21 (borrador, pendiente de la
-# reaprobación de Jefferson) lleva el registro a cada PI, con una causa y una acción que el sistema rotula OM o
+# ningún R-17 llegue a la acreditación sin ellos. El cambio del 2026-11-21, aprobado por Jefferson el mismo
+# día («Sí, apruébalas»), lleva el registro a cada PI, con una causa y una acción que el sistema rotula OM o
 # BP según el semáforo, como piden Mechelle Prado (19-11-2026) y Claudia León (19 o 20-11-2026) en sus correos
 # (spec.md, Input y Session 2026-11-21, y C-P01, C-P03, C-C03, C-B01, C-B03 y C-B06 de revision-historias.md).
 #
@@ -56,7 +56,7 @@
 #   calificados (FR-017).
 # - Texto (J-39 y AD-10). El Back normaliza cada causa y cada acción a NFC, cambia \r\n por \n, rechaza los
 #   caracteres de control salvo \n y \t y cuenta puntos de código, hasta 800 por campo.
-# - V1_12 (J-38, propuesta) crea abet.mejora_borrador (cabecera por carga con versión), abet.mejora_borrador_pi
+# - V1_15 (J-38) crea abet.mejora_borrador (cabecera por carga con versión), abet.mejora_borrador_pi
 #   (un registro por PI, FK a abet.carga_columna), abet.mejora_declaracion (cabecera de solo INSERT) y
 #   abet.mejora_declaracion_pi (registro declarado con tipo y la foto logro_pct, meta_pct y semaforo), sin
 #   columnas de estado, responsable ni plazo. La declaración vigente de una carga es la de mayor
@@ -70,7 +70,10 @@
 #   nunca se suponen.
 # - @delegado_a_vitest marca un escenario de la pantalla P4 (o de P2 y P5) que prueba Vitest en el Front.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec. D-36, D-37,
-#   D-39, D-40 y D-42 siguen abiertas con la Coordinación, y J-38 a J-41 esperan la reaprobación de Jefferson.
+#   D-39, D-40 y D-42 siguen abiertas con la Coordinación, y Jefferson aprueba J-38 a J-41 el 2026-11-21.
+# - La migración es V1_15 y no V1_12, porque la spec 008 toma V1_12 a V1_14 (FR-004 de la spec 008), y desde
+#   T012 y T021 de la spec 005, el 2026-11-24, este archivo es definitivo y nombra V1_15 en sus Antecedentes y en
+#   sus escenarios. Las reglas BR-MEJORA-03 a BR-MEJORA-14 y BR-R17-12 citan sus escenarios por el título.
 
 Característica: Análisis por indicador, con la oportunidad de mejora o la buena práctica de cada PI, desde P4 y guardado en la base
   Como profesor de Ingeniería Ambiental, quiero registrar en P4 una causa y una acción para cada PI de mi
@@ -79,7 +82,7 @@ Característica: Análisis por indicador, con la oportunidad de mejora o la buen
   quede en la base y en el reporte.
 
   Antecedentes:
-    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_12, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_15, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2", CONJUNTO_REGLAS "R-2026-BORRADOR" y GUARDIA_DATOS_INVENTADOS "1"
     Y plan_medicion registra los PI 5.1, 5.2 y 5.3 para la asignatura "450002" en "2026-2"
     Y acceso.docente_seccion asigna la sección 410 de "450002" a "docente410@example.invalid", la 411 de "450002" a "docente411@example.invalid" y la 412 de "450002" a "docente.varias@example.invalid"
@@ -194,7 +197,7 @@ Característica: Análisis por indicador, con la oportunidad de mejora o la buen
     Entonces la API responde 200 con version 1
 
   # (propuesta, D-42) Claudia pide que el responsable y el plazo los defina el coordinador del curso, quizá solo
-  # en el R-18, y que el estado nazca como Propuesta. El profesor no los escribe y V1_12 no los guarda.
+  # en el R-18, y que el estado nazca como Propuesta. El profesor no los escribe y V1_15 no los guarda.
   @US-47 @spec005 @corte1
   Esquema del escenario: El profesor no fija responsable, plazo ni estado
     Dado que "docente410@example.invalid" tiene la sesión iniciada con rol "PROFESOR"
@@ -219,8 +222,8 @@ Característica: Análisis por indicador, con la oportunidad de mejora o la buen
     Y abet.mejora_borrador no gana ninguna fila
 
   @US-47 @spec005 @corte1
-  Escenario: Las tablas de V1_12 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración
-    Dado la base con V1_12 y db/plataforma/neon/crear_rol_app.sql aplicado
+  Escenario: Las tablas de V1_15 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración
+    Dado la base con V1_15 y db/plataforma/neon/crear_rol_app.sql aplicado
     Cuando se consultan las columnas de abet.mejora_borrador, abet.mejora_borrador_pi, abet.mejora_declaracion y abet.mejora_declaracion_pi en information_schema.columns
     Entonces ninguna columna se llama estado, responsable ni plazo
     Y has_table_privilege de abet_app es verdadero para INSERT y falso para UPDATE y DELETE en abet.mejora_declaracion y abet.mejora_declaracion_pi
@@ -232,7 +235,7 @@ Característica: Análisis por indicador, con la oportunidad de mejora o la buen
     Y que "<correo>" tiene la sesión iniciada con rol "<rol>"
     Cuando se envía <método> <ruta> con un cuerpo que no es JSON
     Entonces la API responde 403 con el mensaje "La sección no está a su cargo."
-    Y las cuatro tablas de V1_12 no ganan ninguna fila
+    Y las cuatro tablas de V1_15 no ganan ninguna fila
 
     Ejemplos:
       | correo                       | rol         | método | ruta                                         |
@@ -384,7 +387,7 @@ Característica: Análisis por indicador, con la oportunidad de mejora o la buen
   # (propuesta) DeclaracionPendiente, subclase de R17NoDisponible, con 409 cuando la carga no tiene declaración
   # o cuando a la vigente le falta la fila de un PI con calificados, la misma regla de Q17. El 409 de una carga
   # no PUBLICADA manda sobre el de la declaración. Vale también para el coordinador (J-33), y toda carga
-  # publicada antes de V1_12 queda en 409 hasta declarar, sin excepción por fecha (J-37). Cambia los escenarios
+  # publicada antes de V1_15 queda en 409 hasta declarar, sin excepción por fecha (J-37). Cambia los escenarios
   # 1 a 4 de US-15 y la prueba de humo de US-17, que ahora declaran antes de descargar.
 
   @US-49 @spec005 @corte1

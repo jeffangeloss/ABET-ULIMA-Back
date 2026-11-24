@@ -6,8 +6,8 @@
 # salir con los recuadros A y B y con la descripción del instrumento vacíos y editables, y que el reporte y la
 # base digan lo mismo (C-06 y C-07 de la síntesis de la auditoría). Cierra J-27 de la spec 004 (J-31).
 #
-# Cambio del 2026-11-21 (borrador, pendiente de la reaprobación de Jefferson). US-50 compone A y B con un
-# párrafo por PI, desde la declaración por PI de V1_12, con el tipo de registro, oportunidad de mejora (OM) o
+# Cambio del 2026-11-21, aprobado por Jefferson el mismo día («Sí, apruébalas»). US-50 compone A y B con un
+# párrafo por PI, desde la declaración por PI de V1_15, con el tipo de registro, oportunidad de mejora (OM) o
 # buena práctica (BP), en el prefijo y sin tocar la plantilla oficial (D-41 y D-08). US-51 no cambia.
 #
 # Este archivo usa solo datos inventados, con correos del dominio reservado example.invalid y los códigos de
@@ -47,9 +47,10 @@
 #   ck_plan_medicion_descripcion, que exige al menos un carácter visible y ningún blanco a los lados con la
 #   misma definición de blanco del Back, la de str.isspace() de Python (29 caracteres, BR-R17-11). abet_app no
 #   la escribe.
-# - Los Antecedentes nombran V1_11 mientras V1_12 no existe. US-50 los lleva a V1_12 en el mismo cambio que
-#   crea esa migración, y US-49 (T037) suma entonces «, con su análisis declarado» a los dos primeros
-#   escenarios de US-51, porque desde US-49 el R-17 sale solo con la declaración.
+# - Los Antecedentes nombran V1_15 desde T012 y T021 de la spec 005, el 2026-11-24, porque la migración de la
+#   declaración por PI pasa de V1_12 a V1_15 (FR-004 de la spec 008). US-49 (T037) suma después «, con su
+#   análisis declarado» a los dos primeros escenarios de US-51, porque desde US-49 el R-17 sale solo con la
+#   declaración. El archivo es definitivo desde T012, y BR-R17-04, BR-R17-11 y BR-R17-12 citan sus escenarios.
 # - «el dueño de la base» corre scripts y consultas solo en la base desechable de la prueba. En Neon, las
 #   escrituras las hace Jefferson desde el Windows (AD-20).
 # - Cada escenario corre en una base desechable propia, así que los carga_id salen de la API o de la base y
@@ -62,7 +63,7 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
   lo mismo y nadie complete esos recuadros a mano en el archivo.
 
   Antecedentes:
-    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_11 y los datos de db/datos/periodo_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_15 y los datos de db/datos/periodo_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2", CONJUNTO_REGLAS "R-2026-BORRADOR" y GUARDIA_DATOS_INVENTADOS "1"
     Y plan_medicion registra los PI 5.1, 5.2 y 5.3 para la asignatura "450002" en "2026-2"
     Y acceso.docente_seccion asigna la sección 410 de "450002" a "docente410@example.invalid"

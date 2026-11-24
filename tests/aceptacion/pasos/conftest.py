@@ -26,6 +26,9 @@ lo que repiten sus Antecedentes y sus escenarios.
   «no ganan ninguna fila» admiten tablas de acceso, las consultas de control admiten rangos como «Q01 a Q14 y Q18
   a Q21», la base desechable de la spec 008 nombra cada pieza que le falta con su tarea, y cada escenario
   @playwright registra su prueba de e2e/ del Front con registrar_playwright().
+- La spec 005 (T012 de su tasks.md). Los Antecedentes de sus cuatro .feature piden V1_15, que la base desechable
+  comprueba por sus cuatro tablas, y REGLAS_DE_COPIA suma «con la columna X.Y vacía en las filas N y M» y su forma
+  de tres filas, «en las filas N, M y P».
 
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
@@ -510,6 +513,20 @@ def _pi_vacio_en_todas(ctx: Escenario, nombre: str, pi: str, n: str) -> tuple[by
     return _a_bytes(ctx, nombre, export), nombre
 
 
+def _pi_vacio_en_filas(ctx: Escenario, nombre: str, pi: str, filas: str) -> tuple[bytes, str]:
+    """La columna del PI vacía en dos o tres filas del export, como «2 y 6» o «2, 3 y 9» (spec 005, FR-017)."""
+    export = _export(ctx, nombre)
+    numeros = [int(f) for f in re.findall(r"[0-9]+", filas)]
+    assert len(set(numeros)) == len(numeros), f"una fila se repite en «{filas}»"
+    for fila in numeros:
+        assert 2 <= fila <= len(export.filas) + 1, \
+            f"la fila {fila} está fuera de las filas de datos 2 a {len(export.filas) + 1}"
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in numeros:
+        export = ctx.generador.con_celda(export, fila, pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
 def _columna_mas(ctx: Escenario, nombre: str, enc: str) -> tuple[bytes, str]:
     export = _export(ctx, nombre)
     return _a_bytes(ctx, nombre, ctx.generador.con_columna(export, enc, [3] * len(export.filas))), nombre
@@ -784,6 +801,8 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
     (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _celda_pi),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en la fila (?P<f>[0-9]+)', _pi_vacio),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en sus (?P<n>[0-9]+) filas', _pi_vacio_en_todas),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en las filas (?P<filas>[0-9]+(?:, [0-9]+)? y [0-9]+)',
+     _pi_vacio_en_filas),
     (r'con una columna más "(?P<enc>[^"]+)"', _columna_mas),
     (r'con un (?P<v>-?[0-9]+) en la columna (?P<pi>[0-9]\.[0-9]) de las (?P<n>[0-9]+) filas de datos', _nivel_en_todas),
     (r'con la hoja renombrada "(?P<hoja>[^"]+)"(?: y el nombre "(?P<otro>[^"]+)")?', _hoja),
@@ -926,6 +945,11 @@ def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
         # V1_11 suma abet.plan_medicion.descripcion_instrumento con ck_plan_medicion_descripcion (spec 005, US-51).
         assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
             "falta la migración V1_11"
+    if int(ultima) >= 15:
+        # V1_15 crea las cuatro tablas del análisis por indicador (spec 005, J-38, T021).
+        assert ctx.uno("SELECT count(*) FROM pg_tables WHERE schemaname = 'abet' AND tablename IN ('mejora_borrador',"
+                       " 'mejora_borrador_pi', 'mejora_declaracion', 'mejora_declaracion_pi')") == 4, \
+            "falta la migración V1_15"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"
     if con_varias:
         assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s", A.VARIAS_CORREO) == 1

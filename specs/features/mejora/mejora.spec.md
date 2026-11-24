@@ -86,7 +86,7 @@ El R-17 que se entrega solo con la declaración vigente completa (US-49) y sus r
 - Un PI que la carga no mide responde 422 con «El indicador 2.1 no pertenece a esta carga.», y la base lo rechaza también por la clave foránea (foreign key, FK) (`carga_id`, `pi_id`) de las tablas por PI hacia `abet.carga_columna`, sostenida por `uq_carga_columna_pi`.
 - La ruta 14 deriva el estado PROPUESTA de cada indicador declarado sin guardarlo, y ninguna tabla de V1_15 tiene columnas de estado, responsable ni plazo (D-42).
 - **Fuente**: US-47, FR-004, FR-005, D-42, AD-43 y AD-44 de la spec 005.
-- **Prueba**: «El profesor no fija responsable, plazo ni estado», «Un PI repetido en el cuerpo se rechaza», «Un PI que la carga no mide se rechaza en la ruta y en la base» y «Las tablas de V1_12 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración» (`declaracion.feature`).
+- **Prueba**: «El profesor no fija responsable, plazo ni estado», «Un PI repetido en el cuerpo se rechaza», «Un PI que la carga no mide se rechaza en la ruta y en la base» y «Las tablas de V1_15 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración» (`declaracion.feature`).
 
 ### BR-MEJORA-08: Cada causa y cada acción se normalizan y admiten hasta 800 puntos de código (propuesta)
 - El Back normaliza cada campo a la forma canónica compuesta de Unicode (Normalization Form C, NFC), cambia `\r\n` por `\n`, rechaza los caracteres de control salvo `\n` y `\t` y cuenta puntos de código, hasta 800 por campo (J-39).
@@ -121,7 +121,7 @@ El R-17 que se entrega solo con la declaración vigente completa (US-49) y sus r
 - En `abet.mejora_declaracion` y en `abet.mejora_declaracion_pi`, el rol recibe solo el INSERT de tabla completa, así que no corrige ni borra una declaración. Ninguna de las cuatro tablas le da DELETE, TRUNCATE ni UPDATE de tabla completa.
 - La comprobación final del archivo lista con `has_table_privilege` y `has_column_privilege` los permisos exactos del rol y se detiene, sin dejar ningún cambio, si sobra o falta uno. En una base anterior a V1_15 el archivo no da estos permisos y sus listas quedan como antes.
 - **Fuente**: US-47, FR-004, J-38, AD-56 y el Principio VI de la constitución.
-- **Prueba**: «Las tablas de V1_12 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración» (`declaracion.feature`).
+- **Prueba**: «Las tablas de V1_15 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración» (`declaracion.feature`).
 
 ### BR-MEJORA-13: La carga que reemplaza a otra hereda el análisis al leer, por PI y con el tipo nuevo (propuesta)
 - Si la carga nueva no tiene borrador ni declaración, la ruta 14 devuelve en `borrador` los registros de la declaración vigente de la carga que reemplaza o, sin ella, los de su borrador. El borrador heredado llega con `version` 0 y `heredado_de` igual al `carga_id` de la carga anterior, y la subida no escribe nada de la herencia.
