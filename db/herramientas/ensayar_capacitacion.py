@@ -4,7 +4,8 @@ Uso, desde la raíz del repositorio, con los exports, la tabla maestra y la carp
 repositorio, y la conexión a la base del ensayo en las variables de libpq (PGHOST, PGDATABASE, PGUSER con un rol que
 puede cargar, PGPASSWORD y las demás)
     uv run python -I db/herramientas/ensayar_capacitacion.py --exports CARPETA --maestra TABLA.xlsx \\
-        --r17 CARPETA_NUEVA [--reglas R-2026-BORRADOR] [--rol-lectura abet_respaldo] [--datos-reales]
+        --r17 CARPETA_NUEVA --base-del-ensayo HOST/BASE [--reglas R-2026-BORRADOR] [--rol-lectura abet_respaldo] \\
+        [--datos-reales]
 
 El ensayo prueba a la vez el generador, el lector, la regla de la meta, el R-17 y el conciliador antes de la sala.
 
@@ -13,9 +14,12 @@ El ensayo prueba a la vez el generador, el lector, la regla de la meta, el R-17 
    carpeta y que sus bytes tienen la huella SHA-256 del manifiesto. El periodo, la asignatura y el PI salen del
    manifiesto.
 2. La base es aparte (J-52), porque uq_archivo_origen_sha256 haría que la subida en la sala devolviera la constancia
-   de una carga del ensayo. El ensayo se niega a subir si la base ya tiene cargas de la asignatura en el periodo, y
-   si una sección del manifiesto no existe o no tiene un profesor asignado en acceso.docente_seccion. En esos casos
-   no sube ningún archivo.
+   de una carga del ensayo. --base-del-ensayo nombra esa base como HOST/BASE, con el host y el nombre de la base a
+   los que llega la conexión, y el ensayo se niega a subir si la conexión llega a otra, porque las variables de
+   libpq pueden seguir apuntando a develop, que después de la siembra tiene las secciones y los profesores y ninguna
+   carga. También se niega si la base ya tiene cargas de la asignatura en el periodo, y si una sección del
+   manifiesto no existe o no tiene un profesor asignado en acceso.docente_seccion. En esos casos no sube ningún
+   archivo.
 3. Cada export sube con cargar() de la biblioteca abet_carga, como el profesor de su sección (el primero por
    usuario_id si hay más de uno), con el conjunto de reglas de --reglas o de CONJUNTO_REGLAS. La guardia de datos
    inventados queda encendida salvo con --datos-reales. Cada carga PUBLICADA sin filas rechazadas deja su R-17 en
@@ -32,7 +36,8 @@ El ensayo prueba a la vez el generador, el lector, la regla de la meta, el R-17 
    ser nueva o estar vacía.
 
 Códigos de salida. 0 solo si todas las cargas quedan PUBLICADA sin rechazos y el conciliador dice que todas las
-secciones son iguales, 1 ante un manifiesto que se rechaza, una base que no sirve para el ensayo, una carga que no
+secciones son iguales, 1 ante un manifiesto que se rechaza, una conexión que no llega a la base de
+--base-del-ensayo, una base que no sirve para el ensayo, una carga que no
 queda limpia o una diferencia, 2 por un argumento inválido, una ruta dentro de un repositorio o una carpeta de R-17
 con archivos, antes de leer nada, y 3 si la base no responde. Un código 2 o 3 del conciliador pasa tal cual.
 """
@@ -86,6 +91,8 @@ MANIFIESTO_DE_EJERCICIO = "El manifiesto es de un ejercicio. El ensayo sube los 
 FUERA_DE_LA_CARPETA = "El manifiesto nombra un archivo fuera de la carpeta de los exports."
 FALTA_EL_ARCHIVO = "Falta el archivo que el manifiesto nombra."
 OTRA_HUELLA = "El archivo no tiene la huella SHA-256 del manifiesto."
+OTRA_BASE = ("La conexión no llega a la base que nombra --base-del-ensayo. Revise PGHOST y PGDATABASE antes de subir "
+             "(J-52).")
 SIN_SECCION = "La sección no existe en la base del ensayo."
 SIN_PROFESOR = "No tiene un profesor asignado en la base del ensayo."
 CON_CARGAS = "La base ya tiene cargas de {asignatura} en {periodo}. El ensayo corre en una base aparte, sin cargas del curso (J-52)."
@@ -179,6 +186,15 @@ def leer_manifiesto(carpeta: Path) -> Manifiesto:
 
 # Base del ensayo
 
+def comprobar_destino(conexion: psycopg.Connection, base_del_ensayo: str) -> None:
+    """Rechazo si la conexión no llega al HOST/BASE que nombra --base-del-ensayo, sin mostrar ninguno de los dos.
+
+    El nombre de la base no basta, porque una rama hija de Neon conserva el de develop, y el host no basta en un
+    clúster con varias bases, así que se comparan los dos (cambio del 2026-11-23 del cierre de la spec 008)."""
+    if f"{conexion.info.host}/{conexion.info.dbname}" != base_del_ensayo:
+        raise Rechazo(OTRA_BASE)
+
+
 def destinos(conexion: psycopg.Connection, manifiesto: Manifiesto) -> dict[str, tuple[int, int]]:
     """Sección y profesor de cada export, o Rechazo si la base no sirve para el ensayo. No escribe nada."""
     with conexion.transaction():
@@ -259,14 +275,14 @@ class _Argumentos(argparse.ArgumentParser):
 
 def argumentos_de(argv: list[str] | None) -> argparse.Namespace:
     analizador = _Argumentos(add_help=False)
-    for opcion in ("--exports", "--maestra", "--r17", "--reglas"):
+    for opcion in ("--exports", "--maestra", "--r17", "--reglas", "--base-del-ensayo"):
         analizador.add_argument(opcion)
     analizador.add_argument("--rol-lectura", default="abet_respaldo")
     analizador.add_argument("--datos-reales", action="store_true")
     argumentos = analizador.parse_args(argv)
     argumentos.reglas = (argumentos.reglas or os.environ.get("CONJUNTO_REGLAS", "")).strip()
     if not (argumentos.exports and argumentos.maestra and argumentos.r17 and argumentos.reglas
-            and argumentos.rol_lectura):
+            and argumentos.rol_lectura and argumentos.base_del_ensayo):
         analizador.error("")
     return argumentos
 
@@ -295,6 +311,7 @@ def principal(argv: list[str] | None = None) -> tuple[int, list[str]]:
         try:
             with psycopg.connect("", autocommit=True) as conexion:
                 try:
+                    comprobar_destino(conexion, argumentos.base_del_ensayo)
                     lineas, limpias = subir(conexion, manifiesto, configuracion, carpeta_r17)
                 except Rechazo as rechazo:
                     detenido = [] if rechazo.lineas[0].startswith("El conjunto") else [DETENIDO]

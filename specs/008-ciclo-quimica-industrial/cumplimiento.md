@@ -17,8 +17,8 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | Conciliación | US-83 | 10 | Con prueba |
 | Ensayo | US-84 | 4 | Con prueba |
 | Siembra | US-86 | 9 | Con prueba y 1 pendiente de tarea |
-| Humo | US-85 | 8 | Pendiente de tarea |
-| Guía | US-87 | 9 | Con prueba y 2 pendientes de tarea |
+| Humo | US-85 | 8 | Con prueba |
+| Guía | US-87 | 9 | Con prueba |
 | Privacidad | US-88 | 8 | Con prueba |
 | Cierre | US-89 | 5 | Con prueba |
 
@@ -52,9 +52,9 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-82 | 008 | Uso a 375 px y con teclado | 4 | sistema_visual.feature | Playwright e2e/visual.spec.ts | Ninguna | Con prueba |
 | US-83 | 008 | El conciliador compara la base y los R-17 con la tabla maestra sin mostrar códigos | 10 | ensayo_y_conciliacion.feature | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py | Ninguna | Con prueba |
 | US-84 | 008 | Ensayo de punta a punta de los exports antes de la capacitación | 4 | ensayo_y_conciliacion.feature | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py | Ninguna | Con prueba |
-| US-85 | 008 | Humo con Playwright de punta a punta en la vista previa | 8 | capacitacion_en_develop.feature | Ninguna | El humo con Playwright de e2e/humo_quimica.spec.ts llega con T053 del Front. | Pendiente de tarea |
+| US-85 | 008 | Humo con Playwright de punta a punta en la vista previa | 8 | capacitacion_en_develop.feature | Playwright e2e/humo_quimica.spec.ts | Ninguna | Con prueba |
 | US-86 | 008 | Siembra de Química en develop desde el Windows, en orden y sin cambiar Ambiental | 9 | capacitacion_en_develop.feature | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py | Lectura sobre develop que Jefferson corre desde su Windows en T071, el único escenario de US-86 sin prueba en el clúster desechable. | Con prueba y 1 pendiente de tarea |
-| US-87 | 008 | Guía de la capacitación con rótulos verificados contra el Front | 9 | guia_y_privacidad.feature | Vitest tests/spec008/guia_y_privacidad.test.ts, pytest-bdd tests/aceptacion/pasos/test_exports_capacitacion_feature.py | Escenario @playwright de US-87 que el humo de T053 del Front comprueba en la vista previa. | Con prueba y 2 pendientes de tarea |
+| US-87 | 008 | Guía de la capacitación con rótulos verificados contra el Front | 9 | guia_y_privacidad.feature | Vitest tests/spec008/guia_y_privacidad.test.ts, Playwright e2e/humo_quimica.spec.ts, pytest-bdd tests/aceptacion/pasos/test_exports_capacitacion_feature.py | Ninguna | Con prueba |
 | US-88 | 008 | Barrido de privacidad en los dos repositorios | 8 | guia_y_privacidad.feature | pytest-bdd tests/aceptacion/pasos/test_guia_y_privacidad_feature.py | Ninguna | Con prueba |
 | US-89 | 008 | Cierre de la capacitación sin perder evidencia | 5 | capacitacion_en_develop.feature | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py | Ninguna | Con prueba |
 | US-90 | 008 | Matriz de cumplimiento de las specs 007 y 008 | 9 | matriz_cumplimiento.feature | pytest-bdd tests/aceptacion/pasos/test_matriz_cumplimiento_feature.py | Ninguna | Con prueba |
@@ -150,7 +150,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-61 | que_corregir.feature | Cada motivo de rechazo de toda la carga trae su forma de corregir | Vitest tests/pantallas/ResultadoCarga.test.tsx › la tabla de J-43 tiene un consejo para cada uno de los siete motivos RECHAZA_CARGA del contrato; Vitest tests/pantallas/ResultadoCarga.test.tsx › %s con %s conserva el mensaje de la API, muestra debajo qué corregir y los conteos | Con prueba |
 | US-61 | que_corregir.feature | Si ninguna fila se acepta, P4 remite a la tabla de rechazos y conserva los conteos | Vitest tests/pantallas/ResultadoCarga.test.tsx › sin filas aceptadas muestra el mensaje de la API junto con la tabla de rechazos | Con prueba |
 | US-61 | que_corregir.feature | Un motivo que el Front no conoce muestra solo el mensaje de la API | Vitest tests/pantallas/ResultadoCarga.test.tsx › un motivo que el Front no conoce muestra solo el mensaje de la API, también con PI | Con prueba |
-| US-61 | que_corregir.feature | Una carga publicada no muestra «Qué corregir» | Vitest tests/pantallas/ResultadoCarga.test.tsx › una carga publicada sin rechazos ni avisos no muestra «Qué corregir» | Con prueba |
+| US-61 | que_corregir.feature | Una carga publicada sin rechazos ni avisos no muestra «Qué corregir» | Vitest tests/pantallas/ResultadoCarga.test.tsx › una carga publicada sin rechazos ni avisos no muestra «Qué corregir» | Con prueba |
 | US-62 | que_corregir.feature | Una carga sin R-17 lo dice sin afirmar nada sobre la sección | Vitest tests/pantallas/ResultadoCarga.test.tsx › la carga 12 %s sin sucesora lo dice sin afirmar nada sobre la sección | Con prueba |
 | US-62 | que_corregir.feature | Un reemplazo rechazado no dice que la sección quedó sin carga publicada | Vitest tests/App.test.tsx › US-62 muestra el resultado del reemplazo rechazado de la carga 7 sin afirmar que la sección perdió su publicación | Con prueba |
 | US-62 | que_corregir.feature | Una carga reemplazada con sucesora conocida conserva su texto de hoy | Vitest tests/pantallas/ResultadoCarga.test.tsx › una carga REEMPLAZADA nombra a su sucesora como la publicada y no ofrece el R-17 | Con prueba |
@@ -325,14 +325,14 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-84 | ensayo_y_conciliacion.feature | El manifiesto del generador y lo publicado coinciden por huella y por conteo | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py::test_el_manifiesto_y_lo_publicado_coinciden | Con prueba |
 | US-84 | ensayo_y_conciliacion.feature | Un nivel distinto en el ensayo se nombra sin el código y detiene la conclusión | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py::test_un_nivel_distinto_detiene_la_conclusion | Con prueba |
 | US-84 | ensayo_y_conciliacion.feature | El ensayo corre en una base aparte y no deja huellas en la de la capacitación | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py::test_el_ensayo_corre_en_una_base_aparte | Con prueba |
-| US-85 | capacitacion_en_develop.feature | El profesor sube su export y descarga su R-17 en la vista previa | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | El profesor no alcanza otra sección del curso | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | La coordinación del curso ve las secciones del curso y el avance | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | Sin la etapa B, la coordinación del curso se comprueba en P2 | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | La coordinación del curso no sube en una sección ni ve otro curso | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | Las capturas y los resultados no guardan nada sensible | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | Una vista previa ya usada se detiene antes de subir | Ninguna | Pendiente de tarea |
-| US-85 | capacitacion_en_develop.feature | Con la siembra de la capacitación el humo no corre | Ninguna | Pendiente de tarea |
+| US-85 | capacitacion_en_develop.feature | El profesor sube su export y descarga su R-17 en la vista previa | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | El profesor no alcanza otra sección del curso | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | La coordinación del curso ve las secciones del curso y el avance | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | Sin la etapa B, la coordinación del curso se comprueba en P2 | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | La coordinación del curso no sube en una sección ni ve otro curso | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | Las capturas y los resultados no guardan nada sensible | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | Una vista previa ya usada se detiene antes de subir | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-85 | capacitacion_en_develop.feature | Con la siembra de la capacitación el humo no corre | Playwright e2e/humo_quimica.spec.ts | Con prueba |
 | US-86 | capacitacion_en_develop.feature | La siembra completa deja la misma huella de Ambiental y los controles limpios | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_la_siembra_completa_deja_la_misma_huella | Con prueba |
 | US-86 | capacitacion_en_develop.feature | El alcance de Ambiental queda antes que la vigencia de Industrial | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_el_alcance_de_ambiental_queda_antes_que_la_vigencia | Con prueba |
 | US-86 | capacitacion_en_develop.feature | La programación de Química acepta 2026-1 y una asignatura de cuatro cifras | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_la_programacion_de_quimica_acepta_2026_1 | Con prueba |
@@ -347,8 +347,8 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-87 | guia_y_privacidad.feature | La guía no trae datos que no debe | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | Una fecha sin confirmar se dice como tal | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | La guía del profesor sigue el flujo en el orden de las pantallas | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
-| US-87 | guia_y_privacidad.feature | El profesor sigue la guía de su rol de punta a punta en la vista previa | Ninguna | Pendiente de tarea |
-| US-87 | guia_y_privacidad.feature | El ejercicio de error usa un export inventado y enseña a leer «Qué corregir» | Ninguna | Pendiente de tarea |
+| US-87 | guia_y_privacidad.feature | El profesor sigue la guía de su rol de punta a punta en la vista previa | Playwright e2e/humo_quimica.spec.ts | Con prueba |
+| US-87 | guia_y_privacidad.feature | El ejercicio de error usa un export inventado y enseña a leer «Qué corregir» | Playwright e2e/humo_quimica.spec.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | La guía de la coordinación del curso no promete correos sin D-51 | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | Cada tarjeta de profesor nombra el archivo de su sección según el manifiesto | pytest-bdd tests/aceptacion/pasos/test_exports_capacitacion_feature.py::test_cada_tarjeta_nombra_el_archivo_de_su_seccion | Con prueba |
 | US-88 | guia_y_privacidad.feature | El correo prohibido se detecta por su huella sin imprimirlo | pytest-bdd tests/aceptacion/pasos/test_guia_y_privacidad_feature.py::test_el_correo_prohibido_se_detecta_por_su_huella | Con prueba |

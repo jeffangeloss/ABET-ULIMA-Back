@@ -203,8 +203,9 @@ done <<EOF
 $(printf '%s\n' "$ARCHIVOS" | grep -Ei '(^|/)(test-results|playwright-report|blob-report|capturas)/|(^|/)trace\.zip$|^e2e/.*\.(png|jpe?g|webp|gif|bmp|webm|mp4|zip)$' || true)
 EOF
 
-# Tabla maestra por su encabezado, con cualquier nombre y en cualquier carpeta. En un texto se lee la primera línea
-# (sin nulos, para leer un UTF-16 como ASCII), y en un libro, sus cadenas compartidas y su primera hoja.
+# Tabla maestra por su encabezado, con cualquier nombre y en cualquier carpeta. En un texto se leen las primeras 20
+# líneas no vacías (sin nulos, para leer un UTF-16 como ASCII, y sin el BOM), porque un export puede traer una línea de
+# título antes del encabezado (cambio del 2026-11-23 de FR-022), y en un libro, sus cadenas compartidas y su primera hoja.
 encabezado_tabular() {
   local f="$1" t
   case "$f" in
@@ -213,7 +214,8 @@ encabezado_tabular() {
       leer "$f" > "$t"
       { unzip -p "$t" 'xl/sharedStrings.xml' 'xl/worksheets/sheet1.xml' 2>/dev/null | LC_ALL=C tr -d '\000'; } || true
       rm -f "$t" ;;
-    *) { leer "$f" | head -c 65536 | LC_ALL=C tr -d '\000' | LC_ALL=C tr '\r' '\n' | head -n 1; } 2>/dev/null || true ;;
+    *) { leer "$f" | head -c 65536 | LC_ALL=C tr -d '\000' | LC_ALL=C tr '\r' '\n' | LC_ALL=C sed $'s/^\xef\xbb\xbf//' \
+           | LC_ALL=C grep -av '^[[:space:]]*$' | head -n 20; } 2>/dev/null || true ;;
   esac
 }
 while IFS= read -r f; do

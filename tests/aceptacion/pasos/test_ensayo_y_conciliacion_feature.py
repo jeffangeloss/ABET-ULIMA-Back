@@ -210,7 +210,7 @@ def test_una_calificacion_distinta() -> None:
 
 @scenario(FEATURE, "Cada diferencia se cuenta por su tipo y por sección")
 def test_cada_diferencia_por_su_tipo() -> None:
-    """T037, con sus cuatro Ejemplos."""
+    """T037, con sus cinco Ejemplos (el quinto, del cierre de la spec 008)."""
 
 
 @scenario(FEATURE, "Una sección sin carga publicada se nombra")
@@ -294,12 +294,23 @@ def _m25_cambiado(ctx: Escenario) -> None:
     libro.save(ruta)
 
 
+def _fila_43_cambiada(ctx: Escenario) -> None:
+    # El nivel de la primera fila de la tabla del R-17 pasa a otro del mismo lado del logro (1 y 2 frente a 3 y 4), así
+    # M24, M25 y el porcentaje siguen iguales y solo la comparación de la tabla puede notarlo (FR-018).
+    [ruta] = descargar_r17(ctx).glob("R017_5643_701_2026-1*.xlsx")
+    libro = load_workbook(ruta)
+    hoja = libro["Cursos de Carrera"]
+    hoja["F43"] = {1: 2, 2: 1, 3: 4, 4: 3}[hoja["F43"].value]
+    libro.save(ruta)
+
+
 DIFERENCIAS = {
     "la calificación de un estudiante de la 702 cambiada de 3 a 2": _nivel_cambiado,
     "una fila más en la 701 que la base no tiene": _fila_mas,
     "una fila menos en la 703": _fila_menos,
     "las filas de la 702 en el PI 6.2": _pi_6_2,
     "un R-17 descargado de la 701 con M25 cambiado": _m25_cambiado,
+    "un R-17 descargado de la 701 con el nivel de su fila 43 cambiado sin tocar los conteos": _fila_43_cambiada,
 }
 
 
@@ -544,15 +555,19 @@ def manifiesto(ctx: Escenario) -> dict[str, Any]:
     return json.loads((ctx.extras["exports"] / "manifiesto.json").read_text(encoding="utf-8"))
 
 
-def ensayar(ctx: Escenario, *extra: str, r17: str = "r17_del_ensayo") -> subprocess.CompletedProcess[str]:
+def ensayar(ctx: Escenario, *extra: str, r17: str = "r17_del_ensayo",
+            base_del_ensayo: str | None = "") -> subprocess.CompletedProcess[str]:
     """Corre el ensayo con python -I sobre los exports del escenario, la tabla maestra sin cambios y una carpeta nueva
     para los R-17, con las variables de libpq hacia la copia desechable del escenario y su dueño, que puede escribir.
-    El conciliador que llama el ensayo lee con abet_respaldo."""
+    --base-del-ensayo nombra por omisión esa misma copia, como HOST/BASE, y None lo omite. El conciliador que llama el
+    ensayo lee con abet_respaldo."""
     _roles_de_lectura(ctx)
     tabla = _maestra(ctx).escribir(_carpeta(ctx, "entrada") / "tabla_maestra_inventada.xlsx")
     entorno = {**ctx.request.getfixturevalue("base_desechable")._entorno(), "PGDATABASE": ctx.api.base.nombre}
+    if base_del_ensayo == "":
+        base_del_ensayo = f"{ctx.api.dueno.info.host}/{ctx.api.base.nombre}"
     argumentos = ["--exports", str(ctx.extras["exports"]), "--maestra", str(tabla), "--r17", str(_tmp(ctx) / r17),
-                  "--reglas", REGLAS]
+                  "--reglas", REGLAS, *(["--base-del-ensayo", base_del_ensayo] if base_del_ensayo is not None else [])]
     corrida = subprocess.run([sys.executable, "-I", str(ENSAYO), *argumentos, *extra], env=entorno,
                              capture_output=True, text=True, encoding="utf-8", check=False, cwd=_tmp(ctx))
     ctx.extras["corrida"] = corrida
@@ -795,3 +810,24 @@ def test_los_codigos_sin_99_piden_la_opcion_de_datos_reales(ctx: Escenario) -> N
     assert con_la_opcion.returncode == 0, _salida(ctx)
     assert "3 de 3 secciones iguales." in _lineas(ctx)
     assert not OCHO_CIFRAS.findall(_salida(ctx))
+
+
+def test_el_ensayo_no_sube_en_una_base_que_no_es_la_que_nombra(ctx: Escenario) -> None:
+    """Cambio del 2026-11-23 del cierre de la spec 008. Las variables de libpq apuntan a una base con las secciones y
+    los profesores de Química y sin cargas, como develop recién sembrada, que la negativa por cargas previas deja pasar.
+    Con --base-del-ensayo de otra base, debe terminar con 1 antes de subir, y sin la opción, con 2. No debe sumar filas
+    a abet.archivo_origen ni escribir un R-17."""
+    ctx.crear_base("quimica_plan")
+    ctx.extras["maestra"] = _maestra_de(_codigo_99)
+    generar_exports(ctx, _maestra(ctx))
+    assert ctx.uno("SELECT count(*) FROM abet.carga") == 0
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion") > 0
+    otra = ensayar(ctx, base_del_ensayo=f"{ctx.api.dueno.info.host}/abet_rama_hija_del_ensayo")
+    assert otra.returncode == 1, _salida(ctx)
+    assert _lineas(ctx) == ["La conexión no llega a la base que nombra --base-del-ensayo. Revise PGHOST y PGDATABASE "
+                            "antes de subir (J-52).", "Ensayo detenido antes de subir. No se cargó ningún archivo."]
+    sin_la_opcion = ensayar(ctx, r17="r17_sin_la_opcion", base_del_ensayo=None)
+    assert sin_la_opcion.returncode == 2, _salida(ctx)
+    assert _lineas(ctx) == ["Argumentos inválidos. Lea el uso al comienzo de db/herramientas/ensayar_capacitacion.py."]
+    assert ctx.uno("SELECT count(*) FROM abet.archivo_origen") == 0
+    assert not (_tmp(ctx) / "r17_del_ensayo").exists() or not any((_tmp(ctx) / "r17_del_ensayo").iterdir())

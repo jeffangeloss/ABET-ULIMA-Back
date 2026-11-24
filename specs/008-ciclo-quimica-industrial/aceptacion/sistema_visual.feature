@@ -19,6 +19,9 @@
 # - Los escenarios con @delegado_a_vitest los prueba Vitest en el Front, y los que llevan @playwright los prueba
 #   Playwright 1.64.1 en e2e/ del Front, con la API simulada.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Cambio del 2026-11-23 (cierre de la construcción). La ruta 17 responde 403 al profesor (BR-ACCESO-12), así que la
+#   fila de P7 del esquema «Cada estado de una pantalla usa su componente y su rol» la abre la coordinación del curso.
+#   El esquema suma las columnas cuenta y rol_de_la_cuenta, sin cambiar sus seis filas ni el título de la prueba.
 
 Característica: Sistema visual claro, accesible y usable en cualquier pantalla
   Como profesor o coordinación que usa el sistema una o dos veces por ciclo, quiero pantallas con jerarquía
@@ -34,19 +37,19 @@ Característica: Sistema visual claro, accesible y usable en cualquier pantalla
 
   @spec008 @corte1 @US-81 @delegado_a_vitest
   Esquema del escenario: Cada estado de una pantalla usa su componente y su rol
-    Dado una sesión de "docente701@example.invalid" con rol "PROFESOR"
+    Dado una sesión de "<cuenta>" con rol "<rol_de_la_cuenta>"
     Y que la ruta de <pantalla> está <estado>
-    Cuando el profesor abre <pantalla>
+    Cuando esa cuenta abre <pantalla>
     Entonces ve el componente de <estado> con el rol "<rol>"
 
     Ejemplos:
-      | pantalla | estado    | rol    |
-      | P2       | esperando | status |
-      | P2       | en 500    | alert  |
-      | P4       | esperando | status |
-      | P5       | esperando | status |
-      | P6       | en 500    | alert  |
-      | P7       | esperando | status |
+      | pantalla | estado    | rol    | cuenta                              | rol_de_la_cuenta |
+      | P2       | esperando | status | docente701@example.invalid          | PROFESOR         |
+      | P2       | en 500    | alert  | docente701@example.invalid          | PROFESOR         |
+      | P4       | esperando | status | docente701@example.invalid          | PROFESOR         |
+      | P5       | esperando | status | docente701@example.invalid          | PROFESOR         |
+      | P6       | en 500    | alert  | docente701@example.invalid          | PROFESOR         |
+      | P7       | esperando | status | coordinador.quimica@example.invalid | COORDINADOR      |
 
   @spec008 @corte1 @US-81 @delegado_a_vitest
   Escenario: Los rótulos fijados no cambian con el rediseño

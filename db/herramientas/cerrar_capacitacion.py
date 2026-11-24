@@ -23,7 +23,10 @@ El cierre tiene dos partes, y cada corrida pide al menos una.
    respaldo de esa carpeta, por ejemplo la que restaura la skill respaldar-en-windows en una carpeta temporal,
    porque su respaldo es un tar.gz cifrado y no guarda la huella de cada archivo. El cierre comprueba que cada
    export del manifiesto tenga en las dos carpetas la huella SHA-256 del manifiesto y que el respaldo traiga el mismo
-   manifiesto, e informa qué se puede borrar de la Mac. Nunca borra, mueve ni escribe un archivo.
+   manifiesto, e informa qué se puede borrar de la Mac, que son solo esos exports y el manifiesto. Cuenta, sin
+   nombrarlos, los archivos de la carpeta que no están en el manifiesto, como los R-17 descargados o la tabla maestra,
+   y pide no borrarlos. Un respaldo que es la misma carpeta, un enlace a ella o una carpeta dentro de la otra termina
+   con 2 antes de leer nada. Nunca borra, mueve ni escribe un archivo.
 
 El cierre no restablece la rama develop de Neon, no escribe en main, no despliega y no decide el destino de las
 cargas de Química General, que espera a D-55, así que toda corrida termina con esa línea.
@@ -33,8 +36,9 @@ psql, que PSQL nombra cuando no está en el PATH. Los correos viajan a psql por 
 argumentos.
 
 Códigos de salida. 0 cuando todo sale bien, en seco o con --aplicar, 1 cuando el respaldo no está completo o no
-coincide, cuando el manifiesto no se lee o cuando el CSV se rechaza, 2 por un argumento inválido o una ruta dentro de
-un repositorio git, antes de leer nada y de conectarse, y 3 cuando psql falta o la base no responde o rechaza la
+coincide, cuando el manifiesto no se lee o cuando el CSV se rechaza, 2 por un argumento inválido, una ruta dentro de
+un repositorio git o un respaldo que es la carpeta de la capacitación, antes de leer nada y de conectarse, y 3
+cuando psql falta o la base no responde o rechaza la
 escritura. La comprobación del respaldo corre antes que la baja, y el código final es el mayor de las dos partes.
 """
 
@@ -60,6 +64,8 @@ D_55 = "Destino de las cargas de Química General pendiente de decisión (D-55).
 SIN_RAMAS = "El cierre no restablece develop ni escribe en main."
 SIN_BORRAR = "El cierre no borra ningún archivo."
 HEX64 = re.compile(r"[0-9a-f]{64}")
+MISMA_CARPETA = ("El respaldo es la carpeta de la capacitación, un enlace a ella o una carpeta dentro de la otra. "
+                 "Use la copia restaurada del respaldo en otra carpeta.")
 
 
 def _programacion() -> ModuleType:
@@ -96,6 +102,17 @@ def dentro_de_un_repositorio(ruta: Path) -> bool:
     return any((carpeta / ".git").exists() for carpeta in (resuelta, *resuelta.parents))
 
 
+def misma_o_anidada(una: Path, otra: Path) -> bool:
+    """Si las dos rutas son la misma carpeta, por un enlace o no, o si una está dentro de la otra."""
+    a, b = una.resolve(), otra.resolve()
+    if a == b or a.is_relative_to(b) or b.is_relative_to(a):
+        return True
+    try:
+        return os.path.samefile(una, otra)
+    except OSError:
+        return False
+
+
 class _Argumentos(argparse.ArgumentParser):
     def error(self, message: str) -> None:  # noqa: ARG002, el mensaje de argparse no se muestra en inglés
         raise Rechazo(USO, 2)
@@ -124,6 +141,10 @@ def argumentos_de(argv: list[str] | None) -> argparse.Namespace:
                       (leidos.capacitacion, "La carpeta de la capacitación"), (leidos.respaldo, "El respaldo")):
         if ruta and dentro_de_un_repositorio(Path(ruta)):
             raise Rechazo(f"{que} está dentro de un repositorio git. Use una ruta fuera de los repositorios.", 2)
+    if respaldo and misma_o_anidada(Path(leidos.capacitacion), Path(leidos.respaldo)):
+        # Un respaldo que es la misma carpeta coincide siempre consigo mismo, y su «se pueden borrar» perdería la
+        # única copia (cambio del 2026-11-23 del cierre de la spec 008).
+        raise Rechazo(MISMA_CARPETA, 2)
     if baja and not Path(leidos.programacion).is_file():
         raise Rechazo("No se encuentra el CSV de la programación.", 2)
     return leidos
@@ -181,7 +202,17 @@ def comprobar_respaldo(capacitacion: Path, respaldo: Path) -> tuple[int, list[st
     if lineas:
         return 1, lineas
     n = len(entradas)
-    return 0, [f"{n} de {n} archivos respaldados y comprobados por su huella. Se pueden borrar de la Mac."]
+    lineas = [f"{n} de {n} exports del manifiesto respaldados y comprobados por su huella. Se pueden borrar de la Mac "
+              f"esos {n} exports y el manifiesto."]
+    # Los R-17 descargados, la tabla maestra o los informes que vivan en la carpeta no están en el manifiesto, así que
+    # este cierre no los comprueba ni los da por respaldados, y solo los cuenta, sin nombrarlos.
+    del_manifiesto = {MANIFIESTO, *(archivo for archivo, _ in entradas)}
+    fuera = sum(1 for ruta in capacitacion.rglob("*")
+                if ruta.is_file() and not (ruta.parent == capacitacion and ruta.name in del_manifiesto))
+    if fuera:
+        lineas.append(f"La carpeta trae {_cantidad(fuera, 'archivo', 'archivos')} fuera del manifiesto que este cierre "
+                      "no comprobó. No los borre todavía.")
+    return 0, lineas
 
 
 # Baja de las cuentas

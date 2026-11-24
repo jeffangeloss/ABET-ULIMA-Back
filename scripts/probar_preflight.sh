@@ -195,6 +195,11 @@ caso_por "tabla maestra en .txt falla" "regla de la tabla maestra" bash -c "mkdi
 caso_por "tabla maestra en datos_inventados falla" "regla de la tabla maestra" bash -c "$CON_TEXTO; texto tests/datos_inventados/m.csv cp1252 'Código del estudiante;Calificación\\n99000001;3\\n'; $RS"
 caso_por "tabla maestra en .xlsx falla" "regla de la tabla maestra" bash -c "python3 -c \"import zipfile; z = zipfile.ZipFile('tests/datos_inventados/m.xlsx', 'w'); z.writestr('xl/sharedStrings.xml', '<sst><si><t>CÓDIGO DEL ESTUDIANTE</t></si><si><t>CALIFICACIÓN</t></si></sst>'); z.writestr('xl/worksheets/sheet1.xml', '<worksheet/>'); z.close()\"; $RS"
 caso "csv con solo una de las dos columnas pasa" 0 bash -c "printf 'CÓDIGO DEL ESTUDIANTE,NIVEL\n99000001,3\n' > tests/datos_inventados/m.csv; $RS"
+# Cambio del 2026-11-23 del cierre de la spec 008. Un export con una línea de título, o con un BOM y una línea vacía
+# antes del encabezado, también falla, porque la regla lee las primeras 20 líneas no vacías de un texto.
+caso_por "tabla maestra con una línea de título falla" "regla de la tabla maestra" bash -c "mkdir -p db/referencia; printf 'Tabla maestra 2026-1\nAÑO,CICLO,CÓDIGO DEL ESTUDIANTE,CALIFICACIÓN\n2026,1,99000001,3\n' > db/referencia/maestra.txt; $RS"
+caso_por "tabla maestra con BOM y una línea vacía falla" "regla de la tabla maestra" bash -c "mkdir -p db/referencia; printf '\357\273\277\nAÑO;CICLO;CÓDIGO DEL ESTUDIANTE;CALIFICACIÓN\n2026;1;99000001;3\n' > db/referencia/maestra.csv; $RS"
+caso "un texto que nombra las columnas después de la línea 20 pasa" 0 bash -c "mkdir -p docs; { for i in \$(seq 1 20); do echo \"línea \$i\"; done; echo 'CÓDIGO DEL ESTUDIANTE y CALIFICACIÓN'; } > docs/notas.txt; $RS"
 caso_por "tarjeta de profesor falla" "regla de las tarjetas" bash -c "mkdir -p docs/capacitacion; echo 'docente701@example.invalid' > docs/capacitacion/tarjeta_701.md; $RS"
 caso_por "carpeta de tarjetas falla" "regla de las tarjetas" bash -c "mkdir -p docs/tarjetas; echo x > docs/tarjetas/701.pdf; $RS"
 caso "componente con tarjeta en el nombre pasa" 0 bash -c "mkdir -p src/componentes; echo 'export {}' > src/componentes/TarjetaSeccion.tsx; echo 'export {}' > src/componentes/tarjeta_seccion.ts; $RS"

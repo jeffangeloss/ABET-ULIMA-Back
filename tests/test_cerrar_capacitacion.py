@@ -132,10 +132,61 @@ def test_el_respaldo_completo_da_0_y_no_borra_ni_escribe(tmp_path: Path) -> None
     corrida = _correr(tmp_path, "--capacitacion", str(carpeta), "--respaldo", str(respaldo))
     assert corrida.returncode == 0, corrida.stdout + corrida.stderr
     lineas = corrida.stdout.splitlines()
-    assert "3 de 3 archivos respaldados y comprobados por su huella. Se pueden borrar de la Mac." in lineas
+    assert ("3 de 3 exports del manifiesto respaldados y comprobados por su huella. Se pueden borrar de la Mac esos 3 "
+            "exports y el manifiesto.") in lineas
     assert lineas[-1] == D_55
     assert "El cierre no borra ningún archivo." in lineas
+    assert not any("fuera del manifiesto" in linea for linea in lineas)
     assert (_huellas(carpeta), _huellas(respaldo), sorted(p.name for p in tmp_path.iterdir())) == antes
+
+
+@pytest.mark.parametrize("forma", ["misma", "enlace", "respaldo_dentro", "capacitacion_dentro"])
+def test_un_respaldo_que_es_la_misma_carpeta_termina_con_2_sin_recomendar_borrar(tmp_path: Path, forma: str) -> None:
+    """Cambio del 2026-11-23 del cierre de la spec 008. La misma carpeta, un enlace a ella o una carpeta dentro de la
+    otra no son un respaldo. Debe terminar con 2 y decirlo. No debe decir que algo se puede borrar ni leer los
+    exports."""
+    carpeta = _capacitacion(tmp_path)
+    if forma == "misma":
+        respaldo = carpeta
+    elif forma == "enlace":
+        respaldo = tmp_path / "enlace"
+        respaldo.symlink_to(carpeta, target_is_directory=True)
+    elif forma == "respaldo_dentro":
+        respaldo = carpeta / "respaldo"
+        shutil.copytree(carpeta, tmp_path / "copia")
+        shutil.move(tmp_path / "copia", respaldo)
+    else:
+        respaldo = tmp_path / "respaldo"
+        respaldo.mkdir()
+        shutil.move(carpeta, respaldo / "capacitacion")
+        carpeta = respaldo / "capacitacion"
+        for archivo in carpeta.iterdir():
+            shutil.copy(archivo, respaldo / archivo.name)
+    corrida = _correr(tmp_path, "--capacitacion", str(carpeta), "--respaldo", str(respaldo))
+    assert corrida.returncode == 2, corrida.stdout + corrida.stderr
+    assert ("El respaldo es la carpeta de la capacitación, un enlace a ella o una carpeta dentro de la otra. Use la "
+            "copia restaurada del respaldo en otra carpeta.") in corrida.stderr
+    assert "Se pueden borrar" not in corrida.stdout + corrida.stderr
+    assert "respaldados" not in corrida.stdout
+
+
+def test_los_archivos_fuera_del_manifiesto_se_cuentan_y_no_se_dan_por_respaldados(tmp_path: Path) -> None:
+    """Cambio del 2026-11-23 del cierre de la spec 008. Debe decir que solo los exports del manifiesto se pueden borrar
+    y contar los archivos de la carpeta que el cierre no comprobó, también en una subcarpeta. No debe darlos por
+    respaldados ni nombrarlos."""
+    carpeta = _capacitacion(tmp_path)
+    respaldo = _respaldo(tmp_path, carpeta)
+    (carpeta / "R017_5643_701_2026-1.xlsx").write_bytes(b"R-17 inventado")
+    (carpeta / "informes").mkdir()
+    (carpeta / "informes" / "conciliacion.txt").write_text("informe inventado\n", encoding="utf-8")
+    corrida = _correr(tmp_path, "--capacitacion", str(carpeta), "--respaldo", str(respaldo))
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    lineas = corrida.stdout.splitlines()
+    assert ("3 de 3 exports del manifiesto respaldados y comprobados por su huella. Se pueden borrar de la Mac esos 3 "
+            "exports y el manifiesto.") in lineas
+    assert ("La carpeta trae 2 archivos fuera del manifiesto que este cierre no comprobó. No los borre todavía."
+            in lineas)
+    assert "R017" not in corrida.stdout and "conciliacion" not in corrida.stdout
 
 
 @pytest.mark.parametrize("faltan", [1, 2, 3])
@@ -235,7 +286,8 @@ def test_el_respaldo_se_comprueba_aunque_la_base_no_responda(tmp_path: Path) -> 
     corrida = _correr(tmp_path, "--programacion", str(_programacion(tmp_path)), "--periodo", "2026-1",
                       "--capacitacion", str(carpeta), "--respaldo", str(respaldo), psql=psql)
     assert corrida.returncode == 3
-    assert "3 de 3 archivos respaldados y comprobados por su huella. Se pueden borrar de la Mac." in corrida.stdout
+    assert ("3 de 3 exports del manifiesto respaldados y comprobados por su huella. Se pueden borrar de la Mac esos 3 "
+            "exports y el manifiesto.") in corrida.stdout
 
 
 def test_el_guion_no_tiene_como_borrar_ni_escribir_archivos() -> None:

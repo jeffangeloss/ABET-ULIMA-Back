@@ -17,22 +17,6 @@ razon = "Espera a D-47 y a D-51 de la spec 007 (FR-001 de la spec 008)."
 estado = "Pendiente por decisión"
 razon = "Se construye solo si D-32 se responde (J-54, T039 y T047)."
 
-[historias.US-85]
-estado = "Pendiente de tarea"
-razon = "El humo con Playwright de e2e/humo_quimica.spec.ts llega con T053 del Front."
-
-[[escenarios]]
-archivo = "008-ciclo-quimica-industrial/aceptacion/guia_y_privacidad.feature"
-escenario = "El profesor sigue la guía de su rol de punta a punta en la vista previa"
-estado = "Pendiente de tarea"
-razon = "Escenario @playwright de US-87 que el humo de T053 del Front comprueba en la vista previa."
-
-[[escenarios]]
-archivo = "008-ciclo-quimica-industrial/aceptacion/guia_y_privacidad.feature"
-escenario = "El ejercicio de error usa un export inventado y enseña a leer «Qué corregir»"
-estado = "Pendiente de tarea"
-razon = "Escenario @playwright de US-87 que el humo de T053 del Front comprueba en la vista previa."
-
 [[escenarios]]
 archivo = "008-ciclo-quimica-industrial/aceptacion/capacitacion_en_develop.feature"
 escenario = "Después de la siembra de la capacitación, una lectura sin correos confirma el alcance"
@@ -131,9 +115,9 @@ razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título ex
 
 [[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
-escenario = "Una carga publicada no muestra «Qué corregir»"
+escenario = "Una carga publicada sin rechazos ni avisos no muestra «Qué corregir»"
 pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "una carga publicada sin rechazos ni avisos no muestra «Qué corregir»" }]
-razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+razon = "Prueba de T044 de la spec 008, que comienza con minúscula y por eso no coincide con el título exacto. El escenario cambia el 2026-11-23 (FR-019 de la spec 008)."
 
 [[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"

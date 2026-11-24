@@ -23,6 +23,9 @@
 # - Los escenarios con @playwright corren en e2e/ del Front contra la vista previa de develop. Los demás corren con
 #   pytest-bdd en una base desechable que imita la rama develop.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Cambio del 2026-11-23 (cierre de la construcción). El texto del respaldo completo de «El cierre comprueba el respaldo
+#   por huella y no borra nada» dice que se pueden borrar los 3 exports del manifiesto y el manifiesto, porque los
+#   archivos de la carpeta fuera del manifiesto no se comprueban.
 
 Característica: La capacitación de Química General corre en la versión de prueba
   Como equipo del sistema y Oficina de Calidad, quiero sembrar Química en develop con orden, probar el recorrido
@@ -173,7 +176,7 @@ Característica: La capacitación de Química General corre en la versión de pr
     Dado una carpeta inventada de la capacitación en tmp_path con 3 exports y su manifiesto
     Y un respaldo inventado cuyas huellas coinciden con el manifiesto
     Cuando el cierre comprueba el respaldo
-    Entonces dice «3 de 3 archivos respaldados y comprobados por su huella. Se pueden borrar de la Mac.» (propuesta)
+    Entonces dice «3 de 3 exports del manifiesto respaldados y comprobados por su huella. Se pueden borrar de la Mac esos 3 exports y el manifiesto.» (propuesta)
     Y los 3 exports siguen en la carpeta
 
   @spec008 @corte1 @US-89

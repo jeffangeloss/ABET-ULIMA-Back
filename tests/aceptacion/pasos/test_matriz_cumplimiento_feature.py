@@ -448,8 +448,9 @@ def _primera_tabla(ctx: Matriz) -> None:
     for celdas in filas:
         assert celdas[-1].startswith(ESTADOS), celdas
         assert re.search(r"US-[0-9]+", celdas[1]), celdas
-    # El humo espera a T053 y el avance a D-32 por US-80, y la matriz lo dice en vez de darlos por cumplidos.
-    assert fila(corrida["matriz"], "Humo")[-1].startswith("Pendiente de tarea")
+    # El avance espera a D-32 por US-80, y la matriz lo dice en vez de darlo por cumplido. El humo tiene su prueba desde
+    # T053 del Front (cambio del 2026-11-23 del cierre de la spec 008).
+    assert fila(corrida["matriz"], "Humo")[-1] == "Con prueba"
     assert "US-80" in fila(corrida["matriz"], "Avance")[-1]
 
 

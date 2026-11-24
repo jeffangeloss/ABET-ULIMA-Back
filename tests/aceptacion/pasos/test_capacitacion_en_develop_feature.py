@@ -890,7 +890,7 @@ def _siguen(ctx: Escenario) -> None:
 def _codigo_1(ctx: Escenario) -> None:
     corrida = ctx.extras["cierre"]
     assert corrida.returncode == 1, corrida.stdout + corrida.stderr
-    assert "Se pueden borrar de la Mac." not in corrida.stdout
+    assert "Se pueden borrar" not in corrida.stdout
     assert huellas_de(ctx.extras["capacitacion"]) == ctx.extras["huellas"]
 
 

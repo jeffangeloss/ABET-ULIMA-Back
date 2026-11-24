@@ -485,6 +485,7 @@ def test_la_spec_008_trae_202_escenarios_con_257_casos_41_van_a_vitest_y_14_a_pl
             assert not (a_vitest and a_playwright), f"{escenario.name}: {sorted(escenario.tags)}"
             delegados += a_vitest
             del_navegador += a_playwright
-    assert (escenarios, casos) == (202, 257)
+    # 258 casos desde el cambio del 2026-11-23 del cierre, que suma al esquema de US-83 la fila 43 del R-17 cambiada.
+    assert (escenarios, casos) == (202, 258)
     assert (delegados, del_navegador) == (41, 14)
     assert historias == {f"US-{n}" for n in range(67, 91)}

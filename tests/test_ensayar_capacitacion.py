@@ -13,6 +13,7 @@ Todo es inventado y vive en tmp_path. Cada prueba nombra lo que debe pasar y lo 
 from __future__ import annotations
 
 import csv
+import importlib.util
 import io
 import json
 import os
@@ -20,6 +21,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType, SimpleNamespace
 
 import pytest
 from openpyxl import Workbook
@@ -79,6 +81,8 @@ def ensayar(rutas: dict[str, Path], *extra: str, sin: str | None = None) -> subp
     for opcion in ("exports", "maestra", "r17"):
         if opcion != sin:
             argumentos += [f"--{opcion}", str(rutas[opcion])]
+    if sin != "base-del-ensayo":
+        argumentos += ["--base-del-ensayo", "/nonexistent/abet_sin_servidor/abet_demo_no_existe"]
     return subprocess.run([sys.executable, "-I", str(ENSAYO), *argumentos, "--reglas", "R-2026-BORRADOR", *extra],
                           env=entorno, capture_output=True, text=True, encoding="utf-8", check=False)
 
@@ -93,7 +97,7 @@ def _lineas(corrida: subprocess.CompletedProcess[str]) -> list[str]:
     return corrida.stdout.splitlines()
 
 
-@pytest.mark.parametrize("sin", ["exports", "maestra", "r17"])
+@pytest.mark.parametrize("sin", ["exports", "maestra", "r17", "base-del-ensayo"])
 def test_sin_una_opcion_termina_con_2(entrada: dict[str, Path], sin: str) -> None:
     """Debe terminar con 2 y el mensaje de los argumentos. No debe conectarse, porque eso daría 3."""
     corrida = ensayar(entrada, sin=sin)
@@ -197,3 +201,86 @@ def test_una_base_que_no_responde_termina_con_3(entrada: dict[str, Path]) -> Non
     assert _lineas(corrida) == ["La base no responde. Revise las variables de conexión de libpq."]
     assert "nonexistent" not in corrida.stdout + corrida.stderr
     assert not entrada["r17"].exists()
+
+
+# Cargas que no quedan limpias, sin base (cambio del 2026-11-23 del cierre de la spec 008)
+
+def _modulo() -> ModuleType:
+    """El guion cargado por su ruta, como lo carga el ensayo con scripts/, para cambiar sus piezas en una prueba."""
+    especificacion = importlib.util.spec_from_file_location("ensayar_capacitacion_en_prueba", ENSAYO)
+    modulo = importlib.util.module_from_spec(especificacion)
+    # dataclasses busca el módulo de cada clase en sys.modules.
+    sys.modules[especificacion.name] = modulo
+    especificacion.loader.exec_module(modulo)
+    return modulo
+
+
+class _ConexionFalsa:
+    """Una conexión que no llega a ningún PostgreSQL. El ensayo solo la pasa a las piezas que la prueba cambia."""
+
+    info = SimpleNamespace(host="/nonexistent/abet_sin_servidor", dbname="abet_demo_no_existe")
+
+    def __enter__(self) -> _ConexionFalsa:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
+
+
+def _subir_con(modulo: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+               cuerpos: dict[int, tuple[int, int]], sin_r17: set[int]) -> tuple[list[str], bool]:
+    """subir() con destinos, cargar(), la constancia y el R-17 cambiados. Cada sección 70N es la carga N."""
+    exports = [modulo.Export(seccion, f"{seccion}.xls", b"inventado") for seccion in ("701", "702", "703")]
+    manifiesto = modulo.Manifiesto("2026-1", "5643", "6.1", exports)
+    monkeypatch.setattr(modulo, "destinos", lambda _c, _m: {e.seccion: (int(e.seccion), 99) for e in exports})
+    monkeypatch.setattr(modulo, "cargar", lambda _c, _b, *, seccion_id, **_k: SimpleNamespace(
+        carga_id=seccion_id - 700, resultado=modulo.Resultado.PUBLICADA))
+    monkeypatch.setattr(modulo.constancia, "armar", lambda _c, carga_id: {
+        "filas_aceptadas": cuerpos[carga_id][0], "filas_rechazadas": cuerpos[carga_id][1]})
+
+    def generar(_c: object, carga_id: int, carpeta: Path) -> Path:
+        if carga_id in sin_r17:
+            raise modulo.r17.R17NoDisponible
+        return carpeta / f"R017_{carga_id}.xlsx"
+
+    monkeypatch.setattr(modulo.r17, "generar", generar)
+    return modulo.subir(_ConexionFalsa(), manifiesto, None, tmp_path / "r17")
+
+
+def test_una_carga_publicada_con_rechazos_o_sin_r17_no_queda_limpia(monkeypatch: pytest.MonkeyPatch,
+                                                                    tmp_path: Path) -> None:
+    """Debe decir las filas rechazadas de la 702 y que el R-17 de la 703 no se pudo generar, y no dar las cargas por
+    limpias. No debe decir que la 702 o la 703 tienen su R-17 descargado."""
+    modulo = _modulo()
+    lineas, limpias = _subir_con(modulo, monkeypatch, tmp_path, {1: (5, 0), 2: (4, 1), 3: (5, 0)}, sin_r17={3})
+    assert lineas == ["Sección 701. Carga PUBLICADA con 5 filas aceptadas y 0 rechazadas, y su R-17 descargado.",
+                      "Sección 702. Carga PUBLICADA con 4 filas aceptadas y 1 rechazadas.",
+                      "Sección 703. La carga quedó PUBLICADA y su R-17 no se pudo generar."]
+    assert limpias is False
+    # Cada causa basta sola para que las cargas no queden limpias.
+    assert _subir_con(modulo, monkeypatch, tmp_path, {1: (5, 0), 2: (4, 1), 3: (5, 0)}, sin_r17=set())[1] is False
+    assert _subir_con(modulo, monkeypatch, tmp_path, {1: (5, 0), 2: (5, 0), 3: (5, 0)}, sin_r17={3})[1] is False
+    lineas, limpias = _subir_con(modulo, monkeypatch, tmp_path, {1: (5, 0), 2: (5, 0), 3: (5, 0)}, sin_r17=set())
+    assert limpias is True and all(linea.endswith("y su R-17 descargado.") for linea in lineas)
+
+
+def test_una_carga_que_no_queda_limpia_no_da_el_ensayo_por_bueno(entrada: dict[str, Path],
+                                                                monkeypatch: pytest.MonkeyPatch) -> None:
+    """Con el conciliador en 0 y una carga con filas rechazadas, debe terminar con 1 y «Ensayo con diferencias». No debe
+    decir «Ensayo sin diferencias», porque el 0 exige además todas las cargas limpias."""
+    modulo = _modulo()
+    linea = "Sección 702. Carga PUBLICADA con 2 filas aceptadas y 1 rechazadas."
+    monkeypatch.setattr(modulo.psycopg, "connect", lambda *_a, **_k: _ConexionFalsa())
+    monkeypatch.setattr(modulo, "subir", lambda *_a: ([linea], False))
+    monkeypatch.setattr(modulo, "conciliar",
+                        lambda *_a: subprocess.CompletedProcess([], 0, "2 de 2 secciones iguales.\n", ""))
+    argumentos = ["--exports", str(entrada["exports"]), "--maestra", str(entrada["maestra"]), "--r17",
+                  str(entrada["r17"]), "--reglas", "R-2026-BORRADOR", "--base-del-ensayo",
+                  "/nonexistent/abet_sin_servidor/abet_demo_no_existe"]
+    codigo, lineas = modulo.principal(argumentos)
+    assert codigo == 1
+    assert lineas == [linea, "2 de 2 secciones iguales.",
+                      "Ensayo con diferencias. No se da por bueno hasta resolverlas."]
+    monkeypatch.setattr(modulo, "subir", lambda *_a: ([], True))
+    assert modulo.principal(argumentos) == (0, [
+        "2 de 2 secciones iguales.", "Ensayo sin diferencias. Las 2 secciones salen iguales a la tabla maestra."])

@@ -8,10 +8,12 @@ Ningún código fuera del rango 99 se escribe en este archivo, porque la prueba 
 cerrada CODIGOS_DE_PRUEBA.
 
 El escenario del contenido actual corre el guion de verdad sobre la copia de trabajo del Back, de solo lectura, y sobre
-la del Front cuando ABET_FRONT_RAIZ la nombra. Sin esa variable, la parte del Front queda en su propia integración
-continua, que corre scripts/preflight.sh y scripts/probar_preflight.sh del Front con el mismo bloque de reglas, y el
-resumen de pytest lo dice. El barrido del historial corre sobre dos copias de prueba con las ramas develop y main, y el
-barrido real con la huella del correo real lo corre Jefferson (T052).
+la del Front cuando ABET_FRONT_RAIZ la nombra. El barrido del historial corre sobre copias de prueba con las ramas
+develop y main y commits inventados, una con el guion del Back y otra con el del Front cuando ABET_FRONT_RAIZ lo
+nombra, así que prueba la herramienta, y el barrido de develop y main reales con la huella del correo real lo corre
+Jefferson (T052). Sin ABET_FRONT_RAIZ, los dos escenarios comprueban la parte del Back y terminan en skip con su razón,
+porque la del Front queda en su propia integración continua, que corre scripts/preflight.sh y
+scripts/probar_preflight.sh del Front con el mismo bloque de reglas (cambio del 2026-11-23 del cierre de la spec 008).
 
 Los escenarios de US-87 de este .feature son de Vitest y de Playwright en el Front, salvo el de las tarjetas, que vive
 en test_exports_capacitacion_feature.py.
@@ -31,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
 Escenario = Any
@@ -224,14 +227,29 @@ def test_una_tarjeta_de_profesor_dentro_del_repositorio_se_rechaza() -> None:
     """US-88, escenario 6."""
 
 
+SIN_EL_FRONT = ("La parte del Back pasó. La del Front no corrió aquí, porque falta ABET_FRONT_RAIZ, y su CI la revisa "
+                "con scripts/preflight.sh y scripts/probar_preflight.sh del Front.")
+
+
+def _sin_el_front_se_omite() -> None:
+    """El cuerpo de una prueba de pytest-bdd corre después de sus pasos, así que el skip llega con la parte del Back ya
+    comprobada y deja dicho en el resumen que la del Front no corrió (cambio del 2026-11-23 del cierre de la spec
+    008)."""
+    if not os.environ.get("ABET_FRONT_RAIZ"):
+        pytest.skip(SIN_EL_FRONT)
+
+
 @scenario(FEATURE, "La regla nueva no da falsos positivos en el contenido actual")
 def test_la_regla_nueva_no_da_falsos_positivos_en_el_contenido_actual() -> None:
     """US-88, escenario 7."""
+    _sin_el_front_se_omite()
 
 
 @scenario(FEATURE, "El historial publicado no trae el correo prohibido")
 def test_el_historial_publicado_no_trae_el_correo_prohibido() -> None:
-    """US-88, escenario 8."""
+    """US-88, escenario 8. El barrido corre sobre copias de prueba con commits inventados y prueba la herramienta. El
+    barrido de develop y main reales con la huella del correo real lo corre Jefferson (T052)."""
+    _sin_el_front_se_omite()
 
 
 # Dado
@@ -372,10 +390,6 @@ def _repositorios_reales(ctx: Escenario) -> list[Path]:
     front = os.environ.get("ABET_FRONT_RAIZ")
     if front:
         repositorios.append(Path(front).resolve())
-    else:
-        ctx.request.node.user_properties.append(
-            ("delegado_a_preflight", "el contenido actual del Front lo revisa su CI con scripts/preflight.sh y "
-             "scripts/probar_preflight.sh, con el mismo bloque de reglas; ABET_FRONT_RAIZ lo corre aquí"))
     return repositorios
 
 
@@ -418,8 +432,10 @@ def _historial(copia: Copia, correos: list[str]) -> None:
 
 @when("corre una vez el barrido del historial de los dos repositorios antes de publicar la spec 008")
 def _corre_el_historial(ctx: Escenario) -> None:
+    # Sin ABET_FRONT_RAIZ corre solo la copia del Back, y la prueba termina en skip después de comprobarla. La copia
+    # llamada «front» nunca corre el guion del Back.
     front = os.environ.get("ABET_FRONT_RAIZ")
-    preflights = {"back": PREFLIGHT, "front": Path(front) / "scripts" / "preflight.sh" if front else PREFLIGHT}
+    preflights = {"back": PREFLIGHT, **({"front": Path(front) / "scripts" / "preflight.sh"} if front else {})}
     ctx.extras["huellas"] = huella(CORREO_PROHIBIDO)
     corridas = []
     for nombre, preflight in preflights.items():

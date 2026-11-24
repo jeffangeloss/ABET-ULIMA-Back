@@ -26,6 +26,11 @@
 # - Cambio del 2026-11-23 (FR-012 y FR-019 de la spec 008). El texto de la carga sin filas aceptadas deja de
 #   decir «Corrija en Blackboard», porque los profesores de Química General suben un export que genera la Oficina
 #   de Calidad. Los consejos por motivo RECHAZA_CARGA de esta spec no cambian.
+# - Cambio del 2026-11-23 (FR-012 y FR-019 de la spec 008, cierre de la construcción). Desde US-77 de la spec 008, P4
+#   de una carga PUBLICADA con rechazos de fila dice qué corregir, así que el escenario «Una carga publicada no
+#   muestra «Qué corregir»», con 10 aceptadas y 1 rechazada, contradice el código. Pasa a «Una carga publicada sin
+#   rechazos ni avisos no muestra «Qué corregir»», con 11 aceptadas y 0 rechazadas, y el caso de la fila rechazada
+#   queda en US-77 de la spec 008.
 
 Característica: P4 de una carga rechazada dice qué corregir y no afirma nada falso
   Como profesor, quiero que P4 de una carga rechazada me diga qué corregir en Blackboard y que no me haga creer
@@ -69,8 +74,8 @@ Característica: P4 de una carga rechazada dice qué corregir y no afirma nada f
     Y P4 no muestra ningún texto que empieza con «Qué corregir»
 
   @US-61 @spec007 @corte1 @etapa_a @delegado_a_vitest
-  Escenario: Una carga publicada no muestra «Qué corregir»
-    Dado que la ruta 6 responde la carga 7 en estado "PUBLICADA" con 11 filas leídas, 10 aceptadas y 1 rechazada
+  Escenario: Una carga publicada sin rechazos ni avisos no muestra «Qué corregir»
+    Dado que la ruta 6 responde la carga 7 en estado "PUBLICADA" con 11 filas leídas, 11 aceptadas y 0 rechazadas, sin avisos
     Cuando el profesor abre P4 de la carga 7
     Entonces P4 no muestra ningún texto que empieza con «Qué corregir»
 

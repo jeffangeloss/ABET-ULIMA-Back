@@ -61,6 +61,7 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
       | una fila menos en la 703                                | Sección 703. 1 estudiante medido por el sistema que no está en la tabla.     |
       | las filas de la 702 en el PI 6.2                        | Sección 702. 5 filas del PI 6.2 en la tabla maestra y 0 en el sistema (D-48). |
       | un R-17 descargado de la 701 con M25 cambiado           | Sección 701. El conteo del R-17 no es el de la tabla maestra.                |
+      | un R-17 descargado de la 701 con el nivel de su fila 43 cambiado sin tocar los conteos | Sección 701. La tabla de estudiantes del R-17 no es la de la tabla maestra. |
 
   @spec008 @corte1 @US-83
   Escenario: Una sección sin carga publicada se nombra
