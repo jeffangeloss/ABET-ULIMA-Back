@@ -20,6 +20,13 @@
 # - La prueba de cotejo de la guía corre con Vitest en el Front y lleva @delegado_a_vitest. Los escenarios del
 #   barrido corren scripts/preflight.sh del Back y del Front sobre una copia de prueba en tmp_path.
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec.
+# - Cambio del 2026-11-23 (cierre del segundo bloque, T049 y T053). Varios rótulos que cita la guía viven fuera de
+#   src/pantallas y src/servicios («Salir», «Cargas» y «Periodo 2026-1» en App.tsx y «Rechazos» en src/componentes), y
+#   el mensaje de la sección que no coincide lo manda la API, así que la prueba de cotejo busca en todo src y acepta del
+#   contrato solo los mensajes que terminan en punto o en signo de pregunta. En la misma corrida del humo, la 701 ya
+#   tiene publicado el archivo de la tarjeta, así que el recorrido de la guía recibe en P3 «Este archivo ya se cargó…» y
+#   abre P4 con «Ver resultado», y el ejercicio de error corre en la 703 con docente703, porque con la 701 publicada la
+#   ruta 5 responde 409 antes de leer la sección.
 
 Característica: Guía de la capacitación y barrido de privacidad
   Como Oficina de Calidad, quiero una guía por rol que hable con los rótulos que ven los profesores y unos
@@ -30,7 +37,7 @@ Característica: Guía de la capacitación y barrido de privacidad
   Escenario: Cada rótulo citado en la guía existe en el Front
     Dado la guía con rótulos entre comillas latinas como «Subir export», «Antes de subir», «Descargar R-17», «Reemplazar carga» y «Avance del registro del curso»
     Cuando corre la prueba que coteja la guía con src
-    Entonces cada rótulo citado aparece en src/pantallas o en src/servicios
+    Entonces cada rótulo citado aparece en src, o en el contrato si es un mensaje de la API que termina en punto o en signo de pregunta
 
   @spec008 @corte1 @US-87 @delegado_a_vitest
   Escenario: Un rótulo cambiado en el Front hace fallar la guía
@@ -60,16 +67,16 @@ Característica: Guía de la capacitación y barrido de privacidad
   Escenario: El profesor sigue la guía de su rol de punta a punta en la vista previa
     Dado la tarjeta inventada de "docente701@example.invalid" con la 701 y el archivo "gc_SINTETICO_20261_5643_701_fullgc_2026-07-15-00-00-00.xlsx"
     Cuando el profesor sigue los pasos de su rol en la vista previa con la siembra inventada
-    Entonces ingresa, elige la 701 en P2, lee «Antes de subir» en P3, sube su archivo, ve la carga publicada en P4 y descarga el R-17
+    Entonces ingresa, elige la 701 en P2, lee «Antes de subir» en P3, sube su archivo, que P3 da por ya cargado si la misma corrida lo publicó, ve la carga publicada en P4 con «Ver resultado» y descarga el R-17
 
   @spec008 @corte1 @US-87 @playwright
   Escenario: El ejercicio de error usa un export inventado y enseña a leer «Qué corregir»
     Dado el archivo de ejercicio inventado de la sección ficticia 799 de "5643" en 2026-1, generado con --ejercicio
-    Cuando "docente701@example.invalid" lo sube en la 701
-    Entonces P4 muestra «El archivo corresponde a la sección 799 y usted eligió la 701. No se publicó.»
-    Y debajo «Qué corregir. Exporte el Centro de calificaciones de 5643, sección 701, o suba este archivo en la sección que le corresponde.»
+    Cuando "docente703@example.invalid" lo sube en la 703
+    Entonces P4 muestra «El archivo corresponde a la sección 799 y usted eligió la 703. No se publicó.»
+    Y debajo «Qué corregir. Exporte el Centro de calificaciones de 5643, sección 703, o suba este archivo en la sección que le corresponde.»
     Y la guía dice a continuación «Suba ahora el archivo de su sección.»
-    Y la 701 conserva «Subir export» activo y abet.medicion no gana filas de la 701
+    Y la 703 conserva «Subir export» activo y abet.medicion no gana filas de la 703
 
   @spec008 @corte1 @US-87 @delegado_a_vitest
   Escenario: La guía de la coordinación del curso no promete correos sin D-51

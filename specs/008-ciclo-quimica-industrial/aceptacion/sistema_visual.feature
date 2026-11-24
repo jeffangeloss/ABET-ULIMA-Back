@@ -22,6 +22,9 @@
 # - Cambio del 2026-11-23 (cierre de la construcción). La ruta 17 responde 403 al profesor (BR-ACCESO-12), así que la
 #   fila de P7 del esquema «Cada estado de una pantalla usa su componente y su rol» la abre la coordinación del curso.
 #   El esquema suma las columnas cuenta y rol_de_la_cuenta, sin cambiar sus seis filas ni el título de la prueba.
+# - Cambio del 2026-11-23 (cierre del segundo bloque, T048). «Antes de subir» es una sección sin controles, y volverla
+#   enfocable sería un defecto de accesibilidad, así que el escenario del foco de P3 la lee entre el periodo y el archivo
+#   sin que tome el foco. El orden real empieza en «Salir», que encabeza la página antes del menú.
 
 Característica: Sistema visual claro, accesible y usable en cualquier pantalla
   Como profesor o coordinación que usa el sistema una o dos veces por ciclo, quiero pantallas con jerarquía
@@ -161,7 +164,7 @@ Característica: Sistema visual claro, accesible y usable en cualquier pantalla
     Dado el navegador de Playwright en P3 de la sección 701
     Cuando el profesor recorre la pantalla con la tecla Tab
     Entonces cada control enfocado muestra el anillo de foco
-    Y el orden pasa por el menú, el selector de periodo si existe, «Antes de subir», el archivo, «Subir» y «Volver a mis secciones»
+    Y el orden pasa por «Salir», el menú, el selector de periodo si existe, el archivo, «Subir» y «Volver a mis secciones», y «Antes de subir» se lee entre el periodo y el archivo sin tomar el foco
 
   @spec008 @corte1 @US-82 @playwright
   Escenario: El menú principal se usa solo con el teclado

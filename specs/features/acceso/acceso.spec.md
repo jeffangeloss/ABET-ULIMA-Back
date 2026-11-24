@@ -166,6 +166,7 @@ Esta spec viva fija quién entra al sistema, cómo viaja su sesión y qué secci
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-23 · uv run --frozen --no-build pytest -q -p no:cacheprovider (2095 passed y 18 skipped) y npm test del Front (283 aprobadas) · test_alcance_coordinacion_feature.py, test_avance_feature.py, test_api_avance.py, test_api_sesion.py, test_permisos.py, front/tests/spec008/alcance_coordinacion.test.tsx → BR-ACCESO-12 a BR-ACCESO-14 y los cambios fechados de BR-ACCESO-07 y BR-ACCESO-08 (spec 008, T060)
 - 2026-11-22 · uv run --frozen --offline --no-build pytest -q -p no:cacheprovider · test_programacion_docente_feature.py, test_secciones_sin_docente_feature.py, test_cargar_programacion.py → BR-ACCESO-11 (spec 006)
 - 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_alcance_resultados_feature.py, test_resultados_feature.py, test_rutas_protegidas.py, test_api_resultados.py → BR-ACCESO-07, BR-ACCESO-08 y BR-ACCESO-10 con la ruta 12 (spec 004)
 - 2026-11-17 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_reemplazo_y_cargas_feature.py, test_permisos.py, test_api_cargas.py → BR-ACCESO-07 y BR-ACCESO-08 en el corte 2 (reemplazo y lista de cargas)

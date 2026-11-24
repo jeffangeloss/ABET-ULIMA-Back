@@ -90,6 +90,7 @@ Esta spec viva fija de dónde toma la interfaz de programación de aplicaciones 
 Corrida del 2026-10-30 en el Back, rama `feat/001-mvp-carga-r17`, sobre un PostgreSQL 16 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-23 · uv run --frozen --no-build pytest -q -p no:cacheprovider (2095 passed y 18 skipped), npm test del Front (283 aprobadas) y bash db/pruebas/correr_pruebas.sh («RESULTADO: todo pasó») · test_periodo_elegido_feature.py, test_catalogo_industrial_feature.py, front/tests/spec008/periodo_elegido.test.tsx → BR-PERIODO-05, BR-PERIODO-06 y el cambio fechado de BR-PERIODO-02 (spec 008, T060)
 - 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_alcance_resultados_feature.py, test_resultados_feature.py, test_api_resultados.py → cambios de la spec 004 en BR-PERIODO-01 y BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests/aceptacion -rA · test_acceso_feature.py, test_base_neon_feature.py, test_carga_feature.py, test_r17_constancia_feature.py → BR-PERIODO-01 a BR-PERIODO-04
 - 2026-10-30 · uv run --frozen pytest -q tests -rA · test_api_cargas.py, test_api_secciones.py → BR-PERIODO-01, BR-PERIODO-04
