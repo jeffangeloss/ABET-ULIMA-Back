@@ -16,7 +16,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | Sistema visual | US-81, US-82 | 16 | Con prueba |
 | Conciliación | US-83 | 10 | Con prueba |
 | Ensayo | US-84 | 4 | Con prueba |
-| Siembra | US-86 | 9 | Con prueba y 1 pendiente de tarea |
+| Siembra | US-86 | 9 | Con prueba |
 | Humo | US-85 | 8 | Con prueba |
 | Guía | US-87 | 9 | Con prueba |
 | Privacidad | US-88 | 8 | Con prueba |
@@ -53,7 +53,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-83 | 008 | El conciliador compara la base y los R-17 con la tabla maestra sin mostrar códigos | 10 | ensayo_y_conciliacion.feature | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py | Ninguna | Con prueba |
 | US-84 | 008 | Ensayo de punta a punta de los exports antes de la capacitación | 4 | ensayo_y_conciliacion.feature | pytest-bdd tests/aceptacion/pasos/test_ensayo_y_conciliacion_feature.py | Ninguna | Con prueba |
 | US-85 | 008 | Humo con Playwright de punta a punta en la vista previa | 8 | capacitacion_en_develop.feature | Playwright e2e/humo_quimica.spec.ts | Ninguna | Con prueba |
-| US-86 | 008 | Siembra de Química en develop desde el Windows, en orden y sin cambiar Ambiental | 9 | capacitacion_en_develop.feature | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py | Lectura sobre develop que Jefferson corre desde su Windows en T071, el único escenario de US-86 sin prueba en el clúster desechable. | Con prueba y 1 pendiente de tarea |
+| US-86 | 008 | Siembra de Química en develop desde el Windows, en orden y sin cambiar Ambiental | 9 | capacitacion_en_develop.feature | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py | Ninguna | Con prueba |
 | US-87 | 008 | Guía de la capacitación con rótulos verificados contra el Front | 9 | guia_y_privacidad.feature | Vitest tests/spec008/guia_y_privacidad.test.ts, Playwright e2e/humo_quimica.spec.ts, pytest-bdd tests/aceptacion/pasos/test_exports_capacitacion_feature.py | Ninguna | Con prueba |
 | US-88 | 008 | Barrido de privacidad en los dos repositorios | 8 | guia_y_privacidad.feature | pytest-bdd tests/aceptacion/pasos/test_guia_y_privacidad_feature.py | Ninguna | Con prueba |
 | US-89 | 008 | Cierre de la capacitación sin perder evidencia | 5 | capacitacion_en_develop.feature | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py | Ninguna | Con prueba |
@@ -341,7 +341,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-86 | capacitacion_en_develop.feature | La rama principal exige una confirmación aparte | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_la_rama_principal_exige_una_confirmacion_aparte | Con prueba |
 | US-86 | capacitacion_en_develop.feature | Ninguna salida de la siembra repite el correo de la coordinación | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_ninguna_salida_repite_el_correo_de_la_coordinacion | Con prueba |
 | US-86 | capacitacion_en_develop.feature | La versión de prueba acepta los códigos que no empiezan con 99 | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_la_version_de_prueba_acepta_los_codigos | Con prueba |
-| US-86 | capacitacion_en_develop.feature | Después de la siembra de la capacitación, una lectura sin correos confirma el alcance | Ninguna | Pendiente de tarea |
+| US-86 | capacitacion_en_develop.feature | Después de la siembra de la capacitación, una lectura sin correos confirma el alcance | pytest-bdd tests/aceptacion/pasos/test_capacitacion_en_develop_feature.py::test_una_lectura_sin_correos_confirma_el_alcance | Con prueba |
 | US-87 | guia_y_privacidad.feature | Cada rótulo citado en la guía existe en el Front | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | Un rótulo cambiado en el Front hace fallar la guía | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |
 | US-87 | guia_y_privacidad.feature | La guía no trae datos que no debe | Vitest tests/spec008/guia_y_privacidad.test.ts | Con prueba |

@@ -18,12 +18,6 @@ estado = "Pendiente por decisión"
 razon = "Se construye solo si D-32 se responde (J-54, T039 y T047)."
 
 [[escenarios]]
-archivo = "008-ciclo-quimica-industrial/aceptacion/capacitacion_en_develop.feature"
-escenario = "Después de la siembra de la capacitación, una lectura sin correos confirma el alcance"
-estado = "Pendiente de tarea"
-razon = "Lectura sobre develop que Jefferson corre desde su Windows en T071, el único escenario de US-86 sin prueba en el clúster desechable."
-
-[[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/avance_del_registro.feature"
 escenario = "Atrás desde P4 abierta con «Ver la carga» vuelve a P7"
 estado = "Pendiente por decisión"

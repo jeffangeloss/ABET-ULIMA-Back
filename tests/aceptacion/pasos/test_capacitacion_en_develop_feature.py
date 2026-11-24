@@ -5,13 +5,16 @@ de una base desechable del escenario, en el clúster desechable de tests/cluster
 localhost:5432 ni en Neon. El CSV de la programación se arma en tmp_path, fuera del repositorio, porque
 cargar_programacion.py se niega a leer un archivo dentro de uno.
 
-Aquí están ocho de los nueve escenarios de US-86. La siembra completa corre sobre una base en V1_11, como la rama
+Aquí están los nueve escenarios de US-86. La siembra completa corre sobre una base en V1_11, como la rama
 develop de hoy, primero en seco y después con --aplicar en los dos tramos que separa el despliegue del Back. Flyway no
 alcanza el clúster desechable, que escucha solo en un socket de Unix, así que FLYWAY nombra un doble de prueba que
 aplica las migraciones pendientes con psql -1, como tests/base_desechable.py, y después
 db/callbacks/afterMigrate__permisos_lectura.sql, como Flyway al final de cada migrate. El rol de la aplicación nace en
 V1_11, como abet_app en Neon, así que la siembra prueba también el SELECT de acceso.coordinacion_alcance que le da el
-callback. La lectura de la siembra real espera al Windows de Jefferson (T071), y los de Playwright llegan con T053.
+callback. La lectura que confirma el alcance corre db/plataforma/neon/alcance_capacitacion.sql por la entrada
+estándar de psql, con la cabecera y el filtro de sql_lectura de herramientas_neon/lectura_neon.sh, sobre una copia con
+18 secciones inventadas que la propia siembra carga desde la programación, y la corrida en develop queda para el
+Windows de Jefferson (T071). Los de Playwright llegan con T053.
 
 Los cinco escenarios de US-89 (T056) corren db/herramientas/cerrar_capacitacion.py como proceso aparte. La baja de
 las cuentas corre sobre una copia desechable con la siembra inventada y el plan de 5643, y la comprobación del
@@ -569,6 +572,148 @@ def _sin_el_correo(ctx: Escenario) -> None:
         _sin_otras_variables(corrida)
     assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s AND rol = 'COORDINADOR'",
                    CORREO_COORDINACION) == 1
+
+
+# La lectura sin correos que confirma el alcance después de la siembra de la capacitación (T071)
+
+@scenario(FEATURE, "Después de la siembra de la capacitación, una lectura sin correos confirma el alcance")
+def test_una_lectura_sin_correos_confirma_el_alcance() -> None:
+    """Consulta de comprobación de la lectura de T071."""
+
+
+ALCANCE = RAIZ / "db" / "plataforma" / "neon" / "alcance_capacitacion.sql"
+# Las 18 secciones inventadas de la capacitación, de la 701 a la 718 de 5643 en 2026-1.
+SECCIONES_DE_LA_CAPACITACION = tuple(str(numero) for numero in range(701, 719))
+# La cabecera y el filtro de sql_lectura de herramientas_neon/lectura_neon.sh, que vive fuera del repositorio. La
+# lectura de develop rechaza antes de enviarlo un SQL con alguno de estos patrones, y antepone la cabecera, que pasa
+# la sesión a solo lectura.
+CABECERA_DE_LA_LECTURA = ("\\set ON_ERROR_STOP 1\nSET default_transaction_read_only = on;\n"
+                          "SELECT 'solo_lectura=' || current_setting('default_transaction_read_only');\n"
+                          "SELECT 'rol=' || current_user;\n")
+PROHIBIDOS_EN_LA_LECTURA = (
+    r"read[\s_]+write", r"(?<![a-z_])reset(?![a-z_])", r"read_only\s*(=|to)\s*'?(off|false|0|no)\b",
+    r"session\s+characteristics", r"(?<![a-z_])(set_config|pg_reload_conf)\s*\(",
+    r"(?<![a-z_])(alter|create|drop|insert|update|delete|truncate|grant|revoke|copy|comment|vacuum|call)\s",
+    r"\\(!|o|out|c|connect|copy|w|write|g|gx|gexec|i|ir|include|include_relative|setenv|cd|s|lo_\w+)(?![a-z_])",
+)
+NUMERO_DE_SECCION = re.compile(r"(?<![0-9])7(?:0[1-9]|1[0-8])(?![0-9])")
+
+
+def sembrar_la_capacitacion(ctx: Escenario, correos: dict[str, str] | None = None) -> None:
+    """La siembra con --aplicar desde la programación, con el CSV de las 18 secciones y la coordinación por
+    CORREO_COORDINACION, sobre el plan de 5643 en 2026-1 y sin la siembra inventada de 701 a 704. Con correos, una
+    sección toma el profesor de otra."""
+    ctx.crear_base("quimica_plan_sin_secciones")
+    ruta = escribir_programacion(ctx, SECCIONES_DE_LA_CAPACITACION)
+    if correos:
+        filas = ruta.read_text(encoding="utf-8").splitlines()
+        for numero, otro in correos.items():
+            filas = [fila.replace(f",docente{numero}@", f",docente{otro}@") for fila in filas]
+        ruta.write_text("\n".join(filas) + "\n", encoding="utf-8")
+    corrida = sembrar(ctx, "--rama", "develop", "--aplicar", "--desde", "programacion", "--programacion", str(ruta),
+                      "--huella-antes", huella_de_ambiental(ctx))
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                   " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
+                   " WHERE a.codigo = '5643' AND pe.codigo = '2026-1'") == len(SECCIONES_DE_LA_CAPACITACION)
+
+
+def leer_el_alcance(ctx: Escenario) -> subprocess.CompletedProcess[str]:
+    """La consulta de comprobación como la corre sql_lectura de lectura_neon.sh, por la entrada estándar de psql, con
+    la cabecera de solo lectura y la sesión en solo lectura también por PGOPTIONS."""
+    assert ALCANCE.exists(), "falta db/plataforma/neon/alcance_capacitacion.sql (T071)"
+    consulta = ALCANCE.read_text(encoding="utf-8")
+    for patron in PROHIBIDOS_EN_LA_LECTURA:
+        assert not re.search(patron, consulta, re.IGNORECASE), f"lectura_neon.sh no envía la consulta ({patron})"
+    entorno = {**_bd(ctx)._entorno(), "PGDATABASE": ctx.api.base.nombre, "PGCLIENTENCODING": "UTF8",
+               "PGOPTIONS": "-c default_transaction_read_only=on"}
+    corrida = subprocess.run([entorno.get("PSQL", "psql"), "-X", "-At", "-q", "-v", "ON_ERROR_STOP=1"],
+                             input=CABECERA_DE_LA_LECTURA + consulta, env=entorno, capture_output=True, text=True,
+                             encoding="utf-8", check=False)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert "solo_lectura=on" in corrida.stdout.splitlines(), corrida.stdout
+    return corrida
+
+
+def conteos_del_alcance(corrida: subprocess.CompletedProcess[str]) -> dict[str, str]:
+    """Cada línea «etiqueta|valor» de la consulta, sin la cabecera de la lectura."""
+    lineas = [linea for linea in corrida.stdout.splitlines()
+              if "|" in linea and not linea.startswith(("solo_lectura=", "rol="))]
+    return dict(linea.split("|", 1) for linea in lineas)
+
+
+@given(parsers.re(r'la rama develop con la siembra de la capacitación'))
+def _develop_con_la_capacitacion(ctx: Escenario) -> None:
+    sembrar_la_capacitacion(ctx)
+
+
+@when(parsers.re(r'lectura_neon\.sh corre desde el Windows la consulta de comprobación(?: \(propuesta\))?'))
+def _lectura_del_alcance(ctx: Escenario) -> None:
+    ctx.extras["filas_antes"] = filas_por_tabla(ctx)
+    ctx.extras["lectura"] = leer_el_alcance(ctx)
+
+
+@then(parsers.re(r'cuenta (?P<secciones>[0-9]+) secciones de (?P<asignatura>[0-9]+) en (?P<periodo>[0-9]{4}-[0-2]) con '
+                 r'plan, (?P<filas>[0-9]+) filas de acceso\.docente_seccion con (?P<profesores>[0-9]+) profesores '
+                 r'distintos y (?P<alcance>[0-9]+) fila de alcance de (?P=asignatura) en (?P=periodo) que cubre las '
+                 r'(?P<cubiertas>[0-9]+)'))
+def _cuenta_el_alcance(ctx: Escenario, secciones: str, asignatura: str, periodo: str, filas: str, profesores: str,
+                       alcance: str, cubiertas: str) -> None:
+    assert conteos_del_alcance(ctx.extras["lectura"]) == {
+        "asignatura": asignatura, "periodo": periodo, "secciones con plan": secciones,
+        "filas de acceso.docente_seccion": filas, "profesores distintos": profesores, "filas de alcance": alcance,
+        "secciones que cubre el alcance": cubiertas}
+    assert filas_por_tabla(ctx) == ctx.extras["filas_antes"], "la lectura escribió en la base"
+
+
+@then(parsers.re(r'la salida no trae correos ni códigos'))
+def _sin_correos_ni_codigos(ctx: Escenario) -> None:
+    corrida = ctx.extras["lectura"]
+    salida = corrida.stdout + corrida.stderr
+    assert "@" not in salida, "la lectura repite un correo"
+    assert not OCHO_CIFRAS.search(salida), "la lectura trae un número de ocho cifras"
+    assert "SINTETICO" not in salida, "la lectura repite un curso de Blackboard"
+    assert not NUMERO_DE_SECCION.search(salida), "la lectura nombra una sección"
+
+
+def test_la_lectura_del_alcance_cuenta_cada_profesor_una_vez(ctx: Escenario) -> None:
+    """Fuera del .feature. Con la 718 a cargo del profesor de la 717, la lectura cuenta 18 filas de
+    acceso.docente_seccion y 17 profesores distintos. Una sección de otra asignatura en 2026-1 y una de 5643 en 2026-2,
+    cada una con su profesor, no cambian ninguna cifra."""
+    sembrar_la_capacitacion(ctx, {"718": "717"})
+    dueno = ctx.api.dueno
+    for asignatura, periodo, numero in (("450002", "2026-1", "412"), ("5643", "2026-2", "719")):
+        dueno.execute("INSERT INTO abet.seccion (periodo_id, asignatura_id, numero) SELECT pe.periodo_id,"
+                      " a.asignatura_id, %s FROM abet.periodo pe, abet.asignatura a WHERE pe.codigo = %s"
+                      " AND a.codigo = %s", (numero, periodo, asignatura))
+        dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) SELECT u.usuario_id, s.seccion_id"
+                      " FROM acceso.usuario_autorizado u, abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                      " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id WHERE u.correo = %s"
+                      " AND s.numero = %s AND a.codigo = %s AND pe.codigo = %s",
+                      ("docente701@example.invalid", numero, asignatura, periodo))
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion d JOIN abet.seccion s USING (seccion_id)"
+                   " WHERE s.numero IN ('412', '719')") == 2
+    conteos = conteos_del_alcance(leer_el_alcance(ctx))
+    assert conteos["secciones con plan"] == "18", conteos
+    assert (conteos["filas de acceso.docente_seccion"], conteos["profesores distintos"]) == ("18", "17"), conteos
+    assert (conteos["filas de alcance"], conteos["secciones que cubre el alcance"]) == ("1", "18"), conteos
+
+
+def test_la_lectura_del_alcance_no_cubre_sin_una_coordinacion_activa(ctx: Escenario) -> None:
+    """Fuera del .feature. Con la coordinación del curso dada de baja, la fila de alcance sigue y no cubre ninguna
+    sección, y sin la fila la lectura cuenta 0 filas de alcance, sin cambiar las demás cifras."""
+    sembrar_la_capacitacion(ctx)
+    completo = conteos_del_alcance(leer_el_alcance(ctx))
+    dueno = ctx.api.dueno
+    dueno.execute("UPDATE acceso.usuario_autorizado SET activo = false WHERE correo = %s", (CORREO_COORDINACION,))
+    de_baja = conteos_del_alcance(leer_el_alcance(ctx))
+    assert (de_baja["filas de alcance"], de_baja["secciones que cubre el alcance"]) == ("1", "0"), de_baja
+    dueno.execute("DELETE FROM acceso.coordinacion_alcance ca USING abet.asignatura a"
+                  " WHERE a.asignatura_id = ca.asignatura_id AND a.codigo = '5643'")
+    sin_alcance = conteos_del_alcance(leer_el_alcance(ctx))
+    assert (sin_alcance["filas de alcance"], sin_alcance["secciones que cubre el alcance"]) == ("0", "0"), sin_alcance
+    for etiqueta in ("secciones con plan", "filas de acceso.docente_seccion", "profesores distintos"):
+        assert de_baja[etiqueta] == sin_alcance[etiqueta] == completo[etiqueta] == "18", etiqueta
 
 
 # US-89, el cierre de la capacitación (T056)
