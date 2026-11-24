@@ -467,7 +467,7 @@ def test_la_spec_007_trae_35_escenarios_con_70_casos_y_29_van_a_vitest() -> None
         (ANTES_DE_SUBIR, "El lector de exports reconoce el nombre que propone P3 y no el que lleva guiones")]
 
 
-def test_la_spec_008_trae_202_escenarios_con_257_casos_41_van_a_vitest_y_14_a_playwright() -> None:
+def test_la_spec_008_trae_202_escenarios_con_258_casos_41_van_a_vitest_y_14_a_playwright() -> None:
     # T003 y T013 de specs/008-ciclo-quimica-industrial/tasks.md. Cada escenario lleva @spec008, @corte1 y una sola
     # historia de las que spec.md asigna a su archivo, y ninguno va a la vez a Vitest y a Playwright. Las 24 historias,
     # de US-67 a US-90, tienen al menos un escenario.

@@ -84,18 +84,11 @@ jobs:
         # la construcción directa de uv_build, que no ejecuta Python (hallazgo githubactions:S8541 de
         # SonarQube Cloud).
         run: uv sync --frozen --no-build
-      - name: Pruebas de Python (biblioteca abet_carga, bases desechables, exports inventados y Gherkin en español)
-        # --frozen y --no-build también aquí, para que uv run no vuelva a resolver, no toque uv.lock y no
-        # construya desde su código fuente ninguna dependencia. Las pruebas con el marcador base crean y
-        # borran bases abet_demo_ en el mismo PostgreSQL 18 del paso de la base, con las mismas variables
-        # de libpq y sin contraseña.
-        env:
-          PGHOST: localhost
-          PGUSER: postgres
-        run: uv run --frozen --no-build pytest -q
-      - name: Front de la misma rama para la matriz de cumplimiento (US-90 de la spec 008)
+      - name: Front de la misma rama para pytest y la matriz de cumplimiento (US-88 y US-90 de la spec 008)
         # El Front es público. La matriz busca los escenarios de pantalla y de navegador en la rama del mismo
-        # nombre y, si no existe, en develop. La copia vive fuera del repositorio y se borra con el runner.
+        # nombre y, si no existe, en develop. La copia vive fuera del repositorio y se borra con el runner. Va antes
+        # de pytest, que la recibe en ABET_FRONT_RAIZ para los escenarios de US-88 que nombran el Front y la
+        # comparación de cumplimiento.md con el Front real. Por eso la rama del Front se empuja antes que la del Back.
         env:
           RAMA: ${{ github.head_ref || github.ref_name }}
         run: |
@@ -104,6 +97,16 @@ jobs:
             git clone -q --depth 1 --branch develop "$FRONT" ../front_ci
           fi
           git -C ../front_ci log -1 --format='Front en %h'
+      - name: Pruebas de Python (biblioteca abet_carga, bases desechables, exports inventados y Gherkin en español)
+        # --frozen y --no-build también aquí, para que uv run no vuelva a resolver, no toque uv.lock y no
+        # construya desde su código fuente ninguna dependencia. Las pruebas con el marcador base crean y
+        # borran bases abet_demo_ en el mismo PostgreSQL 18 del paso de la base, con las mismas variables
+        # de libpq y sin contraseña.
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          ABET_FRONT_RAIZ: ${{ github.workspace }}/../front_ci
+        run: uv run --frozen --no-build pytest -q
       - name: Node 24 para las pruebas del Front
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

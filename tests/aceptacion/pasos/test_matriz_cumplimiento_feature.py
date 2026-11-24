@@ -508,6 +508,30 @@ def test_cumplimiento_md_esta_al_dia_con_el_front_real(tmp_path: Path) -> None:
     assert CUMPLIMIENTO.is_file()
 
 
+def _pasos_del_job_de_pruebas() -> list[str]:
+    """Los pasos del job «pruebas» de ci.yml, cada uno con su texto, en el orden en que corren. Se leen por su sangría,
+    porque PyYAML no está entre las dependencias del Back."""
+    flujo = CI.read_text(encoding="utf-8")
+    job = flujo.split("\n  pruebas:\n", 1)[1]
+    job = re.split(r"\n  [a-z]+:\n", job, maxsplit=1)[0]
+    pasos = job.split("\n    steps:\n", 1)[1]
+    return re.split(r"\n(?=      - )", pasos)
+
+
+def test_la_ci_clona_el_front_antes_de_pytest_y_le_pasa_su_raiz() -> None:
+    # Corrección del 2026-11-23 (traza de los requerimientos). Sin el Front clonado antes de pytest y sin
+    # ABET_FRONT_RAIZ, los dos escenarios de US-88 que nombran el Front y la comparación de cumplimiento.md con el Front
+    # real terminan en skip en la CI (FR-022 y FR-026).
+    pasos = _pasos_del_job_de_pruebas()
+    [clon] = [i for i, paso in enumerate(pasos) if "git clone" in paso and "../front_ci" in paso]
+    [pytest_paso] = [i for i, paso in enumerate(pasos) if re.search(r"uv run [^\n]*pytest -q", paso)]
+    assert clon < pytest_paso, "la CI clona el Front después de pytest"
+    assert "--branch \"$RAMA\"" in pasos[clon] and "--branch develop" in pasos[clon], "el clon perdió su respaldo"
+    raiz = re.search(r"\n\s+ABET_FRONT_RAIZ: ([^\n]+)", pasos[pytest_paso])
+    assert raiz, "el paso de pytest no fija ABET_FRONT_RAIZ"
+    assert raiz.group(1) == "${{ github.workspace }}/../front_ci", raiz.group(1)
+
+
 def _espejo_sin_correr(tmp_path: Path) -> Matriz:
     matriz = Matriz(tmp_path)
     matriz.front = tmp_path / "front"
