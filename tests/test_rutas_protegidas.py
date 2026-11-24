@@ -45,8 +45,8 @@ def _ids_de_la_410(api: Any) -> dict[str, int]:
 
 def test_br_acceso_10_cada_ruta_fuera_de_la_lista_publica_responde_401_sin_cookie(api: Any) -> None:
     respuestas = R.sin_cookie(api.cliente(), _ids_de_la_410(api))
-    assert ("GET", "/api/resultados") in respuestas
-    assert len(respuestas) >= 7, sorted(respuestas)
+    assert {("GET", "/api/resultados"), ("GET", "/api/cargas/{carga_id}/indicadores")} <= set(respuestas)
+    assert len(respuestas) >= 8, sorted(respuestas)
     for (metodo, camino), respuesta in respuestas.items():
         assert respuesta.status_code == 401, f"{metodo} {camino} responde {respuesta.status_code} sin sesión"
         assert respuesta.json() == R.VENCIDA, f"{metodo} {camino}"
@@ -67,7 +67,7 @@ def test_br_acceso_10_cada_ruta_con_un_identificador_ajeno_responde_el_403_unico
         assert respuesta.status_code == 403, f"{metodo} {camino} responde {respuesta.status_code}"
         assert respuesta.json() == R.SIN_ALCANCE, f"{metodo} {camino}"
     assert {("POST", "/api/secciones/{seccion_id}/cargas"), ("GET", "/api/cargas"), ("GET", "/api/cargas/{carga_id}"),
-            ("GET", "/api/cargas/{carga_id}/r17.xlsx")} <= set(respuestas), sorted(respuestas)
+            ("GET", "/api/cargas/{carga_id}/r17.xlsx"), ("GET", "/api/cargas/{carga_id}/indicadores")} <= set(respuestas), sorted(respuestas)
     assert ("GET", "/api/resultados") not in respuestas
 
 

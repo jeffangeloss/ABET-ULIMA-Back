@@ -78,7 +78,7 @@ hoja.add_image(logotipo)
 
 ## Mapa de celdas que usa r17.py
 
-`r17.py` escribe valores, nunca fórmulas, en estas celdas de «Cursos de Carrera» (BR-R17-04). Todas están vacías en la plantilla, y `tests/test_plantilla_r17.py` comprueba sus rótulos, sus celdas combinadas, sus formatos y que no traen valor. Lo marcado «(propuesta)» no lo fija la spec, y la primera celda de cada rango combinado es la que recibe el valor. El mapa vale para cualquier asignatura del plan de medición, y el apartado «Cualquier asignatura del plan» fija lo que cambia con el número de PI y de SO.
+`r17.py` escribe valores, nunca fórmulas, en estas celdas de «Cursos de Carrera» (BR-R17-04). Todas están vacías en la plantilla (los recuadros B29 y B34 los llena r17.componer_recuadros()), y `tests/test_plantilla_r17.py` comprueba sus rótulos, sus celdas combinadas, sus formatos y que no traen valor. Lo marcado «(propuesta)» no lo fija la spec, y la primera celda de cada rango combinado es la que recibe el valor. El mapa vale para cualquier asignatura del plan de medición, y el apartado «Cualquier asignatura del plan» fija lo que cambia con el número de PI y de SO.
 
 ### Cabecera y franja PROVISIONAL
 
@@ -125,8 +125,8 @@ Los conteos de M24 y M25 tampoco siguen `NIVEL_ESPERADO`, porque sus rótulos de
 
 | Celdas | Contenido | Fuente |
 | --- | --- | --- |
-| B29:I31 | Recuadro de causas, bajo el rótulo A. de B28, vacío y editable (BR-R17-04) | Ninguna |
-| B34:I36 | Recuadro de acciones, bajo el rótulo B. de B33:H33, vacío y editable (BR-R17-04) | Ninguna |
+| B29:I31 | Recuadro de causas, bajo el rótulo A. de B28: desde la base, un párrafo por PI con su prefijo sin cifras (BR-R17-04, US-50); ajuste de texto, alineación arriba y alto calculado de la fila 31 | Ninguna |
+| B34:I36 | Recuadro de acciones, bajo el rótulo B. de B33:H33: desde la base, un párrafo por PI con su prefijo sin cifras (BR-R17-04, US-50); ajuste de texto, alineación arriba y alto calculado de la fila 36 | Ninguna |
 | B42:F184 | Tabla `Tabla26`, con estilo `TableStyleLight10`, filtro y encabezados en la fila 42 | Ninguna |
 | B43 a B184 | SO | `abet.pi.so_numero` |
 | C43 a C184 | PI | `abet.pi.codigo` |
@@ -156,7 +156,7 @@ Estas piezas de la spec no tienen celda en la hoja original, y `r17.py` las agre
 | Pieza | Regla | Propuesta |
 | --- | --- | --- |
 | Conteo por nivel de cada PI (`n_nivel_1` a `n_nivel_4`), la cifra «(7 de 11)» y el porcentaje sobre el total con SIN_EVIDENCIA | BR-R17-02, BR-R17-03 y D-05 | Una tabla en K28:Q31, con «PI», «Nivel 1» a «Nivel 4», «Logran / calificados» y «% sobre el total» en la fila 28 y una fila por PI de la 29 a la 31, en la zona libre a la derecha de los recuadros (propuesta) |
-| Recuadro de comentario | BR-R17-04 | La hoja trae solo los recuadros de causas y de acciones, así que la spec o la coordinación (D-08) decide si el plan de acción hace de comentario |
+| Recuadro de comentario | BR-R17-04 | Cerrado: la hoja trae solo los recuadros de causas y de acciones, y la spec 005 los llena desde la base (D-41) |
 | Un cuarto PI | BR-R17-02 | Los bloques I y II tienen tres filas fijas, y un plan con más PI no cabe sin un cambio de la plantilla (apartado «Cualquier asignatura del plan») |
 | Hoja «Constancia» y título con «PROVISIONAL» | BR-R17-05 y BR-R17-09 | `r17.py` agrega la hoja al final del libro y fija el título de las propiedades |
 

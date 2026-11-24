@@ -44,6 +44,11 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    La fila «Hoja» de un export de texto, cuya hoja es nula, muestra «Sin hoja (export de texto)»,
    un texto de presentación que no se guarda en la base (spec 003, US-34).
 
+9. Los recuadros B29:I31 y B34:I36 los arman componer_recuadros() (un párrafo por PI con su prefijo sin
+   cifras, BR-R17-04, US-50), lineas_del_recuadro() y alto_de_fila_final() (cabida determinista, tope de
+   409 puntos) y aplicar_recuadros(). Son funciones puras que generar() aún no llama, porque la declaración
+   vive en V1_15 (T033, T037).
+
 El conteo por nivel, la cifra entre paréntesis y el porcentaje sobre el total van en K28:Q31, la
 zona libre que propone plantillas/README.md, y M24 a M26 repiten los conteos de la hoja original.
 """
@@ -258,6 +263,49 @@ def _cabecera(hoja: Worksheet, filas: list[dict[str, Any]], carrera: str) -> Non
         _escribir(hoja, referencia, primera[clave])
     resultados = sorted({fila["so"] for fila in filas})
     _escribir(hoja, "B15", f"Student Outcome (SO) {constancia.lista([str(so) for so in resultados])}")
+
+
+def componer_recuadros(pis: list[tuple[str, str | None, str, str]]) -> tuple[str, str]:
+    """Compone un párrafo por PI para el recuadro de causas y el de acciones."""
+    causas = []
+    acciones = []
+    # El tipo usa el vocabulario de tipo_de_registro(), de la ruta 13 y de ck_mejora_declaracion_pi_tipo (BR-MEJORA-03).
+    rotulos = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora.", "BUENA_PRACTICA": "Buena práctica."}
+    for pi, tipo, causa, accion in pis:
+        if tipo is None:
+            parrafo = f"{pi} · Sin calificaciones en esta carga."
+            causas.append(parrafo)
+            acciones.append(parrafo)
+        else:
+            if tipo not in rotulos:
+                raise ValueError(f"Tipo de registro desconocido para el PI {pi}: {tipo!r}.")
+            prefijo = f"{pi} · {rotulos[tipo]} "
+            causas.append(prefijo + causa)
+            acciones.append(prefijo + accion)
+    return "\n".join(causas), "\n".join(acciones)
+
+
+def lineas_del_recuadro(texto: str, ancho: float = 208.6) -> int:
+    """Estima las líneas de texto y cuenta cada renglón vacío como una línea."""
+    capacidad = max(1, int(ancho * 0.9))
+    return sum(
+        max(1, (len(renglon) + capacidad - 1) // capacidad)
+        for renglon in texto.split("\n")
+    )
+
+
+def alto_de_fila_final(lineas: int) -> float:
+    """Descuenta los 30 puntos de las dos primeras filas y limita la altura final."""
+    return min(409.0, max(15.0, 15.0 * lineas - 30.0))
+
+
+def aplicar_recuadros(hoja: Worksheet, texto_a: str, texto_b: str) -> None:
+    """Escribe ambos recuadros y ajusta la altura de su última fila."""
+    alineacion = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    for celda, fila_final, texto in (("B29", 31, texto_a), ("B34", 36, texto_b)):
+        _escribir(hoja, celda, texto)
+        hoja[celda].alignment = alineacion
+        hoja.row_dimensions[fila_final].height = alto_de_fila_final(lineas_del_recuadro(texto))
 
 
 def _franja(hoja: Worksheet, cuerpo: dict[str, Any]) -> None:
