@@ -500,6 +500,16 @@ def _pi_vacio(ctx: Escenario, nombre: str, pi: str, f: str) -> tuple[bytes, str]
     return _con_celda(ctx, nombre, f, pi, None), nombre
 
 
+def _pi_vacio_en_filas(ctx: Escenario, nombre: str, pi: str, filas: str) -> tuple[bytes, str]:
+    """La columna del PI vacía en cada fila de la lista «2 y 6» o «2, 3 y 9», y lo demás sin cambios (spec 005, FR-017)."""
+    export = _export(ctx, nombre)
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in re.findall(r"[0-9]+", filas):
+        assert 2 <= int(fila) <= len(export.filas) + 1, f"el export no tiene la fila de datos {fila}"
+        export = ctx.generador.con_celda(export, int(fila), pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
 def _pi_vacio_en_todas(ctx: Escenario, nombre: str, pi: str, n: str) -> tuple[bytes, str]:
     """La columna del PI sin ningún nivel en las N filas de datos, y las demás columnas sin cambios (spec 004, T012)."""
     export = _export(ctx, nombre)
@@ -783,6 +793,7 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
     (r'con el Username (?P<v>vacío|[0-9]+) en la fila (?P<f>[0-9]+)', _celda_username),
     (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _celda_pi),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en la fila (?P<f>[0-9]+)', _pi_vacio),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en las filas (?P<filas>[0-9]+(?:, [0-9]+)* y [0-9]+)', _pi_vacio_en_filas),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en sus (?P<n>[0-9]+) filas', _pi_vacio_en_todas),
     (r'con una columna más "(?P<enc>[^"]+)"', _columna_mas),
     (r'con un (?P<v>-?[0-9]+) en la columna (?P<pi>[0-9]\.[0-9]) de las (?P<n>[0-9]+) filas de datos', _nivel_en_todas),
@@ -993,12 +1004,22 @@ def _subido_antes(ctx: Escenario, quien: str, que: str, numero: str) -> Any:
     return respuesta
 
 
+def _unico_profesor(ctx: Escenario, numero: str) -> str:
+    """El profesor asignado a la sección de 450002, para una subida que no nombra quién sube y llega antes de toda
+    sesión, como en los escenarios de 401 y 403 de semaforo.feature (spec 005)."""
+    correos = [fila[0] for fila in ctx.filas(
+        "SELECT u.correo FROM acceso.docente_seccion d JOIN acceso.usuario_autorizado u USING (usuario_id)"
+        " WHERE d.seccion_id = %s", ctx.seccion_id(numero))]
+    assert len(correos) == 1, f"la sección {numero} no tiene un único profesor asignado: {len(correos)}"
+    return correos[0]
+
+
 @given(parsers.re(r'que (?P<que>"[^"]+"|una copia de "[^"]+" .+?) está subid[oa](?: por "(?P<quien>[^"]+)")? '
                   r'a la sección (?P<numero>[0-9]+)(?: con respuesta 201(?: y su carga_id)?'
                   r'| y su carga está "(?P<estado>[A-Z]+)" con (?P<motivo>[A-Z_]+))'))
 def _subido_a_la_seccion(ctx: Escenario, que: str, quien: str | None, numero: str, estado: str | None,
                          motivo: str | None) -> None:
-    respuesta = _subido_antes(ctx, quien or ctx.profesor, que, numero)
+    respuesta = _subido_antes(ctx, quien or ctx.profesor or _unico_profesor(ctx, numero), que, numero)
     if estado is not None:
         assert respuesta.json()["estado"] == estado
         assert ctx.cuenta("rechazo_fila", "carga_id = %s AND motivo = %s", ctx.carga_previa, motivo) >= 1
