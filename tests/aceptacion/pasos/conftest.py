@@ -74,6 +74,8 @@ DESCRIPCION_DE_PRUEBA = "Texto de prueba del Portafolio 3"
 # Tablas de abet que escriben los guiones de datos de la spec 008 (vigencia, plan y secciones), que Escenario.conteos()
 # suma a las de la carga para las listas de «no ganan ninguna fila».
 DE_LOS_GUIONES_008 = ("catalogo_vigencia", "plan_medicion", "seccion")
+# Tablas de V1_15 del análisis por indicador (spec 005, T032), que Escenario.conteos() suma cuando la base las tiene.
+DE_LA_MEJORA_005 = ("mejora_borrador", "mejora_borrador_pi", "mejora_declaracion", "mejora_declaracion_pi")
 ASIGNATURA = "450002"
 # Campos que un error del corte 2 suma a detail (contrato, sección 3.1).
 CAMPOS_EXTRA_DE_UN_ERROR = frozenset({"requiere_confirmacion", "carga_publicada"})
@@ -296,13 +298,16 @@ class Escenario:
 
         Las listas de «no ganan ninguna fila» comparan con este conteo, así que un escenario que nombra una tabla de
         acceso toma su conteo previo con este método y no con api.conteos(), que cuenta solo las de abet. Desde la spec 008
-        suma también las tablas de abet que escriben los guiones de datos de Química (DE_LOS_GUIONES_008).
+        suma también las tablas de abet que escriben los guiones de datos de Química (DE_LOS_GUIONES_008), y desde V1_15
+        las cuatro del análisis por indicador de la spec 005 (DE_LA_MEJORA_005).
         """
         de_acceso = [fila[0] for fila in self.filas(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'acceso'"
             " AND table_type = 'BASE TABLE' ORDER BY table_name")]
+        de_v1_15 = [fila[0] for fila in self.filas(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'abet' AND tablename = ANY(%s)", list(DE_LA_MEJORA_005))]
         de_los_guiones = {tabla: int(self.api.uno(sql.SQL("SELECT count(*) FROM abet.{}").format(sql.Identifier(tabla))))
-                          for tabla in DE_LOS_GUIONES_008}
+                          for tabla in (*DE_LOS_GUIONES_008, *sorted(de_v1_15))}
         return {**self.api.conteos(), **de_los_guiones, **{f"acceso.{tabla}": int(self.api.uno(
             sql.SQL("SELECT count(*) FROM acceso.{}").format(sql.Identifier(tabla)))) for tabla in de_acceso}}
 

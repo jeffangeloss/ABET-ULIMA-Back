@@ -6,6 +6,7 @@ targets:
   - ../../../abet_carga/r17.py
   - ../../../app/permisos.py
   - ../../../app/rutas/cargas.py
+  - ../../../app/rutas/mejora.py
   - ../../../db/migration/V1_15__mejora_borrador_y_declaracion.sql
   - ../../../db/plataforma/neon/crear_rol_app.sql
   - ../../../db/plataforma/neon/controles_neon.sql
