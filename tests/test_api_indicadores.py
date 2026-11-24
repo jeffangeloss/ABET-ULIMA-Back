@@ -273,6 +273,21 @@ def test_br_mejora_03_un_conjunto_con_todo_pendiente_responde_200_sin_dato(api: 
     assert {i["semaforo"] for i in cuerpo["indicadores"]} == {"SIN_DATO"}
 
 
+@pytest.mark.parametrize(("version", "cambios", "estado", "pendientes"), [
+    ("R-PRUEBA-BORRADOR-COMPLETO", {"aprobado": False}, "BORRADOR", []),
+    ("R-PRUEBA-SIN-TRATO", {"completo": False}, "APROBADO", ["TRATO_SIN_EVIDENCIA"]),
+])
+def test_br_mejora_01_un_borrador_definido_o_un_aprobado_sin_trato_sin_evidencia_queda_provisional(
+        api: Any, version: str, cambios: dict[str, Any], estado: str, pendientes: list[str]) -> None:
+    """Debe responder provisional verdadero; no debe rotular como oficial una carga cuyas reglas no lo son."""
+    C.conjunto_aprobado(api.dueno, version, meta_logro=0.80, nivel_esperado=3, corte_rojo=0.75, **cambios)
+    carga = _publicar(api, CORRECTO_410, conjunto=version)
+    cuerpo = _cuerpo(api.sesion(A.DOCENTE_410), carga)
+    assert (cuerpo["conjunto_reglas_estado"], cuerpo["parametros_pendientes"], cuerpo["provisional"]) == (
+        estado, pendientes, True)
+    assert cuerpo["provisional"] == constancia.armar(api.dueno, carga)["provisional"]
+
+
 # BR-MEJORA-05 y BR-ACCESO-08, el orden 401, 403 y 409
 
 def test_br_mejora_05_sin_sesion_responde_401_aunque_la_carga_no_este_publicada(api: Any) -> None:
