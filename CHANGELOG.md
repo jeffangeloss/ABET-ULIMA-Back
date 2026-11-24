@@ -24,6 +24,10 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 - Traza de los requerimientos de la spec 008 en `audit.md`, con FR-001 a FR-030, sus escenarios, sus pruebas y el resultado de la corrida, y el Front clonado en la CI antes de pytest con `ABET_FRONT_RAIZ`, para que los escenarios de US-88 que nombran el Front y la comparación de la matriz con el Front real corran en la CI.
 - Correcciones de la traza de la spec 008. Cuatro pruebas nuevas atan la sesión de solo lectura y los filtros de `alcance_capacitacion.sql`, la salida 3 del conciliador y la ausencia de una carrera fuera de B6 del R-17, y las filas de FR-015, FR-018, FR-020, FR-025 y FR-030 de `audit.md` citan las pruebas que cubren cada salida. `audit.md` da los 10 pendientes de hoy y fija que el PR del Front se fusiona en develop antes que el del Back.
 
+### Corregido
+
+- El paso de Vitest del Front en `.github/workflows/ci.yml` corre `./node_modules/.bin/vitest`, el binario que instala `npm ci --ignore-scripts` con la versión del `package-lock.json`, en lugar de `npx vitest`, que podía bajar un paquete sin versión fija y correr sus scripts (SonarCloud, githubactions:S6505 y S8543 en el PR #54). Una prueba falla si ci.yml vuelve a instalar paquetes a pedido.
+
 ## [0.3.0] - 2026-11-23
 
 ### Agregado

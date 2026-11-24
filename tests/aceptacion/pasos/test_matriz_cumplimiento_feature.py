@@ -532,6 +532,21 @@ def test_la_ci_clona_el_front_antes_de_pytest_y_le_pasa_su_raiz() -> None:
     assert raiz.group(1) == "${{ github.workspace }}/../front_ci", raiz.group(1)
 
 
+def test_la_ci_corre_vitest_con_el_binario_que_instala_npm_ci_y_sin_npx() -> None:
+    # Corrección del 2026-11-24 (SonarCloud, githubactions:S6505 y S8543 en el PR #54). npx y npm exec pueden bajar en
+    # el momento un paquete sin versión fija y correr sus scripts de instalación. La CI usa solo lo que fija el
+    # package-lock.json del Front, instalado con npm ci --ignore-scripts.
+    instrucciones = [linea.split("#", 1)[0] for linea in CI.read_text(encoding="utf-8").splitlines()
+                     if not linea.lstrip().startswith("#")]
+    a_pedido = [linea.strip() for linea in instrucciones
+                if re.search(r"(^|[\s;&|(])(npx|npm exec|npm x|pnpm dlx|yarn dlx|bunx)\b", linea)]
+    assert not a_pedido, f"ci.yml instala paquetes a pedido: {a_pedido}"
+    pasos = _pasos_del_job_de_pruebas()
+    [vitest] = [paso for paso in pasos if "vitest" in paso and "working-directory: ../front_ci" in paso]
+    assert "npm ci --ignore-scripts" in vitest, "el paso de Vitest perdió --ignore-scripts"
+    assert "./node_modules/.bin/vitest run --reporter=json --outputFile=../informes_ci/vitest.json" in vitest, vitest
+
+
 def _espejo_sin_correr(tmp_path: Path) -> Matriz:
     matriz = Matriz(tmp_path)
     matriz.front = tmp_path / "front"

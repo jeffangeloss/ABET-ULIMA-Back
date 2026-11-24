@@ -114,11 +114,13 @@ jobs:
       - name: Pruebas de Vitest del Front con su reporte JSON, solo para el informe de la matriz
         # La CI del Front es la que exige que sus pruebas pasen. Aquí el reporte lleva el resultado y la fecha de
         # cada prueba al informe, y una prueba fallida sale como «Fallida» en él. --ignore-scripts como en el Front.
+        # Vitest corre con el binario que deja npm ci en la versión del package-lock.json, sin bajar nada en el momento
+        # (SonarCloud, githubactions:S6505 y S8543).
         working-directory: ../front_ci
         run: |
           npm ci --ignore-scripts
           npm run build
-          npx vitest run --reporter=json --outputFile=../informes_ci/vitest.json || echo "Vitest termina con fallas; el informe de la matriz las muestra."
+          ./node_modules/.bin/vitest run --reporter=json --outputFile=../informes_ci/vitest.json || echo "Vitest termina con fallas; el informe de la matriz las muestra."
       - name: Matriz de cumplimiento de las specs 007 y 008 (US-90 de la spec 008)
         # Falla ante un hueco o si cumplimiento.md no está al día, y deja el informe con el resultado y la fecha de
         # cada prueba en el resumen de la corrida, fuera del repositorio.
