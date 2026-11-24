@@ -329,3 +329,32 @@ def _cifras_de_la_701(ctx: Escenario, logrados: str, calificados: str, pct: str,
     assert (indicador["pct_sobre_calificados"], indicador["meta_pct"]) == (float(pct), float(meta))
     assert indicador["en_meta"] is (en_meta == "verdadero")
     assert re.fullmatch(r"[0-9]+", str(seccion["carga_id"]))
+
+
+# Fuera del .feature
+
+def test_ninguna_celda_fuera_de_b6_nombra_una_carrera(ctx: Escenario) -> None:
+    """Cambio del 2026-11-24 (FR-015). El escenario busca solo «Ambiental», y FR-015 pide que ninguna celda fuera de B6
+    nombre una carrera. En el R-17 de la 701 de Industrial y en el de la 410 de Ambiental, B6 debe decir «Carrera de»
+    más el nombre de la carrera de la carga. No debe haber otra celda de ninguna hoja con «Carrera de» ni con el nombre
+    de una fila de abet.carrera, salvo las que copian tal cual una descripción del catálogo. La descripción del PI 6.1
+    de IND-2026 en C17 dice «ingeniería industrial», y es un texto del catálogo de la carrera, no de la plantilla."""
+    ctx.crear_base("quimica_plan")
+    nombres = {codigo: nombre for codigo, nombre in ctx.filas("SELECT codigo, nombre FROM abet.carrera")}
+    assert {"IND", "AMB"} <= set(nombres), nombres
+    del_catalogo = {texto for (texto,) in ctx.filas("SELECT descripcion FROM abet.pi WHERE descripcion IS NOT NULL"
+                                                    " UNION SELECT descripcion FROM abet.so WHERE descripcion IS NOT NULL")}
+    contenido, nombre_701 = ctx.export_de_quimica("701", (1, 2, 3, 4))
+    cargas = (("docente701@example.invalid", _publicar(ctx, "docente701@example.invalid", "701", contenido, nombre_701),
+               "IND"),
+              ("docente410@example.invalid", _publicar(ctx, "docente410@example.invalid", "410",
+                                                      ctx.de_inventados(EXPORT_410), EXPORT_410, "450002"), "AMB"))
+    for quien, carga_id, carrera in cargas:
+        assert _carrera_de(ctx, carga_id) == carrera
+        _descargar(ctx, quien, carga_id)
+        libro = _libro(ctx)
+        assert libro[HOJA]["B6"].value == f"Carrera de {nombres[carrera]}"
+        otras = [f"{hoja}!{celda}" for (hoja, celda), (valor, _) in _celdas(libro).items()
+                 if (hoja, celda) != (HOJA, "B6") and isinstance(valor, str) and valor not in del_catalogo
+                 and ("carrera de" in valor.lower() or any(n.lower() in valor.lower() for n in nombres.values()))]
+        assert not otras, (carrera, otras)

@@ -597,6 +597,7 @@ PROHIBIDOS_EN_LA_LECTURA = (
     r"\\(!|o|out|c|connect|copy|w|write|g|gx|gexec|i|ir|include|include_relative|setenv|cd|s|lo_\w+)(?![a-z_])",
 )
 NUMERO_DE_SECCION = re.compile(r"(?<![0-9])7(?:0[1-9]|1[0-8])(?![0-9])")
+SQLSTATE_SOLO_LECTURA = "25006"
 
 
 def sembrar_la_capacitacion(ctx: Escenario, correos: dict[str, str] | None = None) -> None:
@@ -714,6 +715,61 @@ def test_la_lectura_del_alcance_no_cubre_sin_una_coordinacion_activa(ctx: Escena
     assert (sin_alcance["filas de alcance"], sin_alcance["secciones que cubre el alcance"]) == ("0", "0"), sin_alcance
     for etiqueta in ("secciones con plan", "filas de acceso.docente_seccion", "profesores distintos"):
         assert de_baja[etiqueta] == sin_alcance[etiqueta] == completo[etiqueta] == "18", etiqueta
+
+
+def test_la_lectura_del_alcance_cuenta_solo_lo_que_declara(ctx: Escenario) -> None:
+    """Fuera del .feature (cambio del 2026-11-24). Una fila de acceso.docente_seccion de una cuenta COORDINADOR y otra
+    de una cuenta PROFESOR dada de baja suman a las filas y no a los profesores distintos, una fila de alcance de 5643
+    en 2026-2 no suma a las filas de alcance y, sin el plan de 5643 en 2026-1, la lectura cuenta 0 secciones con plan.
+    No debe contar como profesor a una cuenta que no es PROFESOR activa, ni el alcance de otro periodo, ni una sección
+    sin plan."""
+    sembrar_la_capacitacion(ctx)
+    dueno = ctx.api.dueno
+    dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol, activo)"
+                  " VALUES ('docente.de.baja@example.invalid', 'PROFESOR', false)")
+    for correo, numero in (("docente.de.baja@example.invalid", "701"), (CORREO_COORDINACION, "702")):
+        dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) SELECT u.usuario_id, s.seccion_id"
+                      " FROM acceso.usuario_autorizado u, abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                      " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id WHERE u.correo = %s AND s.numero = %s"
+                      " AND a.codigo = '5643' AND pe.codigo = '2026-1'", (correo, numero))
+    dueno.execute("INSERT INTO acceso.coordinacion_alcance (usuario_id, asignatura_id, periodo_id)"
+                  " SELECT u.usuario_id, a.asignatura_id, pe.periodo_id FROM acceso.usuario_autorizado u,"
+                  " abet.asignatura a, abet.periodo pe WHERE u.correo = %s AND a.codigo = '5643'"
+                  " AND pe.codigo = '2026-2'", (CORREO_COORDINACION,))
+    assert ctx.uno("SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN abet.asignatura a USING (asignatura_id)"
+                   " WHERE a.codigo = '5643'") == 2
+    conteos = conteos_del_alcance(leer_el_alcance(ctx))
+    assert (conteos["filas de acceso.docente_seccion"], conteos["profesores distintos"]) == ("20", "18"), conteos
+    assert (conteos["filas de alcance"], conteos["secciones que cubre el alcance"]) == ("1", "18"), conteos
+    assert conteos["secciones con plan"] == "18", conteos
+    borrados = dueno.execute("DELETE FROM abet.plan_medicion pm USING abet.asignatura a, abet.periodo pe"
+                             " WHERE a.asignatura_id = pm.asignatura_id AND pe.periodo_id = pm.periodo_id"
+                             " AND a.codigo = '5643' AND pe.codigo = '2026-1'").rowcount
+    assert borrados > 0
+    sin_plan = conteos_del_alcance(leer_el_alcance(ctx))
+    assert sin_plan["secciones con plan"] == "0", sin_plan
+    assert {etiqueta: valor for etiqueta, valor in sin_plan.items() if etiqueta != "secciones con plan"} == \
+        {etiqueta: valor for etiqueta, valor in conteos.items() if etiqueta != "secciones con plan"}
+
+
+def test_la_lectura_del_alcance_deja_la_sesion_en_solo_lectura_sin_la_cabecera(ctx: Escenario) -> None:
+    """Fuera del .feature (cambio del 2026-11-24). Con la forma directa que documenta el archivo, psql -f sin la
+    cabecera de sql_lectura y sin PGOPTIONS, la sesión debe quedar en solo lectura y rechazar una escritura posterior
+    con el SQLSTATE 25006. No debe depender de la cabecera ni de PGOPTIONS ni cambiar ninguna fila."""
+    ctx.crear_base("quimica_plan")
+    antes = filas_por_tabla(ctx)
+    entorno = {**_bd(ctx)._entorno(), "PGDATABASE": ctx.api.base.nombre, "PGCLIENTENCODING": "UTF8"}
+    entorno.pop("PGOPTIONS", None)
+    corrida = subprocess.run(
+        [entorno.get("PSQL", "psql"), "-X", "-At", "-q", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=sqlstate",
+         "-v", "asignatura=5643", "-v", "periodo=2026-1", "-f", str(ALCANCE),
+         "-c", "SELECT 'solo_lectura=' || current_setting('default_transaction_read_only')",
+         "-c", "UPDATE abet.periodo SET codigo = codigo WHERE false"],
+        env=entorno, capture_output=True, text=True, encoding="utf-8", check=False)
+    assert "solo_lectura=on" in corrida.stdout.splitlines(), corrida.stdout + corrida.stderr
+    assert corrida.returncode != 0, "la sesión aceptó una escritura después de la consulta"
+    assert SQLSTATE_SOLO_LECTURA in corrida.stderr, corrida.stderr
+    assert filas_por_tabla(ctx) == antes
 
 
 # US-89, el cierre de la capacitación (T056)
