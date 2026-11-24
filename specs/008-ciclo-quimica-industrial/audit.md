@@ -96,12 +96,12 @@ El humo no corre en este cierre, porque exige la API local sobre un clúster des
 | Criterio | Estado al 2026-11-23 | Evidencia o razón |
 | --- | --- | --- |
 | SC-001 | Cumplido salvo los pendientes con razón | 237 escenarios en la matriz y 227 con prueba (nota del 2026-11-24). En el informe del 2026-11-24 213 aprueban y 14 de Playwright aprueban fuera del informe. Los 10 pendientes son 6 de US-80, como prevé el criterio, y 4 que esperan a la spec 005 o a D-47 y a D-51 |
-| SC-002 | Pendiente de Jefferson | El ensayo con los datos reales es de T054, con «18 de 18 secciones iguales.». La herramienta pasa sus escenarios con datos inventados (US-84) |
+| SC-002 | Cumplido en un clúster desechable | El 2026-11-24 el ensayo con los datos reales (T054) da «18 de 18 secciones iguales.» con 18 cargas PUBLICADA y 0 rechazos, en un clúster desechable de la Mac en lugar de una rama hija de Neon. La herramienta pasa sus escenarios con datos inventados (US-84) |
 | SC-003 | Pendiente de Jefferson | El conciliador sobre develop corre después de la capacitación (T072) |
 | SC-004 | Pendiente de la capacitación | Lo mide la sala (T072). Los exports inventados se publican con 0 rechazos en US-75 y en el humo |
-| SC-005 | Pendiente de Jefferson | La huella de Ambiental en develop es de T069 y T071. En el clúster desechable la huella es la misma antes y después de la siembra (US-69 y US-86) |
-| SC-006 | Cumplido en el clúster desechable, pendiente en develop | Los escenarios de 403 y de alcance de US-70, US-71 y US-79 pasan. La lectura sin correos de develop es de T071 |
-| SC-007 | Cumplido en el clúster desechable, pendiente en develop | `correr_pruebas.sh` deja Q01 a Q15 y Q18 a Q21 en 0. En develop lo comprueban T069 a T072 |
+| SC-005 | Cumplido en develop | El 2026-11-24 la huella de Ambiental en develop es la misma antes de V1_12 y después de la siembra de Química (T069 y T071, 363 filas). En el clúster desechable la huella es la misma antes y después de la siembra (US-69 y US-86) |
+| SC-006 | Cumplido en el clúster desechable y en la lectura de develop | Los escenarios de 403 y de alcance de US-70, US-71 y US-79 pasan. El 2026-11-24 la lectura sin correos de develop da 18 secciones cubiertas por 1 fila de alcance (T071). El ingreso con contraseña en la vista previa sigue pendiente |
+| SC-007 | Cumplido en el clúster desechable y en develop | `correr_pruebas.sh` deja Q01 a Q15 y Q18 a Q21 en 0. El 2026-11-24 develop da Q01 a Q14 y Q18 a Q21 en 0 después de T069 y de la siembra de T071 |
 | SC-008 | Cumplido en local, pendiente en la vista previa | El humo da 10 de 10 en local (T053). La corrida en la vista previa es de T071 |
 | SC-009 | Cumplido | La prueba de contraste exige 0 clases sin token, `e2e/visual.spec.ts` da 10 de 10 a 375 px y las pruebas de la spec 007 cambian solo las que nombra FR-019 |
 | SC-010 | Cumplido con una huella inventada, pendiente con la real | `preflight.sh` pasa en los dos repositorios. El barrido del historial con la huella del correo real es de Jefferson |
