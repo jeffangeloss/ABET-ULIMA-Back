@@ -102,6 +102,20 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-CARGA-18 | carga-export | 6 | Ninguna | Con escenario |
 | BR-CARGA-19 | carga-export | 11 | Ninguna | Con escenario |
 | BR-CARGA-20 | carga-export | 8 | Ninguna | Con escenario |
+| BR-MEJORA-01 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-02 | mejora | 4 | Ninguna | Con escenario |
+| BR-MEJORA-03 | mejora | 2 | Ninguna | Con escenario |
+| BR-MEJORA-04 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-05 | mejora | 6 | Ninguna | Con escenario |
+| BR-MEJORA-06 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-07 | mejora | 4 | Ninguna | Con escenario |
+| BR-MEJORA-08 | mejora | 2 | Ninguna | Con escenario |
+| BR-MEJORA-09 | mejora | 5 | Ninguna | Con escenario |
+| BR-MEJORA-10 | mejora | 5 | Ninguna | Con escenario |
+| BR-MEJORA-11 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-12 | mejora | 1 | Ninguna | Con escenario |
+| BR-MEJORA-13 | mejora | 6 | Ninguna | Con escenario |
+| BR-MEJORA-14 | mejora | 8 | Ninguna | Con escenario |
 | BR-PERIODO-01 | periodo | 1 | tests/test_api_resultados.py | Con escenario |
 | BR-PERIODO-02 | periodo | 6 | Ninguna | Con escenario |
 | BR-PERIODO-03 | periodo | 4 | Ninguna | Con escenario |
@@ -111,7 +125,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-R17-01 | r17 | 3 | Ninguna | Con escenario |
 | BR-R17-02 | r17 | 5 | test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas, tests/test_r17.py | Con escenario |
 | BR-R17-03 | r17 | 3 | Ninguna | Con escenario |
-| BR-R17-04 | r17 | 1 | Ninguna | Con escenario |
+| BR-R17-04 | r17 | 9 | Ninguna | Con escenario |
 | BR-R17-05 | r17 | 2 | Ninguna | Con escenario |
 | BR-R17-06 | r17 | 3 | test_br_r17_06_el_r17_no_deja_que_el_navegador_adivine_su_tipo, tests/test_api_cargas.py | Con escenario |
 | BR-R17-07 | r17 | 2 | Ninguna | Con escenario |
@@ -119,6 +133,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-R17-09 | r17 | 2 | Ninguna | Con escenario |
 | BR-R17-10 | r17 | 7 | Ninguna | Con escenario |
 | BR-R17-11 | r17 | 4 | tests/test_r17.py, tests/test_descripcion_instrumento.py | Con escenario |
+| BR-R17-12 | r17 | 8 | Ninguna | Con escenario |
 | BR-R17-13 | r17 | 8 | Ninguna | Con escenario |
 | BR-RESULTADOS-01 | resultados | 5 | tests/test_api_resultados.py | Con escenario |
 | BR-RESULTADOS-02 | resultados | 4 | tests/test_api_resultados.py | Con escenario |
