@@ -36,7 +36,7 @@ Característica: Matriz de cumplimiento de punta a punta
 
   @spec008 @corte1 @US-90
   Escenario: Una regla con prueba nombrada no es un hueco aunque no tenga escenario
-    Dado BR-R17-08, cuya línea **Prueba** nombra una prueba de abet_carga/r17.py y ningún escenario
+    Dado BR-R17-08 en una copia de r17.spec.md cuya línea **Prueba** nombra solo test_br_r17_08_142_mediciones_llenan_la_tabla_hasta_la_fila_184 de tests/test_r17.py y ningún escenario
     Cuando se genera la matriz
     Entonces su fila dice la prueba nombrada y no cuenta como hueco
 

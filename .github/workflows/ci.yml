@@ -18,6 +18,10 @@ permissions:
 jobs:
   pruebas:
     runs-on: ubuntu-latest
+    # El reporte de pytest para el informe de la matriz de cumplimiento (US-90 de la spec 008), fuera del
+    # repositorio. Va en el entorno del job para no cambiar el paso de las pruebas de Python.
+    env:
+      PYTEST_ADDOPTS: --junitxml=${{ github.workspace }}/../informes_ci/pytest.xml
     # PostgreSQL 18 desechable para las pruebas de la base (db/pruebas/), que aplican las
     # migraciones con psql, sin Flyway ni imágenes de Redgate. Vive solo lo que dura el job.
     services:
@@ -89,6 +93,37 @@ jobs:
           PGHOST: localhost
           PGUSER: postgres
         run: uv run --frozen --no-build pytest -q
+      - name: Front de la misma rama para la matriz de cumplimiento (US-90 de la spec 008)
+        # El Front es público. La matriz busca los escenarios de pantalla y de navegador en la rama del mismo
+        # nombre y, si no existe, en develop. La copia vive fuera del repositorio y se borra con el runner.
+        env:
+          RAMA: ${{ github.head_ref || github.ref_name }}
+        run: |
+          FRONT=https://github.com/jeffangeloss/ABET-ULIMA-Front.git
+          if ! git clone -q --depth 1 --branch "$RAMA" "$FRONT" ../front_ci 2>/dev/null; then
+            git clone -q --depth 1 --branch develop "$FRONT" ../front_ci
+          fi
+          git -C ../front_ci log -1 --format='Front en %h'
+      - name: Node 24 para las pruebas del Front
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Pruebas de Vitest del Front con su reporte JSON, solo para el informe de la matriz
+        # La CI del Front es la que exige que sus pruebas pasen. Aquí el reporte lleva el resultado y la fecha de
+        # cada prueba al informe, y una prueba fallida sale como «Fallida» en él. --ignore-scripts como en el Front.
+        working-directory: ../front_ci
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          npx vitest run --reporter=json --outputFile=../informes_ci/vitest.json || echo "Vitest termina con fallas; el informe de la matriz las muestra."
+      - name: Matriz de cumplimiento de las specs 007 y 008 (US-90 de la spec 008)
+        # Falla ante un hueco o si cumplimiento.md no está al día, y deja el informe con el resultado y la fecha de
+        # cada prueba en el resumen de la corrida, fuera del repositorio.
+        run: |
+          OPCIONES=(--front ../front_ci --informe "$GITHUB_STEP_SUMMARY")
+          if [ -s ../informes_ci/vitest.json ]; then OPCIONES+=(--vitest ../informes_ci/vitest.json); fi
+          if [ -s ../informes_ci/pytest.xml ]; then OPCIONES+=(--junit ../informes_ci/pytest.xml); fi
+          uv run --frozen --no-build python scripts/matriz_cumplimiento.py --comprobar "${OPCIONES[@]}"
 
   # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
   # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).
