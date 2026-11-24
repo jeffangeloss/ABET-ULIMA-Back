@@ -27,6 +27,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 ### Corregido
 
 - El paso de Vitest del Front en `.github/workflows/ci.yml` corre `./node_modules/.bin/vitest`, el binario que instala `npm ci --ignore-scripts` con la versión del `package-lock.json`, en lugar de `npx vitest`, que podía bajar un paquete sin versión fija y correr sus scripts (SonarCloud, githubactions:S6505 y S8543 en el PR #54). Una prueba falla si ci.yml vuelve a instalar paquetes a pedido.
+- La prueba que impide volver a bajar paquetes a pedido en `.github/workflows/ci.yml` detecta también `npm exec` y `npm x` con opciones o varios espacios entre `npm` y la suborden, como `npm --yes exec` y `npm  exec`, y `npm install`, `npm i` o `npm add` con un paquete, que antes pasaban. El patrón queda en `INSTALA_A_PEDIDO`, con 15 órdenes que debe marcar y 11 que no.
 
 ## [0.3.0] - 2026-11-23
 

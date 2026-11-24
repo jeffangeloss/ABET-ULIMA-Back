@@ -532,19 +532,46 @@ def test_la_ci_clona_el_front_antes_de_pytest_y_le_pasa_su_raiz() -> None:
     assert raiz.group(1) == "${{ github.workspace }}/../front_ci", raiz.group(1)
 
 
+# Una orden de shell que baja un paquete en el momento: npx, bunx, pnpm dlx o yarn dlx, npm exec o npm x con cualquier
+# opción o espacio entre npm y la suborden, y npm install, npm i o npm add con un paquete, que no lee el package-lock.json.
+_OPCIONES_DE_NPM = r"(\s+-\S+(\s+[^-\s]\S*)?)*"
+INSTALA_A_PEDIDO = re.compile(r"(^|[\s;&|(])((npx|bunx|(pnpm|yarn)\s+dlx|npm" + _OPCIONES_DE_NPM + r"\s+(exec|x))(?=\s|$)"
+                              r"|npm" + _OPCIONES_DE_NPM + r"\s+(i|in|install|add)(\s+-\S+)*\s+[^-\s])")
+
+
 def test_la_ci_corre_vitest_con_el_binario_que_instala_npm_ci_y_sin_npx() -> None:
     # Corrección del 2026-11-24 (SonarCloud, githubactions:S6505 y S8543 en el PR #54). npx y npm exec pueden bajar en
     # el momento un paquete sin versión fija y correr sus scripts de instalación. La CI usa solo lo que fija el
     # package-lock.json del Front, instalado con npm ci --ignore-scripts.
     instrucciones = [linea.split("#", 1)[0] for linea in CI.read_text(encoding="utf-8").splitlines()
                      if not linea.lstrip().startswith("#")]
-    a_pedido = [linea.strip() for linea in instrucciones
-                if re.search(r"(^|[\s;&|(])(npx|npm exec|npm x|pnpm dlx|yarn dlx|bunx)\b", linea)]
+    a_pedido = [linea.strip() for linea in instrucciones if INSTALA_A_PEDIDO.search(linea)]
     assert not a_pedido, f"ci.yml instala paquetes a pedido: {a_pedido}"
     pasos = _pasos_del_job_de_pruebas()
     [vitest] = [paso for paso in pasos if "vitest" in paso and "working-directory: ../front_ci" in paso]
     assert "npm ci --ignore-scripts" in vitest, "el paso de Vitest perdió --ignore-scripts"
     assert "./node_modules/.bin/vitest run --reporter=json --outputFile=../informes_ci/vitest.json" in vitest, vitest
+
+
+@pytest.mark.parametrize("orden", [
+    "npx vitest run", "cd ../front_ci && npx vitest run", "bunx vitest", "pnpm dlx vitest", "yarn  dlx vitest",
+    "npm exec vitest", "npm  exec vitest", "npm --yes exec -- vitest --version", "npm -y x vitest",
+    "npm --prefix ../front_ci exec vitest", "npm\texec vitest", "npm install --no-save vitest", "npm i vitest",
+    "npm add vitest@3", "npm install -D vitest",
+])
+def test_el_patron_de_la_ci_detecta_cada_forma_de_bajar_un_paquete_en_el_momento(orden: str) -> None:
+    # Corrección del 2026-11-24 (verificadores del PR #54). El patrón de antes pedía «npm exec» con un solo espacio, así
+    # que «npm --yes exec» y «npm  exec» pasaban, y no veía «npm install» con un paquete sin versión fija.
+    assert INSTALA_A_PEDIDO.search(orden), orden
+
+
+@pytest.mark.parametrize("orden", [
+    "npm ci --ignore-scripts", "npm run build", "npm ci", "npm install", "npm install --ignore-scripts",
+    "./node_modules/.bin/vitest run --reporter=json --outputFile=../informes_ci/vitest.json", "npm run exec-tareas",
+    "npm run x", "uv run --frozen --no-build pytest -q", "echo npxx", "pnpm exec vitest",
+])
+def test_el_patron_de_la_ci_no_marca_lo_que_usa_el_package_lock(orden: str) -> None:
+    assert not INSTALA_A_PEDIDO.search(orden), orden
 
 
 def _espejo_sin_correr(tmp_path: Path) -> Matriz:
