@@ -135,12 +135,15 @@ def preparar_410(conexion: psycopg.Connection) -> int:
 
 def conjunto_aprobado(
     conexion: psycopg.Connection, version: str = APROBADO, *, completo: bool = True, aprobado: bool = True,
+    meta_logro: float | None = 0.70, nivel_esperado: int | None = 2, corte_rojo: float | None = 0.50,
 ) -> None:
     """Conjunto de reglas inventado con los valores del caso A03 de db/pruebas/pruebas.sql.
 
     Con completo falso deja TRATO_SIN_EVIDENCIA en PENDIENTE, así que el R-17 sigue provisional
     aunque el conjunto esté aprobado. Con aprobado falso el conjunto queda en BORRADOR con los cinco
-    parámetros DEFINIDOS, y el R-17 también sigue provisional.
+    parámetros DEFINIDOS, y el R-17 también sigue provisional. meta_logro, nivel_esperado y corte_rojo
+    cambian sus tres valores, y None deja ese parámetro en PENDIENTE (spec 005, R-PRUEBA-SEMAFORO con
+    0,80, 3 y 0,75).
     """
     estado, por, fecha = ("APROBADO", "Comité de prueba", "2026-10-01") if aprobado else ("BORRADOR", None, None)
     conexion.execute(
@@ -149,10 +152,13 @@ def conjunto_aprobado(
         (version, estado, por, fecha),
     )
     trato = ("DEFINIDO", None, "SE_EXCLUYE_DEL_DENOMINADOR") if completo else ("PENDIENTE", None, None)
+    def numero(valor: float | None) -> tuple[str, float | None, None]:
+        return ("DEFINIDO" if valor is not None else "PENDIENTE", valor, None)
+
     valores = [
-        ("META_LOGRO", "DEFINIDO", 0.70, None),
-        ("NIVEL_ESPERADO", "DEFINIDO", 2, None),
-        ("CORTE_ROJO", "DEFINIDO", 0.50, None),
+        ("META_LOGRO", *numero(meta_logro)),
+        ("NIVEL_ESPERADO", *numero(nivel_esperado)),
+        ("CORTE_ROJO", *numero(corte_rojo)),
         ("CONVERSION_NIVEL_0_1", "DEFINIDO", None, None),
         ("TRATO_SIN_EVIDENCIA", *trato),
     ]

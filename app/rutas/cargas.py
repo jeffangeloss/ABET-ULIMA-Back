@@ -41,6 +41,13 @@ GET /api/cargas/{carga_id}/r17.xlsx el libro del R-17 de una carga PUBLICADA, co
 contrato. Las dos leen con app/permisos.puede_leer(), así que el coordinador alcanza cualquier
 sección. Una sección o una carga que no existe responde el mismo 403 que una ajena, porque un 404
 distinto revelaría qué identificadores existen (sección 9 del contrato, propuesta).
+
+GET /api/cargas/{carga_id}/indicadores (ruta 13 de la spec 005, T031, BR-MEJORA-01 a BR-MEJORA-05) responde las
+cifras de cada PI de una carga PUBLICADA con su semáforo, su hallazgo y su tipo de registro, armadas por
+app/rutas/resultados.indicadores_de_la_carga() con las funciones puras de abet_carga/resultados.py. Lee el alcance,
+el estado, CORTE_ROJO de abet.parametro_valor y la vista en una sola transacción READ ONLY con REPEATABLE READ, y
+responde en el orden 401, 403 (el único, también para una carga que no existe) y 409 para una carga RECHAZADA o
+REEMPLAZADA. No tiene cuerpo ni parámetros de consulta, así que no responde 422 por la forma.
 """
 
 from __future__ import annotations
@@ -61,6 +68,7 @@ from abet_carga import constancia, r17
 from abet_carga.carga import Resultado, ResultadoCarga, cargar
 from abet_carga.constancia import HORA_DE_LIMA
 from app import permisos, sesion
+from app.rutas import resultados
 from app.configuracion import FORMA_INESPERADA, PERIODO, PERIODO_MAL_FORMADO, REGISTRO, ajustes_de, conexion, error
 
 # BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
@@ -71,6 +79,7 @@ CONFIRMACION_INVALIDA = "La sección confirmada no es la sección elegida. No se
 # admite cualquier entero, como el seccion_id de la ruta de subida, y uno que no existe recibe el 403 único.
 _ENTERO_POSITIVO = re.compile(r"[1-9][0-9]{0,17}")
 _ENTERO = re.compile(r"[+-]?[0-9]{1,18}")
+SIN_SEMAFORO = "La carga no está publicada y no tiene semáforo."
 _SECCION_DE_LA_CARGA = "SELECT seccion_id FROM abet.carga WHERE carga_id = %s"
 # reemplaza y seccion_id se declaran solo en el esquema OpenAPI. Las rutas los leen después de comprobar el alcance,
 # como pide el orden de BR-CARGA-03, y no con la conversión de FastAPI, que respondería su 422 antes que el 403.
@@ -233,3 +242,22 @@ def descargar_r17(
         "X-Content-Type-Options": "nosniff",
     }
     return Response(contenido, media_type=XLSX, headers=cabeceras)
+
+
+@router.get("/cargas/{carga_id}/indicadores")
+def leer_indicadores(
+    carga_id: int,
+    usuario: sesion.Usuario = Depends(sesion.usuario_actual),
+    abierta: psycopg.Connection[Any] = Depends(conexion),
+) -> Response:
+    # Una sola transacción READ ONLY con REPEATABLE READ, que fija la instantánea desde la primera consulta, así que el
+    # alcance, el estado de la carga, el corte rojo y las cifras salen de la misma foto (BR-MEJORA-01). El 403 va antes
+    # que el 409, y una carga que no existe recibe el mismo 403 que una ajena (BR-MEJORA-05 y BR-ACCESO-08).
+    with abierta.transaction():
+        abierta.execute(resultados.SOLO_LECTURA)
+        if not _seccion_legible(abierta, usuario, carga_id):
+            return _ajena()
+        cuerpo = resultados.indicadores_de_la_carga(abierta, carga_id)
+    if cuerpo is None:
+        return error(409, SIN_SEMAFORO)
+    return JSONResponse(cuerpo)
