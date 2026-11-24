@@ -198,6 +198,7 @@ def _pedir(ctx: Escenario, quien: str, ruta: str) -> None:
 
 @when(parsers.re(r'(?P<quien>el profesor|"[^"]+") descarga el R-17 de esa carga'))
 def _descarga_r17(ctx: Escenario, quien: str) -> None:
+    ctx.declarada_antes_del_r17(ctx.carga_id)
     _pedir(ctx, quien, "/api/cargas/{carga_id}/r17.xlsx")
 
 
@@ -351,12 +352,20 @@ def _sin_formulas(ctx: Escenario) -> None:
                 assert not re.search(rb"<f[ >/]", libro.read(parte)), f"{parte} trae una fórmula"
 
 
-@then(parsers.re(r'los recuadros de causas, acciones y comentario están vacíos'))
-def _recuadros_vacios(ctx: Escenario) -> None:
+@then(parsers.re(r'los recuadros de causas y acciones traen un párrafo por PI de la declaración vigente, y ninguna '
+                 r'celda nombra un comentario'))
+def _recuadros_declarados(ctx: Escenario) -> None:
     celdas = _celdas(ctx)
     causas = [f"{columna}{fila}" for columna in "BCDEFGHI" for fila in (29, 30, 31)]
     acciones = [f"{columna}{fila}" for columna in "BCDEFGHI" for fila in (34, 35, 36)]
-    assert [ref for ref in causas + acciones if ref in celdas] == []
+    assert [ref for ref in causas + acciones if ref in celdas] == ["B29", "B34"]
+    textos = ctx.filas("SELECT p.codigo, d.tipo, d.causa, d.accion FROM abet.mejora_declaracion_pi d"
+                       " JOIN abet.pi p ON p.pi_id = d.pi_id WHERE d.declaracion_id = (SELECT max(declaracion_id)"
+                       " FROM abet.mejora_declaracion WHERE carga_id = %s) ORDER BY p.so_numero, p.numero", ctx.carga_id)
+    assert [fila[0] for fila in textos] == ["5.1", "5.2", "5.3"]
+    rotulo = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora.", "BUENA_PRACTICA": "Buena práctica."}
+    assert celdas["B29"].split("\n") == [f"{pi} · {rotulo[tipo]} {causa}" for pi, tipo, causa, _ in textos]
+    assert celdas["B34"].split("\n") == [f"{pi} · {rotulo[tipo]} {accion}" for pi, tipo, _, accion in textos]
     # La plantilla no tiene un recuadro de comentario. Se exige que ninguna celda del libro lo nombre con texto propio.
     assert [ref for ref, valor in celdas.items() if "omentario" in str(valor)] == []
 

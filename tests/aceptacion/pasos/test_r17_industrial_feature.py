@@ -89,6 +89,7 @@ def _publicar(ctx: Escenario, quien: str, numero: str, contenido: bytes, nombre:
 
 
 def _descargar(ctx: Escenario, quien: str, carga_id: int) -> Any:
+    ctx.declarada_antes_del_r17(carga_id)
     ctx.respuesta = ctx.sesion(quien).get(f"/api/cargas/{carga_id}/r17.xlsx")
     return ctx.respuesta
 

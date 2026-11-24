@@ -1,7 +1,7 @@
 """R-17, el reporte de medición de una sección, desde la carga publicada en la base (T035).
 
 generar(conexion, carga_id, carpeta) escribe en carpeta el R-17 de una carga PUBLICADA y devuelve su
-ruta. Cumple las reglas de negocio (business rules, BR) BR-R17-01 a BR-R17-09 y BR-R17-11 de
+ruta. Cumple las reglas de negocio (business rules, BR) BR-R17-01 a BR-R17-09 y BR-R17-11 a BR-R17-13 de
 specs/features/r17/r17.spec.md sobre plantillas/R017_ambiental_general.xlsx, con el mapa de celdas
 de plantillas/README.md, y sirve a cualquier asignatura y sección del plan de medición. Lee con la
 conexión que recibe, sin escribir en la base ni confirmar o deshacer su transacción.
@@ -44,10 +44,18 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    La fila «Hoja» de un export de texto, cuya hoja es nula, muestra «Sin hoja (export de texto)»,
    un texto de presentación que no se guarda en la base (spec 003, US-34).
 
-9. Los recuadros B29:I31 y B34:I36 los arman componer_recuadros() (un párrafo por PI con su prefijo sin
+9. Solo una carga con su declaración vigente completa tiene R-17 (BR-R17-12, spec 005, US-49). La vigente es la de
+   mayor declaracion_id de abet.mejora_declaracion, y debe tener una fila de abet.mejora_declaracion_pi por cada PI de
+   abet.carga_columna con al menos una medición CALIFICADO, la regla del control Q17. Sin declaración, con solo un
+   borrador o con la vigente incompleta, generar() lanza DeclaracionPendiente, el 409 de la API, sin escribir
+   ningún archivo. El 409 de una carga no PUBLICADA manda sobre ese, y el 422 de la sección que no cabe también.
+   generar() lee la constancia, las cifras y la declaración en una sola transacción READ ONLY y REPEATABLE READ,
+   así que el libro y su análisis salen de la misma instantánea. Si la conexión ya está dentro de una transacción,
+   lee en esa, que es la de quien llama.
+10. Los recuadros B29:I31 y B34:I36 los arman componer_recuadros() (un párrafo por PI con su prefijo sin
    cifras, BR-R17-04, US-50), lineas_del_recuadro() y alto_de_fila_final() (cabida determinista, tope de
-   409 puntos) y aplicar_recuadros(). Son funciones puras que generar() aún no llama, porque la declaración
-   vive en V1_15 (T033, T037).
+   409 puntos) y aplicar_recuadros(). El tipo de cada párrafo sale de la foto de la declaración y no del
+   semáforo de hoy, y un PI sin calificaciones lleva «5.3 · Sin calificaciones en esta carga.» (J-40, D-40).
 
 El conteo por nivel, la cifra entre paréntesis y el porcentaje sobre el total van en K28:Q31, la
 zona libre que propone plantillas/README.md, y M24 a M26 repiten los conteos de la hoja original.
@@ -67,6 +75,7 @@ from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, TwoCellAnchor
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 
 from abet_carga import constancia, resultados
@@ -97,6 +106,8 @@ FUENTE = "Calibri"
 BLANCO = "FFFFFFFF"
 # Primeros caracteres con que Excel empieza una fórmula si alguien edita la celda.
 _PREFIJOS_DE_FORMULA = ("=", "+", "-", "@")
+# La misma instantánea para la constancia, las cifras y la declaración (BR-R17-12).
+SOLO_LECTURA = "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
 
 _VISTA = """
 SELECT periodo, codigo_asignatura, asignatura, seccion, carga_id, provisional, so, pi, n_nivel_1, n_nivel_2,
@@ -125,6 +136,19 @@ FROM abet.carga c
 JOIN abet.carrera cr ON cr.carrera_id = c.carrera_id
 WHERE c.carga_id = %s
 """
+
+# BR-R17-12. Cada PI de la carga, con su registro en la declaración vigente, si lo tiene, y si tiene calificados.
+_ANALISIS = """
+SELECT p.codigo AS pi, d.tipo, d.causa, d.accion,
+       EXISTS (SELECT 1 FROM abet.medicion m
+               WHERE m.carga_columna_id = cc.carga_columna_id AND m.estado_evidencia = 'CALIFICADO') AS con_calificados
+FROM abet.carga_columna cc
+JOIN abet.pi p ON p.pi_id = cc.pi_id
+LEFT JOIN abet.mejora_declaracion_pi d ON d.pi_id = cc.pi_id AND d.declaracion_id = %(vigente)s
+WHERE cc.carga_id = %(carga)s
+ORDER BY p.so_numero, p.numero
+"""
+_VIGENTE = "SELECT max(declaracion_id) AS declaracion_id FROM abet.mejora_declaracion WHERE carga_id = %s"
 
 # Una fila más que el tope basta para saber que la tabla no cabe.
 _MEDICIONES = """
@@ -162,8 +186,29 @@ class SeccionSuperaPlantilla(R17NoDisponible):
     codigo_http = 422
 
 
-def generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path) -> Path:
-    """Escribe el R-17 de la carga en carpeta y devuelve su ruta, o lanza la razón por la que no lo tiene."""
+class DeclaracionPendiente(R17NoDisponible):
+    """La carga no tiene la declaración vigente completa de su análisis por indicador (BR-R17-12, propuesta)."""
+
+    mensaje = "Complete la causa y la acción de cada indicador en la página de la carga antes de descargar el R-17."
+    codigo_http = 409
+
+
+def generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path, *, exigir_declaracion: bool = True) -> Path:
+    """Escribe el R-17 de la carga en carpeta y devuelve su ruta, o lanza la razón por la que no lo tiene.
+
+    exigir_declaracion falso deja los recuadros A y B vacíos y no lee la declaración. Lo usa solo el ensayo de la
+    capacitación (db/herramientas/ensayar_capacitacion.py), que compara las cifras con la tabla maestra en una base
+    aparte antes de que ningún profesor declare, y la prueba que arma el R-17 de una base anterior a V1_15. La ruta 7
+    y el comando python -m abet_carga r17 siempre la exigen (BR-R17-12).
+    """
+    if conexion.info.transaction_status != TransactionStatus.IDLE:
+        return _generar(conexion, carga_id, carpeta, exigir_declaracion)
+    with conexion.transaction():
+        conexion.execute(SOLO_LECTURA)
+        return _generar(conexion, carga_id, carpeta, exigir_declaracion)
+
+
+def _generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path, exigir_declaracion: bool) -> Path:
     cuerpo = constancia.armar(conexion, carga_id)
     filas = _leer(conexion, _VISTA, carga_id)
     if cuerpo["estado"] != "PUBLICADA" or not filas:
@@ -173,10 +218,11 @@ def generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path) -> Path:
     mediciones = _leer(conexion, _MEDICIONES, carga_id, TOPE_DE_MEDICIONES + 1)
     if len(mediciones) > TOPE_DE_MEDICIONES:
         raise SeccionSuperaPlantilla()
+    recuadros = _recuadros(conexion, carga_id) if exigir_declaracion else None
     plan = {detalle["codigo"]: detalle for detalle in _leer(conexion, _PLAN, carga_id)}
     provisional = any(fila["provisional"] for fila in filas)
     [carrera] = _leer(conexion, _CARRERA, carga_id)
-    libro = _libro(filas, plan, mediciones, cuerpo, provisional, carrera["nombre"])
+    libro = _libro(filas, plan, mediciones, cuerpo, provisional, carrera["nombre"], recuadros)
     ruta = carpeta / _nombre(filas[0], provisional)
     libro.save(ruta)
     return ruta
@@ -185,6 +231,27 @@ def generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path) -> Path:
 def _leer(conexion: psycopg.Connection, consulta: str, *parametros: object) -> list[dict[str, Any]]:
     with conexion.cursor(row_factory=dict_row) as cursor:
         return cursor.execute(consulta, parametros).fetchall()
+
+
+def _recuadros(conexion: psycopg.Connection, carga_id: int) -> tuple[str, str]:
+    """Textos de B29 y B34 desde la declaración vigente, o DeclaracionPendiente si falta o le falta un PI.
+
+    Una base anterior a V1_15 no tiene dónde guardar la declaración, así que su carga tampoco la tiene y recibe el
+    mismo 409, en lugar de un 500 por la tabla que falta.
+    """
+    [tabla] = _leer(conexion, "SELECT to_regclass('abet.mejora_declaracion') IS NOT NULL AS existe")
+    if not tabla["existe"]:
+        raise DeclaracionPendiente()
+    [vigente] = _leer(conexion, _VIGENTE, carga_id)
+    if vigente["declaracion_id"] is None:
+        raise DeclaracionPendiente()
+    with conexion.cursor(row_factory=dict_row) as cursor:
+        pis = cursor.execute(_ANALISIS, {"vigente": vigente["declaracion_id"], "carga": carga_id}).fetchall()
+    if any(pi["con_calificados"] and pi["tipo"] is None for pi in pis):
+        raise DeclaracionPendiente()
+    return componer_recuadros([
+        (pi["pi"], pi["tipo"], pi["causa"], pi["accion"]) if pi["con_calificados"] else (pi["pi"], None, "", "")
+        for pi in pis])
 
 
 def _nombre(fila: dict[str, Any], provisional: bool) -> str:
@@ -200,6 +267,7 @@ def _libro(
     cuerpo: dict[str, Any],
     provisional: bool,
     carrera: str,
+    recuadros: tuple[str, str] | None,
 ) -> Workbook:
     libro = load_workbook(PLANTILLA)
     hoja = libro[HOJA]
@@ -210,6 +278,8 @@ def _libro(
         _franja(hoja, cuerpo)
     _bloques(hoja, filas, plan)
     _frecuencias(hoja, filas)
+    if recuadros is not None:
+        aplicar_recuadros(hoja, *recuadros)
     _tabla(hoja, mediciones)
     _hoja_constancia(libro.create_sheet("Constancia"), cuerpo, provisional)
     _propiedades(libro, filas[0], provisional)

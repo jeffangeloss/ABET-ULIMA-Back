@@ -10,8 +10,10 @@ tests/conftest.py. La última revisa el guion sin correrlo, porque correrlo arma
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import re
 import subprocess
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -34,6 +36,18 @@ HUELLA_CON_ERROR = "2b94db8d8abfd5ff24425584172de7942383c480f25ee0a8cacf927e17df
 CONFIGURACION = Configuracion(conjunto_reglas="R-2026-BORRADOR")
 FRANJA = ("R-17 PROVISIONAL. Las reglas de la carrera (conjunto R-2026-BORRADOR) aún no están aprobadas. "
           "No usar como evidencia oficial.")
+
+
+def _cargas_de_prueba() -> Any:
+    """tests/cargas_de_prueba.py, cargado por su ruta porque tests/ no es un paquete."""
+    if "cargas_de_prueba" not in sys.modules:
+        especificacion = importlib.util.spec_from_file_location(
+            "cargas_de_prueba", Path(__file__).with_name("cargas_de_prueba.py"))
+        assert especificacion is not None and especificacion.loader is not None
+        modulo = importlib.util.module_from_spec(especificacion)
+        sys.modules["cargas_de_prueba"] = modulo
+        especificacion.loader.exec_module(modulo)
+    return sys.modules["cargas_de_prueba"]
 
 
 @pytest.fixture
@@ -87,9 +101,12 @@ def test_br_carga_09_16_la_410_con_error_se_publica_una_sola_vez_con_11_10_y_1(
 
 
 def test_br_r17_01_05_el_r17_de_la_410_trae_nombre_franja_cifras_logotipo_y_constancia(
-    conexion: psycopg.Connection, tmp_path: Path
+    conexion: psycopg.Connection, tmp_path: Path, base_demo: Any
 ) -> None:
     carga_id = _subir(conexion, CON_ERROR).carga_id
+    # Desde US-49 (spec 005) el R-17 sale solo con la declaración vigente completa, que el dueño registra.
+    with psycopg.connect(base_demo.conexion, autocommit=True) as dueno:
+        _cargas_de_prueba().declarar(dueno, carga_id)
     ruta = r17.generar(conexion, carga_id, tmp_path)
     assert ruta.name == "R017_450002_410_2026-2_PROVISIONAL.xlsx"
     libro = openpyxl.load_workbook(ruta)

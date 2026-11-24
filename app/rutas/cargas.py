@@ -40,7 +40,12 @@ GET /api/cargas/{carga_id} responde la constancia, con el mensaje de cada rechaz
 GET /api/cargas/{carga_id}/r17.xlsx el libro del R-17 de una carga PUBLICADA, con las cabeceras del
 contrato. Las dos leen con app/permisos.puede_leer(), así que el coordinador alcanza cualquier
 sección. Una sección o una carga que no existe responde el mismo 403 que una ajena, porque un 404
-distinto revelaría qué identificadores existen (sección 9 del contrato, propuesta).
+distinto revelaría qué identificadores existen (sección 9 del contrato, propuesta). La ruta del R-17 responde
+con el código y el mensaje de cada abet_carga.r17.R17NoDisponible: 409 para una carga que no está PUBLICADA, que
+manda, 409 «Complete la causa y la acción de cada indicador en la página de la carga antes de descargar el R-17.»
+para una carga PUBLICADA sin su declaración vigente completa, también para el coordinador (DeclaracionPendiente,
+BR-R17-12, sección 13.6 del contrato), y 422 para una sección que no cabe en la plantilla. r17.generar() lee la
+constancia, las cifras y la declaración en una sola transacción READ ONLY y REPEATABLE READ.
 
 GET /api/cargas/{carga_id}/indicadores (ruta 13 de la spec 005, T031, BR-MEJORA-01 a BR-MEJORA-05) responde las
 cifras de cada PI de una carga PUBLICADA con su semáforo, su hallazgo y su tipo de registro, armadas por

@@ -359,6 +359,10 @@ class Escenario:
     def huella(self, contenido: bytes) -> str:
         return hashlib.sha256(contenido).hexdigest()
 
+    def declarada_antes_del_r17(self, carga_id: int | None) -> None:
+        """declarada_antes_del_r17() de este módulo, para los pasos de otros archivos (spec 005, US-49)."""
+        declarada_antes_del_r17(self, carga_id)
+
     def copia_de(self, texto: str) -> tuple[bytes, str]:
         """Archivo que describe una frase como «una copia de "X" con ...». Devuelve sus bytes y su nombre."""
         return armar_archivo(self, texto)
@@ -1052,6 +1056,60 @@ def _subido_a_la_seccion(ctx: Escenario, que: str, quien: str | None, numero: st
     if estado is not None:
         assert respuesta.json()["estado"] == estado
         assert ctx.cuenta("rechazo_fila", "carga_id = %s AND motivo = %s", ctx.carga_previa, motivo) >= 1
+    ctx.antes = ctx.conteos()
+
+
+# Dado, la subida con su análisis declarado (spec 005, US-49, T037)
+
+def declarar_la_carga(ctx: Escenario, correo: str, numero: str) -> None:
+    """Declara con declarar() de tests/cargas_de_prueba.py los registros de prueba de la sección en cada PI con
+    calificados, como lo harían las rutas 15 y 16 (FR-017). La 412 usa los suyos y las demás, copias de la 410, los de
+    la 410. Anota la carga en ctx.extras["declaradas"]."""
+    assert ctx.carga_id is not None, ctx.respuesta.text
+    registros = C.REGISTROS_DE_PRUEBA["412" if numero == "412" else "410"]
+    C.declarar(ctx.api.dueno, ctx.carga_id, registros, correo=correo)
+    ctx.extras.setdefault("declaradas", []).append(ctx.carga_id)
+
+
+def declarada_antes_del_r17(ctx: Escenario, carga_id: int | None) -> None:
+    """Declara la carga, si está PUBLICADA y todavía no tiene declaración, antes de que un escenario de las specs 001,
+    003, 004 u 008 pida su R-17.
+
+    Desde US-49 (spec 005, BR-R17-12) el R-17 sale solo con la declaración vigente completa, y la spec dice que esos
+    escenarios «ahora declaran antes de descargar» (US-49 y T037). Sus .feature no lo nombran, así que este paso lo
+    hace con declarar() de tests/cargas_de_prueba.py y los textos de prueba de cada PI. Una carga que no está
+    PUBLICADA o que ya tiene una declaración no cambia, así que el 409 de una carga rechazada y el 403 de una ajena
+    siguen como antes.
+    """
+    if carga_id is None:
+        return
+    estado = ctx.filas("SELECT c.estado, (SELECT count(*) FROM abet.mejora_declaracion d WHERE d.carga_id = c.carga_id)"
+                       " FROM abet.carga c WHERE c.carga_id = %s", carga_id)
+    if estado and estado[0] == ("PUBLICADA", 0):
+        C.declarar(ctx.api.dueno, carga_id)
+
+
+@given(parsers.re(r'que (?:"(?P<correo>[^"]+)" tiene subid[oa] (?P<que_de>"[^"]+"|una copia de "[^"]+" .+?)|'
+                  r'(?P<que>"[^"]+"|una copia de "[^"]+" .+?) está subid[oa]) a la sección (?P<numero>[0-9]+) con '
+                  r'respuesta 201 y su carga_id, con su análisis declarado'))
+def _subido_y_declarado(ctx: Escenario, correo: str | None, que_de: str | None, que: str | None, numero: str) -> None:
+    profesor = correo or _unico_profesor(ctx, numero)
+    texto = que_de or que
+    origen = re.fullmatch(r'una copia de "[^"]*_(?P<seccion>[0-9]{3})\.xlsx" .+', texto)
+    if origen is not None and origen["seccion"] != numero:
+        # semaforo.feature sube a la 411 una copia de la 410. La copia es la del curso de la sección que la recibe, así
+        # que su hoja nombra esa sección, como el export de Blackboard de la 411, y el lector no la rechaza por
+        # SECCION_NO_COINCIDE.
+        contenido, nombre = ctx.copia_de(texto)
+        export = ctx.generador.leer_export(contenido)
+        export = ctx.generador.con_hoja(export, export.hoja.replace(f"_{origen['seccion']}_", f"_{numero}_"))
+        respuesta = ctx.subir(profesor, _a_bytes(ctx, nombre, export), nombre, numero)
+        assert respuesta.status_code == 201, respuesta.text
+        ctx.carga_previa = ctx.carga_id
+    else:
+        respuesta = _subido_antes(ctx, profesor, texto, numero)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    declarar_la_carga(ctx, profesor, numero)
     ctx.antes = ctx.conteos()
 
 

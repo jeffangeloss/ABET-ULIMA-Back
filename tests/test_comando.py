@@ -11,6 +11,7 @@ comando como proceso aparte para probar python -m abet_carga.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
@@ -33,6 +34,24 @@ DOCENTE_411 = "docente411@example.invalid"
 COORDINACION = "coordinacion@example.invalid"
 SIN_ALCANCE = "La sección no está a su cargo."
 TABLAS = ("archivo_origen", "carga", "carga_columna", "carga_fila", "estudiante", "medicion", "rechazo_fila")
+PENDIENTE = "Complete la causa y la acción de cada indicador en la página de la carga antes de descargar el R-17."
+
+
+def _cargas_de_prueba() -> Any:
+    """tests/cargas_de_prueba.py, cargado por su ruta porque tests/ no es un paquete."""
+    if "cargas_de_prueba" not in sys.modules:
+        especificacion = importlib.util.spec_from_file_location("cargas_de_prueba", RAIZ / "tests" / "cargas_de_prueba.py")
+        assert especificacion is not None and especificacion.loader is not None
+        modulo = importlib.util.module_from_spec(especificacion)
+        sys.modules["cargas_de_prueba"] = modulo
+        especificacion.loader.exec_module(modulo)
+    return sys.modules["cargas_de_prueba"]
+
+
+def _declarar(base: Any, carga_id: int) -> None:
+    """Desde US-49 el R-17 sale solo con la declaración vigente completa, así que la prueba la registra antes (T037)."""
+    with psycopg.connect(base.conexion) as conexion:
+        _cargas_de_prueba().declarar(conexion, carga_id)
 
 
 @pytest.fixture
@@ -172,6 +191,7 @@ def test_br_r17_10_el_comando_genera_el_r17_y_la_constancia_en_la_carpeta(
 ) -> None:
     _, salida = _correr(_cargar(base, CON_ERROR), capsys)
     carga_id = _carga_id(salida)
+    _declarar(base, carga_id)
     codigo, salida = _correr(_r17(base, carga_id, tmp_path), capsys)
     assert codigo == 0
     r17 = tmp_path / "R017_450002_410_2026-2_PROVISIONAL.xlsx"
@@ -190,8 +210,21 @@ def test_br_r17_10_el_coordinador_lee_y_genera_el_r17_de_cualquier_seccion(
     base: Any, capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
     _, salida = _correr(_cargar(base, CON_ERROR), capsys)
+    _declarar(base, _carga_id(salida))
     codigo, _ = _correr(_r17(base, _carga_id(salida), tmp_path, COORDINACION), capsys)
     assert codigo == 0 and len(list(tmp_path.iterdir())) == 2
+
+
+@pytest.mark.parametrize("correo", [DOCENTE_410, COORDINACION])
+def test_br_r17_12_sin_declaracion_el_comando_termina_con_el_mensaje_y_sin_escribir_ningun_archivo(
+    base: Any, capsys: pytest.CaptureFixture[str], tmp_path: Path, correo: str
+) -> None:
+    _, salida = _correr(_cargar(base, CON_ERROR), capsys)
+    carpeta = tmp_path / "salida"
+    codigo, salida = _correr(_r17(base, _carga_id(salida), carpeta, correo), capsys)
+    assert codigo == 1
+    assert salida.strip() == PENDIENTE
+    assert not carpeta.exists() or list(carpeta.iterdir()) == []
 
 
 @pytest.mark.parametrize("correo", [DOCENTE_411, "nadie@example.invalid"])

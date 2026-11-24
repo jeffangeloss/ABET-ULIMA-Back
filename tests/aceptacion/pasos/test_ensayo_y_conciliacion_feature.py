@@ -149,7 +149,9 @@ def publicar_como_la_tabla(ctx: Escenario, secciones: tuple[str, ...] = SECCIONE
 def descargar_r17(ctx: Escenario) -> Path:
     carpeta = _carpeta(ctx, "r17")
     for carga_id in ctx.extras["cargas"].values():
-        r17.generar(ctx.api.dueno, carga_id, carpeta)
+        # El conciliador lee solo las cifras, y la base de la spec 008 no tiene la declaración de la spec 005, así que el
+        # R-17 sale como en el ensayo, sin exigirla.
+        r17.generar(ctx.api.dueno, carga_id, carpeta, exigir_declaracion=False)
     ctx.extras["r17"] = carpeta
     return carpeta
 

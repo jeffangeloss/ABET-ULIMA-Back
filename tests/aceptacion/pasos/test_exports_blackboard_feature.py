@@ -387,6 +387,7 @@ def _registro(ctx: Escenario, motivo: str, detalle: str) -> None:
 def _constancia_y_r17(ctx: Escenario) -> None:
     cliente = ctx.sesion(ctx.profesor)
     constancia = cliente.get(f"/api/cargas/{ctx.carga_id}")
+    ctx.declarada_antes_del_r17(ctx.carga_id)
     r17 = cliente.get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
     assert constancia.status_code == 200, constancia.text
     assert r17.status_code == 200, r17.text[:300]

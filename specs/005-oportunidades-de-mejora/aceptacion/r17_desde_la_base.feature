@@ -177,7 +177,7 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
   Escenario: G17, G18 y G19 traen la descripción de cada PI
     Dado que el dueño de la base fija en abet.plan_medicion de "450002" en "2026-2" una descripción distinta para 5.1, 5.2 y 5.3, cada una «Texto de prueba.» seguido del número de su PI
     Y que "docente410@example.invalid" tiene la sesión iniciada con rol "PROFESOR"
-    Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id
+    Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id, con su análisis declarado
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
     Entonces G17 trae el texto del PI 5.1, G18 el del PI 5.2 y G19 el del PI 5.3
     Y los tres textos son distintos entre sí
@@ -186,7 +186,7 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
   Escenario: Sin descripción en la base, G17:I19 queda vacía
     Dado que abet.plan_medicion de "450002" en "2026-2" no tiene descripcion_instrumento en ningún PI
     Y que "docente410@example.invalid" tiene la sesión iniciada con rol "PROFESOR"
-    Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id
+    Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id, con su análisis declarado
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
     Entonces G17, G18 y G19 están vacías
     Y el R-17 no inventa ningún texto de descripción

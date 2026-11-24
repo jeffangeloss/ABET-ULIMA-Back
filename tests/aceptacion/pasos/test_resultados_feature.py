@@ -287,6 +287,7 @@ def _pide_y_descarga(ctx: Escenario, periodo: str, cuales: str) -> None:
         assert len(cargas) == 3, cargas
     libros = {}
     for carga_id in cargas:
+        ctx.declarada_antes_del_r17(carga_id)
         descarga = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
         assert descarga.status_code == 200, descarga.text
         libros[carga_id] = load_workbook(io.BytesIO(descarga.content), data_only=True)[r17.HOJA]

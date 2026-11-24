@@ -45,7 +45,10 @@ Característica: R-17 y constancia de la carga generados desde la base
     Y cada conteo por nivel es igual a n_nivel_1, n_nivel_2, n_nivel_3 y n_nivel_4 de abet.v_r17_por_pi para ese carga_id y ese PI
     Y la tabla de estudiantes tiene 33 filas con SO, PI, código y calificación, ordenadas por PI y fila de origen, con los códigos 99000001 a 99000011
     Y ninguna celda del libro empieza por "=" ni contiene "#REF!"
-    Y los recuadros de causas, acciones y comentario están vacíos
+    # Cambio del 2026-11-24 (spec 005, US-49 y US-50, BR-R17-04 y BR-R17-12). El R-17 sale solo con la declaración
+    # vigente completa, que el paso de la descarga registra antes con declarar() de tests/cargas_de_prueba.py, y los
+    # recuadros dejan de quedar vacíos. La hoja no tiene recuadro de comentario.
+    Y los recuadros de causas y acciones traen un párrafo por PI de la declaración vigente, y ninguna celda nombra un comentario
 
   @US-15 @corte1
   Escenario: R-17 del export con el 5 en la fila 3
