@@ -131,6 +131,10 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-RESULTADOS-09 | resultados | 3 | Ninguna | Con escenario |
 | BR-RESULTADOS-10 | resultados | 2 | Ninguna | Con escenario |
 | BR-RESULTADOS-11 | resultados | 0 | tests/pantallas/MisLogros.test.tsx, tests/App.test.tsx, e2e/humo.spec.ts | Con prueba nombrada |
+| BR-RESULTADOS-12 | resultados | 3 | Ninguna | Con escenario |
+| BR-RESULTADOS-13 | resultados | 2 | Ninguna | Con escenario |
+| BR-RESULTADOS-14 | resultados | 3 | Ninguna | Con escenario |
+| BR-RESULTADOS-15 | resultados | 3 | Ninguna | Con escenario |
 
 ## Escenarios
 

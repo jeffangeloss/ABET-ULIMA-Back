@@ -28,6 +28,10 @@ Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz d
 | US-42 | El reporte no expone a estudiantes ni a otros usuarios | spec 004 |
 | US-43 | Ver cómo se reparten mis estudiantes por nivel | spec 004 |
 | US-44 | El coordinador ve los resultados de todas las secciones de la carrera | spec 004 |
+| US-91 | La coordinación recibe las cifras del curso en la ruta 20 | spec 009 |
+| US-92 | P8 muestra el resumen del curso | spec 009 |
+| US-93 | La coordinación de la carrera elige el curso | spec 009 |
+| US-94 | El conciliador compara el curso y sus secciones con la tabla maestra | spec 009 |
 
 ## Business Rules
 
@@ -107,7 +111,7 @@ Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz d
 ### BR-RESULTADOS-10: El coordinador ve la carrera sin un orden por resultado
 - El coordinador recibe con la misma ruta todas las secciones de la carrera en el periodo, las que `_ALCANCE` de `app/permisos.py` da al rol COORDINADOR sin filas en `acceso.docente_seccion` (BR-ACCESO-07), con las mismas cifras que ve el profesor de cada sección.
 - Las secciones van por código de asignatura y número de sección, nunca por su porcentaje, y la respuesta no trae correos ni nombres de profesores, para que P6 no arme un ranking de docentes (H05 y J-28).
-- La comparación entre secciones de N9, el consolidado por PI y la cifra por SO (D-32) y el agregado del curso o de la carrera (D-33) quedan fuera de esta ruta.
+- La comparación entre secciones de N9, el consolidado por PI y la cifra por SO (D-32) y el agregado del curso o de la carrera (D-33) quedan fuera de esta ruta. Cambio del 2026-11-24 (spec 009, J-61). El agregado del curso para la coordinación sale de la ruta 20 (BR-RESULTADOS-12 a BR-RESULTADOS-15), y la ruta 12 sigue sin él.
 - **Fuente**: US-44, AD-09 y J-28.
 - **Prueba**: «El coordinador ve las cinco secciones del periodo» y «P6 del coordinador agrupa por asignatura y no ordena por resultado» (`resultados.feature`).
 
@@ -119,6 +123,34 @@ Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz d
 - P6 no ofrece «Subir export», no muestra correos ni nombres de profesores y no escribe en `localStorage` ni en `sessionStorage`. P2 y P4 siguen sin porcentajes (invariante 8 de ADR-008).
 - **Fuente**: US-37 a US-44, FR-011 a FR-016, SC-004, SC-007, J-24 y la sección 9 de `docs/01-arquitectura/frontend.md` del Front.
 - **Prueba**: los diez escenarios con `@delegado_a_vitest` de los dos `.feature`, que comprueban `tests/pantallas/MisLogros.test.tsx` y `tests/App.test.tsx` del Front, y la prueba de humo de `e2e/humo.spec.ts` del Front contra la vista previa de `develop` (T043 y T071).
+
+### BR-RESULTADOS-12: La ruta 20 resume un curso solo para la coordinación y dentro de su alcance (propuesta)
+- `GET /api/resumen-curso?periodo=AAAA-C&asignatura=CODIGO` atiende solo a la cuenta COORDINADOR con el guardián de la ruta 17, responde 403 `SOLO_COORDINACION` al PROFESOR, 401 sin sesión y 422 con un periodo o una asignatura mal formados, sin leer la base.
+- Las secciones salen de `app/permisos.secciones_visibles()` filtradas por la asignatura y el periodo, así que fuera del alcance la respuesta es 200 con `indicadores` vacío y no revela si el curso existe, como las rutas 12 y 17.
+- La respuesta trae solo las claves de la lista cerrada de la ruta 20 del contrato, sin datos de personas.
+- **Fuente**: US-91, FR-001 a FR-003 y FR-008 de la spec 009, D-33 y J-61.
+- **Prueba**: «El profesor recibe 403 en el resumen del curso», «La coordinación de Ambiental recibe el resumen de 5643 sin indicadores» y «La respuesta del resumen trae solo las claves de su lista cerrada» (`resumen_del_curso.feature`).
+
+### BR-RESULTADOS-13: El curso suma alumnos y no promedia porcentajes (propuesta)
+- Las cifras del curso suman los conteos de las cargas PUBLICADA de `abet.v_r17_por_pi`. El porcentaje es la suma de logrados entre la suma de calificados y el promedio de calificación es la suma de cada nivel por su conteo entre la suma de los conteos, con `ROUND(numeric, 1)` y `ROUND(numeric, 2)` en PostgreSQL, nunca en float.
+- Los calificados son `n_total` menos `n_sin_evidencia`, y los estudiantes sin evidencia se informan aparte y no entran al promedio.
+- Es el valor provisional de D-32 (J-60), y la respuesta lo marca provisional mientras el conjunto de reglas lo sea.
+- **Fuente**: US-91, FR-004 de la spec 009, D-32, J-60 y H13.
+- **Prueba**: «El curso suma alumnos de las secciones publicadas y no promedia porcentajes» y «Cada sección trae sus cifras en orden de número y la sección sin carga no inventa un porcentaje» (`resumen_del_curso.feature`).
+
+### BR-RESULTADOS-14: La meta del curso y el conteo de secciones siguen la regla del R-17 (propuesta)
+- `en_meta` del curso y de cada sección sale de `abet_carga.resultados.en_meta()` sobre el porcentaje ya redondeado (BR-RESULTADOS-06).
+- `conteo_secciones` cuenta `en_meta` y `debajo_de_la_meta` solo sobre las secciones publicadas y `sin_dato` aparte, y un curso sin cargas publicadas trae `calificados` 0 con el porcentaje, el promedio y `en_meta` en `null`.
+- Si las secciones del curso traen metas distintas, `meta_pct` y `en_meta` del curso quedan en `null`.
+- **Fuente**: US-91, FR-005 a FR-007 de la spec 009 y BR-RESULTADOS-07.
+- **Prueba**: «El conteo de secciones cuenta la meta solo sobre las publicadas», «El curso cumple con el 80,0 justo y no cumple con 75,0, igual que el R-17» y «Un curso sin cargas publicadas trae nulos y no ceros» (`resumen_del_curso.feature`).
+
+### BR-RESULTADOS-15: P8 escribe el resumen sin profesores y sin recalcular (propuesta)
+- P8 escribe las cifras de la ruta 20 tal como llegan y dibuja las barras con HTML y Tailwind, con el ancho en `style` y `aria-hidden`, sin biblioteca de gráficos y sin torta (J-24 y J-62).
+- Las filas y las barras van en orden de número de sección, sin correos ni nombres de profesores y sin la tarjeta de porcentaje de profesores (BR-RESULTADOS-10 y D-57).
+- Solo la cuenta COORDINADOR ve «Resumen del curso» en el menú.
+- **Fuente**: US-92, FR-009 de la spec 009, J-62, J-63 y D-57.
+- **Prueba**: «P8 no muestra profesores ni ordena por resultado», «P8 trae una fila por sección con su barra y la línea de la meta» y «Solo la coordinación ve el enlace al resumen del curso en el menú» (`pantalla_resumen_del_curso.feature`).
 
 ## Verification
 

@@ -56,7 +56,7 @@ Característica: Pantalla del resumen del curso
     Y no dibuja la barra del curso
 
   @spec009 @corte1 @US-92 @delegado_a_vitest
-  Escenario: Solo la coordinación ve «Resumen del curso» en el menú
+  Escenario: Solo la coordinación ve el enlace al resumen del curso en el menú
     Dado una sesión de coordinador.quimica@example.invalid y otra de docente701@example.invalid
     Cuando cada una abre el menú
     Entonces la coordinación ve «Resumen del curso» y el profesor no

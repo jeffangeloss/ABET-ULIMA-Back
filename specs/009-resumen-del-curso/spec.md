@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/009-resumen-curso` del Back (PR a `develop`), con el contrato en el Front y la implementación en `feat/009-resumen-curso` después de la aprobación
 **Created**: 2026-11-24
-**Status**: Borrador para la aprobación de Jefferson
+**Status**: Aprobada por Jefferson en el chat el 2026-11-24 («Sí, apruébala»), con D-32 y J-60 a J-64 en sus valores provisionales, en la rama `docs/009-resumen-curso` del Back y del Front. La construcción va en `feat/009-resumen-curso` después del ensayo de la capacitación de la spec 008 (J-64)
 **Input**: «ahora empieza con la página Resumen Curso del pbix» y, antes en la misma sesión, «para el tema de los gráficos, considera usar lo que se trabajó en el pbix de steffanu»
 
 ## Épica
@@ -88,7 +88,7 @@ Como coordinación de Química General, quiero ver en una página las cifras del
 3. **P8 no muestra profesores ni ordena por resultado**, y no trae torta ni tarjeta de profesores.
 4. **P8 marca las cifras provisionales.**
 5. **P8 de un curso sin cargas no dibuja barras de 0 %.**
-6. **Solo la coordinación ve «Resumen del curso» en el menú.**
+6. **Solo la coordinación ve el enlace al resumen del curso en el menú.**
 7. **P8 a 375 px no se desplaza a lo ancho y se recorre con teclado** (Playwright).
 
 ---
