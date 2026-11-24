@@ -519,8 +519,8 @@ def _conservan_filas(ctx: Escenario, lista: str) -> None:
 @then('las consultas de control Q01 a Q14 devuelven 0 filas')
 def _q01_a_q14(ctx: Escenario) -> None:
     consultas = _conftest(ctx).consultas_de_control()
-    # Q18 a Q21 llegan con la spec 008 (FR-021), y este escenario nombra Q01 a Q14.
-    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    # Q16 y Q17 llegan con la spec 005 y Q18 a Q21 con la spec 008 (FR-021), y este escenario nombra Q01 a Q14.
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(16, 22))]
     for nombre, consulta in ((n, c) for n, c in consultas.items() if n <= "Q14"):
         assert ctx.filas(consulta) == [], f"{nombre} devuelve filas"
 

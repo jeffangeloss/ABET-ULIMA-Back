@@ -515,8 +515,9 @@ def _r17_de_b(ctx: Escenario, p1: str, p2: str, p3: str) -> None:
 @then(parsers.re(r'cada una de las consultas de control (?P<lista>Q[0-9]{2}(?:, Q[0-9]{2})* y Q[0-9]{2}) devuelve 0 filas'))
 def _cada_control_en_cero(ctx: Escenario, lista: str) -> None:
     consultas = _consultas_de_control()
-    # Q18 a Q21 llegan con la spec 008 (FR-021), y estos escenarios nombran solo consultas de Q01 a Q14.
-    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    # Q16 y Q17 llegan con la spec 005 y Q18 a Q21 con la spec 008 (FR-021), y estos escenarios nombran solo
+    # consultas de Q01 a Q14.
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(16, 22))]
     for nombre in lista.replace(" y ", ", ").split(", "):
         assert ctx.filas(consultas[nombre]) == [], f"{nombre} devuelve filas"
 

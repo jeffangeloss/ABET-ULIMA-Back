@@ -397,3 +397,106 @@ def test_br_mejora_12_la_comprobacion_de_crear_rol_app_detiene_un_permiso_de_mas
         assert conexion.execute("SELECT has_table_privilege(%s, 'abet.mejora_declaracion', 'SELECT'),"
                                 " has_column_privilege(%s, 'abet.mejora_declaracion_pi', 'causa', 'UPDATE')",
                                 (base.rol_app, base.rol_app)).fetchone() == (True, False)
+
+
+# Q16 y Q17 de db/pruebas/pruebas.sql y db/plataforma/neon/controles_neon.sql (T039, BR-MEJORA-11)
+
+CONTROLES = RAIZ / "db" / "plataforma" / "neon" / "controles_neon.sql"
+
+
+def _consultas_de_control() -> dict[str, str]:
+    texto = CONTROLES.read_text(encoding="utf-8")
+    bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
+    return {nombre: consulta.strip() for nombre, consulta in bloques}
+
+
+def _declarar_410(conexion: psycopg.Connection, pis: tuple[str, ...] = ("5.1", "5.2", "5.3")) -> int:
+    _borrador(conexion)
+    declaracion_id = _declaracion(conexion)
+    for pi in pis:
+        _fila_declarada(conexion, declaracion_id, pi=pi)
+    return declaracion_id
+
+
+def test_br_mejora_11_controles_neon_trae_q16_y_q17() -> None:
+    consultas = _consultas_de_control()
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(16, 22))]
+    assert "mejora_borrador_pi" in consultas["Q16"] and "mejora_declaracion_pi" in consultas["Q16"]
+    assert "CALIFICADO" in consultas["Q17"] and "PUBLICADA" in consultas["Q17"]
+
+
+def test_br_mejora_11_q16_usa_el_patron_de_los_checks(base: Any) -> None:
+    with psycopg.connect(base.conexion) as conexion:
+        definicion = conexion.execute("SELECT pg_get_constraintdef(oid) FROM pg_constraint"
+                                      " WHERE conname = 'ck_mejora_borrador_pi_sin_codigos'").fetchone()[0]
+    [patron] = set(re.findall(r"'([^']*)'::text", definicion))
+    assert _consultas_de_control()["Q16"].count(f"'{patron}'") == 4
+
+
+def test_br_mejora_11_q16_y_q17_dan_0_filas_con_una_declaracion_sana(dueno: psycopg.Connection) -> None:
+    _declarar_410(dueno)
+    consultas = _consultas_de_control()
+    assert dueno.execute(consultas["Q16"]).fetchall() == []
+    assert dueno.execute(consultas["Q17"]).fetchall() == []
+
+
+def test_br_mejora_11_q17_ve_el_pi_con_calificados_que_falta_en_la_vigente(dueno: psycopg.Connection) -> None:
+    _declarar_410(dueno, ("5.1", "5.2"))
+    carga_id, _ = _ids(dueno)
+    filas = dueno.execute(_consultas_de_control()["Q17"]).fetchall()
+    assert filas == [(carga_id, "5.3")]
+    assert all(CAUSA not in str(valor) and ACCION not in str(valor) for fila in filas for valor in fila)
+
+
+def test_br_mejora_11_q17_mira_solo_la_declaracion_vigente(dueno: psycopg.Connection) -> None:
+    # Una declaración anterior incompleta no cuenta si la vigente, la de mayor declaracion_id, está completa.
+    declaracion_id = _declaracion(dueno)
+    _borrador(dueno)
+    _fila_declarada(dueno, declaracion_id, pi="5.1")
+    vigente = _declaracion(dueno)
+    for pi in ("5.1", "5.2", "5.3"):
+        _fila_declarada(dueno, vigente, pi=pi)
+    assert dueno.execute(_consultas_de_control()["Q17"]).fetchall() == []
+
+
+def test_br_mejora_11_q17_no_mira_una_carga_que_no_esta_publicada(dueno: psycopg.Connection) -> None:
+    _declarar_410(dueno, ("5.1",))
+    carga_id, _ = _ids(dueno)
+    dueno.execute("UPDATE abet.carga SET estado = 'RECHAZADA' WHERE carga_id = %s", (carga_id,))
+    assert dueno.execute(_consultas_de_control()["Q17"]).fetchall() == []
+
+
+def test_br_mejora_11_q17_no_pide_el_pi_sin_calificaciones(dueno: psycopg.Connection) -> None:
+    _declarar_410(dueno, ("5.1", "5.2"))
+    carga_id, _ = _ids(dueno)
+    dueno.execute("UPDATE abet.medicion m SET estado_evidencia = 'SIN_EVIDENCIA', nivel_original = NULL FROM abet.pi p"
+                  " WHERE p.pi_id = m.pi_id AND p.codigo = '5.3' AND m.carga_id = %s", (carga_id,))
+    assert dueno.execute(_consultas_de_control()["Q17"]).fetchall() == []
+
+
+@pytest.mark.parametrize("tabla", ["borrador", "declaracion"])
+def test_br_mejora_11_q16_ve_un_codigo_que_salta_el_check(dueno: psycopg.Connection, tabla: str) -> None:
+    dueno.execute(f"ALTER TABLE abet.mejora_{tabla}_pi DROP CONSTRAINT ck_mejora_{tabla}_pi_sin_codigos")
+    declaracion_id = _declarar_410(dueno)
+    if tabla == "borrador":
+        dueno.execute("UPDATE abet.mejora_borrador_pi SET accion = '99000004 no entregó'")
+    else:
+        dueno.execute("UPDATE abet.mejora_declaracion_pi SET causa = 'escribir a alguien@example.invalid'"
+                      " WHERE declaracion_id = %s AND pi_id = %s", (declaracion_id, _pi(dueno, "5.2")))
+    filas = dueno.execute(_consultas_de_control()["Q16"]).fetchall()
+    assert len(filas) == 1
+    assert not any("99000004" in str(valor) or "@" in str(valor) for valor in filas[0])
+
+
+def test_br_mejora_11_controles_neon_cierra_con_q16_a_q21_desde_v1_15(base_desechable: ModuleType,
+                                                                     base: Any) -> None:
+    salida = base_desechable._psql(base.nombre, "-f", str(CONTROLES))
+    assert "RESULTADO: Q01 a Q14 y Q16 a Q21 devuelven 0 filas." in salida.splitlines()
+
+
+def test_br_mejora_11_controles_neon_sigue_sirviendo_antes_de_v1_15(base_desechable: ModuleType) -> None:
+    with base_desechable.abierta(hasta=(1, 14)) as anterior:
+        salida = base_desechable._psql(anterior.nombre, "-f", str(CONTROLES))
+    lineas = salida.splitlines()
+    assert "RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas." in lineas
+    assert "Q16 y Q17 esperan a V1_15 (spec 005), que esta base todavía no tiene." in lineas

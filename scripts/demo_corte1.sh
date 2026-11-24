@@ -138,7 +138,7 @@ libro.close()' "$R17" 2>&1 || true)"
 
 paso "Consultas de control Q01 a Q14"
 CONTROLES="$(psql -X -q -d "$BD" -f "$RAIZ/db/plataforma/neon/controles_neon.sql" 2>&1 || true)"
-espera "Q01 a Q14 y Q18 a Q21 en cero" "RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas." "$CONTROLES"
+espera "Q01 a Q14 y Q16 a Q21 en cero" "RESULTADO: Q01 a Q14 y Q16 a Q21 devuelven 0 filas." "$CONTROLES"
 
 if [ "$VARIAS" -eq 1 ]; then
     V=docente.varias@example.invalid
