@@ -100,12 +100,13 @@ def _repetibles(ctx: Escenario) -> None:
 
 
 def _controles() -> dict[str, str]:
-    """Q01 a Q14 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql."""
+    """Q01 a Q14 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql. Desde la spec 008 el archivo
+    suma Q18 a Q21 (FR-021), que estos escenarios de la spec 001 no nombran."""
     texto = CONTROLES.read_text(encoding="utf-8")
     bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
     consultas = {nombre: consulta.strip() for nombre, consulta in bloques}
-    assert sorted(consultas) == [f"Q{n:02d}" for n in range(1, 15)]
-    return consultas
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    return {nombre: consulta for nombre, consulta in consultas.items() if nombre <= "Q14"}
 
 
 def _conexion_de_la_aplicacion(ctx: Escenario) -> None:
@@ -346,7 +347,7 @@ PUBLICAR = (
        JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
        JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
        JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
-       JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+       JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
        JOIN acceso.usuario_autorizado u ON u.correo = 'docente411@example.invalid'
        WHERE s.numero = '411'""",
     """INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id,

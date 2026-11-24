@@ -1,13 +1,13 @@
--- Consultas de control Q01 a Q14 para la base de Neon (US-01, FR-001, SC-002 y T027). Son copia literal de las de
--- db/pruebas/pruebas.sql, escritas como consultas sueltas, y db/pruebas/correr_pruebas.sh comprueba que no se
--- aparten de ellas. Cada consulta debe devolver 0 filas.
+-- Consultas de control Q01 a Q14 y, desde la spec 008, Q18 a Q21 para la base de Neon (US-01, FR-001, SC-002, T027
+-- y FR-021 de la spec 008). Son copia literal de las de db/pruebas/pruebas.sql, escritas como consultas sueltas, y
+-- db/pruebas/correr_pruebas.sh comprueba que no se aparten de ellas. Cada consulta debe devolver 0 filas.
 -- Se corre con el usuario abet_respaldo, de solo lectura, y la conexión directa, en cada rama de Neon.
 --
 --   psql "host=$NEON_HOST dbname=$NEON_DB user=abet_respaldo sslmode=verify-full sslrootcert=system" \
 --        -f db/plataforma/neon/controles_neon.sql
 --
 -- La sesión pasa a solo lectura antes de la primera consulta, así que el script no escribe aunque lo corra el dueño
--- de la base. Al final informa si las catorce consultas devuelven 0 filas; si alguna devuelve filas, termina con
+-- de la base. Al final informa si las dieciocho consultas devuelven 0 filas; si alguna devuelve filas, termina con
 -- error para que la terminal o la integración continua (continuous integration, CI) lo noten. Las filas que muestra
 -- una consulta con falla son identificadores internos y nombres de columnas, nunca códigos ni nombres de estudiantes.
 
@@ -100,10 +100,36 @@ SHOW default_transaction_read_only;
  WHERE a.estado = 'REEMPLAZADA' AND NOT EXISTS (SELECT 1 FROM abet.carga n WHERE n.reemplaza_carga_id = a.carga_id);
 \set q14 :ROW_COUNT
 
-SELECT (:q01 + :q02 + :q03 + :q04 + :q05 + :q06 + :q07 + :q08 + :q09 + :q10 + :q11 + :q12 + :q13 + :q14) = 0
+\echo 'Q18. Curso con plan de medición de dos carreras en el mismo periodo (spec 008).'
+ SELECT a.codigo AS asignatura, pe.codigo AS periodo FROM abet.plan_medicion pm
+ JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
+ GROUP BY a.codigo, pe.codigo HAVING count(DISTINCT pm.carrera_id) > 1;
+\set q18 :ROW_COUNT
+
+\echo 'Q19. Carrera con plan de medición sin conjunto de reglas (spec 008).'
+ SELECT DISTINCT c.codigo AS carrera, pe.codigo AS periodo FROM abet.plan_medicion pm
+ JOIN abet.carrera c ON c.carrera_id = pm.carrera_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
+ WHERE NOT EXISTS (SELECT 1 FROM abet.conjunto_reglas cr WHERE cr.carrera_id = pm.carrera_id);
+\set q19 :ROW_COUNT
+
+\echo 'Q20. Cuenta COORDINADOR activa sin alcance o con secciones propias en acceso.docente_seccion (spec 008).'
+ SELECT u.usuario_id, u.rol FROM acceso.usuario_autorizado u
+ WHERE u.rol = 'COORDINADOR' AND u.activo
+   AND (NOT EXISTS (SELECT 1 FROM acceso.coordinacion_alcance ca WHERE ca.usuario_id = u.usuario_id)
+        OR EXISTS (SELECT 1 FROM acceso.docente_seccion d WHERE d.usuario_id = u.usuario_id));
+\set q20 :ROW_COUNT
+
+\echo 'Q21. Sección cuyo curso de Blackboard no declara su periodo, su asignatura y su número (spec 008).'
+ SELECT s.seccion_id, s.numero, a.codigo AS asignatura, pe.codigo AS periodo FROM abet.seccion s
+ JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id
+ WHERE s.curso_blackboard IS NOT NULL
+   AND s.curso_blackboard !~ ('(^|_)' || pe.anio || pe.ciclo || '_' || a.codigo || '_' || s.numero || '$');
+\set q21 :ROW_COUNT
+
+SELECT (:q01 + :q02 + :q03 + :q04 + :q05 + :q06 + :q07 + :q08 + :q09 + :q10 + :q11 + :q12 + :q13 + :q14 + :q18 + :q19 + :q20 + :q21) = 0
        AS controles_en_cero \gset
 \if :controles_en_cero
-    \echo 'RESULTADO: Q01 a Q14 devuelven 0 filas.'
+    \echo 'RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.'
 \else
     \echo 'RESULTADO: al menos una consulta de control devuelve filas, con el detalle en su bloque de arriba.'
     DO $$ BEGIN RAISE EXCEPTION 'Consultas de control con filas'; END $$;

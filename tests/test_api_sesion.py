@@ -83,7 +83,9 @@ def test_br_acceso_03_un_usuario_autorizado_entra_con_su_contrasena(api: object,
     assert fila[0][0] == hashlib.sha256(token.encode()).hexdigest() != token
     assert fila[0][1].total_seconds() == 12 * 3600
     actual = cliente.get("/api/sesion")
-    assert actual.status_code == 200 and actual.json() == {"correo": A.DOCENTE_410, "rol": "PROFESOR"}
+    # Desde la spec 008 la sesión suma el campo aditivo alcance (BR-ACCESO-13), SECCIONES para el profesor.
+    assert actual.status_code == 200 and actual.json() == {
+        "correo": A.DOCENTE_410, "rol": "PROFESOR", "alcance": {"tipo": "SECCIONES", "carreras": [], "asignaturas": []}}
     assert token not in respuesta.text and clave not in respuesta.text
     assert clave not in caplog.text and token not in caplog.text
 
@@ -309,7 +311,8 @@ def test_la_cookie_sin_secure_solo_se_admite_con_una_base_local_fuera_de_vercel(
 
 @pytest.mark.parametrize(("cambio", "mensaje"), [
     ({"periodo_vigente": "2027-1"}, "PERIODO_VIGENTE 2027-1 no existe en abet.periodo"),
-    ({"carga": A.Configuracion(conjunto_reglas="R-NO-EXISTE")}, "CONJUNTO_REGLAS R-NO-EXISTE no existe para Ambiental"),
+    # Desde la spec 008 el mensaje nombra la carrera con plan que no tiene el conjunto (BR-PERIODO-06).
+    ({"carga": A.Configuracion(conjunto_reglas="R-NO-EXISTE")}, "CONJUNTO_REGLAS R-NO-EXISTE no existe para la carrera AMB."),
 ])
 def test_la_api_se_detiene_si_la_base_no_tiene_el_periodo_o_las_reglas(api: object, cambio: dict, mensaje: str) -> None:
     with pytest.raises(ConfiguracionDeLaApi, match=mensaje), TestClient(crear_app(replace(api.ajustes, **cambio))):

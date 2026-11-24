@@ -22,6 +22,10 @@ lo que repiten sus Antecedentes y sus escenarios.
 - Las etiquetas. Los escenarios del corte 2 corren desde T087, salvo los de US-20 (@US-20), que se omiten
   con su razón, porque el código de acceso por correo espera a T018, el dominio y la cuenta de Resend de
   Jefferson (T083 y T086).
+- La spec 008 (T013 de su tasks.md). Las migraciones llegan hasta V1_15, el rol admite el guion bajo, las listas de
+  «no ganan ninguna fila» admiten tablas de acceso, las consultas de control admiten rangos como «Q01 a Q14 y Q18
+  a Q21», la base desechable de la spec 008 nombra cada pieza que le falta con su tarea, y cada escenario
+  @playwright registra su prueba de e2e/ del Front con registrar_playwright().
 
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
@@ -35,6 +39,7 @@ import importlib.util
 import io
 import re
 import secrets
+import subprocess
 import sys
 import zipfile
 from collections.abc import Iterator
@@ -49,6 +54,7 @@ import pytest
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from pytest_bdd import given, parsers, then, when
+from pytest_bdd.scenario import scenario_wrapper_template_registry
 
 from abet_carga.carga import Configuracion
 
@@ -56,6 +62,15 @@ RAIZ = Path(__file__).resolve().parents[3]
 CONTROLES = RAIZ / "db" / "plataforma" / "neon" / "controles_neon.sql"
 GUARDIA_SQL = "db/plataforma/neon/guardia_datos_inventados.sql"
 VARIAS_SQL = RAIZ / "db" / "datos" / "varias_secciones_2026_2_inventado.sql"
+MIGRACIONES = RAIZ / "db" / "migration"
+# Spec 008. Guiones de datos de la base desechable de Química General, que llegan con T022 a T024.
+ALCANCE_AMB_SQL = RAIZ / "db" / "datos" / "alcance_coordinacion_ambiental.sql"
+QUIMICA_SQL = RAIZ / "db" / "datos" / "quimica_2026_1_inventado.sql"
+PLAN_QUIMICA_SQL = RAIZ / "db" / "datos" / "plan_quimica_2026_1.sql"
+DESCRIPCION_DE_PRUEBA = "Texto de prueba del Portafolio 3"
+# Tablas de abet que escriben los guiones de datos de la spec 008 (vigencia, plan y secciones), que Escenario.conteos()
+# suma a las de la carga para las listas de «no ganan ninguna fila».
+DE_LOS_GUIONES_008 = ("catalogo_vigencia", "plan_medicion", "seccion")
 ASIGNATURA = "450002"
 # Campos que un error del corte 2 suma a detail (contrato, sección 3.1).
 CAMPOS_EXTRA_DE_UN_ERROR = frozenset({"requiere_confirmacion", "carga_publicada"})
@@ -88,7 +103,8 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
 
 # Resumen de los pasos que no comprueban todo en el Back
 
-PROPIEDADES_A_LA_VISTA = ("criterio_relajado", "delegado_a_preflight", "delegado_a_vitest", "sin_casos", "valor_buscado")
+PROPIEDADES_A_LA_VISTA = ("criterio_relajado", "delegado_a_playwright", "delegado_a_preflight", "delegado_a_vitest",
+                          "sin_casos", "valor_buscado")
 
 
 def pytest_terminal_summary(terminalreporter: Any) -> None:
@@ -120,9 +136,60 @@ VARIANTES = {
     # Spec 006. Sin los datos de 2026-2, con el rol de la aplicación para GET /api/secciones, y con la base de
     # partida que siembra tests/cargas_de_prueba.base_de_partida_006() en la plantilla (FR-012).
     "programacion": {"datos_2026_2": False},
+    # Spec 008. Los datos de 2026-2 con la siembra de Química en SIEMBRAS, y la base de partida del catálogo de
+    # Industrial, que aplica las migraciones hasta V1_11 y deja V1_12 a su escenario.
+    "quimica": {},
+    "quimica_plan": {},
+    "catalogo_industrial": {"hasta": (1, 11)},
+    # Corrección del 2026-11-23 a T027. El alcance de Ambiental y el plan de 5643 en 2026-1, sin las secciones de
+    # Química, para el escenario de la programación de capacitacion_en_develop.feature.
+    "quimica_plan_sin_secciones": {},
+    # Spec 007, etapa B, construida en T038 de la spec 008. Los datos de 2026-2 con el plan de 450010 en 2026-2.
+    "avance": {},
 }
+
+
+def correr_guion(conexion: psycopg.Connection, guion: Path, variables: dict[str, str],
+                 entorno: dict[str, str] | None = None) -> None:
+    """Guion de db/ corrido con psql sobre la base de la conexión, con sus variables -v y, si las pide por \\getenv,
+    las de entorno, siempre en el clúster desechable que exige tests/base_desechable.py."""
+    base_desechable = _modulo_de_pruebas("base_desechable")
+    completo = {**base_desechable._entorno(), **(entorno or {})}
+    argumentos = [f"{clave}={valor}" for clave, valor in variables.items()]
+    corrida = subprocess.run(
+        [completo.get("PSQL", "psql"), "-X", "-q", "-v", "ON_ERROR_STOP=1",
+         *[parte for argumento in argumentos for parte in ("-v", argumento)],
+         "-d", conexion.info.dbname, "-f", str(guion)],
+        env=completo, capture_output=True, text=True, check=False)
+    assert corrida.returncode == 0, f"{guion.name}: {corrida.stderr.strip() or corrida.stdout.strip()}"
+
+
+def sembrar_quimica(conexion: psycopg.Connection) -> None:
+    """Alcance de Ambiental (T023) antes que la siembra inventada de Química (T024), para que solo las coordinaciones
+    de hoy reciban la carrera AMB, como en el orden de FR-020 de la spec 008."""
+    correr_guion(conexion, ALCANCE_AMB_SQL, {"aplicar": "1"})
+    correr_guion(conexion, QUIMICA_SQL, {})
+
+
+def sembrar_quimica_con_plan(conexion: psycopg.Connection) -> None:
+    """sembrar_quimica() y el plan de 5643 en 2026-1 con el guion de T022 (FR-006), con el PI 6.1 y la descripción de
+    prueba, que llega por \\getenv como en Neon y no por un argumento."""
+    sembrar_quimica(conexion)
+    correr_guion(conexion, PLAN_QUIMICA_SQL, {"aplicar": "1", "pi": "6.1"},
+                 {"DESCRIPCION_INSTRUMENTO": DESCRIPCION_DE_PRUEBA})
+
+
+def sembrar_plan_sin_secciones(conexion: psycopg.Connection) -> None:
+    """Alcance de Ambiental y plan de 5643 en 2026-1 con el PI 6.1, sin quimica_2026_1_inventado.sql, así la
+    programación de la siembra trae las secciones de Química (capacitacion_en_develop.feature, US-86)."""
+    correr_guion(conexion, ALCANCE_AMB_SQL, {"aplicar": "1"})
+    correr_guion(conexion, PLAN_QUIMICA_SQL, {"aplicar": "1", "pi": "6.1"},
+                 {"DESCRIPCION_INSTRUMENTO": DESCRIPCION_DE_PRUEBA})
+
+
 # Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
-SIEMBRAS = {"programacion": C.base_de_partida_006}
+SIEMBRAS = {"programacion": C.base_de_partida_006, "quimica": sembrar_quimica, "quimica_plan": sembrar_quimica_con_plan,
+            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones, "avance": C.base_del_avance_007}
 
 
 class Plantillas:
@@ -221,6 +288,21 @@ class Escenario:
     def filas(self, consulta: str, *parametros: object) -> list[tuple[Any, ...]]:
         return self.api.dueno.execute(consulta, parametros or None).fetchall()
 
+    def conteos(self) -> dict[str, int]:
+        """Filas de las tablas de la carga, con su nombre sin esquema, y de cada tabla de acceso, como «acceso.X».
+
+        Las listas de «no ganan ninguna fila» comparan con este conteo, así que un escenario que nombra una tabla de
+        acceso toma su conteo previo con este método y no con api.conteos(), que cuenta solo las de abet. Desde la spec 008
+        suma también las tablas de abet que escriben los guiones de datos de Química (DE_LOS_GUIONES_008).
+        """
+        de_acceso = [fila[0] for fila in self.filas(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'acceso'"
+            " AND table_type = 'BASE TABLE' ORDER BY table_name")]
+        de_los_guiones = {tabla: int(self.api.uno(sql.SQL("SELECT count(*) FROM abet.{}").format(sql.Identifier(tabla))))
+                          for tabla in DE_LOS_GUIONES_008}
+        return {**self.api.conteos(), **de_los_guiones, **{f"acceso.{tabla}": int(self.api.uno(
+            sql.SQL("SELECT count(*) FROM acceso.{}").format(sql.Identifier(tabla)))) for tabla in de_acceso}}
+
     def cuenta(self, tabla: str, donde: str = "true", *parametros: object) -> int:
         consulta = sql.SQL("SELECT count(*) FROM abet.{} WHERE ").format(sql.Identifier(tabla)) + sql.SQL(donde)
         return int(self.api.dueno.execute(consulta, parametros or None).fetchone()[0])
@@ -242,7 +324,7 @@ class Escenario:
         """POST del export con la sesión de correo. Guarda el conteo previo, la respuesta y la carga que trae."""
         cliente = self.sesion(correo)
         seccion_id = self.seccion_id(seccion, asignatura)
-        self.antes = self.api.conteos()
+        self.antes = self.conteos()
         self.carga_id = None
         self.respuesta = A.subir(cliente, seccion_id, contenido, nombre, **opciones)
         self.ultimo = (contenido, nombre)
@@ -272,6 +354,38 @@ class Escenario:
     def copia_de(self, texto: str) -> tuple[bytes, str]:
         """Archivo que describe una frase como «una copia de "X" con ...». Devuelve sus bytes y su nombre."""
         return armar_archivo(self, texto)
+
+    # Spec 008. Secciones, exports y peticiones de Química General (T030 a T033)
+
+    def seccion_de(self, numero: str, asignatura: str | None = None, periodo: str | None = None) -> int:
+        """Sección por su número. Sin asignatura, la 70N es de 5643 y las demás de 450002, y sin periodo, 5643 va en
+        2026-1 y 450002 en 2026-2, como en los datos inventados de la spec 008."""
+        asignatura = asignatura or ("5643" if numero.startswith("70") else ASIGNATURA)
+        periodo = periodo or ("2026-1" if asignatura == "5643" else "2026-2")
+        return int(self.uno("SELECT s.seccion_id FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                            " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
+                            " WHERE a.codigo = %s AND s.numero = %s AND pe.codigo = %s", asignatura, numero, periodo))
+
+    def export_de_quimica(self, numero: str, niveles: tuple[int, ...] = (3, 4, 2, 3), periodo: str = "20261",
+                          texto: bool = False) -> tuple[bytes, str]:
+        """Export inventado de una sección de 5643, con la hoja y el nombre que declaran su curso y la columna del PI
+        6.1, en .xlsx o como texto UTF-16 con tabuladores. Los códigos son del rango 99 y distintos en cada sección."""
+        g = self.generador
+        curso = f"SINTETICO_{periodo}_5643_{numero}"
+        filas = tuple((f"Inventado {n:02d}", "Estudiante", 99100000 + int(numero) * 100 + n, nivel)
+                      for n, nivel in enumerate(niveles, start=1))
+        export = g.Export(f"gc_{curso}_f", ("Last Name", "First Name", "Username",
+                                            "ABET SO6.1 [Total Pts: 4 Score] |9000061"), filas)
+        if texto:
+            return g.a_texto(export, separador="\t", codificacion="utf-16"), f"gc_{curso}_fullgc_2026-07-15-00-00-00.xls"
+        return bytes(g.a_bytes(export)), f"gc_{curso}_fullgc_2026-07-15-00-00-00.xlsx"
+
+    def pedir(self, ruta: str) -> Any:
+        """GET de la ruta con la sesión de quien la inició al último, o sin cookie si el escenario no inició ninguna."""
+        correo = self.extras.get("con_sesion")
+        cliente = self.sesion(correo) if correo else self.api.cliente()
+        self.respuesta = cliente.get(ruta)
+        return self.respuesta
 
 
 @pytest.fixture
@@ -780,21 +894,35 @@ def contenedor_ole_sin_cifrado(generador: ModuleType) -> bytes:
 
 # Antecedentes
 
-@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|10|11)(?P<resto>.*)'))
+# Migraciones que llegan después de V1_11 y la tarea que construye cada una. La spec 008 toma V1_12 a V1_14 y la V1_12
+# de la spec 005 pasa a V1_15 (FR-004 de la spec 008).
+MIGRACIONES_POR_LLEGAR = {"12": "T020 de la spec 008", "13": "T021 de la spec 008", "14": "T023 de la spec 008",
+                          "15": "T021 de la spec 005"}
+
+
+def migraciones_que_faltan(ultima: str, carpeta: Path = MIGRACIONES) -> list[str]:
+    """Migraciones de V1_12 hasta la última que pide un escenario y que todavía no están en db/migration."""
+    return [f"falta la migración V1_{version} ({tarea})" for version, tarea in MIGRACIONES_POR_LLEGAR.items()
+            if int(version) <= int(ultima) and not list(carpeta.glob(f"V1_{version}__*.sql"))]
+
+
+@given(parsers.re(r'una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_(?P<ultima>09|1[0-5])(?![0-9])(?P<resto>.*)'))
 def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
+    faltan = migraciones_que_faltan(ultima)
+    assert not faltan, "; ".join(faltan)
     con_varias = "varias_secciones_2026_2_inventado.sql" in resto
     guardia = ctx.request.node.get_closest_marker("guardia_en_base") is not None
     ctx.crear_base("varias" if con_varias else "guardia" if guardia else "periodo")
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'acceso'"
                    " AND table_name = 'usuario_autorizado'") == 1, "falta la migración V1_09"
-    if ultima in ("10", "11"):
+    if int(ultima) >= 10:
         # V1_10 reemplaza ck_carga_columna_encabezado por la regla J-19 y suma SIN_CALIFICACIONES a los motivos.
         definiciones = dict(ctx.filas("SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname IN"
                                       " ('ck_carga_columna_encabezado', 'ck_rechazo_fila_motivo')"))
         assert "[Aa][Bb][Ee][Tt]" in definiciones.get("ck_carga_columna_encabezado", ""), "falta la migración V1_10"
         assert "SIN_CALIFICACIONES" in definiciones.get("ck_rechazo_fila_motivo", ""), "falta la migración V1_10"
-    if ultima == "11":
+    if int(ultima) >= 11:
         # V1_11 suma abet.plan_medicion.descripcion_instrumento con ck_plan_medicion_descripcion (spec 005, US-51).
         assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
             "falta la migración V1_11"
@@ -824,7 +952,7 @@ def _plan_registrado(ctx: Escenario, pis: str, asignatura: str, periodo: str) ->
     assert registrados == esperados
 
 
-@given(parsers.re(r'(?:que )?"(?P<correo>[^"]+)" tiene la sesión iniciada con rol "(?P<rol>[A-Z]+)"'
+@given(parsers.re(r'(?:que )?"(?P<correo>[^"]+)" tiene la sesión iniciada con rol "(?P<rol>[A-Z_]+)"'
                   r'(?: y acceso\.docente_seccion le asigna la sección (?P<numero>[0-9]+)'
                   r'(?: de "(?P<asignatura>[0-9]+)" en "(?P<periodo>[^"]+)")?)?'))
 def _sesion_iniciada(ctx: Escenario, correo: str, rol: str, numero: str | None, asignatura: str | None,
@@ -874,7 +1002,7 @@ def _subido_a_la_seccion(ctx: Escenario, que: str, quien: str | None, numero: st
     if estado is not None:
         assert respuesta.json()["estado"] == estado
         assert ctx.cuenta("rechazo_fila", "carga_id = %s AND motivo = %s", ctx.carga_previa, motivo) >= 1
-    ctx.antes = ctx.api.conteos()
+    ctx.antes = ctx.conteos()
 
 
 # Cuando, subidas
@@ -982,18 +1110,23 @@ def _archivo_origen_con(ctx: Escenario, n: str, pares: str) -> None:
 
 # Entonces, lo que gana o no gana la base
 
-def _tablas(lista: str) -> list[str]:
-    return re.findall(r"abet\.(\w+)", lista)
+def tablas_de(lista: str) -> list[tuple[str, str]]:
+    """Esquema y nombre de cada tabla de una lista como «abet.carga, abet.medicion y acceso.sesion»."""
+    return re.findall(r"\b(abet|acceso)\.(\w+)", lista)
 
 
-LISTA = r"abet\.\w+(?:(?:, | y )abet\.\w+)*"
+# Tablas de abet y, desde la spec 008, de acceso (T013), como «acceso.usuario_autorizado y acceso.coordinacion_alcance».
+TABLA = r"(?:abet|acceso)\.\w+"
+LISTA = rf"{TABLA}(?:(?:, | y ){TABLA})*"
 
 
 @then(parsers.re(rf'(?P<lista>{LISTA}) no ganan ninguna fila'))
 def _no_ganan(ctx: Escenario, lista: str) -> None:
-    ahora = ctx.api.conteos()
-    for tabla in _tablas(lista):
-        assert ahora[tabla] == ctx.antes[tabla], f"abet.{tabla} cambió de {ctx.antes[tabla]} a {ahora[tabla]} filas"
+    ahora = ctx.conteos()
+    for esquema, tabla in tablas_de(lista):
+        clave = tabla if esquema == "abet" else f"{esquema}.{tabla}"
+        assert clave in ctx.antes, f"el escenario no tomó el conteo previo de {esquema}.{tabla}, que da ctx.conteos()"
+        assert ahora[clave] == ctx.antes[clave], f"{esquema}.{tabla} cambió de {ctx.antes[clave]} a {ahora[clave]} filas"
 
 
 @then(parsers.re(rf'(?P<lista>{LISTA}) no gana ninguna fila'))
@@ -1009,7 +1142,8 @@ def _gana(ctx: Escenario, tabla: str, n: str) -> None:
 @then(parsers.re(rf'(?P<lista>{LISTA}) no tienen? filas de esa carga'))
 def _sin_filas_de_la_carga(ctx: Escenario, lista: str) -> None:
     assert ctx.carga_id is not None
-    for tabla in _tablas(lista):
+    for esquema, tabla in tablas_de(lista):
+        assert esquema == "abet", f"{esquema}.{tabla} no guarda filas de una carga"
         assert ctx.cuenta(tabla, "carga_id = %s", ctx.carga_id) == 0, tabla
 
 
@@ -1018,20 +1152,49 @@ def _ninguna_en_curso(ctx: Escenario) -> None:
     assert ctx.cuenta("carga", "estado = 'EN_CURSO'") == 0
 
 
-# Entonces, consultas de control Q01 a Q14
+# Entonces, consultas de control Q01 a Q14 y, desde la spec 008, Q18 a Q21
+
+# controles_neon.sql trae siempre Q01 a Q14 y admite Q16 y Q17 de la spec 005 y Q18 a Q21 de la spec 008 (FR-021).
+# Q15 vive solo en db/pruebas/pruebas.sql.
+CONTROLES_OBLIGATORIOS = tuple(f"Q{n:02d}" for n in range(1, 15))
+CONTROLES_ADMITIDOS = frozenset(CONTROLES_OBLIGATORIOS) | {f"Q{n:02d}" for n in range(16, 22)}
+CONTROL = r"Q[0-9]{2}(?: a Q[0-9]{2})?"
+
 
 def consultas_de_control() -> dict[str, str]:
-    """Q01 a Q14 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql."""
+    """Consultas de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql."""
     texto = CONTROLES.read_text(encoding="utf-8")
     bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
     return {nombre: consulta.strip() for nombre, consulta in bloques}
 
 
-@then(parsers.re(r'(?:la consulta|las consultas) de control (?P<lista>Q[0-9]{2}(?:, Q[0-9]{2})*(?: y Q[0-9]{2})?) devuelven? 0 filas'))
+def controles_de(lista: str) -> list[str]:
+    """Consultas de una lista como «Q01 a Q14 y Q18 a Q21» o «Q05 y Q18», en el orden en que la lista las nombra."""
+    nombres = []
+    for desde, hasta in re.findall(r"Q([0-9]{2})(?: a Q([0-9]{2}))?", lista):
+        if hasta:
+            assert int(desde) < int(hasta), f"el rango Q{desde} a Q{hasta} no va de menor a mayor"
+            nombres += [f"Q{n:02d}" for n in range(int(desde), int(hasta) + 1)]
+        else:
+            nombres.append(f"Q{desde}")
+    return nombres
+
+
+def exigir_controles(consultas: dict[str, str], pedidas: list[str]) -> None:
+    """controles_neon.sql con Q01 a Q14, solo consultas admitidas y cada consulta que pide el escenario."""
+    faltan = [nombre for nombre in CONTROLES_OBLIGATORIOS if nombre not in consultas]
+    assert not faltan, f"controles_neon.sql: faltan {' y '.join([', '.join(faltan[:-1]), faltan[-1]] if faltan[:-1] else faltan)}"
+    for nombre in sorted(consultas):
+        assert nombre in CONTROLES_ADMITIDOS, f"{nombre} no es una consulta de controles_neon.sql"
+    for nombre in pedidas:
+        assert nombre in consultas, f"{nombre} no está en controles_neon.sql"
+
+
+@then(parsers.re(rf'(?:la consulta|las consultas) de control (?P<lista>{CONTROL}(?:(?:, | y ){CONTROL})*) devuelven? 0 filas'))
 def _controles_en_cero(ctx: Escenario, lista: str) -> None:
-    consultas = consultas_de_control()
-    assert sorted(consultas) == [f"Q{n:02d}" for n in range(1, 15)]
-    for nombre in re.findall(r"Q[0-9]{2}", lista):
+    consultas, pedidas = consultas_de_control(), controles_de(lista)
+    exigir_controles(consultas, pedidas)
+    for nombre in pedidas:
         assert ctx.filas(consultas[nombre]) == [], f"{nombre} devuelve filas"
 
 
@@ -1062,7 +1225,7 @@ def _conexion_con_carga_en_curso(ctx: Escenario, numero: str, filas: str | None)
     carrera, reglas = ctx.filas(
         "SELECT (SELECT pm.carrera_id FROM abet.plan_medicion pm JOIN abet.seccion s"
         " ON s.asignatura_id = pm.asignatura_id AND s.periodo_id = pm.periodo_id WHERE s.seccion_id = %s LIMIT 1),"
-        " (SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s)", seccion, A.REGLAS)[0]
+        " (SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB'))", seccion, A.REGLAS)[0]
     de_datos = int(filas or 11)
     archivo = ctx.directa.execute(
         "INSERT INTO abet.archivo_origen (sha256, nombre_archivo, hoja, filas_de_datos)"
@@ -1274,3 +1437,94 @@ def _guion_aplicado_006(ctx: Escenario) -> None:
                                str(escribir_archivo_006(ctx, ArchivoDeProgramacion())), aplicar=True)
     assert corrida.returncode == 0, corrida.stdout + corrida.stderr
     assert corrida.stdout.splitlines()[-1] == "Cambios guardados.", corrida.stdout
+
+
+# Spec 008. Base desechable, cuentas con alcance y escenarios @playwright (T013 de su tasks.md)
+
+# Piezas que pide cada forma de la base de la spec 008, con la tarea que construye cada una.
+_PIEZAS_DE_QUIMICA = (("db/migration/V1_12__*.sql", "T020"), ("db/migration/V1_13__*.sql", "T021"),
+                      ("db/migration/V1_14__*.sql", "T023"), ("db/datos/alcance_coordinacion_ambiental.sql", "T023"),
+                      ("db/datos/quimica_2026_1_inventado.sql", "T024"))
+_PIEZAS_DEL_PLAN = (*_PIEZAS_DE_QUIMICA, ("db/datos/plan_quimica_2026_1.sql", "T022"))
+_PIEZAS_DEL_CATALOGO = (("db/referencia/industrial_2026.json", "T026"), ("db/herramientas/generar_v1_12.py", "T020"))
+# Cada forma de los Antecedentes de la spec 008 y su variante. La del R-17 nombra la descripción de prueba, que es la
+# misma del plan, así que usa su plantilla. El catálogo parte de V1_11 con la referencia de 7 SO, 21 PI y 53
+# asignaturas, 15 de ellas ya en AMB-2026 (cambio fechado del 2026-11-23 en spec.md).
+FORMAS_DE_LA_BASE_008 = (
+    (r"con los datos de periodo_2026_2_inventado\.sql y quimica_2026_1_inventado\.sql", "quimica", _PIEZAS_DE_QUIMICA),
+    (r"con el plan de 5643 en 2026-1 y los datos de quimica_2026_1_inventado\.sql", "quimica_plan", _PIEZAS_DEL_PLAN),
+    # Cambio del 2026-11-23 (T030 y T033). Los Antecedentes de alcance_coordinacion.feature y periodo_elegido.feature
+    # suman el plan, porque una carga PUBLICADA de la 701 lo exige y sin la vigencia de IND-2026 en 2026-1 el escenario
+    # de la coordinación de Ambiental no probaría nada.
+    (r"con el plan de 5643 en 2026-1 y los datos de periodo_2026_2_inventado\.sql y quimica_2026_1_inventado\.sql",
+     "quimica_plan", _PIEZAS_DEL_PLAN),
+    (rf'con el plan de 5643 en 2026-1 para "IND" con el PI 6\.1, el instrumento «Portafolio 3» y la descripción '
+     rf'"{re.escape(DESCRIPCION_DE_PRUEBA)}"', "quimica_plan", _PIEZAS_DEL_PLAN),
+    (r"con las migraciones V1_01 a V1_11 y la referencia db/referencia/industrial_2026\.json de 7 SO, 21 PI y 53 "
+     r"asignaturas, 15 de ellas también en AMB-2026", "catalogo_industrial", _PIEZAS_DEL_CATALOGO),
+)
+
+
+def forma_de_la_base_008(resto: str) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """Variante y piezas de una forma de la base de la spec 008. Una forma desconocida no adivina su base."""
+    for patron, variante, piezas in FORMAS_DE_LA_BASE_008:
+        if re.fullmatch(patron, resto):
+            return variante, piezas
+    raise AssertionError(f"la base de la spec 008 «{resto}» no tiene variante en conftest.py")
+
+
+def piezas_que_faltan(piezas: tuple[tuple[str, str], ...], raiz: Path = RAIZ) -> list[str]:
+    """Archivos que una forma de la base pide y que todavía no están en el repositorio, con su tarea."""
+    return [f"{patron} ({tarea})" for patron, tarea in piezas if not list(raiz.glob(patron))]
+
+
+@given(parsers.re(r'una base desechable de la spec 008 (?P<resto>con .+)'))
+def _base_de_la_spec_008(ctx: Escenario, resto: str) -> None:
+    variante, piezas = forma_de_la_base_008(resto)
+    faltan = piezas_que_faltan(piezas)
+    assert not faltan, f"la base de la spec 008 espera {', '.join(faltan)}"
+    ctx.crear_base(variante)
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" con rol "(?P<rol>[A-Z_]+)", activo y con alcance de '
+                  r'(?:la carrera "(?P<carrera>[A-Z]+)"|la asignatura "(?P<asignatura>[0-9]+)" en "(?P<periodo>[^"]+)")'))
+def _con_alcance(ctx: Escenario, correo: str, rol: str, carrera: str | None, asignatura: str | None,
+                 periodo: str | None) -> None:
+    """Cuenta activa con su fila de acceso.coordinacion_alcance (V1_14), que siembran los guiones de datos."""
+    assert ctx.filas("SELECT rol, activo FROM acceso.usuario_autorizado WHERE correo = %s", correo) == [(rol, True)]
+    if carrera is not None:
+        filas = ctx.uno("SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN acceso.usuario_autorizado u"
+                        " USING (usuario_id) JOIN abet.carrera c USING (carrera_id)"
+                        " WHERE u.correo = %s AND c.codigo = %s AND ca.asignatura_id IS NULL", correo, carrera)
+    else:
+        filas = ctx.uno("SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN acceso.usuario_autorizado u"
+                        " USING (usuario_id) JOIN abet.asignatura a USING (asignatura_id)"
+                        " JOIN abet.periodo p USING (periodo_id) WHERE u.correo = %s AND a.codigo = %s"
+                        " AND p.codigo = %s AND ca.carrera_id IS NULL", correo, asignatura, periodo)
+    assert filas == 1, f"{correo} no tiene una sola fila de alcance de {carrera or asignatura}"
+
+
+@when(parsers.re(r'corre la consulta de control (?P<control>Q(?:18|19|20|21))$'))
+def _corre_control_008(ctx: Escenario, control: str) -> None:
+    """Consulta de control nueva de la spec 008 (FR-021), leída de controles_neon.sql, sobre la base del escenario."""
+    consultas = consultas_de_control()
+    exigir_controles(consultas, [control])
+    ctx.extras["control"] = ctx.filas(consultas[control])
+
+
+def registrar_playwright(nodo: Any, escenario: str, etiquetas: set[str], cubiertos: dict[str, list[str]],
+                         texto: str) -> None:
+    """Deja constancia de un paso de un escenario @playwright y de las pruebas de e2e/ del Front que lo comprueban."""
+    assert "playwright" in etiquetas, f"«{escenario}» no lleva @playwright"
+    pruebas = cubiertos.get(escenario)
+    assert pruebas, f"el escenario «{escenario}» no tiene pruebas de e2e/ anotadas"
+    ajenas = [prueba for prueba in pruebas if not prueba.startswith("e2e/")]
+    assert not ajenas, f"«{escenario}» anota pruebas fuera de e2e/: {'; '.join(ajenas)}"
+    nodo.user_properties.append(("delegado_a_playwright", f"{texto} → {'; '.join(pruebas)}"))
+
+
+def delegar_a_playwright(request: pytest.FixtureRequest, cubiertos: dict[str, list[str]], texto: str) -> None:
+    """registrar_playwright() con el escenario que pytest-bdd arma para la prueba en curso."""
+    plantilla = scenario_wrapper_template_registry[request.node.function]
+    registrar_playwright(request.node, plantilla.name, set(plantilla.tags), cubiertos, texto)

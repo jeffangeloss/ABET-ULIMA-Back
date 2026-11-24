@@ -18,6 +18,10 @@ permissions:
 jobs:
   pruebas:
     runs-on: ubuntu-latest
+    # El reporte de pytest para el informe de la matriz de cumplimiento (US-90 de la spec 008), fuera del
+    # repositorio. Va en el entorno del job para no cambiar el paso de las pruebas de Python.
+    env:
+      PYTEST_ADDOPTS: --junitxml=${{ github.workspace }}/../informes_ci/pytest.xml
     # PostgreSQL 18 desechable para las pruebas de la base (db/pruebas/), que aplican las
     # migraciones con psql, sin Flyway ni imágenes de Redgate. Vive solo lo que dura el job.
     services:
@@ -45,6 +49,8 @@ jobs:
           EVENTO: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           AUTOR: ${{ github.actor }}
+          # Huellas SHA-256 de los correos prohibidos (US-88 de la spec 008). Sin el secreto, el guion avisa y no falla.
+          HUELLAS_CORREOS_PROHIBIDOS: ${{ secrets.HUELLAS_CORREOS_PROHIBIDOS }}
         run: |
           if [ "$EVENTO" = "pull_request" ] && [ "$AUTOR" != "dependabot[bot]" ]; then
             bash scripts/preflight.sh --pr "origin/$BASE_REF"
@@ -78,6 +84,19 @@ jobs:
         # la construcción directa de uv_build, que no ejecuta Python (hallazgo githubactions:S8541 de
         # SonarQube Cloud).
         run: uv sync --frozen --no-build
+      - name: Front de la misma rama para pytest y la matriz de cumplimiento (US-88 y US-90 de la spec 008)
+        # El Front es público. La matriz busca los escenarios de pantalla y de navegador en la rama del mismo
+        # nombre y, si no existe, en develop. La copia vive fuera del repositorio y se borra con el runner. Va antes
+        # de pytest, que la recibe en ABET_FRONT_RAIZ para los escenarios de US-88 que nombran el Front y la
+        # comparación de cumplimiento.md con el Front real. Por eso la rama del Front se empuja antes que la del Back.
+        env:
+          RAMA: ${{ github.head_ref || github.ref_name }}
+        run: |
+          FRONT=https://github.com/jeffangeloss/ABET-ULIMA-Front.git
+          if ! git clone -q --depth 1 --branch "$RAMA" "$FRONT" ../front_ci 2>/dev/null; then
+            git clone -q --depth 1 --branch develop "$FRONT" ../front_ci
+          fi
+          git -C ../front_ci log -1 --format='Front en %h'
       - name: Pruebas de Python (biblioteca abet_carga, bases desechables, exports inventados y Gherkin en español)
         # --frozen y --no-build también aquí, para que uv run no vuelva a resolver, no toque uv.lock y no
         # construya desde su código fuente ninguna dependencia. Las pruebas con el marcador base crean y
@@ -86,7 +105,30 @@ jobs:
         env:
           PGHOST: localhost
           PGUSER: postgres
+          ABET_FRONT_RAIZ: ${{ github.workspace }}/../front_ci
         run: uv run --frozen --no-build pytest -q
+      - name: Node 24 para las pruebas del Front
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Pruebas de Vitest del Front con su reporte JSON, solo para el informe de la matriz
+        # La CI del Front es la que exige que sus pruebas pasen. Aquí el reporte lleva el resultado y la fecha de
+        # cada prueba al informe, y una prueba fallida sale como «Fallida» en él. --ignore-scripts como en el Front.
+        # Vitest corre con el binario que deja npm ci en la versión del package-lock.json, sin bajar nada en el momento
+        # (SonarCloud, githubactions:S6505 y S8543).
+        working-directory: ../front_ci
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          ./node_modules/.bin/vitest run --reporter=json --outputFile=../informes_ci/vitest.json || echo "Vitest termina con fallas; el informe de la matriz las muestra."
+      - name: Matriz de cumplimiento de las specs 007 y 008 (US-90 de la spec 008)
+        # Falla ante un hueco o si cumplimiento.md no está al día, y deja el informe con el resultado y la fecha de
+        # cada prueba en el resumen de la corrida, fuera del repositorio.
+        run: |
+          OPCIONES=(--front ../front_ci --informe "$GITHUB_STEP_SUMMARY")
+          if [ -s ../informes_ci/vitest.json ]; then OPCIONES+=(--vitest ../informes_ci/vitest.json); fi
+          if [ -s ../informes_ci/pytest.xml ]; then OPCIONES+=(--junit ../informes_ci/pytest.xml); fi
+          uv run --frozen --no-build python scripts/matriz_cumplimiento.py --comprobar "${OPCIONES[@]}"
 
   # Secretos en todo el historial con gitleaks, fijado por versión y suma SHA-256. Hoy es un check
   # informativo; pasa a requerido cuando se confirme que no da falsos positivos (docs/devops.md).

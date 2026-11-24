@@ -32,6 +32,15 @@ _HOSTS_LOCALES = frozenset({"localhost", "127.0.0.1", "::1"})
 
 _PERIODO_EXISTE = "SELECT 1 FROM abet.periodo WHERE codigo = %s"
 _REGLAS_EXISTEN = "SELECT 1 FROM abet.conjunto_reglas WHERE version = %s"
+# BR-PERIODO-06 (spec 008). Cada carrera con plan de medición, en cualquier periodo, como Q19, sin el conjunto de
+# CONJUNTO_REGLAS. Q19 busca la carrera sin ningún conjunto y esta consulta, la que no tiene esa versión.
+_CARRERAS_SIN_REGLAS = """
+SELECT DISTINCT c.codigo
+FROM abet.plan_medicion pm
+JOIN abet.carrera c ON c.carrera_id = pm.carrera_id
+WHERE NOT EXISTS (SELECT 1 FROM abet.conjunto_reglas cr WHERE cr.carrera_id = pm.carrera_id AND cr.version = %s)
+ORDER BY c.codigo
+"""
 _ROL = """
 SELECT rolsuper OR rolcreaterole OR rolcreatedb OR rolbypassrls OR rolreplication
 FROM pg_roles WHERE rolname = current_user
@@ -113,7 +122,8 @@ def conectar(ajustes: Ajustes) -> psycopg.Connection[Any]:
 
 
 def comprobar_base(ajustes: Ajustes) -> None:
-    """Comprueba el rol de la conexión, la marca de entorno en Vercel, el periodo y las reglas, o detiene el arranque."""
+    """Comprueba el rol de la conexión, la marca de entorno en Vercel, el periodo y las reglas de cada carrera con plan,
+    o detiene el arranque."""
     try:
         conexion = conectar(ajustes)
     except psycopg.OperationalError:
@@ -136,8 +146,22 @@ def comprobar_base(ajustes: Ajustes) -> None:
                     "db/plataforma/neon/marcar_entorno.sql.")
         if conexion.execute(_PERIODO_EXISTE, (ajustes.periodo_vigente,)).fetchone() is None:
             raise ConfiguracionDeLaApi(f"PERIODO_VIGENTE {ajustes.periodo_vigente} no existe en abet.periodo")
-        if conexion.execute(_REGLAS_EXISTEN, (ajustes.carga.conjunto_reglas,)).fetchone() is None:
-            raise ConfiguracionDeLaApi(f"CONJUNTO_REGLAS {ajustes.carga.conjunto_reglas} no existe para Ambiental")
+        _comprobar_reglas(conexion, ajustes.carga.conjunto_reglas)
+
+
+def _comprobar_reglas(conexion: psycopg.Connection[Any], version: str) -> None:
+    """Exige la versión de CONJUNTO_REGLAS para cada carrera con plan de medición (BR-PERIODO-06, spec 008, T033).
+
+    El mensaje nombra cada carrera que no la tiene y no dice «Ambiental». Sin ningún plan de medición en la base, la
+    versión debe existir al menos para una carrera, como antes de la spec 008.
+    """
+    faltan = [fila[0] for fila in conexion.execute(_CARRERAS_SIN_REGLAS, (version,)).fetchall()]
+    if len(faltan) == 1:
+        raise ConfiguracionDeLaApi(f"CONJUNTO_REGLAS {version} no existe para la carrera {faltan[0]}.")
+    if faltan:
+        raise ConfiguracionDeLaApi(f"CONJUNTO_REGLAS {version} no existe para las carreras {', '.join(faltan)}.")
+    if conexion.execute(_REGLAS_EXISTEN, (version,)).fetchone() is None:
+        raise ConfiguracionDeLaApi(f"CONJUNTO_REGLAS {version} no existe en abet.conjunto_reglas.")
 
 
 def ajustes_de(request: Request) -> Ajustes:

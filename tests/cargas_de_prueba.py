@@ -159,13 +159,13 @@ def conjunto_aprobado(
     for clave, estado, numero, texto in valores:
         conexion.execute(
             "INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado, valor_numero, valor_texto) "
-            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
             (clave, estado, numero, texto, version),
         )
     for nivel, valor in ((1, 0.0), (2, 0.3333), (3, 0.6667), (4, 1.0)):
         conexion.execute(
             "INSERT INTO abet.conversion_nivel_0_1 (conjunto_reglas_id, nivel_original, valor_0_1) "
-            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s",
+            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
             (nivel, valor, version),
         )
 
@@ -180,7 +180,7 @@ def conjunto_pendiente(conexion: psycopg.Connection, version: str) -> None:
     conexion.execute(
         "INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado) "
         "SELECT cr.conjunto_reglas_id, p.clave, 'PENDIENTE' FROM abet.conjunto_reglas cr, abet.parametro p "
-        "WHERE cr.version = %s",
+        "WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
         (version,),
     )
 
@@ -213,7 +213,7 @@ def reemplazar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, reemplaza_carga_id, subida_por) "
         "SELECT c.seccion_id, %s, c.filas_de_datos, c.carrera_id, "
-        "coalesce((SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s), c.conjunto_reglas_id), "
+        "coalesce((SELECT conjunto_reglas_id FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')), c.conjunto_reglas_id), "
         "'v0.0.0-prueba', c.carga_id, c.subida_por FROM abet.carga c WHERE c.carga_id = %s RETURNING carga_id",
         (archivo_id, conjunto, anterior),
     ))
@@ -315,7 +315,7 @@ def publicar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, subida_por) "
         "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s "
-        "FROM abet.conjunto_reglas cr WHERE cr.version = %s RETURNING carga_id",
+        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') RETURNING carga_id",
         (seccion_id, archivo_id, filas_de_datos, autor, conjunto),
     ))
     columnas = _columnas(conexion, carga_id, seccion_id, pis, puntajes or {})
@@ -370,7 +370,7 @@ def rechazar(
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
         "programa_version, subida_por) "
         "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s "
-        "FROM abet.conjunto_reglas cr WHERE cr.version = %s RETURNING carga_id",
+        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') RETURNING carga_id",
         (seccion_id, archivo_id, filas_de_datos, usuario(conexion, DOCENTE_410), conjunto),
     ))
     conexion.execute(
@@ -450,8 +450,8 @@ def base_de_partida_006(conexion: psycopg.Connection) -> None:
     """Base de partida de la spec 006 sobre una base con las migraciones y sin los datos de 2026-2 (FR-012).
 
     Siembra la vigencia de AMB-2026 en 2026-2, el plan de 450002 (5.1, 5.2 y 5.3) y el de 450010 (2.1, 2.2 y
-    5.1) y a coordinacion@example.invalid con rol COORDINADOR, sin secciones ni profesores. Corre con la
-    conexión del dueño de la base y se puede repetir.
+    5.1) y a coordinacion@example.invalid con rol COORDINADOR y, desde V1_14, el alcance de la carrera AMB, sin
+    secciones ni profesores. Corre con la conexión del dueño de la base y se puede repetir.
     """
     conexion.execute(
         "INSERT INTO abet.catalogo_vigencia (periodo_id, carrera_id, catalogo_version_id) "
@@ -465,6 +465,25 @@ def base_de_partida_006(conexion: psycopg.Connection) -> None:
         "INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (%s, 'COORDINADOR') ON CONFLICT DO NOTHING",
         (COORDINACION,),
     )
+    # Desde V1_14 (spec 008, BR-ACCESO-13) la coordinación ve solo lo que le dan sus filas de alcance, así que recibe la
+    # carrera AMB, como en periodo_2026_2_inventado.sql y alcance_coordinacion_ambiental.sql.
+    if conexion.execute("SELECT to_regclass('acceso.coordinacion_alcance')").fetchone()[0] is not None:
+        conexion.execute(
+            "INSERT INTO acceso.coordinacion_alcance (usuario_id, carrera_id) SELECT u.usuario_id, c.carrera_id"
+            " FROM acceso.usuario_autorizado u, abet.carrera c WHERE u.correo = %s AND c.codigo = 'AMB'"
+            " ON CONFLICT DO NOTHING",
+            (COORDINACION,),
+        )
+
+
+def base_del_avance_007(conexion: psycopg.Connection) -> None:
+    """Base del avance de la spec 007 (avance_del_registro.feature, T038 de la spec 008).
+
+    Sobre los datos de periodo_2026_2_inventado.sql, con la vigencia de AMB-2026 en 2026-2 y el plan de 450002, suma el
+    plan de 450010 en 2026-2 con los PI 2.1, 2.2 y 5.1, el mismo de la spec 006. 450020 queda sin plan, y las secciones,
+    las asignaciones y las cargas de cada escenario nacen en sus pasos. Corre con la conexión del dueño de la base.
+    """
+    plan(conexion, "450010", PLANES_006["450010"])
 
 
 def entorno_de_programacion(base: str, *, sin_servidor: Path | None = None) -> dict[str, str]:

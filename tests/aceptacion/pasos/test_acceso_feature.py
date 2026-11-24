@@ -382,7 +382,9 @@ def _get_con_cookie(ctx: Escenario, ruta: str, codigo: str, correo: str | None, 
     respuesta = ctx.api.cliente().get(f"/api/{ruta}", headers={"Cookie": f"{COOKIE}={ctx.extras['token']}"})
     assert respuesta.status_code == int(codigo), respuesta.text
     if correo is not None:
-        assert respuesta.json() == {"correo": correo, "rol": rol}
+        # GET /api/sesion suma desde la spec 008 el campo aditivo alcance (BR-ACCESO-13), que este escenario no nombra.
+        assert {clave: valor for clave, valor in respuesta.json().items() if clave != "alcance"} == {"correo": correo,
+                                                                                                    "rol": rol}
 
 
 @then("los registros de la API de esas peticiones no contienen la contraseña ni el valor de la cookie")

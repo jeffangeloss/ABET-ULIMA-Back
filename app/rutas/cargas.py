@@ -28,7 +28,10 @@ el nombre del archivo, de la hoja, un código, un valor leído, el DETAIL de Pos
 
 GET /api/cargas?seccion_id= (corte 2, BR-CARGA-20) responde la lista resumida de las cargas al
 alcance del usuario, de la más reciente a la más antigua. Sin seccion_id lista las de las secciones que
-app/permisos.secciones_visibles() da en PERIODO_VIGENTE, y con seccion_id, las de esa sección si
+app/permisos.secciones_visibles() da en el periodo del parámetro aditivo periodo o, sin él, en PERIODO_VIGENTE
+(cambio fechado de BR-CARGA-20, spec 008, T033). Un periodo con otra forma que AAAA-C responde el 422 de la ruta 4,
+y uno bien formado sin secciones del usuario, una lista vacía. Con seccion_id el periodo no se usa, porque la
+sección ya lo fija. Con seccion_id, las de esa sección si
 app/permisos.puede_leer() la alcanza, o el 403 único si no, también para un entero que no es el de
 ninguna sección, como 0. Un seccion_id que no es un entero responde 422 con el texto de la forma
 inesperada.
@@ -58,7 +61,7 @@ from abet_carga import constancia, r17
 from abet_carga.carga import Resultado, ResultadoCarga, cargar
 from abet_carga.constancia import HORA_DE_LIMA
 from app import permisos, sesion
-from app.configuracion import FORMA_INESPERADA, REGISTRO, ajustes_de, conexion, error
+from app.configuracion import FORMA_INESPERADA, PERIODO, PERIODO_MAL_FORMADO, REGISTRO, ajustes_de, conexion, error
 
 # BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
 router = APIRouter(dependencies=[Depends(sesion.usuario_actual)])
@@ -74,6 +77,8 @@ _SECCION_DE_LA_CARGA = "SELECT seccion_id FROM abet.carga WHERE carga_id = %s"
 _REEMPLAZA = {"name": "reemplaza", "in": "query", "required": False,
               "schema": {"type": "integer", "minimum": 1}, "description": "Carga PUBLICADA que la nueva reemplaza."}
 _SECCION_ID = {"name": "seccion_id", "in": "query", "required": False, "schema": {"type": "integer"}}
+_PERIODO = {"name": "periodo", "in": "query", "required": False, "schema": {"type": "string", "pattern": "^[0-9]{4}-[0-2]$"},
+            "description": "Periodo de la lista sin seccion_id. Sin él, PERIODO_VIGENTE."}
 _MULTIPART = {
     "parameters": [_REEMPLAZA],
     "requestBody": {
@@ -173,7 +178,7 @@ def _seccion_legible(abierta: psycopg.Connection[Any], usuario: sesion.Usuario, 
     return fila is not None and permisos.puede_leer(abierta, usuario.usuario_id, int(fila[0]))
 
 
-@router.get("/cargas", openapi_extra={"parameters": [_SECCION_ID]})
+@router.get("/cargas", openapi_extra={"parameters": [_SECCION_ID, _PERIODO]})
 def listar_cargas(
     request: Request,
     usuario: sesion.Usuario = Depends(sesion.usuario_actual),
@@ -187,7 +192,11 @@ def listar_cargas(
             return _ajena()
         secciones = [pedida]
     else:
-        visibles = permisos.secciones_visibles(abierta, usuario.usuario_id, ajustes_de(request).periodo_vigente)
+        pedidos = request.query_params.getlist("periodo")
+        if len(pedidos) > 1 or (pedidos and not PERIODO.fullmatch(pedidos[0])):
+            return error(422, PERIODO_MAL_FORMADO)
+        periodo = pedidos[0] if pedidos else ajustes_de(request).periodo_vigente
+        visibles = permisos.secciones_visibles(abierta, usuario.usuario_id, periodo)
         secciones = [visible.seccion_id for visible in visibles]
     return JSONResponse(constancia.resumenes(abierta, secciones))
 

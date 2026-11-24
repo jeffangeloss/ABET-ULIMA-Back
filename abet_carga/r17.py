@@ -35,7 +35,9 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    SeccionSuperaPlantilla, el 422 de la API, en lugar de truncar la tabla o los bloques (BR-R17-08,
    propuesta). Más de 3 PI es posible con las asignaturas que tributan a dos o tres resultados del
    estudiante (student outcomes, SO), y la salida para ese caso la decide la coordinación (D-08).
-7. La hoja «Constancia» va al final y repite la constancia de constancia.armar(), con la frase fija
+7. B6 dice «Carrera de» más abet.carrera.nombre de la carrera de la carga, leída por abet.carga.carrera_id, y es
+   la única celda de la plantilla que nombra una carrera (BR-R17-13, spec 008).
+8. La hoja «Constancia» va al final y repite la constancia de constancia.armar(), con la frase fija
    de BR-R17-09 al cierre. Las líneas de avisos y rechazos tienen la forma «PUNTAJE_MAXIMO_DISTINTO
    en el PI 5.3» y «Fila 3, PI 5.2, NIVEL_FUERA_DE_ESCALA, RECHAZA_FILA», con el mensaje al lado y
    sin el valor leído. La hoja se imprime en una página de ancho, con los rótulos junto a sus valores.
@@ -111,6 +113,14 @@ LEFT JOIN abet.instrumento i ON i.instrumento_id = pm.instrumento_id
 WHERE c.carga_id = %s
 """
 
+# BR-R17-13. La carrera de la carga, que B6 nombra en lugar de la de la plantilla.
+_CARRERA = """
+SELECT cr.nombre
+FROM abet.carga c
+JOIN abet.carrera cr ON cr.carrera_id = c.carrera_id
+WHERE c.carga_id = %s
+"""
+
 # Una fila más que el tope basta para saber que la tabla no cabe.
 _MEDICIONES = """
 SELECT p.so_numero, p.codigo AS pi, e.codigo AS estudiante, m.nivel_original
@@ -160,7 +170,8 @@ def generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path) -> Path:
         raise SeccionSuperaPlantilla()
     plan = {detalle["codigo"]: detalle for detalle in _leer(conexion, _PLAN, carga_id)}
     provisional = any(fila["provisional"] for fila in filas)
-    libro = _libro(filas, plan, mediciones, cuerpo, provisional)
+    [carrera] = _leer(conexion, _CARRERA, carga_id)
+    libro = _libro(filas, plan, mediciones, cuerpo, provisional, carrera["nombre"])
     ruta = carpeta / _nombre(filas[0], provisional)
     libro.save(ruta)
     return ruta
@@ -183,12 +194,13 @@ def _libro(
     mediciones: list[dict[str, Any]],
     cuerpo: dict[str, Any],
     provisional: bool,
+    carrera: str,
 ) -> Workbook:
     libro = load_workbook(PLANTILLA)
     hoja = libro[HOJA]
     _sin_rellenos_automaticos(hoja)
     _logotipo(hoja)
-    _cabecera(hoja, filas)
+    _cabecera(hoja, filas, carrera)
     if provisional:
         _franja(hoja, cuerpo)
     _bloques(hoja, filas, plan)
@@ -237,8 +249,10 @@ def _logotipo(hoja: Worksheet) -> None:
     hoja.add_image(imagen)
 
 
-def _cabecera(hoja: Worksheet, filas: list[dict[str, Any]]) -> None:
+def _cabecera(hoja: Worksheet, filas: list[dict[str, Any]], carrera: str) -> None:
     primera = filas[0]
+    # BR-R17-13. B6 es la única celda de la plantilla que nombra una carrera, y dice la de la carga.
+    _escribir(hoja, "B6", f"Carrera de {carrera}")
     cabecera = (("D8", "codigo_asignatura"), ("D9", "asignatura"), ("D11", "seccion"), ("I11", "periodo"))
     for referencia, clave in cabecera:
         _escribir(hoja, referencia, primera[clave])

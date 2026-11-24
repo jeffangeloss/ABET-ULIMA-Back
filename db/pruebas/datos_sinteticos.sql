@@ -42,7 +42,7 @@ FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 WHERE s.numero = '410';
 
 -- Columnas de PI reconocidas (ids de Blackboard inventados)

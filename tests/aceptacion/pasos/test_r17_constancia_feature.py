@@ -120,7 +120,7 @@ def _cabecera(ctx: Escenario) -> str:
                   r'y NIVEL_ESPERADO (?P<nivel>[0-9]) DEFINIDOS'))
 def _conjunto_de_reglas(ctx: Escenario, version: str, estado: str, meta: str, nivel: str) -> None:
     filas = ctx.filas("SELECT cr.estado, pv.clave, pv.estado, pv.valor_numero FROM abet.conjunto_reglas cr"
-                      " JOIN abet.parametro_valor pv USING (conjunto_reglas_id) WHERE cr.version = %s"
+                      " JOIN abet.parametro_valor pv USING (conjunto_reglas_id) WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')"
                       " AND pv.clave IN ('META_LOGRO', 'NIVEL_ESPERADO') ORDER BY pv.clave", version)
     assert filas == [(estado, "META_LOGRO", "DEFINIDO", _numero(meta)),
                      (estado, "NIVEL_ESPERADO", "DEFINIDO", Decimal(nivel))], filas
@@ -156,9 +156,9 @@ def _reglas_aprobadas_de_prueba(ctx: Escenario, version: str) -> None:
     """Inserta, con la conexión del dueño de la copia, las mismas filas que el caso A03 de db/pruebas/pruebas.sql."""
     for sentencia in (APROBAR, PARAMETROS, CONVERSION):
         ctx.api.dueno.execute(sentencia, {"version": version})
-    assert ctx.filas("SELECT estado FROM abet.conjunto_reglas WHERE version = %s", version) == [("APROBADO",)]
+    assert ctx.filas("SELECT estado FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')", version) == [("APROBADO",)]
     assert ctx.cuenta("conversion_nivel_0_1", "conjunto_reglas_id = (SELECT conjunto_reglas_id"
-                      " FROM abet.conjunto_reglas WHERE version = %s)", version) == 4
+                      " FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB'))", version) == 4
 
 
 @given(parsers.re(r'la API configurada con CONJUNTO_REGLAS "(?P<version>[^"]+)"'))

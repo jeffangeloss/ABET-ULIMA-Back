@@ -68,9 +68,14 @@ class BaseDesechable:
     conexion_app: str | None
 
 
-def migraciones() -> list[Path]:
-    """Migraciones versionadas en orden de versión y repetibles en orden alfabético, como correr_pruebas.sh."""
-    versionadas = sorted(MIGRACIONES.glob("V*__*.sql"), key=_version)
+def migraciones(hasta: tuple[int, ...] | None = None) -> list[Path]:
+    """Migraciones versionadas en orden de versión y repetibles en orden alfabético, como correr_pruebas.sh.
+
+    Con hasta, como (1, 11), deja fuera las versionadas posteriores, como la base de partida del catálogo de
+    Industrial de la spec 008, que aplica V1_12 en su propio escenario. Las repetibles van siempre al final.
+    """
+    versionadas = sorted((ruta for ruta in MIGRACIONES.glob("V*__*.sql") if hasta is None or _version(ruta) <= hasta),
+                         key=_version)
     repetibles = sorted(MIGRACIONES.glob("R__*.sql"), key=lambda ruta: ruta.name.encode())
     return [*versionadas, *repetibles]
 
@@ -82,6 +87,7 @@ def crear(
     rol_app: bool = True,
     datos_2026_2: bool = True,
     despues: Sequence[Path] = (),
+    hasta: tuple[int, ...] | None = None,
 ) -> BaseDesechable:
     """Crea la base abet_demo_<sufijo> con sus migraciones y sus scripts, o no deja nada si un paso falla."""
     sufijo = _sufijo_nuevo() if sufijo is None else sufijo
@@ -96,7 +102,7 @@ def crear(
         _psql("postgres", "-c", f"CREATE DATABASE {nombre} TEMPLATE template0 ENCODING 'UTF8'")
         creada = True
         _psql(nombre, "-c", "CREATE SCHEMA abet", "-c", "CREATE SCHEMA acceso")
-        for migracion in migraciones():
+        for migracion in migraciones(hasta):
             _psql(nombre, "-1", "-f", str(migracion), opciones="-c client_min_messages=warning")
         if rol is not None:
             if rol in restos()[1]:
@@ -127,9 +133,10 @@ def abierta(
     rol_app: bool = True,
     datos_2026_2: bool = True,
     despues: Sequence[Path] = (),
+    hasta: tuple[int, ...] | None = None,
 ) -> Iterator[BaseDesechable]:
     """Base desechable que se borra al salir del bloque, también si el bloque falla."""
-    base = crear(sufijo, guardia=guardia, rol_app=rol_app, datos_2026_2=datos_2026_2, despues=despues)
+    base = crear(sufijo, guardia=guardia, rol_app=rol_app, datos_2026_2=datos_2026_2, despues=despues, hasta=hasta)
     try:
         yield base
     finally:

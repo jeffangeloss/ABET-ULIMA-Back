@@ -8,44 +8,95 @@
 SET client_min_messages = notice;
 
 -- ---------------------------------------------------------------------------------------------
--- 1. Catálogo cargado por V1_03
+-- 1. Catálogos cargados por V1_03 (AMB-2026) y V1_12 (IND-2026), contados por catálogo
 -- ---------------------------------------------------------------------------------------------
+-- Desde la spec 008 (T020) la base tiene dos catálogos, así que cada cuenta de una tabla del catálogo lleva el filtro
+-- por versión. abet.asignatura es común, con las 53 de V1_03 y las 38 nuevas de V1_12.
 DO $$
 DECLARE
+    v_amb      smallint := (SELECT catalogo_version_id FROM abet.catalogo_version WHERE codigo = 'AMB-2026');
     v_esperado int;
     v_real     int;
     v_tabla    text;
 BEGIN
     FOR v_tabla, v_esperado, v_real IN
-        SELECT 'so', 7, count(*) FROM abet.so
-        UNION ALL SELECT 'pi', 17, count(*) FROM abet.pi
-        UNION ALL SELECT 'rubrica_nivel', 102, count(*) FROM abet.rubrica_nivel
-        UNION ALL SELECT 'competencia', 11, count(*) FROM abet.competencia
-        UNION ALL SELECT 'competencia_so', 7, count(*) FROM abet.competencia_so
-        UNION ALL SELECT 'asignatura', 53, count(*) FROM abet.asignatura
-        UNION ALL SELECT 'plan_estudios', 53, count(*) FROM abet.plan_estudios
-        UNION ALL SELECT 'asignatura_so', 61, count(*) FROM abet.asignatura_so
-        UNION ALL SELECT 'asignatura_so sin instrumento', 10, count(*) FROM abet.asignatura_so WHERE instrumento_id IS NULL
-        UNION ALL SELECT 'asignatura_competencia', 95, count(*) FROM abet.asignatura_competencia
-        UNION ALL SELECT 'asignatura de 4 dígitos', 6, count(*) FROM abet.asignatura WHERE length(codigo) = 4
+        SELECT 'so', 7, count(*) FROM abet.so WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'pi', 17, count(*) FROM abet.pi WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'rubrica_nivel', 102, count(*) FROM abet.rubrica_nivel r JOIN abet.pi p ON p.pi_id = r.pi_id
+                  WHERE p.catalogo_version_id = v_amb
+        UNION ALL SELECT 'competencia', 11, count(*) FROM abet.competencia WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'competencia_so', 7, count(*) FROM abet.competencia_so WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'asignatura de V1_03', 53, count(*) FROM abet.asignatura a JOIN abet.plan_estudios pe
+                  ON pe.asignatura_id = a.asignatura_id AND pe.catalogo_version_id = v_amb
+        UNION ALL SELECT 'plan_estudios', 53, count(*) FROM abet.plan_estudios WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'asignatura_so', 61, count(*) FROM abet.asignatura_so WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'asignatura_so sin instrumento', 10, count(*) FROM abet.asignatura_so WHERE catalogo_version_id = v_amb
+                  AND instrumento_id IS NULL
+        UNION ALL SELECT 'asignatura_competencia', 95, count(*) FROM abet.asignatura_competencia WHERE catalogo_version_id = v_amb
+        UNION ALL SELECT 'asignatura de 4 dígitos', 6, count(*) FROM abet.asignatura a JOIN abet.plan_estudios pe
+                  ON pe.asignatura_id = a.asignatura_id AND pe.catalogo_version_id = v_amb WHERE length(a.codigo) = 4
     LOOP
         IF v_real <> v_esperado THEN
-            RAISE EXCEPTION 'FALLA catálogo: % tiene % filas y se esperaban %', v_tabla, v_real, v_esperado;
+            RAISE EXCEPTION 'FALLA catálogo AMB-2026: % tiene % filas y se esperaban %', v_tabla, v_real, v_esperado;
         END IF;
     END LOOP;
     IF (SELECT string_agg(k.codigo, ',' ORDER BY k.codigo)
           FROM abet.competencia k
-         WHERE NOT EXISTS (SELECT 1 FROM abet.competencia_so x WHERE x.competencia_id = k.competencia_id))
+         WHERE k.catalogo_version_id = v_amb
+           AND NOT EXISTS (SELECT 1 FROM abet.competencia_so x WHERE x.competencia_id = k.competencia_id))
        IS DISTINCT FROM 'G1,G2,G5,G7' THEN
-        RAISE EXCEPTION 'FALLA catálogo: las competencias sin SO deben ser G1, G2, G5 y G7';
+        RAISE EXCEPTION 'FALLA catálogo AMB-2026: las competencias sin SO deben ser G1, G2, G5 y G7';
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM abet.pi WHERE codigo = '6.1') OR EXISTS (SELECT 1 FROM abet.pi WHERE codigo = '6.10') THEN
-        RAISE EXCEPTION 'FALLA catálogo: 6.1 debe existir y 6.10 no';
+    IF NOT EXISTS (SELECT 1 FROM abet.pi WHERE catalogo_version_id = v_amb AND codigo = '6.1')
+       OR EXISTS (SELECT 1 FROM abet.pi WHERE codigo = '6.10') THEN
+        RAISE EXCEPTION 'FALLA catálogo AMB-2026: 6.1 debe existir y 6.10 no';
     END IF;
-    IF (SELECT huella_fuente FROM abet.catalogo_version WHERE codigo = 'AMB-2026') !~ '^[0-9a-f]{64}$' THEN
-        RAISE EXCEPTION 'FALLA catálogo: AMB-2026 sin huella SHA-256';
+    IF (SELECT huella_fuente FROM abet.catalogo_version WHERE catalogo_version_id = v_amb) !~ '^[0-9a-f]{64}$' THEN
+        RAISE EXCEPTION 'FALLA catálogo AMB-2026: sin huella SHA-256';
     END IF;
-    RAISE NOTICE 'ok C01 catálogo AMB-2026 con los conteos de la referencia';
+    RAISE NOTICE 'ok C01 catálogo AMB-2026 con los conteos de la referencia, contados solo en AMB-2026';
+END $$;
+
+-- C02 (spec 008, US-67). IND-2026 de V1_12 con los conteos de db/referencia/industrial_2026.json, en BORRADOR, sin
+-- rúbricas ni competencias, con 15 asignaturas que ya trae V1_03 y el «Portafolio 3» del par 5643 y SO 6.
+DO $$
+DECLARE
+    v_ind      smallint := (SELECT catalogo_version_id FROM abet.catalogo_version WHERE codigo = 'IND-2026');
+    v_amb      smallint := (SELECT catalogo_version_id FROM abet.catalogo_version WHERE codigo = 'AMB-2026');
+    v_esperado int;
+    v_real     int;
+    v_tabla    text;
+BEGIN
+    FOR v_tabla, v_esperado, v_real IN
+        SELECT 'so', 7, count(*) FROM abet.so WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'pi', 21, count(*) FROM abet.pi WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'rubrica_nivel', 0, count(*) FROM abet.rubrica_nivel r JOIN abet.pi p ON p.pi_id = r.pi_id
+                  WHERE p.catalogo_version_id = v_ind
+        UNION ALL SELECT 'competencia', 0, count(*) FROM abet.competencia WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'plan_estudios', 53, count(*) FROM abet.plan_estudios WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'asignatura_so', 64, count(*) FROM abet.asignatura_so WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'asignatura_so con instrumento', 1, count(*) FROM abet.asignatura_so WHERE catalogo_version_id = v_ind
+                  AND instrumento_id IS NOT NULL
+        UNION ALL SELECT 'instrumento', 1, count(*) FROM abet.instrumento WHERE catalogo_version_id = v_ind
+        UNION ALL SELECT 'asignatura compartida con AMB-2026', 15, count(*) FROM abet.plan_estudios i
+                  JOIN abet.plan_estudios a ON a.asignatura_id = i.asignatura_id AND a.catalogo_version_id = v_amb
+                  WHERE i.catalogo_version_id = v_ind
+        UNION ALL SELECT 'asignatura', 91, count(*) FROM abet.asignatura
+    LOOP
+        IF v_real <> v_esperado THEN
+            RAISE EXCEPTION 'FALLA catálogo IND-2026: % tiene % filas y se esperaban %', v_tabla, v_real, v_esperado;
+        END IF;
+    END LOOP;
+    IF (SELECT c.codigo || ':' || cv.estado FROM abet.catalogo_version cv JOIN abet.carrera c ON c.carrera_id = cv.carrera_id
+         WHERE cv.catalogo_version_id = v_ind) IS DISTINCT FROM 'IND:BORRADOR' THEN
+        RAISE EXCEPTION 'FALLA catálogo IND-2026: debe ser de la carrera IND y estar en BORRADOR';
+    END IF;
+    IF (SELECT i.nombre FROM abet.asignatura_so x JOIN abet.asignatura a ON a.asignatura_id = x.asignatura_id
+          JOIN abet.so s ON s.so_id = x.so_id JOIN abet.instrumento i ON i.instrumento_id = x.instrumento_id
+         WHERE x.catalogo_version_id = v_ind AND a.codigo = '5643' AND s.numero = 6) IS DISTINCT FROM 'Portafolio 3' THEN
+        RAISE EXCEPTION 'FALLA catálogo IND-2026: el par 5643 y SO 6 debe llevar el «Portafolio 3»';
+    END IF;
+    RAISE NOTICE 'ok C02 catálogo IND-2026 con los conteos de la referencia';
 END $$;
 
 -- ---------------------------------------------------------------------------------------------
@@ -76,7 +127,7 @@ SELECT s.seccion_id, ao.archivo_id, ao.filas_de_datos, cr.carrera_id, cr.conjunt
 FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450020'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'sintetico_450020_301_v1.csv'
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 WHERE s.numero = '301';
 
 INSERT INTO abet.carga_columna (carga_id, seccion_id, carrera_id, periodo_id, asignatura_id, plan_medicion_id, pi_id,
@@ -279,8 +330,8 @@ DO $$
 BEGIN
     IF (SELECT string_agg(table_name, ',' ORDER BY table_name) FROM information_schema.tables
          WHERE table_schema = 'acceso')
-       IS DISTINCT FROM 'codigo_acceso,credencial,docente_seccion,intento_fallido,sesion,usuario_autorizado' THEN
-        RAISE EXCEPTION 'FALLA A04: acceso debe tener usuario_autorizado, credencial, sesion, intento_fallido, docente_seccion y codigo_acceso';
+       IS DISTINCT FROM 'codigo_acceso,coordinacion_alcance,credencial,docente_seccion,intento_fallido,sesion,usuario_autorizado' THEN
+        RAISE EXCEPTION 'FALLA A04: acceso debe tener las seis tablas de V1_09 y coordinacion_alcance de V1_14';
     END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                     WHERE table_schema = 'abet' AND table_name = 'carga' AND column_name = 'subida_por'
@@ -298,7 +349,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM abet.carga WHERE subida_por IS NOT NULL) THEN
         RAISE EXCEPTION 'FALLA A04: las cargas de los datos sintéticos y de A02 y A03 no registran quién las sube';
     END IF;
-    RAISE NOTICE 'ok A04 V1_09 crea acceso con sus seis tablas comentadas y abet.carga.subida_por nulo con su FK';
+    RAISE NOTICE 'ok A04 V1_09 crea acceso con sus seis tablas comentadas, V1_14 suma coordinacion_alcance y abet.carga.subida_por es nulo con su FK';
 END $$;
 
 -- A05. Datos de 2026-2 de db/datos/periodo_2026_2_inventado.sql. correr_pruebas.sh los aplica dos veces después de
@@ -369,7 +420,7 @@ SELECT s.seccion_id, ao.archivo_id, 2, cr.carrera_id, cr.conjunto_reglas_id, 'v0
        u.usuario_id
 FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002',
      abet.archivo_origen ao, abet.conjunto_reglas cr, acceso.usuario_autorizado u
-WHERE s.numero = '411' AND ao.nombre_archivo = 'sondeo_motivos.xlsx' AND cr.version = 'R-2026-BORRADOR'
+WHERE s.numero = '411' AND ao.nombre_archivo = 'sondeo_motivos.xlsx' AND cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
   AND u.correo = 'docente411@example.invalid';
 INSERT INTO abet.rechazo_fila (carga_id, fila_origen, motivo, efecto)
 SELECT c.carga_id, v.fila, v.motivo, v.efecto
@@ -415,7 +466,7 @@ FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo IN ('sondeo_sin_5_2.xlsx', 'sondeo_5_1_repetido.xlsx')
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 JOIN acceso.usuario_autorizado u ON u.correo = 'docente410@example.invalid'
 WHERE s.numero = '410';
 -- El PI de cada rechazo sale del plan de medición de la sección, como lo toma el programa de carga.
@@ -648,7 +699,7 @@ END $$;
 BEGIN;
 UPDATE abet.parametro_valor pv SET estado = 'DEFINIDO', valor_texto = 'CUENTA_COMO_NO_LOGRADO'
 FROM abet.conjunto_reglas cr
-WHERE cr.conjunto_reglas_id = pv.conjunto_reglas_id AND cr.version = 'R-2026-BORRADOR' AND pv.clave = 'TRATO_SIN_EVIDENCIA';
+WHERE cr.conjunto_reglas_id = pv.conjunto_reglas_id AND cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') AND pv.clave = 'TRATO_SIN_EVIDENCIA';
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM abet.v_r17_por_pi
@@ -867,8 +918,8 @@ $q$, '23514', 'ck_carga_conciliada'),
 $q$, '23503', 'fk_carga_archivo'),
 ('R29', 'carga de Ambiental con el conjunto de reglas de otra carrera', $q$
  WITH ca AS (INSERT INTO abet.carrera (facultad_id, codigo, nombre)
-             SELECT facultad_id, 'IND', 'Carrera de prueba' FROM abet.facultad WHERE codigo = 'FI' RETURNING carrera_id),
-      cr AS (INSERT INTO abet.conjunto_reglas (carrera_id, version) SELECT carrera_id, 'R-IND' FROM ca RETURNING conjunto_reglas_id)
+             SELECT facultad_id, 'PRU', 'Carrera de prueba' FROM abet.facultad WHERE codigo = 'FI' RETURNING carrera_id),
+      cr AS (INSERT INTO abet.conjunto_reglas (carrera_id, version) SELECT carrera_id, 'R-PRU' FROM ca RETURNING conjunto_reglas_id)
  UPDATE abet.carga c SET conjunto_reglas_id = cr.conjunto_reglas_id
  FROM cr, abet.archivo_origen ao WHERE ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'sintetico_20262_450002_410.xlsx'
 $q$, '23503', 'fk_carga_reglas'),
@@ -1154,6 +1205,28 @@ $q$),
 ('Q14', 'carga REEMPLAZADA sin ninguna carga que la reemplace (H57)', $q$
  SELECT a.carga_id FROM abet.carga a
  WHERE a.estado = 'REEMPLAZADA' AND NOT EXISTS (SELECT 1 FROM abet.carga n WHERE n.reemplaza_carga_id = a.carga_id)
+$q$),
+('Q18', 'curso con plan de medición de dos carreras en el mismo periodo (spec 008)', $q$
+ SELECT a.codigo AS asignatura, pe.codigo AS periodo FROM abet.plan_medicion pm
+ JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
+ GROUP BY a.codigo, pe.codigo HAVING count(DISTINCT pm.carrera_id) > 1
+$q$),
+('Q19', 'carrera con plan de medición sin conjunto de reglas (spec 008)', $q$
+ SELECT DISTINCT c.codigo AS carrera, pe.codigo AS periodo FROM abet.plan_medicion pm
+ JOIN abet.carrera c ON c.carrera_id = pm.carrera_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
+ WHERE NOT EXISTS (SELECT 1 FROM abet.conjunto_reglas cr WHERE cr.carrera_id = pm.carrera_id)
+$q$),
+('Q20', 'cuenta COORDINADOR activa sin alcance o con secciones propias en acceso.docente_seccion (spec 008)', $q$
+ SELECT u.usuario_id, u.rol FROM acceso.usuario_autorizado u
+ WHERE u.rol = 'COORDINADOR' AND u.activo
+   AND (NOT EXISTS (SELECT 1 FROM acceso.coordinacion_alcance ca WHERE ca.usuario_id = u.usuario_id)
+        OR EXISTS (SELECT 1 FROM acceso.docente_seccion d WHERE d.usuario_id = u.usuario_id))
+$q$),
+('Q21', 'sección cuyo curso de Blackboard no declara su periodo, su asignatura y su número (spec 008)', $q$
+ SELECT s.seccion_id, s.numero, a.codigo AS asignatura, pe.codigo AS periodo FROM abet.seccion s
+ JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id
+ WHERE s.curso_blackboard IS NOT NULL
+   AND s.curso_blackboard !~ ('(^|_)' || pe.anio || pe.ciclo || '_' || a.codigo || '_' || s.numero || '$')
 $q$);
 
 -- Cada consulta de control nueva debe ver el caso que vigila. Se arma en una transacción que se deshace.
@@ -1167,7 +1240,7 @@ INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conj
 SELECT s.seccion_id, ao.archivo_id, 1, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', 'RECHAZADA', now()
 FROM abet.seccion s JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002',
      abet.archivo_origen ao, abet.conjunto_reglas cr
-WHERE s.numero = '301' AND ao.nombre_archivo = 'sondeo_rechazada.csv' AND cr.version = 'R-2026-BORRADOR';
+WHERE s.numero = '301' AND ao.nombre_archivo = 'sondeo_rechazada.csv' AND cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB');
 INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, programa_version, estado,
                         reemplaza_carga_id, filas_leidas, filas_aceptadas, terminada_en)
 SELECT c.seccion_id, ao.archivo_id, 1, c.carrera_id, c.conjunto_reglas_id, 'v0.0.0-prueba', 'PUBLICADA', c.carga_id, 1, 1, now()
@@ -1218,6 +1291,25 @@ WHERE e.codigo = '99000002';
 -- Q14: la carga publicada sin columnas pasa a REEMPLAZADA sin que otra la reemplace (Q06 y Q07 la siguen viendo).
 UPDATE abet.carga c SET estado = 'REEMPLAZADA'
 FROM abet.archivo_origen ao WHERE ao.archivo_id = c.archivo_id AND ao.nombre_archivo = 'sondeo_sin_columnas.csv';
+-- Q18 y Q19 (spec 008): IND-2026 vigente en 2026-2 con un plan de 5643 junto al de Ambiental, y la carrera IND sin
+-- conjunto de reglas.
+INSERT INTO abet.catalogo_vigencia (periodo_id, carrera_id, catalogo_version_id)
+SELECT pe.periodo_id, cv.carrera_id, cv.catalogo_version_id
+FROM abet.periodo pe, abet.catalogo_version cv WHERE pe.codigo = '2026-2' AND cv.codigo = 'IND-2026';
+INSERT INTO abet.plan_medicion (periodo_id, asignatura_id, carrera_id, catalogo_version_id, so_id, pi_id)
+SELECT pe.periodo_id, a.asignatura_id, cv.carrera_id, cv.catalogo_version_id, p.so_id, p.pi_id
+FROM abet.periodo pe, abet.asignatura a, abet.catalogo_version cv
+JOIN abet.pi p ON p.catalogo_version_id = cv.catalogo_version_id
+WHERE pe.codigo = '2026-2' AND a.codigo = '5643' AND p.codigo IN ('6.1', '6.2')
+  AND cv.codigo = (CASE p.codigo WHEN '6.1' THEN 'IND-2026' ELSE 'AMB-2026' END);
+DELETE FROM abet.parametro_valor pv USING abet.conjunto_reglas cr, abet.carrera c
+WHERE cr.conjunto_reglas_id = pv.conjunto_reglas_id AND c.carrera_id = cr.carrera_id AND c.codigo = 'IND';
+DELETE FROM abet.conjunto_reglas cr USING abet.carrera c WHERE c.carrera_id = cr.carrera_id AND c.codigo = 'IND';
+-- Q20 (spec 008): una coordinación activa sin fila de alcance.
+INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('coordinacion.sin.alcance@example.invalid', 'COORDINADOR');
+-- Q21 (spec 008): la 411 de 450002 con un curso de Blackboard que declara otra sección.
+UPDATE abet.seccion s SET curso_blackboard = 'SINTETICO_20262_450002_499'
+FROM abet.asignatura a WHERE a.asignatura_id = s.asignatura_id AND a.codigo = '450002' AND s.numero = '411';
 -- Q09: la conversión pasa a DEFINIDO sin ninguna fila.
 UPDATE abet.parametro_valor SET estado = 'DEFINIDO' WHERE clave = 'CONVERSION_NIVEL_0_1';
 -- Q11: el conjunto aprobado vuelve a dejar CORTE_ROJO PENDIENTE.
@@ -1229,7 +1321,8 @@ DECLARE
     q   record;
     v_n bigint;
 BEGIN
-    FOR q IN SELECT * FROM control_cero WHERE id IN ('Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14') ORDER BY id LOOP
+    FOR q IN SELECT * FROM control_cero WHERE id IN ('Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q18', 'Q19', 'Q20', 'Q21')
+               ORDER BY id LOOP
         EXECUTE 'SELECT count(*) FROM (' || q.consulta || ') AS t' INTO v_n;
         IF v_n = 0 THEN
             RAISE EXCEPTION 'FALLA %: no detectó el caso que vigila (%)', q.id, q.descripcion;
@@ -1268,8 +1361,8 @@ BEGIN
     RAISE NOTICE 'ok Q15 el filtro de Q04 sobre acceso solo encuentra usuario_autorizado.correo';
 END $$;
 
--- db/plataforma/neon/controles_neon.sql debe traer Q01 a Q14 iguales a las de arriba, salvo espacios, cada una sola
--- entre su \echo y su \set qNN :ROW_COUNT, y su cierre debe sumar las catorce (T025). Las órdenes de psql que fijan
+-- db/plataforma/neon/controles_neon.sql debe traer Q01 a Q14 y Q18 a Q21 iguales a las de arriba, salvo espacios, cada una sola
+-- entre su \echo y su \set qNN :ROW_COUNT, y su cierre debe sumar las dieciocho (T025 y FR-021 de la spec 008). Las órdenes de psql que fijan
 -- variables en ese archivo son solo \set ON_ERROR_STOP 1, un \set qNN :ROW_COUNT por consulta y el \gset del cierre,
 -- sin repetirse. Así, un \set qNN de más, un \set que no lee :ROW_COUNT, un control que falta, una condición agregada
 -- a una consulta o una consulta comentada rompen la prueba. correr_pruebas.sh pasa la ruta del archivo en la variable
@@ -1316,9 +1409,9 @@ BEGIN
     END LOOP;
     SELECT '(' || string_agg(':' || lower(id), ' + ' ORDER BY id) || ') = 0' INTO v_suma FROM control_cero;
     IF position('SELECT ' || v_suma || ' AS controles_en_cero \gset' IN regexp_replace(v_crudo, '\s+', ' ', 'g')) = 0 THEN
-        RAISE EXCEPTION 'FALLA controles_neon.sql: su cierre no suma las catorce consultas como %', v_suma;
+        RAISE EXCEPTION 'FALLA controles_neon.sql: su cierre no suma las dieciocho consultas como %', v_suma;
     END IF;
-    RAISE NOTICE 'ok controles_neon.sql trae Q01 a Q14 iguales a las de pruebas.sql, cada una con su único \set qNN :ROW_COUNT, solo las órdenes esperadas que fijan variables y el cierre que las suma todas';
+    RAISE NOTICE 'ok controles_neon.sql trae Q01 a Q14 y Q18 a Q21 iguales a las de pruebas.sql, cada una con su único \set qNN :ROW_COUNT, solo las órdenes esperadas que fijan variables y el cierre que las suma todas';
 END $$;
 \else
 \echo '  aviso: sin -v controles_neon=<ruta> no se compara controles_neon.sql con estas consultas'
@@ -1471,7 +1564,7 @@ FROM abet.seccion s
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002'
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'export_inventado_411.xlsx'
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 JOIN acceso.usuario_autorizado u ON u.correo = 'docente411@example.invalid'
 WHERE s.numero = '411';
 
@@ -1610,7 +1703,7 @@ JOIN abet.seccion s ON s.seccion_id = d.seccion_id
 JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = '2026-2'
 JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id
 JOIN abet.archivo_origen ao ON ao.nombre_archivo = 'sintetico_20262_' || a.codigo || '_' || s.numero || '.xlsx'
-JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR'
+JOIN abet.conjunto_reglas cr ON cr.version = 'R-2026-BORRADOR' AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')
 WHERE u.correo = 'docente.varias@example.invalid';
 
 -- Las columnas de cada export, con el id de Blackboard del curso de su sección.

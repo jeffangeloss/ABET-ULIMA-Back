@@ -74,7 +74,7 @@ ABET-ULIMA-Back/
     005-oportunidades-de-mejora/    semáforo, declaración y R-17 desde la base en P4 y las rutas 13 a 16, aprobada (spec 005), con el cambio por indicador aprobado el 2026-11-21
     006-programacion-docente/       carga de la programación docente del ciclo desde el archivo de la carrera, sin migración, aprobada y construida (spec 006)
     007-experiencia-por-cuenta/     lo importante para cada cuenta en P2 a P4, rótulos por rol, ruta 17 y P7 del avance, borrador (spec 007)
-    008-ciclo-quimica-industrial/   ciclo de punta a punta de Química General de Industrial en 2026-1, coordinación por curso, periodo elegido, generador y conciliador, borrador (spec 008)
+    008-ciclo-quimica-industrial/   ciclo de punta a punta de Química General de Industrial en 2026-1, coordinación por curso, periodo elegido, generador y conciliador, aprobada el 2026-11-23 y en construcción (spec 008)
     features/<feature>/<feature>.spec.md
   docs/
     devops.md
@@ -86,10 +86,11 @@ La épica EP-01 vive en `001-mvp-carga-r17/`, y su fase 1 de contrato ya escribe
 
 | Feature | Reglas | Historias | Archivos de `targets` | Estado |
 | --- | --- | --- | --- | --- |
-| `carga-export` | BR-CARGA-01 a BR-CARGA-20, con los bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17 | US-07 a US-14, US-18, US-19, US-21 y US-26 a US-36 | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
-| `r17` | BR-R17-01 a BR-R17-10 | US-15 y US-16 | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
-| `acceso` | BR-ACCESO-01 a BR-ACCESO-11 | US-04, US-05, US-06, US-20, US-38 (spec 004) y US-55 a US-58 (spec 006) | `app/sesion.py`, `app/permisos.py`, `app/rutas/*.py`, `scripts/asignar_clave.py`, `db/migration/V1_09__crear_acceso.sql`, `db/herramientas/cargar_programacion.py` y su SQL y `db/plataforma/neon/secciones_sin_docente.sql` | en revisión |
-| `periodo` | BR-PERIODO-01 a BR-PERIODO-04 | US-03 y el listado de US-06 | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |
+| `carga-export` | BR-CARGA-01 a BR-CARGA-20, con los bloques de la spec 003 en BR-CARGA-03, 05 a 08, 11 y 14 a 17 y el cambio fechado de la spec 008 en BR-CARGA-20 | US-07 a US-14, US-18, US-19, US-21, US-26 a US-36 y US-73 (spec 008) | `abet_carga/lector.py`, `validacion.py`, `carga.py` y `app/rutas/cargas.py` | en revisión |
+| `r17` | BR-R17-01 a BR-R17-11 y BR-R17-13 (spec 008), con BR-R17-12 reservada para la spec 005 | US-15, US-16, US-51 (spec 005) y US-78 (spec 008) | `abet_carga/r17.py`, `constancia.py`, `app/rutas/cargas.py`, `plantillas/R017_ambiental_general.xlsx` y `db/migration/R__vista_r17_por_pi.sql` | en revisión |
+| `acceso` | BR-ACCESO-01 a BR-ACCESO-14, con BR-ACCESO-12 de la spec 007 y BR-ACCESO-13 y 14 de la spec 008 | US-04, US-05, US-06, US-20, US-38 (spec 004), US-55 a US-58 (spec 006), US-64 (spec 007) y US-70 a US-72 (spec 008) | `app/sesion.py`, `app/permisos.py`, `app/rutas/*.py`, `scripts/asignar_clave.py`, `db/migration/V1_09__crear_acceso.sql`, `db/herramientas/cargar_programacion.py` y su SQL y `db/plataforma/neon/secciones_sin_docente.sql` | en revisión |
+| `periodo` | BR-PERIODO-01 a BR-PERIODO-06, con BR-PERIODO-05 y 06 de la spec 008 | US-03, el listado de US-06, US-68 y US-73 (spec 008) | `app/main.py`, `app/rutas/secciones.py` y `db/datos/periodo_2026_2_inventado.sql` | en revisión |
+| `avance` (specs 007 y 008) | BR-AVANCE-01 a BR-AVANCE-05 | US-64 a US-66 (spec 007) y US-79 (spec 008) | `app/rutas/avance.py`, `abet_carga/avance.py` y `app/permisos.py` | contrato escrito el 2026-11-23, sin código (T038 de la spec 008) |
 | `resultados` (spec 004) | BR-RESULTADOS-01 a BR-RESULTADOS-11 | US-37 a US-44 de `004-reportes-docente/`, con BR-ACCESO-10 y cambios fechados en `acceso`, `r17` y `periodo` | `app/rutas/resultados.py`, `abet_carga/resultados.py`, `abet_carga/r17.py`, `app/permisos.py`, `db/migration/R__vista_r17_por_pi.sql` y `db/plataforma/neon/revisar_permisos_resultados.sql` | contrato listo (implementada y verificada, con `specs/004-reportes-docente/audit.md`, en `develop` desde el PR #31, a la espera del humo contra la vista previa de T071) |
 
 US-01, US-02 y US-17 son de plataforma (migración en Neon, rol `abet_app` y despliegue en Vercel), no abren una spec viva y se verifican en `001-mvp-carga-r17/audit.md`.

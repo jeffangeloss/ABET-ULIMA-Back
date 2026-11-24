@@ -32,7 +32,7 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
     Dado una base desechable de la spec 008 con el plan de 5643 en 2026-1 y los datos de quimica_2026_1_inventado.sql
     Y una tabla maestra inventada en tmp_path con 5 estudiantes por sección en la 701, la 702 y la 703, códigos del rango 99 y calificaciones de 1 a 4
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: Todo coincide en la base, en la vista y en los R-17
     Dado las cargas PUBLICADA de la 701, la 702 y la 703 con los mismos niveles de la tabla
     Y sus R-17 descargados en una carpeta de tmp_path
@@ -41,7 +41,7 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
     Y por cada sección dice «Sección 701. Igual en 5 de 5 estudiantes, en el conteo por nivel y en el porcentaje.» (propuesta)
     Y el resumen dice «3 de 3 secciones iguales.» (propuesta)
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: Una calificación distinta se informa sin el código
     Dado las cargas PUBLICADA de las tres secciones y la tabla con la calificación de un estudiante de la 702 cambiada de 3 a 2
     Cuando el conciliador corre
@@ -49,7 +49,7 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
     Y dice «Sección 702. 1 estudiante con nivel distinto.» y «2 de 3 secciones iguales.» (propuesta)
     Y ninguna línea del informe trae un número de ocho cifras
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Esquema del escenario: Cada diferencia se cuenta por su tipo y por sección
     Dado las cargas PUBLICADA de las tres secciones y la tabla con <diferencia>
     Cuando el conciliador corre
@@ -61,50 +61,51 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
       | una fila menos en la 703                                | Sección 703. 1 estudiante medido por el sistema que no está en la tabla.     |
       | las filas de la 702 en el PI 6.2                        | Sección 702. 5 filas del PI 6.2 en la tabla maestra y 0 en el sistema (D-48). |
       | un R-17 descargado de la 701 con M25 cambiado           | Sección 701. El conteo del R-17 no es el de la tabla maestra.                |
+      | un R-17 descargado de la 701 con el nivel de su fila 43 cambiado sin tocar los conteos | Sección 701. La tabla de estudiantes del R-17 no es la de la tabla maestra. |
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: Una sección sin carga publicada se nombra
     Dado la carga PUBLICADA de la 701 y la 702 y la 703 sin carga PUBLICADA
     Cuando el conciliador corre
     Entonces dice «Sección 703. Sin carga publicada.» (propuesta)
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: El mismo cociente con otro redondeo cuenta como igual
     Dado la 701 con 2 de 3 estudiantes con nivel 3 o 4 en la base y en la tabla
     Cuando el conciliador corre
     Entonces la 701 es igual, porque compara el cociente 2 de 3 y el porcentaje con un decimal
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: Una carga reemplazada no duplica filas
     Dado la 703 con una carga REEMPLAZADA y su sucesora PUBLICADA con los mismos niveles
     Cuando el conciliador corre
     Entonces la 703 trae 5 estudiantes y es igual, porque abet.v_tabla_maestra_pi lee solo la carga PUBLICADA
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: El orden de las filas y la columna PROFESOR no cuentan como diferencia
     Dado la tabla con las filas en otro orden y la columna PROFESOR llena
     Cuando el conciliador corre
     Entonces las tres secciones son iguales
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: Los códigos que no empiezan con 99 se aceptan con 8 cifras
     Dado una tabla y una base inventadas con códigos de ocho cifras que no empiezan con 99, armados por la prueba en tmp_path
     Cuando el conciliador corre con la opción de datos reales (propuesta)
     Entonces compara las secciones y su informe no trae ningún número de ocho cifras
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: El conciliador no lee un archivo dentro de un repositorio
     Dado la tabla inventada copiada dentro de una carpeta con .git
     Cuando el conciliador corre con esa ruta
     Entonces termina con código 2 antes de leer el archivo
 
-  @spec008 @US-83
+  @spec008 @corte1 @US-83
   Escenario: La conciliación no escribe en la base
     Cuando el conciliador corre con el rol abet_respaldo
     Entonces abet.carga, abet.medicion y acceso.sesion no ganan ninguna fila
     Y un INSERT del conciliador fallaría con el SQLSTATE 25006 de la transacción READ ONLY
 
-  @spec008 @US-84
+  @spec008 @corte1 @US-84
   Escenario: El ensayo sube los exports generados y deja las secciones iguales
     Dado los exports de la 701, la 702 y la 703 que el generador de US-74 arma desde la tabla inventada, con su manifiesto
     Cuando el ensayo sube cada export con la biblioteca abet_carga y descarga su R-17
@@ -112,21 +113,21 @@ Característica: Conciliación con la tabla maestra y ensayo de punta a punta
     Y el conciliador dice «3 de 3 secciones iguales.» y termina con código 0
     Y las consultas de control Q01, Q02, Q03, Q04, Q06, Q07, Q08, Q10, Q12, Q13, Q14, Q18, Q19, Q20 y Q21 devuelven 0 filas
 
-  @spec008 @US-84
+  @spec008 @corte1 @US-84
   Escenario: El manifiesto del generador y lo publicado coinciden por huella y por conteo
     Dado los exports generados con su manifiesto
     Cuando el ensayo termina
     Entonces cada abet.archivo_origen tiene la huella SHA-256 que el manifiesto da para su sección
     Y el conteo por nivel de cada sección en abet.v_r17_por_pi es el del manifiesto
 
-  @spec008 @US-84
+  @spec008 @corte1 @US-84
   Escenario: Un nivel distinto en el ensayo se nombra sin el código y detiene la conclusión
     Dado el export de la 702 con el nivel de un estudiante cambiado de 3 a 2 frente a la tabla
     Cuando el ensayo sube los exports y corre el conciliador
     Entonces el conciliador dice «Sección 702. 1 estudiante con nivel distinto.» y «2 de 3 secciones iguales.»
     Y el ensayo termina con código 1
 
-  @spec008 @US-84
+  @spec008 @corte1 @US-84
   Escenario: El ensayo corre en una base aparte y no deja huellas en la de la capacitación
     Dado una base para el ensayo y otra para la capacitación
     Cuando el ensayo sube los exports en la base del ensayo

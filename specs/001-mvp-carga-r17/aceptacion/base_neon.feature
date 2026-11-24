@@ -228,6 +228,8 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
 
   # (propuesta) La API valida su configuración al arrancar, porque la base no marca un periodo ni
   # un conjunto de reglas como vigente (faltante del periodo vigente en revision-historias.md).
+  # Cambio del 2026-11-23 (spec 008, BR-PERIODO-06). El mensaje del conjunto nombra la carrera con plan que no lo
+  # tiene, en lugar de «Ambiental».
   @US-03 @corte1
   Esquema del escenario: La API no arranca con un periodo o un conjunto de reglas que la base no conoce
     Dado una base PostgreSQL 18 desechable con V1_01 a V1_09 y los datos de periodo_2026_2_inventado.sql
@@ -239,7 +241,7 @@ Característica: Base del MVP en Neon con el rol de la aplicación y los datos i
     Ejemplos:
       | periodo | conjunto        | mensaje                                             |
       | 2027-1  | R-2026-BORRADOR | PERIODO_VIGENTE 2027-1 no existe en abet.periodo     |
-      | 2026-2  | R-NO-EXISTE     | CONJUNTO_REGLAS R-NO-EXISTE no existe para Ambiental |
+      | 2026-2  | R-NO-EXISTE     | CONJUNTO_REGLAS R-NO-EXISTE no existe para la carrera AMB. |
 
   # US-04: Registrar usuarios autorizados y docentes por sección
   # (propuesta) Los nombres ck_usuario_autorizado_rol, ck_usuario_autorizado_correo,

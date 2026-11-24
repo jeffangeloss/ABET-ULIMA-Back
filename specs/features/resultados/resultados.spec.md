@@ -125,6 +125,7 @@ Esta spec viva fija qué devuelve la ruta `GET /api/resultados` de la interfaz d
 Corrida del 2026-11-18 en el Back y en el Front, rama `feat/004-reportes-docente`, sobre un PostgreSQL 18 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
 
 ```text
+- 2026-11-23 · uv run --frozen --no-build pytest -q -p no:cacheprovider (2095 passed y 18 skipped) y npm test del Front (283 aprobadas) · test_r17_industrial_feature.py, test_periodo_elegido_feature.py, front/tests/spec008/r17_industrial.test.tsx → BR-RESULTADOS-01 a BR-RESULTADOS-10 con el catálogo de Industrial y el periodo elegido, y BR-RESULTADOS-11 con la barra de P6 y su aria-label (spec 008, T060)
 - 2026-11-18 · uv run --frozen --no-build pytest -q -p no:cacheprovider · test_resultados_feature.py, test_alcance_resultados_feature.py, test_api_resultados.py, test_resultados.py, test_rutas_protegidas.py, test_permisos_resultados.py → BR-RESULTADOS-01 a BR-RESULTADOS-10
 - 2026-11-18 · npx vitest run (Front) · tests/pantallas/MisLogros.test.tsx, tests/App.test.tsx, tests/servicios/api.test.ts, tests/servicios/formato.test.ts → BR-RESULTADOS-11
 - 2026-11-18 · npx playwright test e2e/humo.spec.ts (Front) contra scripts/api_local.sh del Back · los dos casos de P6 → BR-RESULTADOS-03 y BR-RESULTADOS-11 en local

@@ -20,7 +20,8 @@ Configuración, siempre del despliegue y nunca de la petición.
   obligatoria, y con production o preview la base de DATABASE_URL debe tener esa misma marca de
   db/plataforma/neon/marcar_entorno.sql (T077).
 
-Al arrancar, la API comprueba que el periodo y el conjunto de reglas existen, que en Production y
+Al arrancar, la API comprueba que el periodo existe y que cada carrera con plan de medición tiene el conjunto
+de reglas de CONJUNTO_REGLAS (BR-PERIODO-06, spec 008), que en Production y
 Preview de Vercel la base está marcada para ese entorno y que DATABASE_URL no entra con un rol de
 administración (superusuario, creación de roles o de bases, o sin seguridad por
 filas), porque la aplicación trabaja solo con el privilegio mínimo del rol de
@@ -59,7 +60,7 @@ from app.configuracion import (
     error,
     registrar_falla,
 )
-from app.rutas import cargas, resultados, secciones, sesion
+from app.rutas import avance, cargas, periodos, resultados, secciones, sesion
 
 __all__ = ["Ajustes", "ConfiguracionDeLaApi", "app", "crear_app"]
 _GENERICOS = {404: "La ruta no existe.", 405: "El método no se admite en esta ruta."}
@@ -103,7 +104,7 @@ def crear_app(ajustes: Ajustes | None = None) -> FastAPI:
     aplicacion.add_exception_handler(StarletteHTTPException, _http)
     aplicacion.add_exception_handler(RequestValidationError, _validacion)
     aplicacion.middleware("http")(_sin_trazas)
-    for modulo in (sesion, secciones, cargas, resultados):
+    for modulo in (sesion, secciones, cargas, resultados, periodos, avance):
         aplicacion.include_router(modulo.router, prefix="/api")
     return aplicacion
 

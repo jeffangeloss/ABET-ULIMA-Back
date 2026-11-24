@@ -16,13 +16,13 @@
 --   abet     SELECT sobre organización, catálogo, plan de medición, reglas, registro de cargas y las dos vistas;
 --            INSERT en archivo_origen, carga, carga_columna, carga_fila, estudiante, medicion y rechazo_fila;
 --            UPDATE solo de estado, filas_leidas, filas_aceptadas, filas_rechazadas y terminada_en de carga.
---   acceso   SELECT de usuario_autorizado, credencial, docente_seccion, sesion e intento_fallido; INSERT solo de
---            sesion.usuario_id, sesion.hash_token e intento_fallido.hash_cuenta, porque las fechas de una sesión
---            y de un intento salen de los valores por defecto de la base; UPDATE solo de sesion.expira_en, para el
---            cierre de sesión.
+--   acceso   SELECT de usuario_autorizado, credencial, docente_seccion, sesion, intento_fallido y, desde V1_14,
+--            coordinacion_alcance; INSERT solo de sesion.usuario_id, sesion.hash_token e
+--            intento_fallido.hash_cuenta, porque las fechas de una sesión y de un intento salen de los valores por
+--            defecto de la base; UPDATE solo de sesion.expira_en, para el cierre de sesión.
 -- El rol no tiene DELETE ni TRUNCATE en ninguna tabla, no escribe conjunto_reglas, parametro_valor, catalogo_*,
--- plan_medicion, seccion, usuario_autorizado, credencial ni docente_seccion, y no cambia conjunto_reglas_id,
--- subida_por, archivo_id, seccion_id ni reemplaza_carga_id de una carga. Tampoco toca acceso.codigo_acceso, que
+-- plan_medicion, seccion, usuario_autorizado, credencial, docente_seccion ni coordinacion_alcance, y no cambia
+-- conjunto_reglas_id, subida_por, archivo_id, seccion_id ni reemplaza_carga_id de una carga. Tampoco toca acceso.codigo_acceso, que
 -- llega con el corte 2, cuando T083 le suma SELECT, INSERT y el UPDATE de intentos y usado_en.
 --
 -- Las repetibles R__ borran y recrean sus vistas, y con eso el rol pierde el SELECT de v_r17_por_pi y de
@@ -101,6 +101,11 @@ GRANT INSERT (usuario_id, hash_token) ON acceso.sesion TO :"rol_app";
 GRANT UPDATE (expira_en) ON acceso.sesion TO :"rol_app";
 GRANT INSERT (hash_cuenta) ON acceso.intento_fallido TO :"rol_app";
 
+-- Desde V1_14 (spec 008, US-70), la aplicación lee el alcance de cada coordinación y no lo escribe. En una base
+-- anterior a V1_14 la tabla no existe y la orden no corre, así el script sigue sirviendo en la rama que no la tiene.
+SELECT format('GRANT SELECT ON acceso.coordinacion_alcance TO %I', :'rol_app')
+WHERE to_regclass('acceso.coordinacion_alcance') IS NOT NULL \gexec
+
 -- Comprobación final. Se detiene, y la transacción se deshace, si algo queda distinto de lo que promete el archivo.
 -- Las funciones has_*_privilege cuentan también lo que llega por PUBLIC.
 DO $$
@@ -169,6 +174,10 @@ BEGIN
     IF v_texto IS DISTINCT FROM 'abet.carga.estado,abet.carga.filas_leidas,abet.carga.filas_aceptadas,'
                                 || 'abet.carga.filas_rechazadas,abet.carga.terminada_en,acceso.sesion.expira_en' THEN
         RAISE EXCEPTION 'El rol % actualiza otras columnas que el estado y los conteos de la carga y el vencimiento de la sesión (%)', v_rol, v_texto;
+    END IF;
+    IF to_regclass('acceso.coordinacion_alcance') IS NOT NULL
+       AND NOT has_table_privilege(v_rol, 'acceso.coordinacion_alcance', 'SELECT') THEN
+        RAISE EXCEPTION 'El rol % no lee el alcance de las coordinaciones (V1_14)', v_rol;
     END IF;
     IF NOT has_table_privilege(v_rol, 'abet.v_r17_por_pi', 'SELECT')
        OR NOT has_table_privilege(v_rol, 'abet.v_tabla_maestra_pi', 'SELECT')

@@ -1,0 +1,171 @@
+# Razones escritas de la matriz de cumplimiento de las specs 007 y 008 (US-90, T055).
+#
+# scripts/matriz_cumplimiento.py lee este archivo. Un escenario sin prueba hace fallar la generación salvo que este
+# archivo dé su razón. Hay dos clases de entradas.
+# - [historias.US-NN] marca una historia entera como «Pendiente por decisión» o «Pendiente de tarea», con su razón.
+# - [[escenarios]] marca un escenario. Con «pruebas», lo enlaza con las pruebas del Front que lo comprueban aunque su
+#   título no sea el del escenario, y con «estado», lo deja pendiente.
+# Cada entrada lleva su razón. Las rutas de «archivo» son relativas a specs/ en los escenarios y al Front en las pruebas.
+# Una razón que nombra una historia o un escenario que no existe hace fallar la generación, y una razón de pendiente
+# cuyo escenario ya tiene prueba sale como aviso, para quitarla.
+
+[historias.US-66]
+estado = "Pendiente por decisión"
+razon = "Espera a D-47 y a D-51 de la spec 007 (FR-001 de la spec 008)."
+
+[historias.US-80]
+estado = "Pendiente por decisión"
+razon = "Se construye solo si D-32 se responde (J-54, T039 y T047)."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/avance_del_registro.feature"
+escenario = "Atrás desde P4 abierta con «Ver la carga» vuelve a P7"
+estado = "Pendiente por decisión"
+razon = "Espera a US-52 de la spec 005, la navegación por fragmento, y la spec 005 queda fuera de la spec 008 (FR-001). En el Front es un it.todo de tests/pantallas/Avance.test.tsx."
+
+# Escenarios de pantalla de la spec 007 cuyas pruebas de Vitest son anteriores a la regla del título exacto de la
+# spec 008 (FR-027). Cada enlace nombra la prueba que comprueba el escenario con el título que lleva en el Front.
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "La línea de lo que falta sale del estado de la sección"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "la sección $caso conserva su texto y dice debajo lo que falta" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "El botón de la fila anuncia lo que falta y, desactivado, su motivo"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "el botón anuncia el siguiente paso de su propia sección o el motivo de su desactivación" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "«Ver por qué se rechazó» abre P4 de la carga rechazada más reciente"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "abre P4 de la primera rechazada de esa sección en el orden de la ruta 8" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "Si la ruta 8 falla, P2 sigue con la ruta 4 y no muestra error"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "conserva las secciones y permite subir si la ruta 8 da 500" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "Sin secciones asignadas, P2 dice a quién acudir y no pide la ruta 8"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "sin secciones muestra un texto y no una lista vacía" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
+escenario = "La coordinación no recibe las líneas del profesor"
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "el coordinador no ve Subir export y sí el resultado y la descarga del R-17 publicada" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"
+escenario = "P3 lista antes del campo de archivo lo que el profesor debe tener listo"
+pruebas = [{ archivo = "tests/pantallas/SubirExport.test.tsx", titulo = "US-60: en $modo, Antes de subir presenta las cuatro líneas en orden antes del campo de archivo" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"
+escenario = "La primera línea nombra los PI de la sección elegida"
+pruebas = [{ archivo = "tests/pantallas/SubirExport.test.tsx", titulo = "US-60: la primera línea usa los PI de la sección y dice $nombres" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"
+escenario = "El apartado sale solo del plan y no lee el archivo"
+pruebas = [{ archivo = "tests/pantallas/SubirExport.test.tsx", titulo = "US-60: elegir un archivo conserva el apartado del plan y no envía peticiones hasta Subir" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"
+escenario = "El modo reemplazo muestra el mismo apartado"
+pruebas = [{ archivo = "tests/pantallas/SubirExport.test.tsx", titulo = "US-60: en $modo, Antes de subir presenta las cuatro líneas en orden antes del campo de archivo" }]
+razon = "La misma prueba recorre los modos subir y reemplazo con it.each."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Cada motivo de rechazo de toda la carga trae su forma de corregir"
+pruebas = [
+  { archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "la tabla de J-43 tiene un consejo para cada uno de los siete motivos RECHAZA_CARGA del contrato" },
+  { archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "%s con %s conserva el mensaje de la API, muestra debajo qué corregir y los conteos" },
+]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Si ninguna fila se acepta, P4 remite a la tabla de rechazos y conserva los conteos"
+pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "sin filas aceptadas muestra el mensaje de la API junto con la tabla de rechazos" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Un motivo que el Front no conoce muestra solo el mensaje de la API"
+pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "un motivo que el Front no conoce muestra solo el mensaje de la API, también con PI" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Una carga publicada sin rechazos ni avisos no muestra «Qué corregir»"
+pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "una carga publicada sin rechazos ni avisos no muestra «Qué corregir»" }]
+razon = "Prueba de T044 de la spec 008, que comienza con minúscula y por eso no coincide con el título exacto. El escenario cambia el 2026-11-23 (FR-019 de la spec 008)."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Una carga sin R-17 lo dice sin afirmar nada sobre la sección"
+pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "la carga 12 %s sin sucesora lo dice sin afirmar nada sobre la sección" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Un reemplazo rechazado no dice que la sección quedó sin carga publicada"
+pruebas = [{ archivo = "tests/App.test.tsx", titulo = "US-62 muestra el resultado del reemplazo rechazado de la carga 7 sin afirmar que la sección perdió su publicación" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "Una carga reemplazada con sucesora conocida conserva su texto de hoy"
+pruebas = [{ archivo = "tests/pantallas/ResultadoCarga.test.tsx", titulo = "una carga REEMPLAZADA nombra a su sucesora como la publicada y no ofrece el R-17" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/que_corregir.feature"
+escenario = "P3 en modo reemplazo dice que la carga publicada no se pierde"
+pruebas = [{ archivo = "tests/pantallas/SubirExport.test.tsx", titulo = "en modo reemplazo dice qué carga reemplaza y envía reemplaza desde la primera subida" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
+escenario = "La cabecera nombra lo que ve cada cuenta"
+pruebas = [{ archivo = "tests/App.test.tsx", titulo = "con el rol $usuario.rol la cabecera dice «$secciones», «Cargas» y «$logros», y P2 lleva el título de su botón" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
+escenario = "Una lista vacía se explica según la cuenta"
+pruebas = [
+  { archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "sin secciones muestra un texto y no una lista vacía" },
+  { archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "al coordinador sin secciones le habla de la carrera, sin la línea del profesor ni la ruta 8" },
+  { archivo = "tests/pantallas/Cargas.test.tsx", titulo = "sin secciones dice que no tiene secciones asignadas" },
+  { archivo = "tests/pantallas/Cargas.test.tsx", titulo = "al coordinador sin secciones le dice que la carrera no tiene secciones" },
+  { archivo = "tests/pantallas/MisLogros.test.tsx", titulo = "con el rol $usuario.rol espera con «$espera» y sin secciones dice «$vacia»" },
+]
+razon = "Cada fila del esquema vive en la prueba de su pantalla, P2, P5 y P6, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
+escenario = "El aviso de espera de P6 habla de la cuenta que lo lee"
+pruebas = [{ archivo = "tests/pantallas/MisLogros.test.tsx", titulo = "con el rol $usuario.rol espera con «$espera» y sin secciones dice «$vacia»" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+
+[[escenarios]]
+archivo = "007-experiencia-por-cuenta/aceptacion/rotulos_por_cuenta.feature"
+escenario = "El menú marca la pantalla actual"
+pruebas = [
+  { archivo = "tests/App.test.tsx", titulo = "US-63 marca solo la pantalla abierta en el menú del profesor, incluso al entrar y salir de P3 y P4" },
+  { archivo = "tests/pantallas/Avance.test.tsx", titulo = "El menú marca la pantalla actual (P7 «Avance del registro»)" },
+]
+razon = "Las filas del profesor viven en tests/App.test.tsx y la fila de P7 de la etapa B en tests/pantallas/Avance.test.tsx."

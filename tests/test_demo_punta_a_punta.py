@@ -59,10 +59,10 @@ def _subir(conexion: psycopg.Connection, archivo: Path) -> Any:
 
 
 def _controles_con_filas(base: Any) -> dict[str, int]:
-    """Q01 a Q14 de controles_neon.sql con las filas que devuelve cada una, como en tests/test_carga.py."""
+    """Q01 a Q14 y Q18 a Q21 de controles_neon.sql con las filas que devuelve cada una, como en tests/test_carga.py."""
     texto = CONTROLES.read_text(encoding="utf-8")
     bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
-    assert [nombre for nombre, _ in bloques] == [f"Q{numero:02d}" for numero in range(1, 15)]
+    assert [nombre for nombre, _ in bloques] == [f"Q{numero:02d}" for numero in (*range(1, 15), *range(18, 22))]
     with psycopg.connect(base.conexion, autocommit=True) as revision:
         filas = {nombre: len(revision.execute(consulta.strip()).fetchall()) for nombre, consulta in bloques}
     return {nombre: cuantas for nombre, cuantas in filas.items() if cuantas}

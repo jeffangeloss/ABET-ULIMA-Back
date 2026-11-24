@@ -5,10 +5,15 @@
 --                   necesita para el respaldo. pg_dump bloquea cada tabla que vuelca, también las de acceso cuyos
 --                   datos no guarda, así que abet_respaldo puede leer credenciales y sesiones aunque el archivo
 --                   del respaldo no las traiga.
---   rol de la API   SELECT sobre las dos vistas, que la API lee para el R-17. Es abet_app en Neon y otro nombre en
---                   las pruebas, así que el callback lo reconoce por lo que puede hacer, que es insertar en
---                   abet.carga sin ser su dueño ni tener atributos de administración. El resto de sus permisos lo da
---                   db/plataforma/neon/crear_rol_app.sql, y una R__ no lo toca.
+--   rol de la API   SELECT sobre las dos vistas, que la API lee para el R-17, y desde V1_14 sobre
+--                   acceso.coordinacion_alcance, que app/permisos.py lee en cada ruta con sesión. Es abet_app en Neon y
+--                   otro nombre en las pruebas, así que el callback lo reconoce por lo que puede hacer, que es insertar
+--                   en abet.carga sin ser su dueño ni tener atributos de administración. El resto de sus permisos lo da
+--                   db/plataforma/neon/crear_rol_app.sql, y una R__ no lo toca. crear_rol_app.sql da el SELECT de la
+--                   tabla de alcance solo si la tabla ya existe cuando corre, y en Neon abet_app nace antes de V1_14, así
+--                   que el callback lo da en el mismo migrate que crea la tabla (spec 008, corrección del 2026-11-23).
+--                   Sin ese SELECT, cada cuenta recibe 42501 y la API responde 500, porque PostgreSQL revisa el permiso
+--                   de toda tabla de la consulta, también la de una rama OR que no se evalúa.
 -- Hace falta repetirlo en cada migrate porque las repetibles R__ borran y recrean las vistas, y con eso
 -- PostgreSQL borra los permisos que tenían, y porque una migración nueva puede crear tablas nuevas.
 -- Si un rol no existe, como en la base local o en el CI, su parte no hace nada, y lo mismo pasa con acceso antes
@@ -43,6 +48,10 @@ BEGIN
         LOOP
             EXECUTE format('GRANT SELECT ON abet.v_tabla_maestra_pi, abet.v_r17_por_pi TO %I', r.rolname);
             RAISE NOTICE 'Permisos de % repuestos sobre las dos vistas', r.rolname;
+            IF to_regclass('acceso.coordinacion_alcance') IS NOT NULL THEN
+                EXECUTE format('GRANT SELECT ON acceso.coordinacion_alcance TO %I', r.rolname);
+                RAISE NOTICE 'SELECT de % sobre acceso.coordinacion_alcance repuesto', r.rolname;
+            END IF;
         END LOOP;
     END IF;
 END
