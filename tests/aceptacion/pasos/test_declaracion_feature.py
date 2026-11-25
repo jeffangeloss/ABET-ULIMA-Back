@@ -5,8 +5,8 @@ respuesta de la API o contra la base, sin dobles del sistema bajo prueba. Este m
 escenarios del Back que piden solo las rutas 14 a 16 y V1_15. Quedan fuera, con su tarea, los que piden el R-17 con el
 análisis (US-49, «Corregir una declaración…» y «Una sección con todos sus PI en la meta…», T033 y T037), los de Q16 y
 Q17 y los de la base sola («Las tablas de V1_15…» y «La base rechaza…», T038), los de la herencia de US-54 (T036) y los
-@delegado_a_vitest, que prueba el Front. «con su análisis declarado» guarda y declara aquí por la API los registros de
-prueba de la sección, hasta que T037 sume declarar() a tests/cargas_de_prueba.py.
+@delegado_a_vitest, que prueba el Front. «con su análisis declarado» es el paso compartido de conftest.py, que llama a
+declarar() de tests/cargas_de_prueba.py con los registros de prueba de la sección (T037, FR-017).
 
 Los registros de prueba son los del encabezado del .feature, inventados y sin datos de estudiantes. Las subidas van por
 la API, así que los carga_id salen de sus respuestas y nunca se suponen.
@@ -14,13 +14,20 @@ la API, así que los carga_id salen de sus respuestas y nunca se suponen.
 
 from __future__ import annotations
 
+import io
+import os
 import re
+import subprocess
 import sys
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 import psycopg
+from openpyxl import load_workbook
 from pytest_bdd import given, parsers, scenario, then, when
+
+from abet_carga import r17
 
 Escenario = Any
 FEATURE = "specs/005-oportunidades-de-mejora/aceptacion/declaracion.feature"
@@ -28,22 +35,15 @@ PIS = ("5.1", "5.2", "5.3")
 OM, BP = "OPORTUNIDAD_MEJORA", "BUENA_PRACTICA"
 ASIGNADAS = {("docente410@example.invalid", "410"), ("docente411@example.invalid", "411"),
              ("docente.varias@example.invalid", "412")}
-REGISTROS = {
-    "410": {
-        "5.1": ("La entrega coincidió con la semana de parciales.",
-                "Mover la entrega a la semana 10 y revisar el avance en clase."),
-        "5.2": ("Los grupos no recibieron la rúbrica antes de la entrega.", "Publicar la rúbrica en la semana 8."),
-        "5.3": ("El trabajo en equipo se evaluó solo al final.", "Revisar el trabajo en equipo en dos avances."),
-    },
-    "412": {
-        "5.1": ("Los grupos presentaron avances semanales en clase.", "Mantener las revisiones semanales del avance."),
-        "5.2": ("La entrega coincidió con la semana de parciales.",
-                "Mover la entrega a la semana 10 y revisar el avance en clase."),
-        "5.3": ("Los roles del equipo rotaron en cada entrega.", "Compartir la rotación de roles con las otras secciones."),
-    },
-}
+# Los registros de prueba del encabezado del .feature, en tests/cargas_de_prueba.py desde T037.
+REGISTROS = sys.modules["cargas_de_prueba"].REGISTROS_DE_PRUEBA
 CAMINOS = {"/api/cargas/{carga_id}/mejora/borrador": "PUT", "/api/cargas/{carga_id}/mejora/declaracion": "POST"}
 TABLAS_V1_15 = ("mejora_borrador", "mejora_borrador_pi", "mejora_declaracion", "mejora_declaracion_pi")
+RAIZ = Path(__file__).resolve().parents[3]
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+# La corrección de la 410 del encabezado del .feature, que cambia solo 5.1.
+CORRECCION_410 = ("La entrega coincidió con la semana de parciales y de feriado.",
+                  "Mover la entrega a la semana 10 y revisar el avance en tutoría.")
 COPIA_PARA_REEMPLAZAR = 'una copia de "sintetico_20262_450002_410.xlsx" con la columna 5.3 vacía en la fila 9'
 
 
@@ -123,6 +123,43 @@ def test_regla_sin_definir() -> None:
 @scenario(FEATURE, "El coordinador lee la declaración sin editarla ni ver el borrador")
 def test_coordinador_lee() -> None:
     """US-47, J-33."""
+
+
+@scenario(FEATURE, "Corregir una declaración deja la anterior guardada y vigente hasta declarar la nueva")
+def test_corregir_una_declaracion() -> None:
+    """US-47, D-37, con el R-17 de US-49 y US-50 (T033)."""
+
+
+# US-49
+
+@scenario(FEATURE, "Sin declaración el R-17 no se entrega")
+def test_sin_declaracion_no_hay_r17() -> None:
+    """US-49, con sus dos Ejemplos."""
+
+
+@scenario(FEATURE, "Con la declaración el R-17 se entrega")
+def test_con_declaracion_hay_r17() -> None:
+    """US-49."""
+
+
+@scenario(FEATURE, "El coordinador recibe el mismo 409 sin declaración y el archivo con ella")
+def test_coordinador_y_r17() -> None:
+    """US-49, J-33, con sus dos Ejemplos."""
+
+
+@scenario(FEATURE, "Una sección con todos sus PI en la meta también registra sus buenas prácticas")
+def test_todos_en_la_meta_declaran_bp() -> None:
+    """US-49, D-36."""
+
+
+@scenario(FEATURE, "El 409 de una carga rechazada manda sobre el de la declaración")
+def test_rechazada_manda() -> None:
+    """US-49."""
+
+
+@scenario(FEATURE, "El comando r17 de una carga sin declaración termina sin escribir ningún archivo")
+def test_comando_sin_declaracion() -> None:
+    """US-49."""
 
 
 # US-48
@@ -236,18 +273,6 @@ def _sin_cargas(ctx: Escenario) -> None:
 
 # Dado
 
-@given(parsers.re(r'que "(?P<nombre>[^"]+)" está subido a la sección (?P<numero>[0-9]+) con respuesta 201 y su '
-                  r'carga_id, con su análisis declarado'))
-def _subido_y_declarado(ctx: Escenario, nombre: str, numero: str) -> None:
-    profesor = next(correo for correo, seccion in ASIGNADAS if seccion == numero)
-    respuesta = ctx.subir(profesor, ctx.de_inventados(nombre), nombre, numero)
-    assert respuesta.status_code == 201, respuesta.text
-    ctx.carga_previa = ctx.carga_id
-    _guardar_de_prueba(ctx, profesor, 0)
-    assert _post(ctx, profesor, 1).status_code == 201, ctx.respuesta.text
-    ctx.antes = ctx.conteos()
-
-
 @given(parsers.re(r'que "(?P<correo>[^"]+)" guardó en la versión 1 los registros de prueba de la '
                   r'(?P<seccion>410|412)(?:, salvo (?P<falta>.+))?'))
 def _guardo_salvo(ctx: Escenario, correo: str, seccion: str, falta: str | None) -> None:
@@ -313,6 +338,77 @@ def _conjunto_sin_un_parametro(ctx: Escenario, parametro: str) -> None:
     valores = {"meta_logro": 0.80, "nivel_esperado": 3, "corte_rojo": 0.75, parametro.lower(): None}
     _cargas().conjunto_aprobado(ctx.api.dueno, version, **valores)
     ctx.reiniciar_api(carga=replace(ctx.api.ajustes.carga, conjunto_reglas=version))
+
+
+# Dado, US-49
+
+@given(parsers.re(r'que la carga (?P<situacion>no tiene ningún texto|tiene solo un borrador con los tres registros)'))
+def _situacion(ctx: Escenario, situacion: str) -> None:
+    if situacion.startswith("tiene solo"):
+        _guardar_de_prueba(ctx, ctx.profesor, 0)
+        assert ctx.cuenta("mejora_borrador_pi", "carga_id = %s AND causa IS NOT NULL", ctx.carga_id) == 3
+    assert ctx.cuenta("mejora_declaracion", "carga_id = %s", ctx.carga_id) == 0
+
+
+@given(parsers.re(r'que la base tiene el conjunto "(?P<version>R-PRUEBA-APROBADO)" de Ambiental en estado "APROBADO" con '
+                  r'META_LOGRO 0,70, NIVEL_ESPERADO 2, CORTE_ROJO 0,50, TRATO_SIN_EVIDENCIA "SE_EXCLUYE_DEL_DENOMINADOR" y '
+                  r'la conversión de sus 4 niveles, como en el caso A03 de pruebas\.sql'))
+def _conjunto_a03(ctx: Escenario, version: str) -> None:
+    _cargas().conjunto_aprobado(ctx.api.dueno, version)
+    assert ctx.filas("SELECT estado FROM abet.conjunto_reglas WHERE version = %s", version) == [("APROBADO",)]
+
+
+@given(parsers.re(r'la API configurada con CONJUNTO_REGLAS "(?P<version>[^"]+)"'))
+def _api_con_conjunto(ctx: Escenario, version: str) -> None:
+    ctx.reiniciar_api(carga=replace(ctx.api.ajustes.carga, conjunto_reglas=version))
+    assert ctx.api.ajustes.carga.conjunto_reglas == version
+
+
+# Cuando, el R-17 y el comando
+
+def _r17(ctx: Escenario, correo: str | None = None) -> Any:
+    ctx.respuesta = ctx.sesion(correo or ctx.profesor).get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
+    return ctx.respuesta
+
+
+def _b29_y_b34(ctx: Escenario) -> tuple[str, str]:
+    respuesta = _r17(ctx)
+    assert respuesta.status_code == 200, respuesta.text
+    hoja = load_workbook(io.BytesIO(respuesta.content))[r17.HOJA]
+    return hoja["B29"].value, hoja["B34"].value
+
+
+@when(parsers.re(r'"(?P<correo>[^"]+)" descarga el R-17 de esa carga'))
+def _descarga(ctx: Escenario, correo: str) -> None:
+    _r17(ctx, correo)
+
+
+@when(parsers.re(r'"(?P<correo>[^"]+)" guarda el borrador con los registros de prueba de la 410 y version 0, y declara '
+                 r'la versión 1'))
+def _guarda_y_declara(ctx: Escenario, correo: str) -> None:
+    _guardar_de_prueba(ctx, correo, 0)
+    assert _post(ctx, correo, 1).status_code == 201, ctx.respuesta.text
+
+
+@when(parsers.re(r'"(?P<correo>[^"]+)" guarda otro borrador con la corrección de la 410 y version (?P<version>[0-9]+)'))
+def _guarda_la_correccion(ctx: Escenario, correo: str, version: str) -> None:
+    ctx.extras["anterior"] = _b29_y_b34(ctx)
+    registros = _de_prueba(ctx, correo, "410")
+    registros[0]["causa"], registros[0]["accion"] = CORRECCION_410
+    assert _put(ctx, correo, registros, int(version)).status_code == 200, ctx.respuesta.text
+
+
+@when("el administrador técnico corre el comando python -m abet_carga r17 para esa carga")
+def _corre_el_comando(ctx: Escenario, tmp_path: Path) -> None:
+    carpeta = tmp_path / "r17_del_comando"
+    entorno = {clave: valor for clave, valor in os.environ.items() if clave != "DATABASE_URL"}
+    entorno["CONJUNTO_REGLAS"] = ctx.api.ajustes.carga.conjunto_reglas
+    ctx.extras["carpeta"] = carpeta
+    ctx.extras["comando"] = subprocess.run(
+        [sys.executable, "-m", "abet_carga", "r17", "--carga", str(ctx.carga_id), "--correo",
+         "coordinacion@example.invalid", "--carpeta", str(carpeta), "--base", ctx.api.base.conexion,
+         "--rol", ctx.api.base.rol_app],
+        cwd=RAIZ, env=entorno, capture_output=True, text=True, check=False, timeout=120)
 
 
 # Cuando, la ruta 15
@@ -397,6 +493,11 @@ def _guarda_en_a(ctx: Escenario, correo: str, pi: str, causa: str, version: str)
 @when(parsers.re(r'(?:"(?P<quien>[^"]+)" )?declara la versión (?P<version>[0-9]+)'))
 def _declara(ctx: Escenario, quien: str | None, version: str) -> None:
     _post(ctx, _quien(ctx, quien), int(version))
+
+
+@when("se envía GET /api/cargas/{carga_id}/indicadores")
+def _pide_indicadores(ctx: Escenario) -> None:
+    ctx.pedir(f"/api/cargas/{ctx.carga_id}/indicadores")
 
 
 @when("se envía GET /api/cargas/{carga_id}/mejora")
@@ -613,3 +714,110 @@ def _sin_datos_de_estudiantes(ctx: Escenario) -> None:
         assert "@" not in texto, respuesta.url
         # El export inventado de la 410 nombra a sus estudiantes «Inventado NN Estudiante», y ninguna respuesta lo repite.
         assert "Inventado" not in texto and "Estudiante" not in texto
+
+
+# Entonces, US-49
+
+@then("la respuesta no trae ningún archivo")
+def _sin_archivo(ctx: Escenario) -> None:
+    assert ctx.respuesta.headers["content-type"] == "application/json"
+    assert "content-disposition" not in ctx.respuesta.headers
+    assert not ctx.respuesta.content.startswith(b"PK")
+
+
+@then(parsers.re(r'la API responde 200 con el archivo "(?P<nombre>[^"]+)"'))
+def _200_con_el_archivo(ctx: Escenario, nombre: str) -> None:
+    respuesta = ctx.respuesta
+    assert respuesta.status_code == 200, respuesta.text
+    assert respuesta.headers["content-type"] == XLSX
+    assert respuesta.headers["content-disposition"] == f'attachment; filename="{nombre}"'
+    assert load_workbook(io.BytesIO(respuesta.content)).sheetnames == [r17.HOJA, "Constancia"]
+
+
+@then(parsers.re(r'los tres PI traen pct_sobre_calificados (?P<logro>[0-9.]+), semaforo "(?P<semaforo>[A-Z]+)" y '
+                 r'tipo_registro "(?P<tipo>[A-Z_]+)"'))
+def _tres_pi(ctx: Escenario, logro: str, semaforo: str, tipo: str) -> None:
+    assert ctx.respuesta.status_code == 200, ctx.respuesta.text
+    indicadores = ctx.respuesta.json()["indicadores"]
+    assert [(i["pi"], i["pct_sobre_calificados"], i["semaforo"], i["tipo_registro"]) for i in indicadores] == [
+        (pi, float(logro), semaforo, tipo) for pi in PIS]
+
+
+@then(parsers.re(r'abet\.mejora_declaracion_pi guarda los tres PI con tipo "(?P<tipo>[A-Z_]+)"'))
+def _tres_con_tipo(ctx: Escenario, tipo: str) -> None:
+    filas = ctx.filas("SELECT cc.pi_codigo, d.tipo FROM abet.mejora_declaracion_pi d JOIN abet.carga_columna cc"
+                      " ON cc.carga_id = d.carga_id AND cc.pi_id = d.pi_id WHERE d.carga_id = %s ORDER BY cc.pi_codigo",
+                      ctx.carga_id)
+    assert filas == [(pi, tipo) for pi in PIS]
+
+
+@then("la descarga del R-17 de esa carga responde 200")
+def _descarga_200(ctx: Escenario) -> None:
+    respuesta = _r17(ctx)
+    assert respuesta.status_code == 200 and respuesta.headers["content-type"] == XLSX, respuesta.text
+
+
+@then("la carga no tiene ninguna declaración")
+def _sin_declaracion(ctx: Escenario) -> None:
+    assert ctx.cuenta("mejora_declaracion", "carga_id = %s", ctx.carga_id) == 0
+    assert ctx.cuenta("mejora_declaracion_pi", "carga_id = %s", ctx.carga_id) == 0
+
+
+@then(parsers.re(r'el comando termina con el mensaje "(?P<mensaje>[^"]+)"(?: \(propuesta\))?'))
+def _comando_termina(ctx: Escenario, mensaje: str) -> None:
+    corrida = ctx.extras["comando"]
+    assert corrida.returncode == 1, corrida.stdout + corrida.stderr
+    assert corrida.stdout.strip() == mensaje and corrida.stderr == ""
+
+
+@then("el comando no escribe ningún archivo")
+def _comando_sin_archivos(ctx: Escenario) -> None:
+    carpeta = ctx.extras["carpeta"]
+    assert not carpeta.exists() or list(carpeta.iterdir()) == []
+
+
+# Entonces, la corrección de una declaración
+
+@then("GET /api/cargas/{carga_id}/mejora responde 200 con la declaración anterior vigente y borrador_pendiente verdadero")
+def _anterior_vigente(ctx: Escenario) -> None:
+    cuerpo = _mejora(ctx)
+    assert [(i["pi"], i["causa"], i["accion"]) for i in cuerpo["declaracion"]["indicadores"]] == [
+        (pi, *REGISTROS["410"][pi]) for pi in PIS]
+    assert cuerpo["borrador_pendiente"] is True
+    assert cuerpo["borrador"]["indicadores"][0]["causa"] == CORRECCION_410[0]
+
+
+@then("el R-17 de esa carga sigue saliendo con el texto de la declaración anterior")
+def _r17_anterior(ctx: Escenario) -> None:
+    b29, b34 = _b29_y_b34(ctx)
+    assert (b29, b34) == ctx.extras["anterior"]
+    assert b29.split("\n")[0] == f"5.1 · Oportunidad de mejora. {REGISTROS['410']['5.1'][0]}"
+
+
+@then("el R-17 de esa carga toma el texto nuevo de 5.1")
+def _r17_nuevo(ctx: Escenario) -> None:
+    b29, b34 = _b29_y_b34(ctx)
+    assert b29.split("\n")[0] == f"5.1 · Oportunidad de mejora. {CORRECCION_410[0]}"
+    assert b34.split("\n")[0] == f"5.1 · Oportunidad de mejora. {CORRECCION_410[1]}"
+    anterior_a, anterior_b = ctx.extras["anterior"]
+    assert b29.split("\n")[1:] == anterior_a.split("\n")[1:] and b34.split("\n")[1:] == anterior_b.split("\n")[1:]
+
+
+@then(parsers.re(r'GET /api/cargas/\{carga_id\}/mejora responde los tres indicadores declarados con estado "PROPUESTA"'))
+def _tres_propuesta(ctx: Escenario) -> None:
+    cuerpo = _mejora(ctx)
+    assert [(i["pi"], i["estado"]) for i in cuerpo["declaracion"]["indicadores"]] == [(pi, "PROPUESTA") for pi in PIS]
+    assert cuerpo["declaracion"]["indicadores"][0]["causa"] == CORRECCION_410[0]
+    assert cuerpo["borrador_pendiente"] is False
+
+
+@then("abet.mejora_declaracion tiene 2 filas de esa carga, con la anterior y sus tres filas de "
+      "abet.mejora_declaracion_pi intactas")
+def _dos_declaraciones(ctx: Escenario) -> None:
+    primera, segunda = [fila[0] for fila in ctx.filas(
+        "SELECT declaracion_id FROM abet.mejora_declaracion WHERE carga_id = %s ORDER BY declaracion_id", ctx.carga_id)]
+    anteriores = ctx.filas("SELECT cc.pi_codigo, d.causa, d.accion FROM abet.mejora_declaracion_pi d"
+                           " JOIN abet.carga_columna cc ON cc.carga_id = d.carga_id AND cc.pi_id = d.pi_id"
+                           " WHERE d.declaracion_id = %s ORDER BY cc.pi_codigo", primera)
+    assert anteriores == [(pi, *REGISTROS["410"][pi]) for pi in PIS]
+    assert ctx.cuenta("mejora_declaracion_pi", "declaracion_id = %s", segunda) == 3

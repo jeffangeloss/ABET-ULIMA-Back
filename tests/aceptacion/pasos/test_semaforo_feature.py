@@ -2,10 +2,10 @@
 
 El .feature manda. Ningún paso cambia un texto para que el escenario pase, y cada «Entonces» se comprueba contra la
 respuesta de la ruta 13, GET /api/cargas/{carga_id}/indicadores, sin dobles del sistema bajo prueba. Este módulo enlaza
-con @scenario los diez escenarios del Back que no necesitan la migración V1_15. «Las cifras y el semáforo coinciden
-con el R-17 de la misma carga» necesita V1_15, las rutas 14 a 16, US-49 y declarar(), y entra en la segunda etapa de
-J-41 (T037). Los seis de US-46 llevan @delegado_a_vitest y los prueba Vitest en el Front. Cuando llegue V1_15, el
-módulo pasa a scenarios() sobre el archivo entero.
+con @scenario los once escenarios del Back. «Las cifras y el semáforo coinciden con el R-17 de la misma carga» entra
+en la segunda etapa de J-41 (T037), con V1_15, US-49 y el paso compartido «con su análisis declarado» de conftest.py,
+que llama a declarar() de tests/cargas_de_prueba.py. Los seis de US-46 llevan @delegado_a_vitest y los prueba Vitest
+en el Front.
 
 «El dueño de la base» usa la conexión del dueño de la copia desechable, la misma de las consultas de los pasos, y nunca
 toca Neon. Las subidas van por la API, así que los carga_id salen de sus respuestas y nunca se suponen.
@@ -13,11 +13,15 @@ toca Neon. Las subidas van por la API, así que los carga_id salen de sus respue
 
 from __future__ import annotations
 
+import io
 import re
 from dataclasses import replace
 from typing import Any
 
+from openpyxl import load_workbook
 from pytest_bdd import given, parsers, scenario, then, when
+
+from abet_carga import r17
 
 Escenario = Any
 FEATURE = "specs/005-oportunidades-de-mejora/aceptacion/semaforo.feature"
@@ -76,6 +80,11 @@ def test_el_profesor_solo_ve_sus_secciones() -> None:
 @scenario(FEATURE, "Una carga que no está publicada no tiene semáforo")
 def test_una_carga_no_publicada_no_tiene_semaforo() -> None:
     """US-45, BR-MEJORA-05, con sus dos Ejemplos."""
+
+
+@scenario(FEATURE, "Las cifras y el semáforo coinciden con el R-17 de la misma carga")
+def test_las_cifras_y_el_semaforo_coinciden_con_el_r17() -> None:
+    """US-45, con las tres cargas declaradas de US-49 (T037)."""
 
 
 # Ayudas
@@ -285,3 +294,79 @@ def _tres_pi_de_la_410(ctx: Escenario) -> None:
     assert cuerpo["carga_id"] == ctx.carga_id
     assert [(i["pi"], i["pct_sobre_calificados"], i["semaforo"]) for i in cuerpo["indicadores"]] == [
         ("5.1", 63.6, "ROJO"), ("5.2", 63.6, "ROJO"), ("5.3", 72.7, "ROJO")]
+
+
+# Cuando y Entonces, las cifras contra el R-17 de la misma carga
+
+def _fila(hoja: Any, filas: tuple[int, ...], columna: str, pi: str) -> int:
+    [fila] = [fila for fila in filas if hoja[f"{columna}{fila}"].value == pi]
+    return fila
+
+
+def _con_su_r17(ctx: Escenario) -> list[tuple[str, dict[str, Any], Any]]:
+    """(carga, indicador, hoja) de cada indicador de las tres cargas."""
+    return [(carga, indicador, hoja) for carga, (indicadores, hoja) in ctx.extras["con_r17"].items()
+            for indicador in indicadores]
+
+
+@when("se envía GET /api/cargas/{carga_id}/indicadores y se descarga el R-17 de cada una de las tres cargas")
+def _indicadores_y_r17(ctx: Escenario) -> None:
+    cliente = ctx.sesion(ctx.extras["con_sesion"])
+    cargas = ctx.extras["declaradas"]
+    assert len(cargas) == 3, cargas
+    leidas = {}
+    for carga_id in cargas:
+        indicadores = cliente.get(f"/api/cargas/{carga_id}/indicadores")
+        descarga = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
+        assert indicadores.status_code == 200 and descarga.status_code == 200, (indicadores.text, descarga.text)
+        leidas[carga_id] = (indicadores.json()["indicadores"],
+                            load_workbook(io.BytesIO(descarga.content), data_only=True)[r17.HOJA])
+    ctx.extras["con_r17"] = leidas
+
+
+@then("en cada indicador el logro es igual a round(100 × la celda E de su fila del bloque II, 1) y la meta a "
+      "round(100 × la celda G de esa fila, 1)")
+def _logro_y_meta(ctx: Escenario) -> None:
+    revisados = 0
+    for _, indicador, hoja in _con_su_r17(ctx):
+        fila = _fila(hoja, r17.FILAS_DEL_BLOQUE_II, "B", indicador["pi"])
+        logro, meta = hoja[f"E{fila}"].value, hoja[f"G{fila}"].value
+        assert indicador["pct_sobre_calificados"] == (round(100 * logro, 1) if logro is not None else None)
+        assert indicador["meta_pct"] == round(100 * meta, 1)
+        revisados += 1
+    assert revisados == 9
+
+
+@then("los conteos por nivel son los de las celdas L a O de K29:Q31, «7 de 11» es el de la celda P y pct_sobre_total "
+      "es round(100 × la celda Q, 1)")
+def _conteos(ctx: Escenario) -> None:
+    for _, indicador, hoja in _con_su_r17(ctx):
+        fila = _fila(hoja, r17.FILAS_DE_FRECUENCIAS, "K", indicador["pi"])
+        assert indicador["estudiantes_por_nivel"] == [hoja[f"{columna}{fila}"].value for columna in "LMNO"]
+        logran = f"{indicador['logrados']} de {indicador['calificados']}" if indicador["logrados"] is not None else None
+        assert hoja[f"P{fila}"].value == logran
+        total = hoja[f"Q{fila}"].value
+        assert indicador["pct_sobre_total"] == (round(100 * total, 1) if total is not None else None)
+
+
+def _celda_h(hoja: Any, pi: str) -> Any:
+    return hoja[f"H{_fila(hoja, r17.FILAS_DEL_BLOQUE_II, 'B', pi)}"].value
+
+
+@then(parsers.re(r'el semáforo "VERDE" va con el texto «¡Felicidades! …» de la celda H de su fila'))
+def _verde(ctx: Escenario) -> None:
+    verdes = [(i, hoja) for _, i, hoja in _con_su_r17(ctx) if i["semaforo"] == "VERDE"]
+    assert verdes and all(_celda_h(hoja, i["pi"]) == r17.LOGRADO for i, hoja in verdes)
+
+
+@then(parsers.re(r'el semáforo "ROJO" o "AMBAR" va con el texto «El indicador aún no alcanza …» de la celda H de su fila'))
+def _rojo_o_ambar(ctx: Escenario) -> None:
+    abajo = [(i, hoja) for _, i, hoja in _con_su_r17(ctx) if i["semaforo"] in ("ROJO", "AMBAR")]
+    assert abajo and all(_celda_h(hoja, i["pi"]) == r17.NO_LOGRADO for i, hoja in abajo)
+
+
+@then(parsers.re(r'el indicador "SIN_DATO" de la copia sin notas en 5\.3 va con la celda H vacía'))
+def _sin_dato(ctx: Escenario) -> None:
+    sin_dato = [(i, hoja) for _, i, hoja in _con_su_r17(ctx) if i["semaforo"] == "SIN_DATO"]
+    assert [i["pi"] for i, _ in sin_dato] == ["5.3"]
+    assert all(_celda_h(hoja, i["pi"]) is None for i, hoja in sin_dato)
