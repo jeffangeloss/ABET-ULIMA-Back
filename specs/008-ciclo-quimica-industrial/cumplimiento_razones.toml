@@ -15,7 +15,46 @@ razon = "Espera a D-47 y a D-51 de la spec 007 (FR-001 de la spec 008)."
 
 [historias.US-80]
 estado = "Pendiente por decisión"
-razon = "Se construye solo si D-32 se responde (J-54, T039 y T047)."
+razon = "Sustituida el 2026-11-25 por la spec 009 (J-61). El agregado del curso sale de la ruta 20 y de P8, no de la ruta 12 ni de P6, así que T039 y T047 no se construyen."
+
+# Los seis escenarios de US-80, sustituidos el 2026-11-25 por la spec 009 (J-61). Cada uno nombra los de la spec 009
+# que cubren lo mismo con la ruta 20 y P8.
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "Cada sección trae su porcentaje como en su R-17"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «Cada porcentaje de sección es el de su R-17» y «Cada sección trae sus cifras en orden de número y la sección sin carga no inventa un porcentaje» (US-91)."
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "El agregado del curso suma estudiantes y no promedia porcentajes"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «El curso suma alumnos de las secciones publicadas y no promedia porcentajes» (US-91)."
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "Un curso sin cargas publicadas no inventa un porcentaje"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «Un curso sin cargas publicadas trae nulos y no ceros» (US-91)."
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "El profesor no recibe el agregado del curso"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «El profesor recibe 403 en el resumen del curso» (US-91), porque la ruta 20 es solo de la coordinación y la ruta 12 no suma el campo `agregados`."
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "Ninguna cifra del agregado revela a un estudiante"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «La respuesta del resumen trae solo las claves de su lista cerrada» (US-91)."
+
+[[escenarios]]
+archivo = "008-ciclo-quimica-industrial/aceptacion/avance_del_curso.feature"
+escenario = "P6 muestra el curso antes de las secciones"
+estado = "Pendiente por decisión"
+razon = "Sustituido por la spec 009 (J-61). Lo cubre «P8 escribe las cifras del curso con su barra de dos tramos» (US-92), porque el curso se muestra en P8 y no en P6."
 
 [[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/avance_del_registro.feature"

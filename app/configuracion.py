@@ -25,6 +25,9 @@ REGISTRO = logging.getLogger("abet.api")
 PERIODO = re.compile(r"[0-9]{4}-[0-2]")
 # El 422 de un periodo con otra forma que AAAA-C en las rutas 4 y 12 (BR-PERIODO-04 y BR-RESULTADOS-01, propuesta).
 PERIODO_MAL_FORMADO = "El periodo no tiene la forma AAAA-C."
+# Código de asignatura de 4 o 6 cifras, como ck_asignatura_codigo, y el 422 de la ruta 20 (BR-RESULTADOS-12, propuesta).
+ASIGNATURA = re.compile(r"[0-9]{4}(?:[0-9]{2})?")
+ASIGNATURA_MAL_FORMADA = "La asignatura no tiene la forma de un código de 4 o 6 cifras."
 LARGO_MINIMO_DEL_SECRETO = 32
 FORMA_INESPERADA = "La petición no tiene la forma esperada."
 ERROR_INTERNO = "Ocurrió un error interno. Intente de nuevo."

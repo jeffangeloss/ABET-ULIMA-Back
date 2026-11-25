@@ -59,6 +59,12 @@ HISTORIAS_DE_LA_SPEC_008 = {
 }
 SPEC_008_DIR = "specs/008-ciclo-quimica-industrial/aceptacion"
 SPEC_008 = tuple(f"{SPEC_008_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_008)
+# Los tres archivos de la spec 009, con las historias que spec.md asigna a cada uno (T014 de su tasks.md).
+HISTORIAS_DE_LA_SPEC_009 = {
+    "resumen_del_curso": (91, 93), "pantalla_resumen_del_curso": (92,), "conciliacion_del_curso": (94,),
+}
+SPEC_009_DIR = "specs/009-resumen-del-curso/aceptacion"
+SPEC_009 = tuple(f"{SPEC_009_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_009)
 # Los cuatro archivos de la spec 010, con las historias que spec.md asigna a cada uno (T014 de su tasks.md).
 HISTORIAS_DE_LA_SPEC_010 = {"nombre_en_la_base": (95,), "programacion_con_nombre": (96,),
                             "profesores_en_el_r17": (97, 98), "privacidad_del_nombre": (99,)}
@@ -69,7 +75,7 @@ SPEC_010 = tuple(f"{SPEC_010_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_L
 # los escenarios de la siembra, la guía, la privacidad, la matriz y el sistema visual arman cada uno lo suyo.
 SIN_ANTECEDENTES = frozenset({ANTES_DE_SUBIR, ROTULOS, *(ruta for ruta in SPEC_008 if any(
     nombre in ruta for nombre in ("capacitacion_en_develop", "guia_y_privacidad", "matriz_cumplimiento",
-                                  "sistema_visual")))})
+                                  "sistema_visual")))} | {f"{SPEC_009_DIR}/pantalla_resumen_del_curso.feature"})
 
 
 class _EscenariosDeCarga:
@@ -240,6 +246,24 @@ class _EscenariosDeMatrizCumplimiento:
     scenarios(f"{SPEC_008_DIR}/matriz_cumplimiento.feature")
 
 
+class _EscenariosDelResumenDelCurso:
+    """Funciones que scenarios() arma para resumen_del_curso.feature (spec 009) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_009_DIR}/resumen_del_curso.feature")
+
+
+class _EscenariosDeLaPantallaDelResumen:
+    """Funciones que scenarios() arma para pantalla_resumen_del_curso.feature (spec 009) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_009_DIR}/pantalla_resumen_del_curso.feature")
+
+
+class _EscenariosDeLaConciliacionDelCurso:
+    """Funciones que scenarios() arma para conciliacion_del_curso.feature (spec 009) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_009_DIR}/conciliacion_del_curso.feature")
+
+
 class _EscenariosDeNombreEnLaBase:
     """Funciones que scenarios() arma para nombre_en_la_base.feature (spec 010) con la ruta relativa a la raíz."""
 
@@ -272,13 +296,16 @@ _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _Escenari
             SIGUIENTE_PASO: _EscenariosDelSiguientePaso, ANTES_DE_SUBIR: _EscenariosDeAntesDeSubir,
             QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance,
             **{ruta: clase for ruta, clase in zip(SPEC_008, (_EscenariosDeCatalogoIndustrial, _EscenariosDeAlcanceCoordinacion, _EscenariosDePeriodoElegido, _EscenariosDeExportsCapacitacion, _EscenariosDeCargaQuimica, _EscenariosDeR17Industrial, _EscenariosDeAvanceDelCurso, _EscenariosDeSistemaVisual, _EscenariosDeEnsayoYConciliacion, _EscenariosDeCapacitacionEnDevelop, _EscenariosDeGuiaYPrivacidad, _EscenariosDeMatrizCumplimiento), strict=True)},
+            **dict(zip(SPEC_009, (_EscenariosDelResumenDelCurso, _EscenariosDeLaPantallaDelResumen,
+                                  _EscenariosDeLaConciliacionDelCurso), strict=True)),
             **dict(zip(SPEC_010, (_EscenariosDeNombreEnLaBase, _EscenariosDeProgramacionConNombre,
                                   _EscenariosDeProfesoresEnElR17, _EscenariosDePrivacidadDelNombre), strict=True))}
 _POR_ARCHIVO = pytest.mark.parametrize("ruta", list(_ARMADAS),
                                        ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
                                             "alcance_y_privacidad", *HISTORIAS_DE_LA_SPEC_005, "programacion_docente", "secciones_sin_docente",
                                             "siguiente_paso", "antes_de_subir", "que_corregir", "rotulos_por_cuenta",
-                                            "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008, *HISTORIAS_DE_LA_SPEC_010])
+                                            "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008, *HISTORIAS_DE_LA_SPEC_009,
+                                            *HISTORIAS_DE_LA_SPEC_010])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero
@@ -603,6 +630,46 @@ def test_la_spec_008_trae_202_escenarios_con_258_casos_41_van_a_vitest_y_14_a_pl
     assert (escenarios, casos) == (202, 258)
     assert (delegados, del_navegador) == (41, 14)
     assert historias == {f"US-{n}" for n in range(67, 91)}
+
+
+def test_la_spec_009_trae_23_escenarios_con_23_casos_6_van_a_vitest_y_1_a_playwright() -> None:
+    # T003 y T014 de specs/009-resumen-del-curso/tasks.md. Cada escenario lleva @spec009, @corte1 y una sola historia de
+    # las que spec.md asigna a su archivo, y ninguno va a la vez a Vitest y a Playwright. Ningún escenario es un esquema,
+    # así que los casos son los escenarios. Las cuatro historias, de US-91 a US-94, tienen al menos un escenario, y los
+    # siete de pantalla de US-92 son los únicos que no corre el Back.
+    escenarios, casos, delegados, del_navegador, historias = 0, 0, 0, 0, set()
+    por_archivo: dict[str, int] = {}
+    for nombre, ruta in zip(HISTORIAS_DE_LA_SPEC_009, SPEC_009, strict=True):
+        propias = {f"US-{n}" for n in HISTORIAS_DE_LA_SPEC_009[nombre]}
+        for escenario in _feature(ruta).scenarios.values():
+            escenarios += 1
+            por_archivo[nombre] = por_archivo.get(nombre, 0) + 1
+            casos += sum(len(t.examples) for t in escenario.examples) if escenario.templated else 1
+            assert {"spec009", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            [historia] = [t for t in escenario.tags if re.fullmatch(r"US-\d{2}", t)]
+            assert historia in propias, f"{nombre}: «{escenario.name}» lleva {historia}"
+            historias.add(historia)
+            a_vitest, a_playwright = "delegado_a_vitest" in escenario.tags, "playwright" in escenario.tags
+            assert not (a_vitest and a_playwright), f"{escenario.name}: {sorted(escenario.tags)}"
+            # Solo los escenarios de pantalla, que nombran P8, van al Front.
+            assert (a_vitest or a_playwright) == (nombre == "pantalla_resumen_del_curso"), escenario.name
+            delegados += a_vitest
+            del_navegador += a_playwright
+    assert (escenarios, casos) == (23, 23)
+    assert por_archivo == {"resumen_del_curso": 14, "pantalla_resumen_del_curso": 7, "conciliacion_del_curso": 2}
+    assert (delegados, del_navegador) == (6, 1)
+    assert historias == {f"US-{n}" for n in range(91, 95)}
+
+
+def test_cada_escenario_de_la_spec_009_sin_vitest_ni_playwright_tiene_su_paso_de_pytest_bdd() -> None:
+    # Un escenario del Back que ningún módulo enlaza con @scenario no corre en ninguna parte, así que esta prueba lo
+    # nombra antes de que quede sin probar. Los 16 escenarios de resumen_del_curso.feature y conciliacion_del_curso.feature
+    # los atan test_resumen_del_curso_feature.py y test_conciliacion_del_curso_feature.py (T021 a T023).
+    enlazados = _titulos_enlazados()
+    sin_enlace = [f"{ruta.rsplit('/', 1)[1]}: {escenario.name}" for ruta in SPEC_009
+                  for escenario in _feature(ruta).scenarios.values()
+                  if not {"delegado_a_vitest", "playwright"} & set(escenario.tags) and escenario.name not in enlazados]
+    assert sin_enlace == []
 
 
 def test_la_spec_010_trae_30_escenarios_con_42_casos_y_ninguno_va_a_vitest_ni_a_playwright() -> None:

@@ -45,9 +45,11 @@ def _ids_de_la_410(api: Any) -> dict[str, int]:
 
 def test_br_acceso_10_cada_ruta_fuera_de_la_lista_publica_responde_401_sin_cookie(api: Any) -> None:
     respuestas = R.sin_cookie(api.cliente(), _ids_de_la_410(api))
+    # La ruta 20 de la spec 009 entra al recorrido sin cambiar la prueba, y esta línea exige que no salga de él.
     assert {("GET", "/api/resultados"), ("GET", "/api/cargas/{carga_id}/indicadores"),
             ("GET", "/api/cargas/{carga_id}/mejora"), ("PUT", "/api/cargas/{carga_id}/mejora/borrador"),
-            ("POST", "/api/cargas/{carga_id}/mejora/declaracion")} <= set(respuestas)
+            ("POST", "/api/cargas/{carga_id}/mejora/declaracion"), ("GET", "/api/resumen-curso"),
+            ("GET", "/api/resumen-curso/cursos")} <= set(respuestas)
     assert len(respuestas) >= 8, sorted(respuestas)
     for (metodo, camino), respuesta in respuestas.items():
         assert respuesta.status_code == 401, f"{metodo} {camino} responde {respuesta.status_code} sin sesión"
@@ -73,6 +75,8 @@ def test_br_acceso_10_cada_ruta_con_un_identificador_ajeno_responde_el_403_unico
             ("GET", "/api/cargas/{carga_id}/mejora"), ("PUT", "/api/cargas/{carga_id}/mejora/borrador"),
             ("POST", "/api/cargas/{carga_id}/mejora/declaracion")} <= set(respuestas), sorted(respuestas)
     assert ("GET", "/api/resultados") not in respuestas
+    # Las rutas 20 y 21 reciben el periodo y la asignatura y ningún identificador de sección ni de carga, así que no entra a esta lista.
+    assert {("GET", "/api/resumen-curso"), ("GET", "/api/resumen-curso/cursos")}.isdisjoint(respuestas)
 
 
 def test_br_acceso_10_una_ruta_con_un_parametro_desconocido_detiene_el_recorrido() -> None:
