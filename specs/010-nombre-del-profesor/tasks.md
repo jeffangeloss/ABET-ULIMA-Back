@@ -1,6 +1,6 @@
 # Tasks: Nombre del profesor en la base y en el R-17
 
-**Input**: spec.md, plan.md · **Estado al 2026-11-25**: spec aprobada por Jefferson en el chat el 2026-11-24 («Apruebo la spec 010, sepáralos por coma»), con D-12 y D-58 y J-65 a J-71 en sus valores provisionales. La construcción empieza después de fusionar `fix/r17-recuadros-y-filas-de-pi`. Cada tarea lleva su estimación en horas, que suma unas 30
+**Input**: spec.md, plan.md · **Estado al 2026-11-25**: spec aprobada por Jefferson en el chat el 2026-11-24 («Apruebo la spec 010, sepáralos por coma»), con D-12 y D-58 y J-65 a J-71 en sus valores provisionales. `fix/r17-recuadros-y-filas-de-pi` ya está en `develop` del Back (PR #58, 0d92ad9) y `docs/r17-recuadros-y-filas-de-pi` en el del Front (PR #42, 3b0247e), así que la construcción puede empezar. Cada tarea lleva su estimación en horas, que suma unas 30
 
 Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores. `[Back]` es ABET-ULIMA-Back, `[Front]` es ABET-ULIMA-Front, `[Base]` es la base como código de `db/` con sus pruebas en el clúster desechable y `[Jefferson]` marca lo que solo él decide o corre desde su Windows. Toda escritura en Neon la hace Jefferson, o Claude con su permiso, desde el Windows por `en_windows.py`, con respaldo previo y sin credenciales en archivos ni argumentos. Cada tarea de código escribe primero la prueba de sus escenarios y la ve fallar.
 
@@ -9,7 +9,7 @@ Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores
 - [x] T001 Candidatas, auditoría con tres lentes y el crítico, spec y cuatro `.feature` · 2026-11-24
 - [x] T002 [Jefferson] Aprobar la spec y J-65 a J-71, con D10 separada por comas · 2026-11-24, «Apruebo la spec 010, sepáralos por coma»
 - [ ] T003 [Jefferson] Llevar D-12 a la Coordinación de Ambiental y a la Oficina de Calidad y D-58 a la coordinación de cada carrera, y pedir la hoja de la programación con la columna de nombres [US-95] [US-96] [US-97] · 0,5 h
-- [ ] T004 [Jefferson] Fusionar `fix/r17-recuadros-y-filas-de-pi` del Back y `docs/r17-recuadros-y-filas-de-pi` del Front en `develop`, condición de FR-009 y de J-71 [US-97] · 0,5 h
+- [x] T004 [Jefferson] Fusionar `fix/r17-recuadros-y-filas-de-pi` del Back y `docs/r17-recuadros-y-filas-de-pi` del Front en `develop`, condición de FR-009 y de J-71 [US-97] · 2026-11-24, PR #58 del Back (0d92ad9) y PR #42 del Front (3b0247e)
 
 ## Fase 1 · Contrato
 

@@ -45,11 +45,11 @@ Característica: Nombre del profesor en la base
       | dos espacios seguidos    | "Profesor  Inventado Uno"                 |
       | vacío                    | ""                                        |
       | salto de línea           | "Profesor Inventado\nUno"                 |
-      | espacio de ancho cero    | "Profesor Inventado​Uno"             |
+      | espacio de ancho cero    | "Profesor Inventado\u200bUno"             |
       | arroba                   | "docente732@example.invalid"              |
       | dígito                   | "Profesor Inventado 732"                  |
       | coma                     | "Inventado, Profesor"                     |
-      | forma NFD                | "Profesor Inventado Ángel"          |
+      | forma NFD                | "Profesor Inventado A\u0301ngel"          |
 
   @spec010 @corte1 @US-95
   Escenario: Q15 encuentra en acceso solo el correo y el nombre del usuario

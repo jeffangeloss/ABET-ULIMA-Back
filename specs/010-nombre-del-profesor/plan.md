@@ -1,6 +1,6 @@
 # Implementation Plan: Nombre del profesor en la base y en el R-17
 
-**Branch**: `docs/010-nombre-del-profesor` del Back y del Front (PR a `develop`), con la implementación en `feat/010-nombre-del-profesor` después de la aprobación y de la fusión de `fix/r17-recuadros-y-filas-de-pi` | **Date**: 2026-11-25 | **Spec**: [spec.md](./spec.md)
+**Branch**: `docs/010-nombre-del-profesor` del Back y del Front (PR a `develop`), con la implementación en `feat/010-nombre-del-profesor` después de la aprobación y de la fusión de `fix/r17-recuadros-y-filas-de-pi`, ya en `develop` (PR #58, 0d92ad9) | **Date**: 2026-11-25 | **Spec**: [spec.md](./spec.md)
 
 ## Summary
 
@@ -49,7 +49,7 @@ ABET-ULIMA-Front/
 0. **Descubrimiento.** Candidatas, auditoría con tres lentes y el crítico, spec y cuatro `.feature`, y aprobación de Jefferson del 2026-11-24 con D10 separada por comas.
 1. **Contrato.** BR-ACCESO-15 y BR-R17-14 con los cambios fechados de BR-ACCESO-01, BR-ACCESO-11 y BR-R17-07, la línea fechada del contrato del Front, el cambio fechado de la spec 006 y de D-12 de la spec 001 y los pasos compartidos de los Antecedentes.
 2. **Base.** V1_16, Q15, los permisos de la columna, la consulta informativa y las semillas con nombres inventados, con pytest-bdd y `correr_pruebas.sh` primero.
-3. **Back.** La columna `nombre` en `cargar_programacion.py` y su SQL, y los profesores de la sección en D10 con su cabida, con pytest-bdd primero. Empieza después de fusionar `fix/r17-recuadros-y-filas-de-pi`, porque toca `abet_carga/r17.py`, `tests/test_r17.py` y la spec viva `r17`.
+3. **Back.** La columna `nombre` en `cargar_programacion.py` y su SQL, y los profesores de la sección en D10 con su cabida, con pytest-bdd primero. Empieza después de fusionar `fix/r17-recuadros-y-filas-de-pi`, ya en `develop` (PR #58), porque toca `abet_carga/r17.py`, `tests/test_r17.py` y la spec viva `r17`.
 4. **Front.** Solo la prueba de humo de D10. La API no cambia, pero el R-17 descargado se revisa.
 5. **Pruebas y humo.** Suites del Back y del Front, `bash db/pruebas/correr_pruebas.sh`, `preflight.sh` y la matriz de cumplimiento, y el humo con Playwright contra la vista previa de develop.
 6. **Auditoría.** `audit.md`, las líneas Verification fechadas de las specs vivas `acceso` y `r17`, `MEMORIA.md` y `CHANGELOG.md`.
@@ -57,7 +57,7 @@ ABET-ULIMA-Front/
 
 ## Estimación y fecha
 
-La estimación por tarea está en `tasks.md` y suma unas 30 horas, de las cuales unas 17 son de construcción de las cinco historias (US-95 con 3 h, US-96 con 5 h, US-97 con 4 h, US-98 con 2 h y US-99 con 3 h) y el resto es contrato, cierre y despliegue. Con unas 9 horas diarias la construcción cubre tres días, y empieza solo cuando `fix/r17-recuadros-y-filas-de-pi` está fusionada en `develop`. La carga de los nombres reales no tiene fecha propia, porque depende de que la coordinación de cada carrera entregue la hoja con la columna de nombres (D-58).
+La estimación por tarea está en `tasks.md` y suma unas 30 horas, de las cuales unas 17 son de construcción de las cinco historias (US-95 con 3 h, US-96 con 5 h, US-97 con 4 h, US-98 con 2 h y US-99 con 3 h) y el resto es contrato, cierre y despliegue. Con unas 9 horas diarias la construcción cubre tres días, y puede empezar, porque `fix/r17-recuadros-y-filas-de-pi` ya está fusionada en `develop` (PR #58). La carga de los nombres reales no tiene fecha propia, porque depende de que la coordinación de cada carrera entregue la hoja con la columna de nombres (D-58).
 
 ## Riesgos
 

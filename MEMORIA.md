@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-25
-- **Rama de trabajo**: `docs/010-nombre-del-profesor`, con la spec 010 aprobada y su fase 1 de contrato, su plan y sus tareas. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 está en `fix/r17-recuadros-y-filas-de-pi`, sin push
+- **Rama de trabajo**: `docs/010-nombre-del-profesor`, con la spec 010 aprobada y su fase 1 de contrato, su plan y sus tareas. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: BR-ACCESO-15 y BR-R17-14 en las specs vivas, con los cambios fechados de BR-ACCESO-01, BR-ACCESO-11 y BR-R17-07, el plan (fases 0 a 7) y las tareas de la spec 010 con unas 30 horas, y la matriz de cumplimiento regenerada. Antes, la aprobación de la spec 010 con D10 separada por comas
-- **En curso**: los PR de `docs/010-nombre-del-profesor` (Back y Front) y los de `fix/r17-recuadros-y-filas-de-pi` (Back) y `docs/r17-recuadros-y-filas-de-pi` (Front), que esperan el permiso de Jefferson
-- **Siguiente paso**: fusionar los PR con el permiso de Jefferson y construir la spec 010 en `feat/010-nombre-del-profesor` desde T012, después de fusionar `fix/r17-recuadros-y-filas-de-pi`; la demo de Química sigue con la coordinación, y la spec 009 espera su construcción
+- **Último cambio**: la revisión del revisor Opus, que marca T004 como hecha y escribe los caracteres invisibles de los Ejemplos como secuencias. Antes, BR-ACCESO-15 y BR-R17-14 en las specs vivas, con los cambios fechados de BR-ACCESO-01, BR-ACCESO-11 y BR-R17-07, el plan (fases 0 a 7) y las tareas de la spec 010 con unas 30 horas, y la matriz de cumplimiento regenerada. Antes, la aprobación de la spec 010 con D10 separada por comas
+- **En curso**: los PR de `docs/010-nombre-del-profesor` (Back y Front), que esperan el permiso de Jefferson
+- **Siguiente paso**: fusionar los PR con el permiso de Jefferson y construir la spec 010 en `feat/010-nombre-del-profesor` desde T012, porque `fix/r17-recuadros-y-filas-de-pi` ya está en `develop`; la demo de Química sigue con la coordinación, y la spec 009 espera su construcción
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 01:20 (Lima) · docs/010-nombre-del-profesor · Revisión de la fase 1 de la spec 010 por el revisor Opus
+- Quién: revisor Opus independiente, delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `tasks.md` marca T004 como hecha (PR #58 del Back, 0d92ad9, y PR #42 del Front, 3b0247e), y `plan.md`, `specs/README.md` y «Punto actual» dejan de decir que `fix/r17-recuadros-y-filas-de-pi` espera su fusión, porque ya es la base de esta rama. Los Ejemplos de `nombre_en_la_base.feature` escriben el espacio de ancho cero y la tilde combinante como `\u200b` y `\u0301`, como dice su vocabulario, en lugar de caracteres invisibles que un editor puede borrar.
+- Por qué: `git merge-base HEAD origin/develop` es 0d92ad9, la fusión del PR #58, así que el plan y las tareas describían una espera que ya no existe.
+- Lo que debe hacer, cómo se probó: los cuatro `.feature` siguen con 30 escenarios en `pytest_bdd.feature.get_features`, los 30 aparecen en la Prueba de una regla, la matriz con `--comprobar` da 0 huecos y `bash scripts/preflight.sh` termina sin fallas. Las tareas suman 30 h y las de construcción de US-95 a US-99 suman 17 h.
+- Lo que no debe hacer, cómo se probó: no cambia código, migraciones ni `db/`, y ningún ejemplo trae un nombre fuera de la forma inventada ni un correo fuera de `@example.invalid`.
+- Correcciones: el estado de `fix/r17-recuadros-y-filas-de-pi` en el plan, las tareas, la portada de specs y la memoria, y los dos caracteres invisibles de los Ejemplos.
+- Cómo se reporta: esta entrada, en un commit local sin push.
+- Pendiente y siguiente paso: T003 de Jefferson y T012 a T014 del contrato, y después la construcción en `feat/010-nombre-del-profesor`.
 
 ### 2026-11-25 00:40 (Lima) · docs/010-nombre-del-profesor · Fase 1 de la spec 010, reglas, plan y tareas
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin Codex. La sesión principal revisa el diff y la corrida de la matriz antes de aceptarlo.
