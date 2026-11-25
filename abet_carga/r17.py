@@ -60,12 +60,22 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
 11. Con menos de 3 PI, las filas de PI sin uso de los bloques I y II (18 y 19, 25 y 26 con un PI) quedan ocultas, sin
    borrarlas, y las filas 29 a 31 de las frecuencias nunca se ocultan (BR-R17-02).
 
+12. D10, el valor de «Profesor:», lleva los nombres de los profesores asignados a la sección en acceso.docente_seccion
+   (BR-R17-14, spec 010). Son los usuarios con rol PROFESOR y nombre, activos o dados de baja y sin corte temporal (J-67),
+   leídos en la misma transacción READ ONLY del libro. profesores_de_d10(), una función aislada para revertir el valor
+   provisional de D-12 sin tocar el resto de la cabecera, los ordena en Python por clave_de_orden() (NFD sin marcas
+   diacríticas y casefold(), con usuario_id de desempate), los une con «, » y devuelve None si ninguno tiene nombre,
+   así que D10 queda vacía. Un profesor sin nombre se omite y su correo no lo reemplaza, porque el correo va solo en la
+   hoja «Constancia». D10:I10 lleva ajuste de texto y alto_de_la_fila_10() calcula el alto de la fila 10 por líneas, sin
+   pasar de 409 puntos, sin mover la fila 9 ni la 11.
+
 El conteo por nivel, la cifra entre paréntesis y el porcentaje sobre el total van en K28:Q31, la
 zona libre que propone plantillas/README.md, y M24 a M26 repiten los conteos de la hoja original.
 """
 
 from __future__ import annotations
 
+import unicodedata
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -109,6 +119,12 @@ FUENTE = "Calibri"
 BLANCO = "FFFFFFFF"
 # Primeros caracteres con que Excel empieza una fórmula si alguien edita la celda.
 _PREFIJOS_DE_FORMULA = ("=", "+", "-", "@")
+# Ancho, en caracteres, con que se estima cuántas líneas ocupa D10:I10. Las columnas D a I suman 158,2, pero se toman
+# 120, porque los nombres propios llevan mayúsculas, Excel y LibreOffice no ajustan el texto igual, y sobrar una línea
+# cuesta menos que cortar el nombre de un profesor (BR-R17-14).
+ANCHO_DE_D10_I10 = 120.0
+ALTO_DE_LINEA = 15.0
+TOPE_DE_ALTO = 409.0
 # La misma instantánea para la constancia, las cifras y la declaración (BR-R17-12).
 SOLO_LECTURA = "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
 
@@ -138,6 +154,21 @@ SELECT cr.nombre
 FROM abet.carga c
 JOIN abet.carrera cr ON cr.carrera_id = c.carrera_id
 WHERE c.carga_id = %s
+"""
+
+# BR-R17-14. Los profesores con nombre asignados a la sección de la carga, activos o dados de baja, sin corte temporal
+# (J-67). Una cuenta COORDINADOR asignada y un profesor sin nombre no salen.
+_PROFESORES = """
+SELECT u.usuario_id, u.nombre
+FROM abet.carga c
+JOIN acceso.docente_seccion d      ON d.seccion_id = c.seccion_id
+JOIN acceso.usuario_autorizado u   ON u.usuario_id = d.usuario_id
+WHERE c.carga_id = %s AND u.rol = 'PROFESOR' AND u.nombre IS NOT NULL
+"""
+# Una base anterior a V1_16 no tiene la columna nombre, así que su R-17 sale con D10 vacía en lugar de un 500.
+_TIENE_NOMBRE = """
+SELECT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = 'acceso.usuario_autorizado'::regclass
+                  AND attname = 'nombre' AND NOT attisdropped) AS existe
 """
 
 # BR-R17-12. Cada PI de la carga, con su registro en la declaración vigente, si lo tiene, y si tiene calificados.
@@ -225,7 +256,8 @@ def _generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path, exigir_
     plan = {detalle["codigo"]: detalle for detalle in _leer(conexion, _PLAN, carga_id)}
     provisional = any(fila["provisional"] for fila in filas)
     [carrera] = _leer(conexion, _CARRERA, carga_id)
-    libro = _libro(filas, plan, mediciones, cuerpo, provisional, carrera["nombre"], recuadros)
+    profesores = _profesores(conexion, carga_id)
+    libro = _libro(filas, plan, mediciones, cuerpo, provisional, carrera["nombre"], recuadros, profesores)
     ruta = carpeta / _nombre(filas[0], provisional)
     libro.save(ruta)
     return ruta
@@ -234,6 +266,37 @@ def _generar(conexion: psycopg.Connection, carga_id: int, carpeta: Path, exigir_
 def _leer(conexion: psycopg.Connection, consulta: str, *parametros: object) -> list[dict[str, Any]]:
     with conexion.cursor(row_factory=dict_row) as cursor:
         return cursor.execute(consulta, parametros).fetchall()
+
+
+def _profesores(conexion: psycopg.Connection, carga_id: int) -> str | None:
+    """Texto de D10 con los profesores con nombre de la sección de la carga, o None si ninguno lo tiene (BR-R17-14)."""
+    [columna] = _leer(conexion, _TIENE_NOMBRE)
+    if not columna["existe"]:
+        return None
+    return profesores_de_d10([(fila["usuario_id"], fila["nombre"]) for fila in _leer(conexion, _PROFESORES, carga_id)])
+
+
+def clave_de_orden(nombre: str) -> str:
+    """Clave de orden alfabético de un nombre, en NFD sin marcas diacríticas y con casefold(), así «Ángel» va con «A»."""
+    descompuesto = unicodedata.normalize("NFD", nombre)
+    return "".join(c for c in descompuesto if not unicodedata.combining(c)).casefold()
+
+
+def profesores_de_d10(profesores: list[tuple[int, str]]) -> str | None:
+    """Nombres de los profesores unidos con «, » en orden alfabético estable, o None si no hay ninguno (BR-R17-14).
+
+    Cada profesor es (usuario_id, nombre). El orden usa clave_de_orden() y el usuario_id desempata a los homónimos, que
+    salen los dos. Es el valor provisional de D-12 (D10 con los nombres de la sección), aislado en esta función y en
+    _profesores() para revertirlo sin tocar el resto de la cabecera.
+    """
+    if not profesores:
+        return None
+    return ", ".join(nombre for _, nombre in sorted(profesores, key=lambda p: (clave_de_orden(p[1]), p[0])))
+
+
+def alto_de_la_fila_10(lineas: int) -> float:
+    """Alto de la fila 10 para las líneas de D10:I10, de 15 puntos por línea y sin pasar de 409, el tope de Excel."""
+    return min(TOPE_DE_ALTO, max(ALTO_DE_LINEA, ALTO_DE_LINEA * lineas))
 
 
 def _recuadros(conexion: psycopg.Connection, carga_id: int) -> tuple[str, str]:
@@ -271,12 +334,14 @@ def _libro(
     provisional: bool,
     carrera: str,
     recuadros: tuple[str, str] | None,
+    profesores: str | None,
 ) -> Workbook:
     libro = load_workbook(PLANTILLA)
     hoja = libro[HOJA]
     _sin_rellenos_automaticos(hoja)
     _logotipo(hoja)
     _cabecera(hoja, filas, carrera)
+    _profesores_en_d10(hoja, profesores)
     if provisional:
         _franja(hoja, cuerpo)
     _bloques(hoja, filas, plan)
@@ -336,6 +401,18 @@ def _cabecera(hoja: Worksheet, filas: list[dict[str, Any]], carrera: str) -> Non
         _escribir(hoja, referencia, primera[clave])
     resultados = sorted({fila["so"] for fila in filas})
     _escribir(hoja, "B15", f"Student Outcome (SO) {constancia.lista([str(so) for so in resultados])}")
+
+
+def _profesores_en_d10(hoja: Worksheet, profesores: str | None) -> None:
+    """D10:I10 con ajuste de texto y la fila 10 tan alta como pide su texto. Sin nombres, la celda y la fila quedan como en la plantilla."""
+    alineacion = hoja["D10"].alignment
+    hoja["D10"].alignment = Alignment(horizontal=alineacion.horizontal or "left", vertical="top", wrap_text=True)
+    if profesores is None:
+        return
+    _escribir(hoja, "D10", profesores)
+    lineas = lineas_del_recuadro(profesores, ANCHO_DE_D10_I10)
+    if lineas > 1:
+        hoja.row_dimensions[10].height = alto_de_la_fila_10(lineas)
 
 
 def componer_recuadros(pis: list[tuple[str, str | None, str, str]]) -> tuple[str, str]:

@@ -750,10 +750,13 @@ def _correr_q04(ctx: Escenario) -> None:
 
 @when("corre la consulta Q15, nueva en pruebas.sql, que aplica el filtro de columnas de Q04 al esquema acceso")
 def _correr_q15(ctx: Escenario) -> None:
-    assert "Q15" in (RAIZ / "db" / "pruebas" / "pruebas.sql").read_text(encoding="utf-8")
-    q04 = _controles()["Q04"]
-    assert "table_schema = 'abet'" in q04
-    ctx.extras["q15"] = ctx.filas(q04.replace("table_schema = 'abet'", "table_schema = 'acceso'"))
+    # Cambio del 2026-11-25 (spec 010, FR-002). El paso corre el bloque de Q15 de pruebas.sql sobre la base del escenario
+    # y no el texto de Q04, que no vigila la columna nombre de V1_16 ni las columnas de otras tablas de acceso.
+    for plugin in ctx.request.config.pluginmanager.get_plugins():
+        if (getattr(plugin, "__file__", "") or "").endswith("aceptacion/pasos/conftest.py"):
+            ctx.extras["q15"] = plugin.correr_q15(ctx)
+            return
+    raise AssertionError("no se encuentra tests/aceptacion/pasos/conftest.py")
 
 
 @then("Q04 devuelve 0 filas")
@@ -763,4 +766,8 @@ def _q04_en_cero(ctx: Escenario) -> None:
 
 @then("Q15 devuelve solo la columna de correo de acceso.usuario_autorizado")
 def _q15_solo_el_correo(ctx: Escenario) -> None:
-    assert ctx.extras["q15"] == [("usuario_autorizado", "correo")]
+    # Desde V1_16 (spec 010) Q15 encuentra también la columna nombre del mismo usuario, y pasa si y solo si encuentra
+    # exactamente el correo y el nombre de acceso.usuario_autorizado, sin ninguna otra columna de acceso.
+    corrida = ctx.extras["q15"]
+    assert corrida.returncode == 0, corrida.stderr
+    assert "ok Q15" in corrida.stderr, corrida.stderr

@@ -117,6 +117,19 @@ BEGIN
         IF NOT has_schema_privilege('abet_respaldo', 'acceso', 'USAGE') THEN
             RAISE EXCEPTION 'abet_respaldo no puede entrar al esquema acceso, y el respaldo fallaría';
         END IF;
+        -- Desde V1_16 (spec 010) la columna nombre de acceso.usuario_autorizado es un dato personal. Los dos roles de
+        -- lectura no la alcanzan, y el respaldo la lee porque pg_dump la vuelca, así que ese respaldo entra al
+        -- tratamiento de datos de la Ley 29733. El IF EXISTS deja pasar una rama anterior a V1_16.
+        IF EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = 'acceso.usuario_autorizado'::regclass
+                      AND a.attname = 'nombre' AND NOT a.attisdropped) THEN
+            IF has_column_privilege('abet_lectura', 'acceso.usuario_autorizado', 'nombre', 'SELECT')
+               OR has_column_privilege('powerbi_lectura', 'acceso.usuario_autorizado', 'nombre', 'SELECT') THEN
+                RAISE EXCEPTION 'abet_lectura o powerbi_lectura puede leer el nombre de acceso.usuario_autorizado';
+            END IF;
+            IF NOT has_column_privilege('abet_respaldo', 'acceso.usuario_autorizado', 'nombre', 'SELECT') THEN
+                RAISE EXCEPTION 'abet_respaldo no puede leer el nombre de acceso.usuario_autorizado, y el respaldo fallaría';
+            END IF;
+        END IF;
     END IF;
     IF NOT has_schema_privilege('abet_respaldo', 'abet', 'USAGE')
        OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace

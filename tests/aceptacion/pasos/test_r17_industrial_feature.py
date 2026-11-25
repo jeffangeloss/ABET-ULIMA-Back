@@ -267,10 +267,11 @@ def _tabla(ctx: Escenario, desde: str, hasta: str, so: str, pi: str) -> None:
     assert hoja[f"B{int(hasta) + 1}"].value is None
 
 
-@then(parsers.re(r'la columna D y la celda D10 quedan vacías, como fija BR-R17-07'))
+@then(parsers.re(r'la columna D queda vacía y la celda D10 trae el nombre inventado del profesor, como fija BR-R17-14'))
 def _sin_nombres(ctx: Escenario) -> None:
+    # Cambio del 2026-11-25 (spec 010). D10 lleva el nombre del profesor de la 701, y ningún nombre de estudiante.
     hoja = _hoja(ctx)
-    assert hoja["D10"].value is None
+    assert hoja["D10"].value == "Profesor Inventado Setecientos Uno"
     assert [hoja[f"D{n}"].value for n in range(43, 43 + 142)] == [None] * 142
 
 

@@ -6,7 +6,7 @@
 -- cada una con el curso de Blackboard que declara la hoja de su export inventado. Siembra el plan de medición de
 -- 450010 en 2026-2, las tres secciones, el usuario docente.varias@example.invalid, PROFESOR, activo y sin contraseña,
 -- y sus tres asignaciones en acceso.docente_seccion. Las dos secciones 412 de asignaturas distintas prueban que el
--- mismo número de sección en otra asignatura no se confunde.
+-- mismo número de sección en otra asignatura no se confunde. Desde V1_16 (spec 010) el profesor lleva su nombre inventado.
 -- Corre en las bases desechables de varias_secciones.feature y de db/pruebas/correr_pruebas.sh y, cuando haga falta,
 -- en abet_sis_med_dev. No entra en Neon (T027), porque D-09 y D-13 fijan para el piloto el plan de 450002 y un
 -- coordinador con dos profesores de prueba, y los escenarios que usan estos datos nunca corren en Neon.
@@ -86,6 +86,20 @@ ON CONFLICT DO NOTHING;
 INSERT INTO acceso.usuario_autorizado (correo, rol)
 VALUES ('docente.varias@example.invalid', 'PROFESOR')
 ON CONFLICT DO NOTHING;
+
+-- Desde V1_16 (spec 010, FR-013) lleva su nombre inventado, que una segunda corrida completa solo si está nulo.
+DO $$
+BEGIN
+    -- Una base anterior a V1_16 no tiene la columna nombre y solo recibe los usuarios del INSERT anterior, así que las
+    -- bases de prueba que migran por partes siguen sirviendo.
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'acceso'
+               AND table_name = 'usuario_autorizado' AND column_name = 'nombre') THEN
+        INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+        VALUES ('docente.varias@example.invalid', 'PROFESOR', 'Profesor Inventado Varias')
+        ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+    END IF;
+END
+$$;
 
 -- Las tres secciones que dicta. Cada fila de VALUES va en su propia línea, porque db/pruebas/correr_pruebas.sh quita la
 -- de la 410 de 450010 en una copia de este archivo para probar que la comprobación final ve la asignación que falta.

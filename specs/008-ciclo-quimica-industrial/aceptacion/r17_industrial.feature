@@ -68,7 +68,9 @@ Característica: R-17 y logros de Química General con la carrera de su carga
   Escenario: La tabla de estudiantes trae SO, PI, código y nivel, sin nombres ni el profesor
     Cuando el profesor descarga el R-17 de la carga de la 701
     Entonces las filas 43 a 76 traen en B, C, E y F el SO 6, el PI 6.1, el código y el nivel de cada estudiante
-    Y la columna D y la celda D10 quedan vacías, como fija BR-R17-07
+    # Cambio del 2026-11-25 (spec 010, BR-R17-14, propuesta). D10 deja de quedar vacía y trae el nombre inventado del profesor
+    # de la sección, y la columna D de la tabla de estudiantes sigue vacía.
+    Y la columna D queda vacía y la celda D10 trae el nombre inventado del profesor, como fija BR-R17-14
     Y ninguna celda contiene una fórmula
 
   @spec008 @corte1 @US-78

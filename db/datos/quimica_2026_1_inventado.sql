@@ -35,6 +35,24 @@ VALUES ('docente701@example.invalid', 'PROFESOR'),
        ('coordinador.quimica@example.invalid', 'COORDINADOR')
 ON CONFLICT DO NOTHING;
 
+-- Desde V1_16 (spec 010, FR-013) cada profesor lleva su nombre inventado y la coordinación queda sin nombre. Una segunda
+-- corrida completa solo el nombre nulo de un usuario que ya existe y no cambia uno que ya tiene.
+DO $$
+BEGIN
+    -- Una base anterior a V1_16 no tiene la columna nombre y solo recibe los usuarios del INSERT anterior, así que las
+    -- bases de prueba que migran por partes siguen sirviendo.
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'acceso'
+               AND table_name = 'usuario_autorizado' AND column_name = 'nombre') THEN
+        INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+        VALUES ('docente701@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Uno'),
+               ('docente702@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Dos'),
+               ('docente703@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Tres'),
+               ('coordinador.quimica@example.invalid', 'COORDINADOR', NULL)
+        ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+    END IF;
+END
+$$;
+
 -- Un profesor por sección, y la 704 queda sin profesor (SIN_PROFESOR en la ruta 17).
 INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
 SELECT u.usuario_id, s.seccion_id

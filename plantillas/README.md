@@ -86,7 +86,7 @@ hoja.add_image(logotipo)
 | --- | --- | --- | --- |
 | D8 (D8:I8) | «Código:» en B8:C8 | Código de la asignatura, como «450002» | `v_r17_por_pi.codigo_asignatura` |
 | D9 (D9:I9) | «Asignatura:» en B9:C9 | Nombre de la asignatura | `v_r17_por_pi.asignatura` |
-| D10 (D10:I10) | «Profesor:» en B10:C10 | Vacía, porque el R-17 no lleva el nombre del profesor (D-12 y BR-R17-07) | Ninguna |
+| D10 (D10:I10) | «Profesor:» en B10:C10 | Los nombres de los profesores asignados a la sección, en orden alfabético sin tildes ni mayúsculas y separados por «, ». Queda vacía si ningún profesor tiene nombre. **Cambio del 2026-11-25 (spec 010, BR-R17-14, propuesta).** Antes quedaba vacía (D-12 y BR-R17-07) | `acceso.usuario_autorizado.nombre` por `acceso.docente_seccion` |
 | D11 (D11:G11) | «Sección:» en B11 | Sección, como «410» | `v_r17_por_pi.seccion` |
 | I11 | «Período:» en H11 | Periodo, como «2026-2» | `v_r17_por_pi.periodo` |
 | B7:I7 | Bajo el título de E6 | Fila libre y sin combinar. `r17.py` la combina y escribe la franja solo si `v_r17_por_pi.provisional` es verdadero (BR-R17-05) | `v_r17_por_pi.provisional` y `conjunto_reglas` |

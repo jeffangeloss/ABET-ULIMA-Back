@@ -33,6 +33,10 @@ lo que repiten sus Antecedentes y sus escenarios.
   comprueba por sus cuatro tablas, y REGLAS_DE_COPIA suma «con la columna X.Y vacía en las filas N y M» y su forma
   de tres filas, «en las filas N, M y P».
 
+- La spec 010 (T014 de su tasks.md). Los Antecedentes de sus cuatro .feature piden V1_16 y los nombres inventados de las
+  semillas, que el arnés comprueba nombrando cada pieza que falta con su tarea, y el archivo base de la programación
+  suma la columna nombre con los de «Profesor Inventado Cuatrocientos Diez» y «Cuatrocientos Once».
+
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
 """
@@ -60,6 +64,7 @@ import pytest
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from pytest_bdd import given, parsers, then, when
+from openpyxl import load_workbook
 from pytest_bdd.scenario import scenario_wrapper_template_registry
 
 from abet_carga.carga import Configuracion
@@ -1544,6 +1549,11 @@ def correr_guion_006(ctx: Escenario, *argumentos: str, aplicar: bool = False, en
 @given("una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_11, la "
        "vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni profesores")
 def _base_de_partida_006(ctx: Escenario) -> None:
+    armar_base_de_partida_006(ctx)
+
+
+def armar_base_de_partida_006(ctx: Escenario) -> None:
+    """Base de la variante «programacion», con la vigencia, el plan y ningún profesor, que repiten las specs 006 y 010."""
     ctx.crear_base("programacion")
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
@@ -1732,3 +1742,255 @@ def delegar_a_playwright(request: pytest.FixtureRequest, cubiertos: dict[str, li
     """registrar_playwright() con el escenario que pytest-bdd arma para la prueba en curso."""
     plantilla = scenario_wrapper_template_registry[request.node.function]
     registrar_playwright(request.node, plantilla.name, set(plantilla.tags), cubiertos, texto)
+
+
+# Spec 010. Antecedentes de sus cuatro .feature y archivo base con nombres (T014 de su tasks.md)
+
+# Piezas que pide cada forma de la base de la spec 010, con la tarea que construye cada una.
+MIGRACION_V1_16 = ("db/migration/V1_16__*.sql", "T020")
+NOMBRES_INVENTADOS_010 = {
+    "docente410@example.invalid": "Profesor Inventado Cuatrocientos Diez",
+    "docente411@example.invalid": "Profesor Inventado Cuatrocientos Once",
+    "docente701@example.invalid": "Profesor Inventado Setecientos Uno",
+    "docente702@example.invalid": "Profesor Inventado Setecientos Dos",
+    "docente703@example.invalid": "Profesor Inventado Setecientos Tres",
+}
+NOMBRES_DE_LA_PROGRAMACION_010 = ("Profesor Inventado Cuatrocientos Diez", "Profesor Inventado Cuatrocientos Once")
+
+
+def piezas_de_la_spec_010_que_faltan(raiz: Path = RAIZ) -> list[str]:
+    """Piezas de la spec 010 que una base de sus Antecedentes pide y que todavía no están, con su tarea."""
+    return [f"{patron} ({tarea})" for patron, tarea in (MIGRACION_V1_16,) if not list(raiz.glob(patron))]
+
+
+def nombres_que_faltan_010(ctx: Escenario) -> list[str]:
+    """Correos de las semillas que no traen su nombre inventado de las convenciones de spec.md (T022), sin repetir nombres."""
+    en_la_base = dict(ctx.filas("SELECT correo, nombre FROM acceso.usuario_autorizado WHERE correo = ANY(%s)",
+                                list(NOMBRES_INVENTADOS_010)))
+    return [correo for correo, nombre in NOMBRES_INVENTADOS_010.items() if en_la_base.get(correo) != nombre]
+
+
+def exigir_v1_16(ctx: Escenario) -> None:
+    """La base trae la columna nombre de V1_16, con su restricción, o el escenario nombra la pieza que falta."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    assert ctx.uno("SELECT count(*) FROM information_schema.columns WHERE table_schema = 'acceso'"
+                   " AND table_name = 'usuario_autorizado' AND column_name = 'nombre'") == 1, "falta la migración V1_16"
+    assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_usuario_autorizado_nombre'") == 1, \
+        "falta la migración V1_16"
+
+
+@given("una base desechable migrada hasta V1_16")
+def _base_migrada_hasta_v1_16(ctx: Escenario) -> None:
+    """Base de los datos de 2026-2 con las migraciones V1_01 a V1_16, en el clúster desechable y con el rol abet_app."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    ctx.crear_base("periodo")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    exigir_v1_16(ctx)
+
+
+@given("una base desechable de la spec 010 con los datos inventados de Ambiental en 2026-2 y de Química en 2026-1 y sus "
+       "nombres inventados")
+def _base_de_la_spec_010(ctx: Escenario) -> None:
+    """Base de Ambiental en 2026-2 y de Química en 2026-1 con su plan, V1_16 y los nombres inventados de las semillas."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    ctx.crear_base("quimica_plan")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    exigir_v1_16(ctx)
+    sin_nombre = nombres_que_faltan_010(ctx)
+    assert not sin_nombre, (f"las semillas de db/datos/ no traen el nombre inventado de {len(sin_nombre)} profesores"
+                            " (T022)")
+
+
+@given(parsers.re(r"una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_16, "
+                  r"la vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni "
+                  r"profesores"))
+def _base_de_partida_006_con_nombre(ctx: Escenario) -> None:
+    """La base de partida de la spec 006 con V1_16, para que la columna nombre del archivo tenga dónde guardarse."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    armar_base_de_partida_006(ctx)
+    exigir_v1_16(ctx)
+
+
+def archivo_con_nombres_006(ctx: Escenario) -> ArchivoDeProgramacion:
+    """Archivo base de la spec 006 con la columna nombre al final, que nace con los nombres de las dos filas."""
+    archivo = archivo_006(ctx)
+    assert "nombre" not in archivo.encabezados, "el archivo del escenario ya trae la columna nombre"
+    archivo.encabezados.append("nombre")
+    for fila, nombre in zip(archivo.filas, NOMBRES_DE_LA_PROGRAMACION_010, strict=True):
+        fila.append(nombre)
+    return archivo
+
+
+@given("el archivo base con nombres en tmp_path")
+def _archivo_base_con_nombres(ctx: Escenario) -> None:
+    archivo = archivo_con_nombres_006(ctx)
+    assert tuple(archivo.encabezados) == (*ENCABEZADOS_006, "nombre")
+    assert [fila[3] for fila in archivo.filas] == ["docente410@example.invalid", "docente411@example.invalid"]
+    assert [fila[-1] for fila in archivo.filas] == list(NOMBRES_DE_LA_PROGRAMACION_010)
+
+
+# Q15 de db/pruebas/pruebas.sql, que corren la spec 001 (US-04) y la spec 010 (US-95) sobre la base del escenario
+
+PRUEBAS_SQL = RAIZ / "db" / "pruebas" / "pruebas.sql"
+
+
+def bloque_de_q15(texto: str | None = None) -> str:
+    """Bloque DO de Q15 tal como está en pruebas.sql, sin la consulta de Q04 ni ningún otro bloque."""
+    texto = PRUEBAS_SQL.read_text(encoding="utf-8") if texto is None else texto
+    inicio = texto.index("-- Q15 (US-04")
+    bloque = re.search(r"^DO \$\$\n.*?^END \$\$;$", texto[inicio:], flags=re.S | re.M)
+    assert bloque is not None, "pruebas.sql no trae el bloque DO de Q15"
+    assert "FALLA Q15" in bloque.group(0), "el primer bloque DO después de «-- Q15» no es el de Q15"
+    return bloque.group(0)
+
+
+def correr_q15(ctx: Escenario) -> subprocess.CompletedProcess[str]:
+    """Corre el bloque de Q15 con psql sobre la base del escenario, siempre en el clúster desechable. El código de
+    salida es 0 si Q15 pasa, y la salida de errores trae su NOTICE o su FALLA."""
+    entorno = _modulo_de_pruebas("base_desechable")._entorno()
+    return subprocess.run([entorno.get("PSQL", "psql"), "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d",
+                           ctx.api.base.nombre, "-c", bloque_de_q15()],
+                          env={**entorno, "PGOPTIONS": "-c client_min_messages=notice"},
+                          capture_output=True, text=True, check=False)
+
+
+# Spec 010. Profesores y R-17 de profesores_en_el_r17.feature y privacidad_del_nombre.feature (T032 a T035)
+
+EXPORT_410_010 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx"
+HOJA_R17 = "Cursos de Carrera"
+
+
+def _asignatura_de(numero: str) -> str:
+    """La 70N es de 5643 y las demás de 450002, como en los datos inventados de la spec 008."""
+    return "5643" if numero.startswith("70") else ASIGNATURA
+
+
+def profesor_de_la_seccion_010(ctx: Escenario, numero: str) -> str:
+    """Correo del profesor inventado que dicta la sección en las semillas, docente70N@example.invalid o docente41N."""
+    return f"docente{numero}@example.invalid"
+
+
+def publicar_y_declarar_010(ctx: Escenario, numero: str, asignatura: str | None = None, periodo: str | None = None,
+                            por: str | None = None, coordinacion: bool = False) -> int:
+    """Sube el export inventado de la sección por la ruta 5 como su profesor, declara su análisis y la deja PUBLICADA.
+
+    El export de 450002 es el de la 410 del generador y el de 5643 es el de ctx.export_de_quimica(). Con coordinacion,
+    para una sección sin profesor como la 704, la carga se sube con un profesor asignado un instante y la cuenta de la
+    coordinación queda como autora (subida_por) con el corte 2 que la API todavía no tiene, sin cambiar la asignación
+    de nadie al terminar. Guarda la carga en ctx.extras["cargas_010"] y deja en ctx.extras["quien_010"] a quien genera.
+    """
+    asignatura = asignatura or _asignatura_de(numero)
+    seccion_id = ctx.seccion_de(numero, asignatura, periodo)
+    if asignatura == "5643":
+        contenido, nombre = ctx.export_de_quimica(numero)
+    else:
+        contenido, nombre = ctx.de_inventados(EXPORT_410_010), EXPORT_410_010
+    quien = por or profesor_de_la_seccion_010(ctx, numero)
+    temporal = None
+    if coordinacion:
+        asignados = ctx.filas("SELECT 1 FROM acceso.docente_seccion WHERE seccion_id = %s", seccion_id)
+        assert not asignados, f"la {numero} ya tiene profesor y no necesita al de la coordinación"
+        temporal = "docente703@example.invalid"
+        ctx.api.dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) VALUES (%s, %s)",
+                              (ctx.usuario_id(temporal), seccion_id))
+    respuesta = A.subir(ctx.sesion(temporal or quien), seccion_id, contenido, nombre)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    carga_id = int(respuesta.json()["carga_id"])
+    C.declarar(ctx.api.dueno, carga_id, correo=temporal or quien)
+    if coordinacion:
+        ctx.api.dueno.execute("UPDATE abet.carga SET subida_por = %s WHERE carga_id = %s", (ctx.usuario_id(quien), carga_id))
+        ctx.api.dueno.execute("DELETE FROM acceso.docente_seccion WHERE usuario_id = %s AND seccion_id = %s",
+                              (ctx.usuario_id(temporal), seccion_id))
+    ctx.carga_id = carga_id
+    ctx.extras.setdefault("cargas_010", {})[numero] = carga_id
+    ctx.extras["quien_010"] = quien
+    return carga_id
+
+
+@given(parsers.re(r'la (?P<numero>[0-9]+)(?: y la (?P<otra>[0-9]+))?(?: de (?P<asignatura>[0-9]+))?'
+                  r'(?: en (?P<periodo>[0-9]{4}-[0-9]))? publicadas? '
+                  r'(?:por (?P<correo>[^ ]+)(?P<corte> en el corte 2)? )?con su análisis declarado'))
+def _publicada_con_su_analisis_010(ctx: Escenario, numero: str, otra: str | None, asignatura: str | None,
+                                   periodo: str | None, correo: str | None, corte: str | None) -> None:
+    for seccion in (numero, otra):
+        if seccion is not None:
+            publicar_y_declarar_010(ctx, seccion, asignatura, periodo, por=correo, coordinacion=corte is not None)
+            if otra is not None:
+                ctx.extras["quien_010"] = profesor_de_la_seccion_010(ctx, numero)
+
+
+def sembrar_profesor_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str, *,
+                         rol: str = "PROFESOR", activo: bool = True) -> None:
+    """Usuario con nombre asignado a la sección en acceso.docente_seccion, sembrado por el dueño de la base."""
+    ctx.api.dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol, activo, nombre) VALUES (%s, %s, %s, %s)",
+                          (correo, rol, activo, nombre))
+    ctx.api.dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) VALUES (%s, %s)",
+                          (ctx.usuario_id(correo), ctx.seccion_de(numero, asignatura)))
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" con el nombre "(?P<nombre>[^"]+)" asignado a la (?P<numero>[0-9]+) de '
+                  r'"?(?P<asignatura>[0-9]+)"?'))
+def _profesor_con_nombre_asignado_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str) -> None:
+    sembrar_profesor_010(ctx, correo, nombre, numero, asignatura)
+
+
+@given(parsers.re(r'una cuenta COORDINADOR inactiva "(?P<correo>[^"]+)" con el nombre "(?P<nombre>[^"]+)" asignada a la '
+                  r'(?P<numero>[0-9]+) de (?P<asignatura>[0-9]+)'))
+def _coordinador_inactivo_asignado_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str) -> None:
+    sembrar_profesor_010(ctx, correo, nombre, numero, asignatura, rol="COORDINADOR", activo=False)
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" con el nombre nulo'))
+def _profesor_con_nombre_nulo_010(ctx: Escenario, correo: str) -> None:
+    ctx.api.dueno.execute("UPDATE acceso.usuario_autorizado SET nombre = NULL WHERE correo = %s", (correo,))
+    assert ctx.uno("SELECT nombre IS NULL FROM acceso.usuario_autorizado WHERE correo = %s", correo) is True
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" dado de baja con activo falso'))
+def _dado_de_baja_010(ctx: Escenario, correo: str) -> None:
+    assert ctx.api.dueno.execute("UPDATE acceso.usuario_autorizado SET activo = false WHERE correo = %s",
+                                 (correo,)).rowcount == 1
+
+
+@given(parsers.re(r'la (?P<numero>[0-9]+) de (?P<asignatura>[0-9]+) sin filas en acceso\.docente_seccion'))
+def _seccion_sin_profesor_010(ctx: Escenario, numero: str, asignatura: str) -> None:
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE seccion_id = %s",
+                   ctx.seccion_de(numero, asignatura)) == 0
+
+
+def generar_r17_010(ctx: Escenario, quien: str | None = None, veces: int = 1) -> None:
+    """Descarga el R-17 de ctx.carga_id por la ruta 7 con la sesión de quien y guarda cada libro leído con openpyxl."""
+    correo = quien or ctx.extras["quien_010"]
+    libros = []
+    for _ in range(veces):
+        respuesta = ctx.sesion(correo).get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
+        ctx.respuesta = respuesta
+        libros.append(respuesta)
+    ctx.extras["libros_010"] = libros
+    ctx.extras["quien_010"] = correo
+
+
+def hoja_r17_010(ctx: Escenario, indice: int = -1) -> Any:
+    """Hoja «Cursos de Carrera» del R-17 descargado, o falla con el código HTTP y sin repetir el cuerpo."""
+    respuesta = ctx.extras["libros_010"][indice]
+    assert respuesta.status_code == 200, f"la ruta 7 respondió {respuesta.status_code}"
+    return load_workbook(io.BytesIO(respuesta.content))[HOJA_R17]
+
+
+@when("se genera el R-17 de esa carga")
+def _genera_el_r17_010(ctx: Escenario) -> None:
+    generar_r17_010(ctx)
+
+
+@when("se genera el R-17 de esa carga dos veces")
+def _genera_el_r17_dos_veces_010(ctx: Escenario) -> None:
+    generar_r17_010(ctx, veces=2)
+
+
+@when(parsers.re(r'(?P<correo>[^ "]+@[^ "]+) genera el R-17 de esa carga'))
+def _genera_el_r17_como_010(ctx: Escenario, correo: str) -> None:
+    generar_r17_010(ctx, correo)

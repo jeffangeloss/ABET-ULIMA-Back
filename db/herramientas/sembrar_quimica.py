@@ -15,6 +15,12 @@ db/callbacks/afterMigrate__permisos_lectura.sql le da ese SELECT al final de cad
 Sin él, el Back con el _ALCANCE nuevo respondería 500 a cada cuenta, porque PostgreSQL revisa el permiso de toda tabla
 de la consulta, también la de una rama OR que no se evalúa.
 
+La spec 010 suma el nombre del profesor a la programación. El paso programacion corre el mismo cargar_programacion.py
+con el mismo archivo, que puede traer la columna opcional nombre, y esta siembra no cambia de código ni de orden, porque
+el guion lee la columna solo y no la repite en ningún informe. El paso migraciones sigue en -target=1.14, así que V1_15 y
+V1_16 las aplica migrar_neon.sh antes de la siembra (T071 de la spec 010). Una base sin V1_16 carga un archivo sin la
+columna nombre como siempre, y con la columna rechaza el archivo sin escribir nada.
+
 La siembra con --aplicar se detiene en el despliegue y se reanuda con --desde plan_quimica --back-desplegado. Ese
 segundo tramo no corre huella_antes, así que recibe la huella de Ambiental de antes con --huella-antes, el valor que
 el primer tramo escribe en su orden para reanudar. Una corrida en la que huella_despues corre sin huella_antes y sin

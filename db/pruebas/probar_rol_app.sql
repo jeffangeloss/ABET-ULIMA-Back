@@ -486,7 +486,13 @@ BEGIN
                    FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'$q$, 'coordinacion_alcance'),
         ('P45', $q$UPDATE acceso.coordinacion_alcance SET carrera_id = carrera_id$q$, 'coordinacion_alcance'),
         ('P46', 'DELETE FROM acceso.coordinacion_alcance', 'coordinacion_alcance'),
-        ('P47', 'TRUNCATE acceso.coordinacion_alcance', 'coordinacion_alcance')
+        ('P47', 'TRUNCATE acceso.coordinacion_alcance', 'coordinacion_alcance'),
+        -- Spec 010 (FR-003). El rol lee la columna nombre de V1_16 y no la escribe, ni con UPDATE ni con un INSERT.
+        ('P48', $q$UPDATE acceso.usuario_autorizado SET nombre = 'Profesor Inventado Uno'
+                   WHERE correo = 'docente410@example.invalid'$q$, 'usuario_autorizado'),
+        ('P49', $q$INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+                   VALUES ('nuevo.con.nombre@example.invalid', 'PROFESOR', 'Profesor Inventado Uno')$q$,
+                'usuario_autorizado')
     ) AS t (id, sentencia, objeto) ORDER BY id LOOP
         v_total := v_total + 1;
         v_estado := NULL;
@@ -576,6 +582,28 @@ BEGIN
         END IF;
     END LOOP;
     RAISE NOTICE 'ok N10 el rol lee las tablas de V1_15, solo inserta la declaración y no borra ni corrige';
+END $$;
+ROLLBACK;
+
+-- N11 (spec 010, FR-003). Desde V1_16 el rol lee la columna nombre de acceso.usuario_autorizado con el SELECT de tabla
+-- que ya tenía, sin ningún privilegio de INSERT ni de UPDATE sobre esa columna ni sobre ninguna otra, salvo que ya los
+-- tuviera. P48 y P49 de N08 prueban que no la escribe.
+BEGIN;
+SET LOCAL ROLE :"rol_app";
+DO $$
+DECLARE
+    v_rol text := current_setting('prueba.rol_app');
+    v_privilegios text;
+BEGIN
+    -- Sin el SELECT de la columna, esta lectura termina con el error 42501 y psql se detiene.
+    PERFORM nombre FROM acceso.usuario_autorizado LIMIT 1;
+    SELECT string_agg(p, ',' ORDER BY p) INTO v_privilegios
+    FROM unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'REFERENCES']) AS p
+    WHERE has_column_privilege(v_rol, 'acceso.usuario_autorizado', 'nombre', p);
+    IF v_privilegios IS DISTINCT FROM 'SELECT' THEN
+        RAISE EXCEPTION 'FALLA N11: el rol tiene % en la columna nombre y debe tener solo SELECT', v_privilegios;
+    END IF;
+    RAISE NOTICE 'ok N11 el rol lee la columna nombre de acceso.usuario_autorizado y no la escribe';
 END $$;
 ROLLBACK;
 

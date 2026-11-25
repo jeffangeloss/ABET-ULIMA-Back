@@ -656,6 +656,58 @@ BEGIN
     RAISE NOTICE 'ok A10 SIN_CALIFICACIONES aceptado con RECHAZA_CARGA en ck_rechazo_fila_motivo';
 END $$;
 
+-- A11 (spec 010, US-95). V1_16 agrega acceso.usuario_autorizado.nombre, opcional y de hasta 120 caracteres, con
+-- ck_usuario_autorizado_nombre y su comentario. Un nombre normalizado entra, y uno con espacio a los lados, dos
+-- espacios seguidos, vacío, salto de línea, espacio de ancho cero, arroba, coma, dígito, forma NFD, aislante
+-- bidireccional (U+2066), separador de línea (U+2028), marca árabe (U+061C) o etiqueta (U+E0041) se rechaza con
+-- check_violation. Cada intento se deshace con una excepción propia, y ninguna fila queda en la tabla.
+DO $$
+DECLARE
+    v_nombre text;
+    v_n int := 0;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'acceso' AND table_name = 'usuario_autorizado' AND column_name = 'nombre'
+                      AND is_nullable = 'YES' AND data_type = 'character varying' AND character_maximum_length = 120)
+       OR NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_usuario_autorizado_nombre'
+                       AND conrelid = 'acceso.usuario_autorizado'::regclass AND contype = 'c')
+       OR col_description('acceso.usuario_autorizado'::regclass,
+                          (SELECT attnum FROM pg_attribute WHERE attrelid = 'acceso.usuario_autorizado'::regclass
+                              AND attname = 'nombre')) IS NULL THEN
+        RAISE EXCEPTION 'FALLA A11: nombre debe ser varchar(120) nulable, con ck_usuario_autorizado_nombre y su COMMENT ON';
+    END IF;
+    FOREACH v_nombre IN ARRAY ARRAY[' Profesor Inventado Uno', 'Profesor  Inventado Uno', '', E'Profesor Inventado\nUno',
+                                    E'Profesor Inventado\u200bUno', 'docente732@example.invalid',
+                                    'Profesor Inventado 732', 'Inventado, Profesor', E'Profesor Inventado A\u0301ngel',
+                                    repeat('a', 121), E'Profesor Inventado\u2066Uno', E'Profesor Inventado\u2028Uno',
+                                    E'Profesor Inventado\u061cUno', E'Profesor Inventado\U000E0041Uno'] LOOP
+        BEGIN
+            INSERT INTO acceso.usuario_autorizado (correo, rol, nombre) VALUES ('docente732@example.invalid', 'PROFESOR', v_nombre);
+            RAISE EXCEPTION 'FALLA A11: la base aceptó un nombre que debía rechazar (caso %)', v_n + 1;
+        EXCEPTION WHEN check_violation OR string_data_right_truncation THEN
+            v_n := v_n + 1;
+        END;
+    END LOOP;
+    BEGIN
+        INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+        VALUES ('docente731@example.invalid', 'PROFESOR', 'Profesor Inventado Ángel Muñoz'),
+               ('docente730@example.invalid', 'PROFESOR', NULL);
+        IF (SELECT count(*) FROM acceso.usuario_autorizado WHERE correo IN ('docente730@example.invalid', 'docente731@example.invalid')
+                                                              AND (nombre IS NULL) <> (correo = 'docente731@example.invalid')) <> 2 THEN
+            RAISE EXCEPTION 'FALLA A11: un nombre normalizado y un usuario sin nombre deben entrar';
+        END IF;
+        RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'deshacer A11';
+    EXCEPTION WHEN SQLSTATE 'P0001' THEN
+        IF SQLERRM <> 'deshacer A11' THEN
+            RAISE;
+        END IF;
+    END;
+    IF EXISTS (SELECT 1 FROM acceso.usuario_autorizado WHERE correo IN ('docente730@example.invalid', 'docente731@example.invalid', 'docente732@example.invalid')) THEN
+        RAISE EXCEPTION 'FALLA A11: los usuarios de prueba deben deshacerse';
+    END IF;
+    RAISE NOTICE 'ok A11 V1_16 agrega nombre opcional con ck_usuario_autorizado_nombre, que rechaza % casos y acepta un nombre normalizado', v_n;
+END $$;
+
 -- ---------------------------------------------------------------------------------------------
 -- 3. Números del R-17 de la sección 410 de 450002 (misma distribución que el caso real)
 -- ---------------------------------------------------------------------------------------------
@@ -1381,19 +1433,22 @@ BEGIN
     END LOOP;
 END $$;
 
--- Q15 (US-04). El filtro de columnas de Q04 aplicado al esquema acceso solo encuentra el correo de
--- usuario_autorizado, que es el único dato de contacto de la base.
+-- Q15 (US-04 y, desde V1_16, US-95 de la spec 010). El filtro de columnas de Q04 aplicado al esquema acceso solo
+-- encuentra el correo y el nombre de usuario_autorizado, que son los únicos datos de contacto y de persona de la base.
+-- Una columna con «nombre» en cualquier otra tabla de acceso, como acceso.credencial.nombre_contacto, hace fallar la
+-- prueba. El bloque va solo entre este comentario y el de Q16, porque tests/aceptacion/pasos/test_nombre_en_la_base_feature.py
+-- lo corre aparte sobre la base de cada escenario.
 DO $$
 BEGIN
     IF (SELECT string_agg(table_name || '.' || column_name, ',' ORDER BY table_name, column_name)
           FROM information_schema.columns
          WHERE table_schema = 'acceso'
            AND (column_name ~ '(apellido|first_name|last_name|correo|email|telefono|dni)'
-                OR (table_name IN ('estudiante', 'medicion', 'carga', 'rechazo_fila', 'carga_columna') AND column_name LIKE '%nombre%')))
-       IS DISTINCT FROM 'usuario_autorizado.correo' THEN
-        RAISE EXCEPTION 'FALLA Q15: en acceso solo usuario_autorizado.correo debe pasar el filtro de Q04';
+                OR column_name LIKE '%nombre%'))
+       IS DISTINCT FROM 'usuario_autorizado.correo,usuario_autorizado.nombre' THEN
+        RAISE EXCEPTION 'FALLA Q15: en acceso solo usuario_autorizado.correo y usuario_autorizado.nombre deben pasar el filtro';
     END IF;
-    RAISE NOTICE 'ok Q15 el filtro de Q04 sobre acceso solo encuentra usuario_autorizado.correo';
+    RAISE NOTICE 'ok Q15 el filtro de Q04 sobre acceso solo encuentra usuario_autorizado.correo y usuario_autorizado.nombre';
 END $$;
 
 -- Q16 y Q17 con una declaración sana (spec 005, US-53, escenario 7). La 410 de 450002 declara sus tres PI con textos de
