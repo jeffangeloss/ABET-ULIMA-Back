@@ -35,7 +35,7 @@ oráculo. El conciliador compara con ella, por sección, lo que el sistema mide 
 8. Con --curso (US-94 de la spec 009, propuesta) compara además, en el PI de --pi, el curso y el promedio de cada sección con
    lo que da el sistema, que lee con la misma consulta de la ruta 20, abet_carga.resultados.resumen_del_curso(), en la misma
    transacción READ ONLY. Del curso compara los alumnos con el nivel esperado o más, el porcentaje, el promedio de calificación
-   y las secciones en la meta, que la tabla maestra cuenta con la meta provisional de 80 % de D-56 sobre el porcentaje ya
+   y las secciones en la meta, que la tabla maestra cuenta con la meta de 80 % de D-56 (cerrada el 2026-11-25) sobre el porcentaje ya
    redondeado. El porcentaje y el promedio de la tabla se redondean como ROUND(numeric) de PostgreSQL, a uno y a dos
    decimales. Cada sección con carga publicada suma una línea «Con promedio igual.» o «Distinta en el promedio y en el
    porcentaje.», y el curso, «Curso igual en ...» o «Curso distinto en ...». El informe dice solo «igual» o «distinto», sin
@@ -85,7 +85,7 @@ PRIMERA_FILA_DE_LA_TABLA = 43
 FILAS_DEL_BLOQUE_II = (24, 25, 26)
 UN_DECIMAL = Decimal("0.1")
 DOS_DECIMALES = Decimal("0.01")
-# La meta provisional de la sección en la meta (D-56), con la que la tabla maestra cuenta las secciones en la meta del curso.
+# La meta de la sección en la meta (D-56, cerrada el 2026-11-25), con la que la tabla maestra cuenta las secciones en la meta del curso.
 META_DEL_CURSO = Decimal(80)
 TOLERANCIA = 1e-9
 

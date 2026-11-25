@@ -47,6 +47,17 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Cómo se reporta: esta entrada y `CHANGELOG.md`. La aprobación es de Jefferson.
 - Pendiente y siguiente paso: la aprobación de la spec 011, D-59 a Claudia León, D-60 a la coordinación de Industrial y el registro de los `.feature` en `test_lectura_gherkin_es.py` al implementar.
 
+### 2026-11-25 12:40 (Lima) · docs/009-cierre-d56 · D-56 cerrada con las fórmulas del tablero
+- Quién: Jefferson pide en el chat sacar las fórmulas del archivo de Stefanny y aprueba cerrar D-56 («Sí, ciérrala»). Claude Code, en la sesión principal y sin subagentes, lee el modelo del `.pbix` con `pbixray` (`uv run --no-project --with pbixray`) en la carpeta temporal de la sesión, fuera del repositorio, e imprime solo las medidas, las columnas calculadas y el esquema, sin las filas.
+- Qué cambió: `specs/009-resumen-del-curso/spec.md` suma la sesión del 2026-11-25 en Clarifications con las nueve medidas DAX y las tres columnas calculadas en palabras, la razón del cierre y los dos casos en que el tablero puede diferir, y la fila de D-56 y SC-003 los citan. `tasks.md` anota T003, `revision-historias.md` anota el cierre, y `db/herramientas/conciliar_tabla_maestra.py` y `conciliacion_del_curso.feature` dejan de llamar provisional a la meta de 80 % en sus comentarios.
+- Por qué: D-56 y T003 de la spec 009, y SC-003, que pide explicar cualquier diferencia entre P8 y la página «Resumen Curso».
+- Lo que debe hacer, cómo se probó: las medidas leídas cuentan alumnos con 3 o más sobre las filas de la tabla, suman alumnos sin promediar porcentajes y marcan la sección con 0,8, igual que el valor provisional, y en Química las filas son los calificados, porque el generador rechaza una calificación vacía. Las pruebas del conciliador y de la lectura del Gherkin pasan (ver el PR).
+- Lo que no debe hacer, cómo se probó: ningún código de estudiante, nombre de profesor ni fila del `.pbix` entra al repositorio ni a esta entrada, y ninguna regla ni consulta cambia, así que BR-RESULTADOS-13 y 14 siguen iguales.
+- Correcciones: «% Profesores Aprobados» cuenta secciones y no profesores, lo que confirma la razón de quitarla de P8 (D-51 y D-57).
+- Cómo se reporta: esta entrada, `CHANGELOG.md` y el PR de la rama.
+- Pendiente y siguiente paso: SC-003, la comparación de P8 con el tablero que hace Stefanny, y D-57 y D-32 con la coordinación.
+
+
 ### 2026-11-25 08:10 (Lima) · docs/010-neon-develop · V1_16 y nombres inventados en develop de Neon, y R-17 de la 301 comprobado
 - Quién: Claude Code en la sesión principal, sin subagentes ni Codex, con el «sigue trabajando sin mí» de Jefferson.
 - Qué cambió: T071 y T072 de `specs/010-nombre-del-profesor/tasks.md` quedan marcadas con lo que se hizo en develop de Neon y en la vista previa.
