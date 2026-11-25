@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-25
-- **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
+- **Rama de trabajo**: `docs/010-neon-develop`, que registra V1_16 en develop de Neon. Las specs 009 y 010 están en `develop` (PR #59 y #61)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: el cierre de la spec 010 con su `audit.md`, las líneas Verification de `acceso` y `r17` y el CHANGELOG (T050 y T060, 2026-11-25). Antes, la revisión del revisor Opus, que amplía `ck_usuario_autorizado_nombre` y el guion a los demás caracteres de formato y a los separadores U+2028 y U+2029, y quita de dos pruebas un nombre de apariencia real. Antes, la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
-- **En curso**: la spec 010 construida en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson.
-- **Siguiente paso**: T041 y las tareas de Jefferson T070 a T074, la corrida del humo de T040 contra la vista previa y la integración con la spec 009.
+- **Último cambio**: develop de Neon en V1_16 con los nombres inventados de los 20 profesores, y el R-17 de la 301 en la vista previa con D10 llena. Antes, la fusión de las specs 009 y 010 en `develop`
+- **En curso**: la revisión de Jefferson del flujo de Química en la vista previa, con P8 desde la cuenta de la coordinación
+- **Siguiente paso**: Jefferson corre los humos de las specs 009 y 010 con sus contraseñas, y decide cuándo llevar V1_12 a V1_16 a la rama principal de Neon
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 08:10 (Lima) · docs/010-neon-develop · V1_16 y nombres inventados en develop de Neon, y R-17 de la 301 comprobado
+- Quién: Claude Code en la sesión principal, sin subagentes ni Codex, con el «sigue trabajando sin mí» de Jefferson.
+- Qué cambió: T071 y T072 de `specs/010-nombre-del-profesor/tasks.md` quedan marcadas con lo que se hizo en develop de Neon y en la vista previa.
+- Por qué: el flujo de punta a punta de Química necesita develop de Neon en V1_16 antes de desplegar el código de la spec 010, que lee la columna `nombre`.
+- Lo que debe hacer, cómo se probó: `migrar_neon.sh develop` aplica V1_16 con Q01 a Q14 y Q16 a Q21 en 0, `cargar_programacion.py` completa 18 nombres en seco y después con `--aplicar`, `flyway validate` da 20 migraciones tras `repair`, y el R-17 de la carga 4 de la vista previa trae «Profesor Inventado Trescientos Uno» en D10. Las rutas 20 y 21 responden 403 «Esta página es de la Coordinación.» a la cuenta del profesor.
+- Lo que no debe hacer, cómo se probó: la huella de Ambiental sigue igual (363 filas), Q04 da 0 filas, el nombre aparece una sola vez en la hoja y `profesores_sin_nombre.sql` da 0. La rama principal de Neon no se toca.
+- Correcciones: la comprobación de SC-002 usa la 301 en lugar de la 701, que develop no tiene.
+- Cómo se reporta: esta entrada y su PR.
+- Pendiente y siguiente paso: que Jefferson recorra P8 con la cuenta de la coordinación y corra los humos de las specs 009 y 010 con sus contraseñas; la rama principal de Neon sigue sin V1_12 a V1_16.
 
 ### 2026-11-25 07:20 (Lima) · feat/010-nombre-del-profesor · Caracteres invisibles de V1_16 escritos como escapes (S6389 de SonarCloud)
 - Quién: Claude Code en la sesión principal, sin subagentes ni Codex.
