@@ -13,10 +13,10 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-25
-- **Rama de trabajo**: `docs/009-cierre-d56`, que cierra D-56 de la spec 009 con las fórmulas del tablero de Stefanny. Las specs 009 y 010 están en `develop` (PR #59 y #61)
+- **Rama de trabajo**: `docs/011-historico-y-competencias`, con la spec 011 (histórico del curso y competencias por estadío con datos inventados) en borrador, sin empujar
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: D-56 cerrada sin cambio del valor provisional, con las medidas DAX leídas del .pbix. Antes, develop de Neon en V1_16 con los nombres inventados de los 20 profesores
-- **En curso**: la revisión de Jefferson del flujo de Química en la vista previa, con P8 desde la cuenta de la coordinación
+- **Último cambio**: develop de Neon en V1_16 con los nombres inventados de los 20 profesores, y el R-17 de la 301 en la vista previa con D10 llena. Antes, la fusión de las specs 009 y 010 en `develop`
+- **En curso**: la aprobación de la spec 011 por Jefferson, con D-59 y D-60 para la coordinación
 - **Siguiente paso**: Jefferson corre los humos de las specs 009 y 010 con sus contraseñas, y decide cuándo llevar V1_12 a V1_16 a la rama principal de Neon
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-25 13:05 (Lima) · docs/011-historico-y-competencias · Spec 011 en borrador, histórico del curso y competencias por estadío
+- Quién: Jefferson pide replicar las páginas «Histórico por Profesor» y «Resumen Competencias - Nivel» del tablero con datos inventados («Si falta data, genera data»). Claude Code lanza tres flujos de agentes. El primero tiene tres exploradores (tablero, base y pantallas), un redactor de candidatas desde cuatro ángulos, tres lentes y el crítico de arquitectura, un redactor y un revisor. El segundo tiene un corrector de los seis puntos del revisor y una segunda revisión independiente que recalcula el oráculo a mano. Claude Code decide los tres puntos que quedan y los registra en Clarifications.
+- Qué cambió: `specs/011-historico-y-competencias/` nueva, con `spec.md` (EP-11, US-100 a US-108, FR-001 a FR-016, SC-001 a SC-005, D-59, D-60 y J-72 a J-77), `revision-historias.md`, cinco `.feature` con 84 escenarios, `plan.md` y `tasks.md` (T001 a T054, unas 62,5 h).
+- Por qué: P9 y P10 replican las dos páginas del tablero sin profesores (D-57, D-59 y BR-RESULTADOS-10), y la demostración siembra Química en 2025-1 y 2025-2 y Ambiental en 2024-2 y 2026-2 con códigos 99500000 a 99599999 en la rama demo-011 de Neon (J-72 y J-75).
+- Lo que debe hacer, cómo se probó: el analizador de pytest-bdd lee los cinco `.feature` sin errores con 84 escenarios, `tests/aceptacion/pasos/test_lectura_gherkin_es.py` da 187 passed y las dos revisiones recalculan a mano las cifras del oráculo sin diferencias.
+- Lo que no debe hacer, cómo se probó: la spec no trae datos reales (códigos solo 99, correos solo de example.invalid) y no toca código, migraciones ni Neon. El preflight sale sin fallas.
+- Correcciones: la primera revisión encuentra seis contradicciones (celdas de la ruta 23, rango de códigos, siembra en Neon, ruta 24, decisiones heredadas y J-24), y la segunda, seis más y tres puntos de orden y alcance de la siembra.
+- Cómo se reporta: esta entrada y `CHANGELOG.md`. La aprobación es de Jefferson.
+- Pendiente y siguiente paso: la aprobación de la spec 011, D-59 a Claudia León, D-60 a la coordinación de Industrial y el registro de los `.feature` en `test_lectura_gherkin_es.py` al implementar.
+
 ### 2026-11-25 12:40 (Lima) · docs/009-cierre-d56 · D-56 cerrada con las fórmulas del tablero
 - Quién: Jefferson pide en el chat sacar las fórmulas del archivo de Stefanny y aprueba cerrar D-56 («Sí, ciérrala»). Claude Code, en la sesión principal y sin subagentes, lee el modelo del `.pbix` con `pbixray` (`uv run --no-project --with pbixray`) en la carpeta temporal de la sesión, fuera del repositorio, e imprime solo las medidas, las columnas calculadas y el esquema, sin las filas.
 - Qué cambió: `specs/009-resumen-del-curso/spec.md` suma la sesión del 2026-11-25 en Clarifications con las nueve medidas DAX y las tres columnas calculadas en palabras, la razón del cierre y los dos casos en que el tablero puede diferir, y la fila de D-56 y SC-003 los citan. `tasks.md` anota T003, `revision-historias.md` anota el cierre, y `db/herramientas/conciliar_tabla_maestra.py` y `conciliacion_del_curso.feature` dejan de llamar provisional a la meta de 80 % en sus comentarios.
@@ -46,6 +56,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - Correcciones: «% Profesores Aprobados» cuenta secciones y no profesores, lo que confirma la razón de quitarla de P8 (D-51 y D-57).
 - Cómo se reporta: esta entrada, `CHANGELOG.md` y el PR de la rama.
 - Pendiente y siguiente paso: SC-003, la comparación de P8 con el tablero que hace Stefanny, y D-57 y D-32 con la coordinación.
+
 
 ### 2026-11-25 08:10 (Lima) · docs/010-neon-develop · V1_16 y nombres inventados en develop de Neon, y R-17 de la 301 comprobado
 - Quién: Claude Code en la sesión principal, sin subagentes ni Codex, con el «sigue trabajando sin mí» de Jefferson.
