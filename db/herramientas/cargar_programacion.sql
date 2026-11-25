@@ -2,7 +2,7 @@
 -- Lo corre db/herramientas/cargar_programacion.py, que revisa antes la forma de cada fila (FR-003) y entrega todas
 -- las filas por la entrada estándar, cada una con su número y la marca de su falla de forma. No se corre a mano.
 --
---   psql -X -w -q -A -t -v ON_ERROR_STOP=1 -v periodo=2026-2 -v aplicar=0 -f db/herramientas/cargar_programacion.sql
+--   psql -X -w -q -A -t -v ON_ERROR_STOP=1 -v periodo=2026-2 -v aplicar=0 [-v con_nombre=1] -f db/herramientas/cargar_programacion.sql
 --
 -- La corrida en seco (aplicar=0) y la corrida con --aplicar (aplicar=1) ejecutan este mismo SQL. La primera termina
 -- con ROLLBACK y la segunda con COMMIT, así que el informe en seco cuenta exactamente lo que la corrida real
@@ -15,14 +15,21 @@
 -- antes de cualquier INSERT, y el guion termina con código 1.
 --
 -- Escritura (FR-005 y AD-03). Solo INSERT con ON CONFLICT DO NOTHING sobre la restricción única que corresponde,
--- nombrada en cada uno, y un solo UPDATE, que completa el curso_blackboard nulo de una sección que ya existe. Con
+-- nombrada en cada uno, y dos UPDATE, que completan el curso_blackboard nulo de una sección que ya existe y, desde la
+-- spec 010 (FR-005), el nombre nulo de un usuario PROFESOR que ya existe. Un nombre ya guardado no cambia, y el
+-- informe lo avisa sin escribir ningún nombre, y una cuenta COORDINADOR nunca recibe nombre. Con
 -- el objetivo nombrado, un choque de uq_seccion_curso_bb que la revisión no ve, por otra carga que corre a la vez,
 -- llega como error de la base y no se salta en silencio. Nunca borra, nunca cambia rol ni activo y no toca
 -- acceso.credencial, abet.plan_medicion ni ninguna tabla de cargas.
 --
+-- La columna nombre (spec 010). con_nombre vale 1 cuando el archivo trae la columna, y 0 por omisión. Una base que todavía
+-- no tiene V1_16 sigue cargando un archivo sin la columna como en la spec 006, y con la columna se detiene con un error
+-- antes de escribir nada. Los pasos que tocan acceso.usuario_autorizado.nombre van dentro de \if, así que psql nunca
+-- manda a una base sin V1_16 una sentencia que nombra la columna.
+--
 -- Salida. Cada línea es un arreglo JSON que el guion lee y convierte en el informe, sin reenviar nunca el texto de
 -- un error de psql. ["E", fila, motivo, ...] es una falla de la base, ["P", periodo] un periodo que no existe,
--- ["R", secciones, usuarios, asignaciones, cursos] el resumen, ["A", tipo, ...] un aviso y ["FIN", estado] la línea
+-- ["R", secciones, usuarios, asignaciones, cursos, nombres] el resumen, ["A", tipo, ...] un aviso y ["FIN", estado] la línea
 -- centinela, que es RECHAZADO, SECO o GUARDADO. GUARDADO sale solo después de un COMMIT que la base aceptó.
 
 \set ON_ERROR_STOP 1
@@ -37,10 +44,24 @@
     \echo 'Falta aplicar, por ejemplo -v aplicar=0.'
     SELECT CAST('falta aplicar' AS integer);
 \endif
+\if :{?con_nombre}
+\else
+    \set con_nombre 0
+\endif
 \pset format unaligned
 \pset tuples_only on
 
 BEGIN;
+
+-- Si la base tiene la columna nombre de V1_16 (spec 010). El archivo con la columna en una base sin ella se detiene.
+SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'acceso'
+               AND table_name = 'usuario_autorizado' AND column_name = 'nombre')::integer AS base_con_nombre
+\gset
+SELECT (:con_nombre = 1 AND :base_con_nombre = 0)::integer AS falta_v1_16
+\gset
+\if :falta_v1_16
+    SELECT CAST('falta V1_16' AS integer);
+\endif
 
 -- Filas del archivo. Una fila con falla de forma llega sin sus valores y con_error verdadero.
 CREATE TEMP TABLE programacion_archivo (
@@ -49,7 +70,8 @@ CREATE TEMP TABLE programacion_archivo (
     asignatura        text,
     seccion           text,
     correo            text,
-    curso_blackboard  text
+    curso_blackboard  text,
+    nombre            text
 ) ON COMMIT DROP;
 \copy programacion_archivo FROM pstdin WITH (FORMAT csv)
 
@@ -124,15 +146,59 @@ SELECT (EXISTS (SELECT 1 FROM programacion_archivo WHERE con_error)
     SELECT count(*) AS secciones_nuevas FROM nuevas
     \gset
 
-    -- Un correo nuevo entra con rol PROFESOR, activo y sin contraseña (D-45). Uno que ya existe no cambia.
-    WITH nuevos AS (
-        INSERT INTO acceso.usuario_autorizado (correo, rol)
-        SELECT correo, 'PROFESOR' FROM programacion_archivo GROUP BY correo ORDER BY min(fila)
-        ON CONFLICT (correo) DO NOTHING
-        RETURNING 1
-    )
-    SELECT count(*) AS usuarios_nuevos FROM nuevos
-    \gset
+    -- Un nombre por correo. El guion de Python rechaza el archivo si un correo trae dos nombres distintos, y una celda
+    -- vacía llega como texto vacío, que aquí es sin nombre.
+    CREATE TEMP TABLE programacion_nombre ON COMMIT DROP AS
+    SELECT correo, max(nullif(nombre, '')) AS nombre FROM programacion_archivo GROUP BY correo;
+    -- Los correos de la base que ya tienen otro nombre, para el aviso, que no puede nombrar la columna en una base sin V1_16.
+    CREATE TEMP TABLE programacion_otro_nombre (correo text NOT NULL, fila integer NOT NULL) ON COMMIT DROP;
+
+    \if :base_con_nombre
+        -- El segundo UPDATE de FR-005 de la spec 010, antes del INSERT de usuarios para contar solo a quien ya existía.
+        -- Solo completa el nombre nulo de un PROFESOR. Un nombre guardado, el rol y el estado no cambian.
+        WITH completados AS (
+            UPDATE acceso.usuario_autorizado u SET nombre = pn.nombre
+            FROM programacion_nombre pn
+            WHERE u.correo = pn.correo AND u.rol = 'PROFESOR' AND u.nombre IS NULL AND pn.nombre IS NOT NULL
+            RETURNING 1
+        )
+        SELECT count(*) AS nombres_completados FROM completados
+        \gset
+
+        -- Un correo nuevo entra con rol PROFESOR, activo, sin contraseña (D-45) y con el nombre del archivo, si lo trae.
+        -- Uno que ya existe no cambia aquí.
+        WITH nuevos AS (
+            INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+            SELECT pn.correo, 'PROFESOR', pn.nombre
+            FROM programacion_nombre pn JOIN programacion_archivo ar ON ar.correo = pn.correo
+            GROUP BY pn.correo, pn.nombre ORDER BY min(ar.fila)
+            ON CONFLICT (correo) DO NOTHING
+            RETURNING 1
+        )
+        SELECT count(*) AS usuarios_nuevos FROM nuevos
+        \gset
+
+        INSERT INTO programacion_otro_nombre (correo, fila)
+        SELECT u.correo, min(ar.fila)
+        FROM programacion_archivo ar
+        JOIN programacion_nombre pn ON pn.correo = ar.correo
+        JOIN acceso.usuario_autorizado u ON u.correo = ar.correo
+        WHERE pn.nombre IS NOT NULL AND u.nombre IS NOT NULL AND u.nombre <> pn.nombre
+        GROUP BY u.correo;
+    \else
+        SELECT 0 AS nombres_completados
+        \gset
+
+        -- Un correo nuevo entra con rol PROFESOR, activo y sin contraseña (D-45). Uno que ya existe no cambia.
+        WITH nuevos AS (
+            INSERT INTO acceso.usuario_autorizado (correo, rol)
+            SELECT correo, 'PROFESOR' FROM programacion_archivo GROUP BY correo ORDER BY min(fila)
+            ON CONFLICT (correo) DO NOTHING
+            RETURNING 1
+        )
+        SELECT count(*) AS usuarios_nuevos FROM nuevos
+        \gset
+    \endif
 
     WITH nuevas AS (
         INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)
@@ -150,7 +216,8 @@ SELECT (EXISTS (SELECT 1 FROM programacion_archivo WHERE con_error)
     SELECT count(*) AS asignaciones_nuevas FROM nuevas
     \gset
 
-    SELECT json_build_array('R', :secciones_nuevas, :usuarios_nuevos, :asignaciones_nuevas, :cursos_completados);
+    SELECT json_build_array('R', :secciones_nuevas, :usuarios_nuevos, :asignaciones_nuevas, :cursos_completados,
+                            :nombres_completados);
 
     -- Avisos de FR-007. Primero los de las filas del archivo, en el orden de las filas, y después lo que la base
     -- tiene en el periodo y el archivo no trae, por asignatura, sección y correo.
@@ -193,6 +260,10 @@ SELECT (EXISTS (SELECT 1 FROM programacion_archivo WHERE con_error)
         JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id AND pe.codigo = :'periodo'
         WHERE NOT EXISTS (SELECT 1 FROM programacion_seccion ps
                           WHERE ps.asignatura_id = s.asignatura_id AND ps.numero = s.numero)
+        UNION ALL
+        -- Spec 010. El correo ya tiene en la base otro nombre, que no se cambia. El aviso lleva el correo y ningún nombre.
+        SELECT 1, o.fila, '', '0', 7, o.correo, json_build_array('A', 'OTRO_NOMBRE', o.correo)
+        FROM programacion_otro_nombre o
         UNION ALL
         SELECT 2, 0, a.codigo, s.numero, 6, u.correo,
                json_build_array('A', 'ASIGNACION_AUSENTE', s.numero, a.codigo, u.correo)

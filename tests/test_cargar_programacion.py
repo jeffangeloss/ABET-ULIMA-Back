@@ -128,10 +128,122 @@ def test_la_bom_no_cambia_lo_leido(guion: ModuleType) -> None:
 
 
 def test_las_columnas_ajenas_se_ignoran_sin_leer_sus_valores(guion: ModuleType) -> None:
-    filas = [(*fila, "Nombre Inventado de Prueba") for fila in BASE]
-    leidas = guion.leer(_csv(filas, (*ENCABEZADOS, "nombre_profesor")))
-    assert all("Nombre Inventado" not in repr(fila) for fila in leidas)
+    # Cambio del 2026-11-25 (spec 010, FR-007). La columna nombre ya se lee, así que la prueba nombra otras columnas de
+    # persona que siguen ignoradas, aunque se parezcan a nombre, y comprueba que sus valores no llegan a ninguna fila.
+    ajenas = ("nombre_profesor", "nombres", "apellido", "docente", "Nombre completo", "correo_personal")
+    filas = [(*fila, *(f"Valor Inventado {columna}" for columna in ajenas)) for fila in BASE]
+    leidas = guion.leer(_csv(filas, (*ENCABEZADOS, *ajenas)))
+    assert all("Valor Inventado" not in repr(fila) for fila in leidas)
     assert len(leidas) == 2
+    assert leidas.con_nombre is False and [fila.nombre for fila in leidas] == [None, None]
+
+
+# La columna opcional nombre (spec 010, US-96, T030)
+
+NOMBRES = ("Profesor Inventado Cuatrocientos Diez", "Profesor Inventado Cuatrocientos Once")
+CON_NOMBRE = ("periodo", "asignatura", "seccion", "correo", "curso_blackboard", "nombre")
+
+
+def _con_nombres(*nombres: str | None) -> bytes:
+    return _csv([(*fila, nombre or "") for fila, nombre in zip(BASE, nombres, strict=True)], CON_NOMBRE)
+
+
+def test_la_columna_nombre_se_lee_y_el_archivo_lo_dice(guion: ModuleType) -> None:
+    leidas = guion.leer(_con_nombres(*NOMBRES))
+    assert leidas.con_nombre is True
+    assert [fila.nombre for fila in leidas] == list(NOMBRES)
+    assert guion.revisar(leidas, "2026-2") == {}
+
+
+def test_una_celda_de_nombre_vacia_significa_sin_nombre_aunque_la_columna_exista(guion: ModuleType) -> None:
+    leidas = guion.leer(_con_nombres(None, "  "))
+    assert leidas.con_nombre is True and [fila.nombre for fila in leidas] == [None, None]
+    assert guion.revisar(leidas, "2026-2") == {}
+
+
+def test_la_columna_nombre_se_reconoce_sin_importar_las_mayusculas_ni_el_lugar(guion: ModuleType) -> None:
+    datos = _csv([("Profesor Inventado Uno", *fila) for fila in BASE], ("NOMBRE", *ENCABEZADOS))
+    assert [fila.nombre for fila in guion.leer(datos)] == ["Profesor Inventado Uno"] * 2
+
+
+@pytest.mark.parametrize(("celda", "esperado"), [
+    ("  Profesor   Inventado Cuatrocientos Diez ", "Profesor Inventado Cuatrocientos Diez"),
+    ("Profesor Inventado A\u0301ngel", "Profesor Inventado \u00c1ngel"),
+    ("Profesor Inventado \u00c1ngel", "Profesor Inventado \u00c1ngel"),
+    ("Profesor     Inventado    Muñoz", "Profesor Inventado Muñoz"),
+])
+def test_el_nombre_se_normaliza_a_nfc_sin_espacios_a_los_lados_ni_dobles(guion: ModuleType, celda: str, esperado: str) -> None:
+    [primera, _] = guion.leer(_con_nombres(celda, None))
+    assert primera.nombre == esperado
+
+
+@pytest.mark.parametrize("nombre", [
+    "docente411@example.invalid", "Profesor Inventado 411", "Profesor Inventado, Cuatrocientos", "Inventado, Profesor",
+    "Profesor Inventado\nCuatrocientos Once", "Profesor Inventado\tUno", "Profesor Inventado\u200bUno",
+    "Profesor Inventado\ufeffUno", "Profesor Inventado\u00adUno", "Profesor Inventado\u2060Uno",
+    "Profesor Inventado\x07Uno", "Profesor Inventado\x85Uno", "Profesor Inventado\r", "\nProfesor Inventado",
+    "Profesor Inventado " + "a" * 102,
+], ids=["arroba", "digito", "coma", "coma_inicial", "salto", "tab", "u200b", "ufeff", "u00ad", "u2060", "bel", "c1", "cr",
+        "salto_al_comienzo", "121_caracteres"])
+def test_un_nombre_invalido_rechaza_la_fila_sin_repetir_su_valor(guion: ModuleType, nombre: str) -> None:
+    assert len("Profesor Inventado " + "a" * 102) == 121
+    errores = guion.revisar(guion.leer(_con_nombres(NOMBRES[0], nombre)), "2026-2")
+    assert errores == {3: "Fila 3. El nombre no es válido."}
+
+
+def test_un_nombre_de_exactamente_120_caracteres_es_valido(guion: ModuleType) -> None:
+    nombre = "Profesor Inventado " + "a" * 101
+    assert len(nombre) == 120
+    assert guion.revisar(guion.leer(_con_nombres(nombre, None)), "2026-2") == {}
+
+
+@pytest.mark.parametrize("nombre", ["Profesor Inventado D'Ángelo-Núñez", "PROFESOR INVENTADO UNO", "Profesor Inventado Ñandú Güemes"])
+def test_el_apostrofo_el_guion_las_enes_y_las_mayusculas_son_validos_y_no_se_cambian(guion: ModuleType, nombre: str) -> None:
+    [primera, _] = guion.leer(_con_nombres(nombre, None))
+    assert primera.nombre == nombre
+    assert guion.revisar([primera], "2026-2") == {}
+
+
+def test_dos_nombres_distintos_para_un_mismo_correo_rechazan_la_segunda_fila(guion: ModuleType) -> None:
+    filas = [(*BASE[0], NOMBRES[0]), ("2026-2", "450010", "410", BASE[0][3], "", "Profesor Inventado Otro")]
+    errores = guion.revisar(guion.leer(_csv(filas, CON_NOMBRE)), "2026-2")
+    assert errores == {3: "Fila 3. El correo trae otro nombre en otra fila."}
+
+
+def test_el_mismo_nombre_o_un_nombre_vacio_en_otra_fila_del_mismo_correo_no_choca(guion: ModuleType) -> None:
+    mismo = [(*BASE[0], NOMBRES[0]), ("2026-2", "450010", "410", BASE[0][3], "", NOMBRES[0])]
+    vacio = [(*BASE[0], NOMBRES[0]), ("2026-2", "450010", "410", BASE[0][3], "", "")]
+    vacio_antes = [(*BASE[0], ""), ("2026-2", "450010", "410", BASE[0][3], "", NOMBRES[0])]
+    for filas in (mismo, vacio, vacio_antes):
+        assert guion.revisar(guion.leer(_csv(filas, CON_NOMBRE)), "2026-2") == {}
+
+
+def test_una_fila_con_otra_falla_no_cuenta_para_el_choque_de_nombres(guion: ModuleType) -> None:
+    # La fila 2 trae un periodo que no es el de la corrida, así que su nombre no se toma como el primero del correo.
+    filas = [("2026-1", "450002", "410", BASE[0][3], "", NOMBRES[0]), ("2026-2", "450002", "411", BASE[0][3], "", NOMBRES[1])]
+    errores = guion.revisar(guion.leer(_csv(filas, CON_NOMBRE)), "2026-2")
+    assert list(errores) == [2]
+
+
+def test_un_archivo_con_un_nombre_invalido_se_rechaza_sin_conectarse_aunque_la_base_tambien_lo_rechazaria(
+    guion: ModuleType, sin_base: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    filas = [(*BASE[0], "Profesor Inventado 410"), ("2026-2", "999999", "411", BASE[1][3], "", NOMBRES[1])]
+    ruta = _archivo(tmp_path, _csv(filas, CON_NOMBRE))
+    codigo, informe = _main(guion, capsys, "--periodo", "2026-2", "--archivo", str(ruta), "--aplicar")
+    # Con un psql invocado, que no existe, el código sería 3 y no 1. La asignatura 999999 solo la rechazaría la base.
+    assert codigo == 1
+    assert informe == ["Fila 2. El nombre no es válido.", RECHAZADO]
+    assert "Profesor Inventado" not in capsys.readouterr().err
+
+
+def test_dos_nombres_distintos_se_rechazan_sin_conectarse(guion: ModuleType, sin_base: Path, tmp_path: Path,
+                                                         capsys: pytest.CaptureFixture[str]) -> None:
+    filas = [(*BASE[0], NOMBRES[0]), ("2026-2", "450010", "410", BASE[0][3], "", "Profesor Inventado Otro")]
+    ruta = _archivo(tmp_path, _csv(filas, CON_NOMBRE))
+    codigo, informe = _main(guion, capsys, "--periodo", "2026-2", "--archivo", str(ruta))
+    assert codigo == 1 and informe == ["Fila 3. El correo trae otro nombre en otra fila.", RECHAZADO]
+    assert all("Profesor Inventado" not in linea for linea in informe)
 
 
 def test_sin_la_columna_del_curso_cada_fila_queda_sin_curso(guion: ModuleType) -> None:
@@ -598,11 +710,17 @@ def test_los_insert_nombran_su_restriccion_y_no_hay_delete() -> None:
     texto = SQL.read_text(encoding="utf-8")
     sentencias = "\n".join(linea for linea in texto.splitlines() if not linea.lstrip().startswith("--"))
     assert "ON CONFLICT (periodo_id, asignatura_id, numero) DO NOTHING" in sentencias
-    assert "ON CONFLICT (correo) DO NOTHING" in sentencias
     assert "ON CONFLICT (usuario_id, seccion_id) DO NOTHING" in sentencias
-    assert sentencias.count("ON CONFLICT") == 3
+    # Desde la spec 010 el INSERT de usuarios tiene dos formas, con y sin la columna nombre, según la base tenga V1_16.
+    assert sentencias.count("ON CONFLICT") == 4 and sentencias.count("ON CONFLICT (correo) DO NOTHING") == 2
     assert "DELETE" not in sentencias.upper()
-    assert sentencias.upper().count("UPDATE ") == 1
+    # Cambio del 2026-11-25 (spec 010, FR-005). Hay un segundo UPDATE, el del nombre nulo de un PROFESOR que ya existe, y
+    # ninguno cambia rol ni activo.
+    assert sentencias.upper().count("UPDATE ") == 2
+    assert "SET curso_blackboard = ps.curso_blackboard" in sentencias and "SET nombre = pn.nombre" in sentencias
+    assert "u.nombre IS NULL" in sentencias and "u.rol = 'PROFESOR'" in sentencias
+    assert "SET rol" not in sentencias and "SET activo" not in sentencias
+    assert "acceso.credencial" not in sentencias
 
 
 @pytest.mark.parametrize(("opciones", "mensaje"), [
@@ -689,3 +807,132 @@ def test_un_archivo_de_programacion_queda_fuera_de_git(ruta: str) -> None:
     corrida = subprocess.run(["git", "check-ignore", "-q", "--no-index", ruta], cwd=RAIZ, capture_output=True,
                              check=False)
     assert corrida.returncode == 0, f"{ruta} no queda ignorado"
+
+
+# La columna nombre contra la base (spec 010, US-96, T031)
+
+def _filas_con_nombre(*nombres: str) -> list[tuple[str, ...]]:
+    return [(*fila, nombre) for fila, nombre in zip(BASE, nombres, strict=True)]
+
+
+def _nombres(conexion: psycopg.Connection) -> dict[str, str | None]:
+    # La coordinación de la base de partida queda fuera, porque ningún archivo de estas pruebas la nombra.
+    return dict(conexion.execute("SELECT correo, nombre FROM acceso.usuario_autorizado"
+                                 " WHERE correo <> 'coordinacion@example.invalid'").fetchall())
+
+
+def test_la_corrida_en_seco_cuenta_los_nombres_completados_y_no_guarda_ninguno(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (%s, 'PROFESOR')", (BASE[0][3],))
+    antes = _tres_tablas(dueno)
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines()[0] == ("Resumen. 2 secciones nuevas, 1 usuario nuevo, 2 asignaciones nuevas y "
+                                              "1 nombre completado.")
+    assert corrida.stdout.splitlines()[-1] == "Corrida en seco. Nada se escribió."
+    assert _tres_tablas(dueno) == antes
+    assert not any(nombre in corrida.stdout + corrida.stderr for nombre in NOMBRES)
+
+
+def test_una_cuenta_coordinador_nunca_recibe_nombre_y_el_informe_no_lo_dice(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES (%s, 'COORDINADOR')", (BASE[0][3],))
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert _nombres(dueno) == {BASE[0][3]: None, BASE[1][3]: NOMBRES[1]}
+    assert dueno.execute("SELECT rol, activo FROM acceso.usuario_autorizado WHERE correo = %s", (BASE[0][3],)
+                         ).fetchall() == [("COORDINADOR", True)]
+    assert "0 nombres completados" in corrida.stdout.splitlines()[0]
+    assert not any(nombre in corrida.stdout + corrida.stderr for nombre in NOMBRES)
+
+
+def test_el_mismo_nombre_ya_guardado_no_da_aviso_y_la_segunda_corrida_no_cambia_nada(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    primera = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), "--aplicar", encabezados=CON_NOMBRE)
+    assert primera.returncode == 0 and primera.stdout.splitlines()[-1] == "Cambios guardados.", primera.stdout
+    despues_de_la_primera = _tres_tablas(dueno)
+    segunda = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), "--aplicar", encabezados=CON_NOMBRE)
+    assert segunda.returncode == 0, segunda.stdout + segunda.stderr
+    assert segunda.stdout.splitlines() == ["Resumen. 0 secciones nuevas, 0 usuarios nuevos, 0 asignaciones nuevas y "
+                                           "0 nombres completados.", "Sin cambios."]
+    assert _tres_tablas(dueno) == despues_de_la_primera
+
+
+def test_con_la_columna_nombre_vacia_el_resumen_trae_el_cuarto_termino_y_nadie_recibe_nombre(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    corrida = _correr(copia, tmp_path, _filas_con_nombre("", ""), "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines()[0] == ("Resumen. 2 secciones nuevas, 2 usuarios nuevos, 2 asignaciones nuevas y "
+                                              "0 nombres completados.")
+    assert set(_nombres(dueno).values()) == {None}
+
+
+def test_un_profesor_con_dos_filas_y_el_nombre_en_una_sola_lo_recibe(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    filas = [(*BASE[0], ""), (*BASE[1][:3], BASE[0][3], BASE[1][4], NOMBRES[0])]
+    corrida = _correr(copia, tmp_path, filas, "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert _nombres(dueno) == {BASE[0][3]: NOMBRES[0]}
+
+
+def test_un_nombre_que_la_base_rechazaria_no_llega_a_ella_porque_el_guion_lo_normaliza(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(" Profesor   Inventado Uno ", "Profesor Inventado Ángel"),
+                      "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert _nombres(dueno) == {BASE[0][3]: "Profesor Inventado Uno", BASE[1][3]: "Profesor Inventado Ángel"}
+
+
+def test_los_nombres_de_dos_filas_de_correos_distintos_no_se_mezclan(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(NOMBRES[1], NOMBRES[0]), "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert _nombres(dueno) == {BASE[0][3]: NOMBRES[1], BASE[1][3]: NOMBRES[0]}
+
+
+def test_el_aviso_de_otro_nombre_lleva_el_correo_y_ninguno_de_los_dos_nombres(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol, nombre) VALUES (%s, 'PROFESOR', %s)",
+                  (BASE[1][3], "Profesor Inventado Anterior"))
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    avisos = [linea for linea in corrida.stdout.splitlines() if "otro nombre" in linea]
+    assert avisos == [f"Aviso. {BASE[1][3]} ya tiene otro nombre en la base y no se cambia."]
+    assert not any(n in corrida.stdout + corrida.stderr for n in (*NOMBRES, "Profesor Inventado Anterior"))
+    assert _nombres(dueno)[BASE[1][3]] == "Profesor Inventado Anterior"
+
+
+# Una base sin V1_16 (spec 010, FR-014 y el riesgo del plan)
+
+def _sin_v1_16(dueno: psycopg.Connection) -> None:
+    dueno.execute("ALTER TABLE acceso.usuario_autorizado DROP COLUMN nombre")
+
+
+def test_una_base_sin_v1_16_carga_un_archivo_sin_la_columna_nombre_como_en_la_spec_006(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    _sin_v1_16(dueno)
+    corrida = _correr(copia, tmp_path, BASE, "--aplicar")
+    assert corrida.returncode == 0, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines()[0] == "Resumen. 2 secciones nuevas, 2 usuarios nuevos y 2 asignaciones nuevas."
+    assert corrida.stdout.splitlines()[-1] == "Cambios guardados."
+
+
+def test_una_base_sin_v1_16_rechaza_un_archivo_con_la_columna_nombre_sin_escribir_nada(
+    copia: Any, dueno: psycopg.Connection, tmp_path: Path,
+) -> None:
+    _sin_v1_16(dueno)
+    antes = _tres_tablas(dueno)
+    corrida = _correr(copia, tmp_path, _filas_con_nombre(*NOMBRES), "--aplicar", encabezados=CON_NOMBRE)
+    assert corrida.returncode == 3, corrida.stdout + corrida.stderr
+    assert corrida.stdout.splitlines() == ["La base rechazó la escritura y no guardó nada."]
+    assert _tres_tablas(dueno) == antes
+    assert not any(nombre in corrida.stdout + corrida.stderr for nombre in NOMBRES)

@@ -13,6 +13,7 @@ Cada prueba nombra lo que debe pasar y lo que no debe pasar (AGENTS.md, regla 8)
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import subprocess
 import sys
@@ -57,3 +58,35 @@ def test_un_tramo_que_corre_huella_antes_o_no_llega_a_huella_despues_no_la_pide(
         corrida = sembrar("--rama", "develop", "--aplicar", *argumentos)
         assert corrida.returncode == 3, corrida.stdout + corrida.stderr
         assert "Falta --huella-antes" not in corrida.stderr
+
+
+# El nombre del profesor en la programación (spec 010, US-96, T036)
+
+def _siembra() -> object:
+    especificacion = importlib.util.spec_from_file_location("sembrar_quimica_010", SEMBRAR)
+    assert especificacion is not None and especificacion.loader is not None
+    modulo = importlib.util.module_from_spec(especificacion)
+    sys.modules[especificacion.name] = modulo
+    especificacion.loader.exec_module(modulo)
+    return modulo
+
+
+def test_el_paso_programacion_no_cambia_con_la_columna_nombre_y_las_migraciones_siguen_en_la_1_14() -> None:
+    pasos = {paso.nombre: paso for paso in _siembra().PASOS}
+    programacion = pasos["programacion"]
+    assert programacion.aplicado == ("{python}", "-I", "db/herramientas/cargar_programacion.py", "--periodo", "2026-1",
+                                     "--archivo", "{programacion}", "--aplicar")
+    assert programacion.en_seco == programacion.aplicado[:-1]
+    assert "-target=1.14" in pasos["migraciones"].aplicado and "-target=1.16" not in pasos["migraciones"].aplicado
+    assert not any("nombre" in argumento for paso in pasos.values() for argumento in (paso.aplicado or ()))
+
+
+def test_el_docstring_dice_que_v1_16_la_aplica_migrar_neon_antes_de_la_siembra() -> None:
+    doc = _siembra().__doc__
+    assert "V1_16" in doc and "migrar_neon.sh" in doc and "columna opcional nombre" in doc
+
+
+def test_ninguna_salida_de_la_siembra_oculta_ni_repite_un_nombre_de_profesor() -> None:
+    texto = SEMBRAR.read_text(encoding="utf-8")
+    assert "nombre" not in {n.lower() for n in _siembra().OCULTAS}
+    assert "Profesor Inventado" not in texto
