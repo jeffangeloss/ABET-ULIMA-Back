@@ -61,7 +61,7 @@ Orden de construcción (J-41). Primero la ruta 13 y P4 por indicador (T030, T031
 
 ## Phase 5: Auditoría
 
-- [ ] T050 [Back] `specs/005-oportunidades-de-mejora/audit.md` con el cruce de historia, escenario, prueba y resultado, la línea Verification fechada en `r17` y `mejora`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios [US-45..US-54]
+- [x] T050 [Back] `specs/005-oportunidades-de-mejora/audit.md` con el cruce de historia, escenario, prueba y resultado, la línea Verification fechada en `r17` y `mejora`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios [US-45..US-54] · Hecha el 2026-11-24, con `audit.md` (85 escenarios y 118 casos con su prueba y 0 pendientes), la línea Verification de `r17` y `mejora`, y `MEMORIA.md` y `CHANGELOG.md` de los dos repositorios
 
 ## Phase 6: Despliegue
 

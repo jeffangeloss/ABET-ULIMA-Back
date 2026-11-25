@@ -140,4 +140,13 @@ El R-17 que se entrega solo con la declaración vigente completa (US-49) y sus r
 
 ## Verification
 
-Sin corrida todavía. Las reglas se escriben antes del código, y T050 de la spec 005 llena esta sección con el comando, el archivo de prueba y las reglas que cubre cada corrida.
+Corrida del 2026-11-24 en el Back y en el Front, rama `feat/005-oportunidades-de-mejora` (Back 027c5be, Front a579f59), sobre un PostgreSQL 18 desechable que arma la propia suite. La más reciente va primero y cada línea lleva la fecha, el comando, el archivo de prueba y las reglas que cubre.
+
+```text
+- 2026-11-24 · ABET_FRONT_RAIZ=<Front> uv run --frozen --no-build python -m pytest -q -p no:cacheprovider (2560 passed y 15 skipped) · test_semaforo_feature.py, test_declaracion_feature.py, tests/test_api_indicadores.py, tests/test_api_mejora.py, tests/test_resultados.py → BR-MEJORA-01 a BR-MEJORA-13
+- 2026-11-24 · tests/test_mejora_base.py en el mismo comando (37 pruebas) y bash db/pruebas/correr_pruebas.sh («RESULTADO: todo pasó») → BR-MEJORA-07, BR-MEJORA-10, BR-MEJORA-11 y BR-MEJORA-12 (V1_15, los CHECK, los permisos de abet_app y Q16 y Q17)
+- 2026-11-24 · npm test del Front (26 archivos y 378 aprobadas), con tests/spec005/semaforo.test.tsx, declaracion.test.tsx, app.test.tsx y navegacion.test.tsx → BR-MEJORA-14 y los 23 escenarios con @delegado_a_vitest
+- 2026-11-24 · npx playwright test e2e/humo.spec.ts (Front) contra scripts/api_local.sh del Back (5 passed) → BR-MEJORA-01, BR-MEJORA-05, BR-MEJORA-09 y BR-MEJORA-14 en local
+```
+
+Resultado: suite completa del Back, 2560 passed y 15 skipped in 873.45s (0:14:33), con los 118 casos de los cuatro `.feature` de la spec 005 aprobados, 23 de ellos delegados a Vitest; Vitest del Front, 26 archivos y 378 pruebas aprobadas con 1 `todo`; humo local, 5 passed. Q16 y Q17 en `controles_neon.sql` corren contra Neon con T024 y T063, y el humo contra la vista previa de `develop` con T062. El detalle por historia está en `specs/005-oportunidades-de-mejora/audit.md`.
