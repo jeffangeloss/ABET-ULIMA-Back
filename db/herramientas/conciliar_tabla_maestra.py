@@ -3,7 +3,7 @@
 Uso, desde la raíz del repositorio, con la tabla maestra y la carpeta de los R-17 FUERA de todo repositorio y la
 conexión en las variables de libpq (PGHOST, PGDATABASE, PGUSER=abet_respaldo, PGPASSWORD y las demás)
     uv run python -I db/herramientas/conciliar_tabla_maestra.py --maestra TABLA.xlsx --periodo 2026-1 \\
-        --asignatura 5643 --pi 6.1 [--r17 CARPETA] [--datos-reales]
+        --asignatura 5643 --pi 6.1 [--r17 CARPETA] [--datos-reales] [--curso]
 
 La tabla maestra, que Stefanny Montaño verificó igual alumno por alumno a los R-17 que llenó cada profesor, es el
 oráculo. El conciliador compara con ella, por sección, lo que el sistema mide y los R-17 que genera.
@@ -31,6 +31,15 @@ oráculo. El conciliador compara con ella, por sección, lo que el sistema mide 
    de una celda ni la ruta de un archivo.
 7. La tabla maestra y la carpeta de los R-17 no pueden estar dentro de un repositorio git (código 2, antes de leer
    nada y de conectarse), porque los repositorios son públicos (D-10).
+
+8. Con --curso (US-94 de la spec 009, propuesta) compara además, en el PI de --pi, el curso y el promedio de cada sección con
+   lo que da el sistema, que lee con la misma consulta de la ruta 20, abet_carga.resultados.resumen_del_curso(), en la misma
+   transacción READ ONLY. Del curso compara los alumnos con el nivel esperado o más, el porcentaje, el promedio de calificación
+   y las secciones en la meta, que la tabla maestra cuenta con la meta provisional de 80 % de D-56 sobre el porcentaje ya
+   redondeado. El porcentaje y el promedio de la tabla se redondean como ROUND(numeric) de PostgreSQL, a uno y a dos
+   decimales. Cada sección con carga publicada suma una línea «Con promedio igual.» o «Distinta en el promedio y en el
+   porcentaje.», y el curso, «Curso igual en ...» o «Curso distinto en ...». El informe dice solo «igual» o «distinto», sin
+   códigos, calificaciones ni cifras de promedio o de porcentaje. Sin --curso el informe es el de antes.
 
 Códigos de salida. 0 si todas las secciones son iguales, 1 ante una diferencia o una tabla maestra que se rechaza, 2
 por un argumento inválido o un archivo dentro de un repositorio, antes de leer nada, y 3 si la base no responde
@@ -66,12 +75,18 @@ def _cargar(nombre: str, ruta: Path) -> ModuleType:
 
 
 M = _cargar("generar_exports_desde_maestra", RAIZ / "scripts" / "generar_exports_desde_maestra.py")
+# La consulta de la ruta 20, que --curso corre en la transacción de solo lectura de la conciliación. Se carga por su ruta
+# porque este guion corre con python -I y desde cualquier carpeta, y abet_carga/resultados.py solo importa psycopg.
+RESULTADOS = _cargar("abet_carga_resultados", RAIZ / "abet_carga" / "resultados.py")
 
 LOGRO_DEL_R17_A_MANO = 3
 HOJA_DEL_R17 = "Cursos de Carrera"
 PRIMERA_FILA_DE_LA_TABLA = 43
 FILAS_DEL_BLOQUE_II = (24, 25, 26)
 UN_DECIMAL = Decimal("0.1")
+DOS_DECIMALES = Decimal("0.01")
+# La meta provisional de la sección en la meta (D-56), con la que la tabla maestra cuenta las secciones en la meta del curso.
+META_DEL_CURSO = Decimal(80)
 TOLERANCIA = 1e-9
 
 MAESTRA_EN_REPOSITORIO = "La tabla maestra está dentro de un repositorio git. Use una copia fuera de los repositorios."
@@ -118,6 +133,11 @@ def _porcentaje(x: int, n: int) -> Decimal | None:
     return (Decimal(100) * x / n).quantize(UN_DECIMAL, rounding=ROUND_HALF_UP) if n else None
 
 
+def _promedio(suma: int, n: int) -> Decimal | None:
+    """Promedio de n niveles con dos decimales, redondeado lejos del cero como ROUND de PostgreSQL."""
+    return (Decimal(suma) / n).quantize(DOS_DECIMALES, rounding=ROUND_HALF_UP) if n else None
+
+
 @dataclass
 class Logro:
     """Conteo por nivel y logro de una sección y un PI según la tabla maestra."""
@@ -132,6 +152,110 @@ class Logro:
     @property
     def cociente(self) -> tuple[int, int]:
         return sum(1 for nivel in self.niveles.values() if nivel >= LOGRO_DEL_R17_A_MANO), len(self.niveles)
+
+
+# El curso, de la tabla maestra y del sistema (spec 009, US-94)
+
+@dataclass
+class Curso:
+    """Cifras del curso en un PI. por_seccion trae, por número de sección con estudiantes o con carga publicada, su porcentaje
+    y su promedio. en_la_meta cuenta las secciones cuyo porcentaje llega a la meta."""
+
+    logrados: int | None
+    calificados: int
+    porcentaje: Decimal | None
+    promedio: Decimal | None
+    en_la_meta: int
+    por_seccion: dict[str, tuple[Decimal | None, Decimal | None]]
+
+
+def curso_de_la_tabla(tabla: Niveles, pi: str) -> Curso:
+    """Lo que la tabla maestra dice del curso en el PI. Suma estudiantes de todas las secciones y no promedia porcentajes."""
+    por_seccion: dict[str, tuple[Decimal | None, Decimal | None]] = {}
+    logrados = calificados = suma = en_la_meta = 0
+    for seccion, pis in tabla.items():
+        niveles = pis.get(pi, {})
+        if not niveles:
+            continue
+        x, n = Logro(niveles).cociente
+        porcentaje = _porcentaje(x, n)
+        por_seccion[seccion] = (porcentaje, _promedio(sum(niveles.values()), n))
+        logrados, calificados, suma = logrados + x, calificados + n, suma + sum(niveles.values())
+        en_la_meta += porcentaje is not None and porcentaje >= META_DEL_CURSO
+    return Curso(logrados, calificados, _porcentaje(logrados, calificados), _promedio(suma, calificados), en_la_meta,
+                 por_seccion)
+
+
+_SECCIONES_DEL_CURSO = """
+SELECT s.seccion_id, s.numero
+FROM abet.seccion s
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id
+JOIN abet.periodo pe   ON pe.periodo_id = s.periodo_id
+WHERE pe.codigo = %s AND a.codigo = %s
+"""
+
+
+def _decimal(valor: float | None, cuantos: Decimal) -> Decimal | None:
+    return Decimal(repr(valor)).quantize(cuantos) if valor is not None else None
+
+
+def curso_del_sistema(conexion: psycopg.Connection, periodo: str, asignatura: str, pi: str) -> Curso | None:
+    """Lo que la consulta de la ruta 20 da del curso en el PI, o None si el curso no tiene secciones o el plan no mide el PI."""
+    secciones = [(int(seccion_id), str(int(numero)))
+                 for seccion_id, numero in conexion.execute(_SECCIONES_DEL_CURSO, (periodo, asignatura)).fetchall()]
+    secciones.sort(key=lambda par: int(par[1]))
+    indicadores = [i for i in RESULTADOS.resumen_del_curso(conexion, secciones) if i["pi"] == pi]
+    if not indicadores:
+        return None
+    [indicador] = indicadores
+    curso = indicador["curso"]
+    return Curso(curso["logrados"], curso["calificados"], _decimal(curso["pct_sobre_calificados"], UN_DECIMAL),
+                 _decimal(curso["promedio_nivel"], DOS_DECIMALES), indicador["conteo_secciones"]["en_meta"],
+                 {s["numero"]: (_decimal(s["pct_sobre_calificados"], UN_DECIMAL), _decimal(s["promedio_nivel"], DOS_DECIMALES))
+                  for s in indicador["secciones"] if s["estado"] == "PUBLICADA"})
+
+
+def _enumerar(partes: list[str]) -> str:
+    """«en a», «en a y en b» o «en a, en b y en c», con cada parte precedida por «en»."""
+    if len(partes) == 1:
+        return f"en {partes[0]}"
+    return f"en {', en '.join(partes[:-1])} y en {partes[-1]}"
+
+
+ASPECTOS_DEL_CURSO = ("alumnos en el nivel esperado o superior", "el porcentaje", "el promedio", "las secciones en la meta")
+
+
+def lineas_del_curso(tabla: Curso, sistema: Curso | None) -> tuple[list[str], bool]:
+    """Líneas del informe del curso y si es distinto. Primero lo distinto y después lo igual, sin cifras ni códigos."""
+    if sistema is None:
+        iguales = [False] * len(ASPECTOS_DEL_CURSO)
+    else:
+        iguales = [tabla.logrados == sistema.logrados and tabla.calificados == sistema.calificados,
+                   tabla.porcentaje == sistema.porcentaje, tabla.promedio == sistema.promedio,
+                   tabla.en_la_meta == sistema.en_la_meta]
+    distintos = [aspecto for aspecto, igual in zip(ASPECTOS_DEL_CURSO, iguales, strict=True) if not igual]
+    parecidos = [aspecto for aspecto, igual in zip(ASPECTOS_DEL_CURSO, iguales, strict=True) if igual]
+    lineas = []
+    if distintos:
+        lineas.append(f"Curso distinto {_enumerar(distintos)}.")
+    if parecidos:
+        lineas.append(f"Curso igual {_enumerar(parecidos)}.")
+    return lineas, bool(distintos)
+
+
+def lineas_del_promedio(seccion: str, tabla: Curso | None, sistema: Curso | None) -> tuple[list[str], bool]:
+    """Líneas de la sección sobre su promedio y su porcentaje, y si es distinta. Sin carga publicada no trae líneas."""
+    if tabla is None or sistema is None or seccion not in tabla.por_seccion or seccion not in sistema.por_seccion:
+        return [], False
+    (porcentaje_t, promedio_t), (porcentaje_s, promedio_s) = tabla.por_seccion[seccion], sistema.por_seccion[seccion]
+    distintos = [nombre for nombre, igual in (("el promedio", promedio_t == promedio_s),
+                                              ("el porcentaje", porcentaje_t == porcentaje_s)) if not igual]
+    if not distintos:
+        return [f"Sección {seccion}. Con promedio igual."], False
+    lineas = [f"Sección {seccion}. Distinta en {' y en '.join(distintos)}."]
+    if promedio_t == promedio_s:
+        lineas.append(f"Sección {seccion}. Con promedio igual.")
+    return lineas, True
 
 
 # Tabla maestra
@@ -195,9 +319,11 @@ class Base:
     repetidos: Counter = field(default_factory=Counter)
     cifras: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
     cargas: dict[str, set[int]] = field(default_factory=dict)
+    curso: Curso | None = None
 
 
-def leer_base(conexion: psycopg.Connection, periodo: str, asignatura: str) -> Base:
+def leer_base(conexion: psycopg.Connection, periodo: str, asignatura: str, curso_del_pi: str | None = None) -> Base:
+    """Lo que el sistema mide, y con curso_del_pi también el curso de ese PI, todo en la misma transacción READ ONLY."""
     anio, ciclo = (int(parte) for parte in periodo.split("-"))
     base = Base()
     try:
@@ -212,6 +338,8 @@ def leer_base(conexion: psycopg.Connection, periodo: str, asignatura: str) -> Ba
                 base.cargas.setdefault(seccion, set()).add(carga_id)
                 base.cifras.setdefault(seccion, {})[pi] = dict(zip(
                     ("n1", "n2", "n3", "n4", "x", "total", "sin_evidencia", "pct"), fila[3:], strict=True))
+            if curso_del_pi is not None:
+                base.curso = curso_del_sistema(conexion, periodo, asignatura, curso_del_pi)
     finally:
         conexion.rollback()
     return base
@@ -355,21 +483,30 @@ def _diferencias_de_las_cifras(seccion: str, logro: Logro, cifras: dict[str, Any
     return lineas
 
 
-def conciliar(maestra: Niveles, base: Base, pi: str, r17: dict[str, list[R17]] | None) -> tuple[int, list[str]]:
+def conciliar(maestra: Niveles, base: Base, pi: str, r17: dict[str, list[R17]] | None,
+              con_curso: bool = False) -> tuple[int, list[str]]:
+    """Informe de la conciliación. Con con_curso suma por sección la línea del promedio y, antes del total, la del curso."""
     secciones = sorted(set(maestra) | set(base.cargas), key=int)
+    de_la_tabla = curso_de_la_tabla(maestra, pi) if con_curso else None
     lineas, iguales = [], 0
     for seccion in secciones:
         diferencias = diferencias_de_la_seccion(seccion, maestra.get(seccion, {}), base, pi,
                                                 None if r17 is None else r17.get(seccion, []))
+        del_promedio, promedio_distinto = lineas_del_promedio(seccion, de_la_tabla, base.curso)
         if diferencias:
             lineas += diferencias
-        else:
+        elif not promedio_distinto:
             iguales += 1
             n = len(maestra.get(seccion, {}).get(pi, {}))
             lineas.append(f"Sección {seccion}. Igual en {n} de {n} estudiantes, en el conteo por nivel y en el "
                           "porcentaje.")
+        lineas += del_promedio
+    curso_distinto = False
+    if de_la_tabla is not None:
+        del_curso, curso_distinto = lineas_del_curso(de_la_tabla, base.curso)
+        lineas += del_curso
     lineas.append(f"{iguales} de {len(secciones)} secciones iguales.")
-    return (0 if secciones and iguales == len(secciones) else 1), lineas
+    return (0 if secciones and iguales == len(secciones) and not curso_distinto else 1), lineas
 
 
 # Argumentos y principal
@@ -385,6 +522,7 @@ def argumentos_de(argv: list[str] | None) -> argparse.Namespace:
     for opcion in ("--maestra", "--periodo", "--asignatura", "--pi", "--r17"):
         analizador.add_argument(opcion)
     analizador.add_argument("--datos-reales", action="store_true")
+    analizador.add_argument("--curso", action="store_true")
     argumentos = analizador.parse_args(argv)
     validos = (argumentos.maestra and M.PERIODO.fullmatch(argumentos.periodo or "")
                and M.ASIGNATURA_VALIDA.fullmatch(argumentos.asignatura or "") and M.PI_VALIDO.fullmatch(argumentos.pi or ""))
@@ -410,10 +548,11 @@ def principal(argv: list[str] | None = None) -> tuple[int, list[str]]:
         r17, ilegible = leer_r17(carpeta, argumentos.periodo, argumentos.asignatura) if carpeta else (None, False)
         try:
             with abrir() as conexion:
-                base = leer_base(conexion, argumentos.periodo, argumentos.asignatura)
+                base = leer_base(conexion, argumentos.periodo, argumentos.asignatura,
+                                 argumentos.pi if argumentos.curso else None)
         except psycopg.OperationalError:
             raise Rechazo(SIN_RESPUESTA, codigo=3) from None
-        codigo, lineas = conciliar(maestra, base, argumentos.pi, r17)
+        codigo, lineas = conciliar(maestra, base, argumentos.pi, r17, argumentos.curso)
         if ilegible:
             lineas.insert(0, R17_ILEGIBLE)
             codigo = 1

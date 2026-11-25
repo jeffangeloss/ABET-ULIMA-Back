@@ -624,3 +624,13 @@ def test_la_spec_009_trae_23_escenarios_con_23_casos_6_van_a_vitest_y_1_a_playwr
     assert (delegados, del_navegador) == (6, 1)
     assert historias == {f"US-{n}" for n in range(91, 95)}
 
+
+def test_cada_escenario_de_la_spec_009_sin_vitest_ni_playwright_tiene_su_paso_de_pytest_bdd() -> None:
+    # Un escenario del Back que ningún módulo enlaza con @scenario no corre en ninguna parte, así que esta prueba lo
+    # nombra antes de que quede sin probar. Los 16 escenarios de resumen_del_curso.feature y conciliacion_del_curso.feature
+    # los atan test_resumen_del_curso_feature.py y test_conciliacion_del_curso_feature.py (T021 a T023).
+    enlazados = _titulos_enlazados()
+    sin_enlace = [f"{ruta.rsplit('/', 1)[1]}: {escenario.name}" for ruta in SPEC_009
+                  for escenario in _feature(ruta).scenarios.values()
+                  if not {"delegado_a_vitest", "playwright"} & set(escenario.tags) and escenario.name not in enlazados]
+    assert sin_enlace == []
