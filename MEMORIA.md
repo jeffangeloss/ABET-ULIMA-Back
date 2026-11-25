@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-25 01:35 (Lima) · feat/009-resumen-curso · audit.md con los dos pendientes del Front resueltos
+- Quién: Claude Code en la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `specs/009-resumen-del-curso/audit.md` marca como resueltos el tramo de la barra de P8 (BR-RESULTADOS-15) y el selector de P8, con el commit 6357e84 del Front y sus pruebas.
+- Por qué: el revisor Opus los dejó pendientes y la sesión principal los corrige en el Front.
+- Lo que debe hacer, cómo se probó: en el Front, `npm test` da 423 aprobadas con 1 todo, con las tres pruebas nuevas en rojo antes del cambio.
+- Lo que no debe hacer, cómo se probó: el Back no cambia código, y `git diff --stat` muestra solo `audit.md` y `MEMORIA.md`.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de `feat/009-resumen-curso` del Back.
+- Pendiente y siguiente paso: publicar los PR de la spec 009 y fusionarlos en `develop`.
+
 ### 2026-11-25 06:00 (Lima) · feat/009-resumen-curso · Cierre de la spec 009 en el Back (T040 y T041)
 - Quién: Implementer (Sonnet) delegado por la sesión principal, solo. No usó subagentes.
 - Qué cambió: `specs/009-resumen-del-curso/audit.md` nuevo con el cruce de las 4 historias y los 23 escenarios con su prueba y resultado, FR-001 a FR-012, SC-001 a SC-004 y los pendientes. `specs/features/resultados/resultados.spec.md` suma dos líneas fechadas a su Verification. `tasks.md` marca T040 y T041 con [x], y `CHANGELOG.md` suma el cierre en «Sin publicar».
