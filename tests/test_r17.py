@@ -915,6 +915,21 @@ def test_br_r17_12_sin_la_declaracion_vigente_completa_no_hay_r17_ni_archivo(
     assert list(tmp_path.iterdir()) == []
 
 
+def test_br_r17_12_una_base_anterior_a_v1_15_da_el_409_de_la_declaracion_y_no_un_500(
+    base_desechable: ModuleType, tmp_path: Path,
+) -> None:
+    """Sin abet.mejora_declaracion la carga no puede tener declaración: DeclaracionPendiente, no UndefinedTable."""
+    with base_desechable.abierta(hasta=(1, 14), datos_2026_2=False,
+                                 despues=[CARGAS.SINTETICOS, base_desechable.DATOS_2026_2]) as anterior:
+        with psycopg.connect(anterior.conexion) as conexion:
+            carga_id = CARGAS.preparar_410(conexion)
+            assert conexion.execute("SELECT to_regclass('abet.mejora_declaracion')").fetchone() == (None,)
+        with pytest.raises(r17.DeclaracionPendiente) as error:
+            _generar(anterior, carga_id, tmp_path)
+    assert (error.value.mensaje, error.value.codigo_http) == (PENDIENTE, 409)
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_br_r17_12_una_carga_rechazada_sin_declaracion_da_el_409_de_no_publicada(
     base_410: tuple[Any, dict[str, int]], tmp_path: Path,
 ) -> None:

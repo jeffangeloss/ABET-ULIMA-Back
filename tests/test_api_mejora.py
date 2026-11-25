@@ -426,6 +426,19 @@ def test_br_mejora_09_una_version_distinta_de_la_guardada_responde_409_con_el_bo
     assert api.uno("SELECT count(*) FROM abet.mejora_declaracion") == 0
 
 
+def test_br_mejora_09_una_version_anterior_a_la_guardada_responde_409_con_el_borrador(api: Any) -> None:
+    """La versión del pedido debe ser la guardada exacta: una menor, de antes del último guardado, tampoco declara."""
+    carga = _publicar(api)
+    cliente = api.sesion(A.DOCENTE_410)
+    _guardar(cliente, carga, _completo({"5.1": OM, "5.2": OM, "5.3": OM}))
+    assert _guardar(cliente, carga, [_registro("5.1", causa="Causa del segundo guardado.")] +
+                    _completo({"5.2": OM, "5.3": OM}), version=1).json()["version"] == 2
+    respuesta = _declarar(cliente, carga, 1)
+    _error(respuesta, 409, "El borrador cambió después de este guardado. Guarde otra vez antes de declarar.")
+    assert respuesta.json()["borrador"]["version"] == 2
+    assert api.uno("SELECT count(*) FROM abet.mejora_declaracion") == 0
+
+
 def test_br_mejora_09_una_regla_sin_definir_responde_409_que_manda_sobre_el_422(api: Any) -> None:
     C.conjunto_aprobado(api.dueno, "R-PRUEBA-SIN-META", meta_logro=None, nivel_esperado=3, corte_rojo=0.75)
     carga = _publicar(api, conjunto="R-PRUEBA-SIN-META")
@@ -461,6 +474,18 @@ def test_br_mejora_09_un_analisis_que_no_cabe_en_el_r17_responde_422(api: Any) -
     cliente = api.sesion(A.DOCENTE_410)
     registros = _completo({"5.1": OM, "5.2": OM, "5.3": OM})
     registros[0]["causa"] = ("x\n" * 300)[:800]
+    assert _guardar(cliente, carga, registros).status_code == 200
+    _error(_declarar(cliente, carga, 1), 422,
+           "El análisis no cabe en el R-17. Acorte la causa o la acción de algún indicador.")
+    assert api.uno("SELECT count(*) FROM abet.mejora_declaracion") == 0
+
+
+def test_br_mejora_09_un_recuadro_b_que_no_cabe_responde_422_aunque_el_a_quepa(api: Any) -> None:
+    """Las causas son cortas y caben en el recuadro A; solo las acciones del recuadro B desbordan."""
+    carga = _publicar(api)
+    cliente = api.sesion(A.DOCENTE_410)
+    registros = _completo({"5.1": OM, "5.2": OM, "5.3": OM})
+    registros[0]["accion"] = ("x\n" * 300)[:800]
     assert _guardar(cliente, carga, registros).status_code == 200
     _error(_declarar(cliente, carga, 1), 422,
            "El análisis no cabe en el R-17. Acorte la causa o la acción de algún indicador.")
