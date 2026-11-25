@@ -34,7 +34,7 @@ Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores
 
 ## Fase 5 a 7 · Pruebas, auditoría y despliegue
 
-- [ ] T040 [Back] Suites completas del Back y del Front, `preflight.sh` en los dos y la matriz de cumplimiento [US-91..US-94] · 1 h
-- [ ] T041 [Back] `audit.md` con el cruce de historia, escenario, prueba y resultado y la Verification fechada de la spec viva `resultados` [US-91..US-94] · 1,5 h
+- [x] T040 [Back] Suites completas del Back y del Front, `preflight.sh` en los dos y la matriz de cumplimiento [US-91..US-94] · 1 h · 2026-11-25
+- [x] T041 [Back] `audit.md` con el cruce de historia, escenario, prueba y resultado y la Verification fechada de la spec viva `resultados` [US-91..US-94] · 1,5 h · 2026-11-25
 - [ ] T042 [Jefferson] Correr fuera de todo repositorio el conciliador con `--curso` sobre la tabla maestra real de Química General y mostrar P8 a Stefanny junto a su página «Resumen Curso» (SC-002 y SC-003) [US-94] · 1 h
 - [ ] T043 [Jefferson] Autorizar empujar `feat/009-resumen-curso` del Back y del Front y fusionar sus PR en `develop`, fuera de la ventana congelada de la capacitación [US-91..US-94] · 0,5 h
