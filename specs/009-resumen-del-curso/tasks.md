@@ -8,7 +8,7 @@ Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores
 
 - [x] T001 Candidatas, auditoría con tres lentes y el crítico, spec y tres `.feature` · 2026-11-24
 - [x] T002 [Jefferson] Aprobar la spec y J-60 a J-64 · 2026-11-24, «Sí, apruébala»
-- [ ] T003 [Jefferson] Pedir a Stefanny las fórmulas DAX de «Alumnos Aprobados», «Secciones Aprobadas», «Promedio Nota» y «% Alumnos 3-4» (D-56), y llevar D-57 y D-32 a la coordinación y a la Oficina de Calidad [US-91] [US-94] · 0,5 h
+- [ ] T003 [Jefferson] Pedir a Stefanny las fórmulas DAX de «Alumnos Aprobados», «Secciones Aprobadas», «Promedio Nota» y «% Alumnos 3-4» (D-56), y llevar D-57 y D-32 a la coordinación y a la Oficina de Calidad [US-91] [US-94] · 0,5 h · 2026-11-25, D-56 cerrada con las fórmulas leídas del .pbix; D-57 y D-32 siguen con la coordinación
 
 ## Fase 1 · Contrato
 

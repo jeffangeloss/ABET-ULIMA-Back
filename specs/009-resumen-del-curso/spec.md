@@ -42,6 +42,12 @@ Los escenarios viven en `specs/009-resumen-del-curso/aceptacion/`, en español (
 - Q: ¿El tablero responde D-32? → A: No por sí solo, porque D-32 es de la coordinación de Ambiental y de la Oficina de Calidad. La suma de estudiantes por PI y curso del tablero es el valor provisional de D-32 que esta spec construye con la franja provisional (J-60).
 - Q: ¿Por qué no hay profesores en P8? → A: La base no guarda nombres (`PROFESOR` es nulo en `abet.v_tabla_maestra_pi`), BR-RESULTADOS-10 prohíbe un orden de docentes y D-47 y D-51 siguen abiertas. D-57 pregunta si la coordinación debe ver vistas por profesor.
 
+### Session 2026-11-25
+
+- Q: ¿Qué fórmulas usa el tablero de Stefanny? → A: El modelo del archivo `Resumen de indicadores ABET - Cursos de Carrera.pbix` se lee con la biblioteca `pbixray` sin abrir Power BI, fuera del repositorio y sin leer sus filas. Sus medidas en expresiones de análisis de datos (Data Analysis Expressions, DAX) son las siguientes. «Promedio Nota» es `AVERAGE('Maestra'[CALIFICACIÓN])`. «% Alumnos 3-4» divide las filas con `CALIFICACIÓN >= 3` entre `COUNTROWS('Maestra')`. «Sección Aprobada» vale 1 cuando ese porcentaje llega a 0,8, y «Secciones Aprobadas» la suma sobre `VALUES('Maestra'[SECCIÓN])`. «Alumnos Aprobados» y «Alumnos Desaprobados» cuentan las filas con 3 o más y con menos de 3, y «% Profesores Aprobados» divide las secciones aprobadas entre las secciones distintas, así que cuenta secciones y no profesores.
+- Q: ¿Cierra D-56? → A: Sí, sin cambiar el valor provisional. El tablero divide entre todas las filas de la tabla maestra y el sistema entre los calificados, y en Química General las dos cifras coinciden, porque `scripts/generar_exports_desde_maestra.py` rechaza la tabla maestra con una calificación vacía y armó los exports de las 18 secciones. El tablero suma alumnos y no promedia porcentajes, igual que BR-RESULTADOS-13, y compara el porcentaje sin redondear con 0,8, mientras BR-RESULTADOS-14 compara el porcentaje redondeado a un decimal. Esa diferencia solo cambia el estado de una sección con más de 400 estudiantes, porque con menos el logro más cercano por debajo de 80 % queda bajo 79,95 %.
+- Q: ¿Dónde puede diferir el tablero en otros cursos? → A: En dos casos que se le explican a Stefanny antes de cambiar una regla. Una fila con la calificación vacía cuenta como desaprobada en el tablero, porque DAX compara el vacío como 0, mientras el sistema la deja sin evidencia y fuera de los calificados. El tablero agrupa además las secciones solo por número, así que con varios cursos a la vez junta secciones de cursos distintos, y P8 las separa por curso (H32). SC-003 sigue abierto hasta que Stefanny compare las dos pantallas.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### US-91: La coordinación recibe las cifras del curso en la ruta 20 (Priority: P1)
@@ -152,7 +158,7 @@ Como dueño técnico, quiero que el conciliador de la spec 008 compare también 
 
 - **SC-001** Los escenarios de los tres `.feature` tienen su prueba en pytest-bdd, en Vitest o en Playwright, y pasan.
 - **SC-002** Con la tabla maestra real de Química General, fuera de todo repositorio, el conciliador con `--curso` dice «Curso igual…» para 5643 en 2026-1.
-- **SC-003** Stefanny revisa P8 de 5643 en la vista previa de develop junto a su página «Resumen Curso» y no encuentra diferencias en las cifras que ambas muestran, o las diferencias se explican por D-56.
+- **SC-003** Stefanny revisa P8 de 5643 en la vista previa de develop junto a su página «Resumen Curso» y no encuentra diferencias en las cifras que ambas muestran, o las diferencias se explican por los dos casos de la sesión del 2026-11-25.
 - **SC-004** Ninguna respuesta ni pantalla de esta spec trae un dato de personas, como comprueban el escenario de la lista cerrada y el barrido de privacidad de la spec 008.
 
 ## Decisiones abiertas
@@ -162,7 +168,7 @@ De la carrera, de la Oficina de Calidad y de Stefanny (D). Mientras no se decida
 | ID | Decisión | Valor provisional | Quién decide |
 | --- | --- | --- | --- |
 | D-32 | Cómo se resume un PI medido en varias secciones (spec 004) | Suma de estudiantes por PI y curso, como el tablero, con la franja provisional | Coordinación de Ambiental y Oficina de Calidad |
-| D-56 | Fórmulas DAX de «Alumnos Aprobados», «Secciones Aprobadas», «Promedio Nota» y «% Alumnos 3-4», y si cuentan sobre los calificados o sobre el total | Nivel esperado o superior sobre los calificados, sección en la meta con 80 % o más y promedio de 1 a 4 de los calificados | Stefanny Montaño |
+| D-56 | Fórmulas DAX de «Alumnos Aprobados», «Secciones Aprobadas», «Promedio Nota» y «% Alumnos 3-4», y si cuentan sobre los calificados o sobre el total | Cerrada el 2026-11-25 con las fórmulas del tablero, sin cambio. Nivel esperado o superior sobre los calificados, sección en la meta con 80 % o más y promedio de 1 a 4 de los calificados (Clarifications, sesión del 2026-11-25) | Stefanny Montaño |
 | D-57 | Si la coordinación ve vistas por profesor (segmentador, columnas y porcentaje de profesores) | No las ve | Coordinación de la carrera y Oficina de Calidad |
 
 De Jefferson (J).
