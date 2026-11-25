@@ -363,9 +363,9 @@ def _recuadros_declarados(ctx: Escenario) -> None:
                        " JOIN abet.pi p ON p.pi_id = d.pi_id WHERE d.declaracion_id = (SELECT max(declaracion_id)"
                        " FROM abet.mejora_declaracion WHERE carga_id = %s) ORDER BY p.so_numero, p.numero", ctx.carga_id)
     assert [fila[0] for fila in textos] == ["5.1", "5.2", "5.3"]
-    rotulo = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora.", "BUENA_PRACTICA": "Buena práctica."}
-    assert celdas["B29"].split("\n") == [f"{pi} · {rotulo[tipo]} {causa}" for pi, tipo, causa, _ in textos]
-    assert celdas["B34"].split("\n") == [f"{pi} · {rotulo[tipo]} {accion}" for pi, tipo, _, accion in textos]
+    rotulo = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora", "BUENA_PRACTICA": "Buena práctica"}
+    assert celdas["B29"].split("\n\n") == [f"PI {pi} · {rotulo[tipo]}\n{causa}" for pi, tipo, causa, _ in textos]
+    assert celdas["B34"].split("\n\n") == [f"PI {pi} · {rotulo[tipo]}\n{accion}" for pi, tipo, _, accion in textos]
     # La plantilla no tiene un recuadro de comentario. Se exige que ninguna celda del libro lo nombre con texto propio.
     assert [ref for ref, valor in celdas.items() if "omentario" in str(valor)] == []
 

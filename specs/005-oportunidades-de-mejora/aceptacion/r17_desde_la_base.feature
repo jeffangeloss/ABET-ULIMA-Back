@@ -36,11 +36,12 @@
 #   K28:Q31, así que el alto de la fila 31 y el de la 36 lo calcula r17.py de forma determinista por líneas,
 #   con un ancho conservador, sin tocar las filas 29, 30, 34 y 35 y sin pasar de 409 puntos, el máximo de
 #   Excel. La misma función pura de cabida la usa la ruta 16 para rechazar una declaración que no cabe (J-39).
-# - (propuesta) Un párrafo por PI de abet.carga_columna, en el orden de so_numero y pi.numero, separado del
-#   siguiente por un salto de línea. Empieza con «5.2 · Oportunidad de mejora. » o «5.1 · Buena práctica. »,
-#   sin cifras, seguido de la causa en B29 y de la acción en B34. Un PI sin calificaciones lleva en los dos
-#   recuadros «5.3 · Sin calificaciones en esta carga.» (D-40). El tipo sale de la foto de la declaración, y
-#   las cifras siguen solo en E y G del bloque II (J-40).
+# - (propuesta) Un bloque por PI de abet.carga_columna, en el orden de so_numero y pi.numero, separado del
+#   siguiente por una línea vacía. Empieza con el rótulo en su propia línea, «PI 5.2 · Oportunidad de mejora»
+#   o «PI 5.1 · Buena práctica» sin punto final, sin cifras, y debajo la causa en B29 o la acción en B34. Un PI
+#   sin calificaciones lleva en los dos recuadros la línea «PI 5.3 · Sin calificaciones en esta carga.» (D-40).
+#   El tipo sale de la foto de la declaración, y las cifras siguen solo en E y G del bloque II (J-40). Con
+#   menos de 3 PI, las filas de PI sin uso de los bloques I y II quedan ocultas, sin borrarlas.
 # - G17, G18 y G19 son las celdas de la descripción del instrumento de los PI 5.1, 5.2 y 5.3 (G17:I19, con
 #   las filas 17 a 19 de unos 76 puntos, que admiten unos 400 caracteres).
 # - V1_11 agrega abet.plan_medicion.descripcion_instrumento varchar(400) nulo, con
@@ -84,17 +85,17 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
     Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id
     Y que la carga tiene declarados los registros de prueba de la 410
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
-    Entonces B29 trae como cadena tres párrafos separados por un salto de línea, en este orden
-      | párrafo                                                                                  |
-      | 5.1 · Oportunidad de mejora. La entrega coincidió con la semana de parciales.            |
-      | 5.2 · Oportunidad de mejora. Los grupos no recibieron la rúbrica antes de la entrega.    |
-      | 5.3 · Oportunidad de mejora. El trabajo en equipo se evaluó solo al final.               |
-    Y B34 trae como cadena tres párrafos separados por un salto de línea, en este orden
-      | párrafo                                                                                  |
-      | 5.1 · Oportunidad de mejora. Mover la entrega a la semana 10 y revisar el avance en clase. |
-      | 5.2 · Oportunidad de mejora. Publicar la rúbrica en la semana 8.                         |
-      | 5.3 · Oportunidad de mejora. Revisar el trabajo en equipo en dos avances.                |
-    Y ningún párrafo trae una cifra de logro ni de meta
+    Entonces B29 trae como cadena tres bloques separados por una línea vacía, en este orden
+      | rótulo                          | texto                                                      |
+      | PI 5.1 · Oportunidad de mejora | La entrega coincidió con la semana de parciales.           |
+      | PI 5.2 · Oportunidad de mejora | Los grupos no recibieron la rúbrica antes de la entrega.   |
+      | PI 5.3 · Oportunidad de mejora | El trabajo en equipo se evaluó solo al final.              |
+    Y B34 trae como cadena tres bloques separados por una línea vacía, en este orden
+      | rótulo                          | texto                                                      |
+      | PI 5.1 · Oportunidad de mejora | Mover la entrega a la semana 10 y revisar el avance en clase. |
+      | PI 5.2 · Oportunidad de mejora | Publicar la rúbrica en la semana 8.                        |
+      | PI 5.3 · Oportunidad de mejora | Revisar el trabajo en equipo en dos avances.               |
+    Y ningún bloque trae una cifra de logro ni de meta
 
   @US-50 @spec005 @corte1
   Escenario: Una buena práctica y dos oportunidades de mejora conviven en los recuadros
@@ -102,9 +103,9 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
     Y que una copia de "sintetico_20262_450002_410.xlsx" con la columna 5.3 vacía en la fila 9 está subida a la sección 410 con respuesta 201 y su carga_id
     Y que la carga tiene declarados los registros de prueba de la 410 en 5.1 y 5.2, y en 5.3 la causa «Los roles del equipo rotaron en cada entrega.» y la acción «Compartir la rotación de roles con las otras secciones.»
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
-    Entonces el tercer párrafo de B29 es «5.3 · Buena práctica. Los roles del equipo rotaron en cada entrega.»
-    Y el tercer párrafo de B34 es «5.3 · Buena práctica. Compartir la rotación de roles con las otras secciones.»
-    Y los párrafos de 5.1 y 5.2 empiezan con «5.1 · Oportunidad de mejora.» y «5.2 · Oportunidad de mejora.»
+    Entonces el tercer bloque de B29 tiene el rótulo «PI 5.3 · Buena práctica» y el texto «Los roles del equipo rotaron en cada entrega.»
+    Y el tercer bloque de B34 tiene el rótulo «PI 5.3 · Buena práctica» y el texto «Compartir la rotación de roles con las otras secciones.»
+    Y los bloques de 5.1 y 5.2 tienen los rótulos «PI 5.1 · Oportunidad de mejora» y «PI 5.2 · Oportunidad de mejora»
 
   # D-40 (valor provisional). Un PI sin calificaciones no lleva registro y el R-17 lo nombra sin análisis.
   @US-50 @spec005 @corte1
@@ -113,7 +114,7 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
     Y que una copia de "sintetico_20262_450002_410.xlsx" con la columna 5.3 vacía en sus 11 filas está subida a la sección 410 con respuesta 201 y su carga_id
     Y que la carga tiene declarados los registros de prueba de la 410 en 5.1 y 5.2
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
-    Entonces el tercer párrafo de B29 y el de B34 son «5.3 · Sin calificaciones en esta carga.» (propuesta)
+    Entonces el tercer bloque de B29 y el de B34 son la línea «PI 5.3 · Sin calificaciones en esta carga.» sin texto debajo (propuesta)
     Y ningún recuadro trae texto del profesor para 5.3
 
   @US-50 @spec005 @corte1
@@ -153,7 +154,7 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
     Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id
     Y que la carga tiene declarados los registros de prueba de la 410, con la causa de 5.1 cambiada por «=SUMA(1;2)»
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
-    Entonces el primer párrafo de B29 es la cadena «5.1 · Oportunidad de mejora. =SUMA(1;2)»
+    Entonces el primer bloque de B29 tiene el rótulo «PI 5.1 · Oportunidad de mejora» y el texto «=SUMA(1;2)»
     Y ninguna celda del libro es una fórmula
 
   # D-37 (valor provisional, sí). La declaración corregida del escenario «Corregir una declaración deja la
@@ -164,9 +165,9 @@ Característica: El R-17 escribe desde la base el análisis por indicador y la d
     Y que "sintetico_20262_450002_410.xlsx" está subido a la sección 410 con respuesta 201 y su carga_id, con su análisis declarado
     Y que "docente410@example.invalid" corrigió la declaración con la corrección de la 410
     Cuando "docente410@example.invalid" descarga el R-17 de esa carga
-    Entonces el primer párrafo de B29 es «5.1 · Oportunidad de mejora. La entrega coincidió con la semana de parciales y de feriado.»
-    Y el primer párrafo de B34 es «5.1 · Oportunidad de mejora. Mover la entrega a la semana 10 y revisar el avance en tutoría.»
-    Y los párrafos de 5.2 y 5.3 no cambian
+    Entonces el primer bloque de B29 tiene el rótulo «PI 5.1 · Oportunidad de mejora» y el texto «La entrega coincidió con la semana de parciales y de feriado.»
+    Y el primer bloque de B34 tiene el rótulo «PI 5.1 · Oportunidad de mejora» y el texto «Mover la entrega a la semana 10 y revisar el avance en tutoría.»
+    Y los bloques de 5.2 y 5.3 no cambian
     Y abet.mejora_declaracion conserva la declaración anterior con sus filas de abet.mejora_declaracion_pi
 
   # US-51: La descripción del instrumento sale de la base

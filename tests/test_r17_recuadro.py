@@ -26,12 +26,12 @@ def test_ejemplo_410_con_tres_oportunidades():
     ]
 
     assert r17.componer_recuadros(pis) == (
-        "5.1 · Oportunidad de mejora. Falta justificar el método.\n"
-        "5.2 · Oportunidad de mejora. Falta contrastar los resultados.\n"
-        "5.3 · Oportunidad de mejora. Falta sustentar la conclusión.",
-        "5.1 · Oportunidad de mejora. Solicitar la justificación.\n"
-        "5.2 · Oportunidad de mejora. Incluir una comparación.\n"
-        "5.3 · Oportunidad de mejora. Vincularla con la evidencia.",
+        "PI 5.1 · Oportunidad de mejora\nFalta justificar el método.\n\n"
+        "PI 5.2 · Oportunidad de mejora\nFalta contrastar los resultados.\n\n"
+        "PI 5.3 · Oportunidad de mejora\nFalta sustentar la conclusión.",
+        "PI 5.1 · Oportunidad de mejora\nSolicitar la justificación.\n\n"
+        "PI 5.2 · Oportunidad de mejora\nIncluir una comparación.\n\n"
+        "PI 5.3 · Oportunidad de mejora\nVincularla con la evidencia.",
     )
 
 
@@ -42,17 +42,17 @@ def test_buena_practica_y_pi_sin_calificaciones():
     ]
 
     assert r17.componer_recuadros(pis) == (
-        "5.1 · Buena práctica. Se justificó el método.\n"
-        "5.3 · Sin calificaciones en esta carga.",
-        "5.1 · Buena práctica. Compartir el ejemplo.\n"
-        "5.3 · Sin calificaciones en esta carga.",
+        "PI 5.1 · Buena práctica\nSe justificó el método.\n\n"
+        "PI 5.3 · Sin calificaciones en esta carga.",
+        "PI 5.1 · Buena práctica\nCompartir el ejemplo.\n\n"
+        "PI 5.3 · Sin calificaciones en esta carga.",
     )
 
 
 @pytest.mark.parametrize(("semaforo", "rotulo"), [
-    ("VERDE", "Buena práctica."),
-    ("AMBAR", "Oportunidad de mejora."),
-    ("ROJO", "Oportunidad de mejora."),
+    ("VERDE", "Buena práctica"),
+    ("AMBAR", "Oportunidad de mejora"),
+    ("ROJO", "Oportunidad de mejora"),
     ("SIN_DATO", None),
 ])
 def test_acepta_el_tipo_que_da_tipo_de_registro(semaforo, rotulo):
@@ -60,10 +60,10 @@ def test_acepta_el_tipo_que_da_tipo_de_registro(semaforo, rotulo):
     tipo = resultados.tipo_de_registro(semaforo)
     causa, accion = r17.componer_recuadros([("5.1", tipo, "La causa.", "La acción.")])
     if rotulo is None:
-        assert causa == accion == "5.1 · Sin calificaciones en esta carga."
+        assert causa == accion == "PI 5.1 · Sin calificaciones en esta carga."
     else:
-        assert causa == f"5.1 · {rotulo} La causa."
-        assert accion == f"5.1 · {rotulo} La acción."
+        assert causa == f"PI 5.1 · {rotulo}\nLa causa."
+        assert accion == f"PI 5.1 · {rotulo}\nLa acción."
 
 
 def test_tipo_fuera_del_vocabulario_se_rechaza():
@@ -132,13 +132,14 @@ def test_textos_largos_conservan_la_plantilla(hoja):
 
     for referencia, letra, fila_final in [("B29", "c", 31), ("B34", "a", 36)]:
         celda = hoja[referencia]
-        assert celda.value == "\n".join(
-            f"{pi} · Oportunidad de mejora. " + letra * 800 for pi, *_ in pis
+        assert celda.value == "\n\n".join(
+            f"PI {pi} · Oportunidad de mejora\n" + letra * 800 for pi, *_ in pis
         )
         assert celda.alignment.horizontal == "left"
         assert celda.alignment.vertical == "top"
         assert celda.alignment.wrap_text is True
-        assert hoja.row_dimensions[fila_final].height == 195.0
+        # Tres bloques de un rótulo y 800 caracteres (1 + 5 líneas) y dos líneas vacías dan 20 líneas, 15 × 20 − 30.
+        assert hoja.row_dimensions[fila_final].height == 270.0
     assert all(hoja.row_dimensions[fila].height is None for fila in (29, 30, 34, 35))
     assert set(hoja.merged_cells.ranges) == combinaciones
     assert _estado_del_bloque_derecho(hoja) == bloque_derecho

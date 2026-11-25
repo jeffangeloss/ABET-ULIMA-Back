@@ -123,9 +123,9 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-PERIODO-05 | periodo | 8 | Ninguna | Con escenario |
 | BR-PERIODO-06 | periodo | 7 | Ninguna | Con escenario |
 | BR-R17-01 | r17 | 3 | Ninguna | Con escenario |
-| BR-R17-02 | r17 | 5 | test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas, tests/test_r17.py | Con escenario |
+| BR-R17-02 | r17 | 5 | test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas, tests/test_r17.py, test_br_r17_02_con_un_solo_pi_se_ocultan_las_filas_de_pi_que_sobran_de_los_dos_bloques, test_br_r17_02_con_tres_pi_ninguna_fila_de_los_bloques_queda_oculta | Con escenario |
 | BR-R17-03 | r17 | 3 | Ninguna | Con escenario |
-| BR-R17-04 | r17 | 9 | Ninguna | Con escenario |
+| BR-R17-04 | r17 | 9 | test_br_r17_04_los_bloques_se_separan_con_una_linea_vacia_y_un_solo_pi_no_la_lleva, test_br_r17_04_los_recuadros_traen_un_parrafo_por_pi_con_el_tipo_de_la_foto, test_br_r17_04_un_pi_sin_calificaciones_se_nombra_sin_analisis, tests/test_r17.py | Con escenario |
 | BR-R17-05 | r17 | 2 | Ninguna | Con escenario |
 | BR-R17-06 | r17 | 3 | test_br_r17_06_el_r17_no_deja_que_el_navegador_adivine_su_tipo, tests/test_api_cargas.py | Con escenario |
 | BR-R17-07 | r17 | 2 | Ninguna | Con escenario |

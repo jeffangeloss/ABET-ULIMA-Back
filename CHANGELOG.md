@@ -33,6 +33,7 @@ Los cambios visibles de este repositorio quedan aquí. El formato sigue [Keep a 
 
 ### Corregido
 
+- R-17 desde la demo de Química. Los recuadros B29 y B34 llevan un bloque por PI con el rótulo en su propia línea, «PI 5.2 · Oportunidad de mejora», y una línea vacía entre bloques, y las filas de PI que la carga no usa quedan ocultas en los bloques I y II (BR-R17-02 y BR-R17-04, propuesta).
 - El paso de Vitest del Front en `.github/workflows/ci.yml` corre `./node_modules/.bin/vitest`, el binario que instala `npm ci --ignore-scripts` con la versión del `package-lock.json`, en lugar de `npx vitest`, que podía bajar un paquete sin versión fija y correr sus scripts (SonarCloud, githubactions:S6505 y S8543 en el PR #54). Una prueba falla si ci.yml vuelve a instalar paquetes a pedido.
 - La prueba que impide volver a bajar paquetes a pedido en `.github/workflows/ci.yml` detecta también `npm exec` y `npm x` con opciones o varios espacios entre `npm` y la suborden, como `npm --yes exec` y `npm  exec`, y `npm install`, `npm i` o `npm add` con un paquete, que antes pasaban. El patrón queda en `INSTALA_A_PEDIDO`, con 15 órdenes que debe marcar y 11 que no.
 

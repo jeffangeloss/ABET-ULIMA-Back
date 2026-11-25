@@ -480,8 +480,8 @@ def test_br_r17_04_ninguna_celda_del_libro_es_una_formula_ni_trae_ref_y_los_recu
     assert not [texto for texto in _textos(libro) if "#REF!" in texto]
     assert not [nombre for nombre, datos in _partes(r17_correcto).items() if b"<f>" in datos or b"#REF!" in datos]
     hoja = libro[HOJA]
-    assert hoja["B29"].value.split("\n") == [f"{pi} · Oportunidad de mejora. Causa de prueba del PI {pi}." for pi in PIS_410]
-    assert hoja["B34"].value.split("\n") == [f"{pi} · Oportunidad de mejora. Acción de prueba del PI {pi}." for pi in PIS_410]
+    assert hoja["B29"].value.split("\n\n") == [f"PI {pi} · Oportunidad de mejora\nCausa de prueba del PI {pi}." for pi in PIS_410]
+    assert hoja["B34"].value.split("\n\n") == [f"PI {pi} · Oportunidad de mejora\nAcción de prueba del PI {pi}." for pi in PIS_410]
     for rango in ("B29:I31", "B34:I36"):
         assert all(celda.value is None for fila in hoja[rango] for celda in fila if celda.coordinate not in ("B29", "B34"))
 
@@ -946,7 +946,7 @@ def test_br_r17_12_una_carga_sin_ningun_pi_calificado_sale_con_la_declaracion_si
     assert _consulta(base, "SELECT count(*) FROM abet.mejora_declaracion_pi WHERE carga_id = %s",
                      (ids["sin_calificados"],)) == [(0,)]
     hoja = _libro(_generar(base, ids["sin_calificados"], tmp_path))[HOJA]
-    assert (hoja["B29"].value, hoja["B34"].value) == ("1.1 · Sin calificaciones en esta carga.",) * 2
+    assert (hoja["B29"].value, hoja["B34"].value) == ("PI 1.1 · Sin calificaciones en esta carga.",) * 2
 
 
 def test_br_r17_04_los_recuadros_traen_un_parrafo_por_pi_con_el_tipo_de_la_foto(
@@ -954,15 +954,15 @@ def test_br_r17_04_los_recuadros_traen_un_parrafo_por_pi_con_el_tipo_de_la_foto(
 ) -> None:
     base, ids = base_pendiente
     hoja = _libro(_generar(base, ids["completa"], tmp_path))[HOJA]
-    assert hoja["B29"].value.split("\n") == [
-        "5.1 · Oportunidad de mejora. La entrega coincidió con la semana de parciales.",
-        "5.2 · Oportunidad de mejora. =SUMA(1;2)",
-        "5.3 · Buena práctica. El trabajo en equipo se evaluó solo al final.",
+    assert hoja["B29"].value.split("\n\n") == [
+        "PI 5.1 · Oportunidad de mejora\nLa entrega coincidió con la semana de parciales.",
+        "PI 5.2 · Oportunidad de mejora\n=SUMA(1;2)",
+        "PI 5.3 · Buena práctica\nEl trabajo en equipo se evaluó solo al final.",
     ]
-    assert hoja["B34"].value.split("\n") == [
-        "5.1 · Oportunidad de mejora. Mover la entrega a la semana 10.",
-        "5.2 · Oportunidad de mejora. Publicar la rúbrica en la semana 8.",
-        "5.3 · Buena práctica. Revisar el trabajo en equipo en dos avances.",
+    assert hoja["B34"].value.split("\n\n") == [
+        "PI 5.1 · Oportunidad de mejora\nMover la entrega a la semana 10.",
+        "PI 5.2 · Oportunidad de mejora\nPublicar la rúbrica en la semana 8.",
+        "PI 5.3 · Buena práctica\nRevisar el trabajo en equipo en dos avances.",
     ]
     # Las cifras siguen saliendo de la vista, que da 5.3 en 0 %, y el prefijo no las repite (J-40).
     assert hoja["E26"].value == 0 and hoja["H26"].value == NO_LOGRADO
@@ -980,7 +980,7 @@ def test_br_r17_04_un_pi_sin_calificaciones_se_nombra_sin_analisis(
     base, ids = base_pendiente
     hoja = _libro(_generar(base, ids["sin_notas_en_5_3"], tmp_path))[HOJA]
     for celda in ("B29", "B34"):
-        assert hoja[celda].value.split("\n")[-1] == "5.3 · Sin calificaciones en esta carga."
+        assert hoja[celda].value.split("\n\n")[-1] == "PI 5.3 · Sin calificaciones en esta carga."
         assert "del PI 5.3" not in hoja[celda].value
 
 
@@ -1006,3 +1006,37 @@ def test_br_r17_12_generar_lee_en_una_sola_transaccion_read_only_y_repeatable_re
     anotadas = _CursorQueAnota.anotadas
     assert anotadas[0] == "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
     assert any("abet.mejora_declaracion" in sentencia for sentencia in anotadas[1:])
+
+
+def _ocultas(hoja: Worksheet, filas: tuple[int, ...]) -> list[int]:
+    return [fila for fila in filas if hoja.row_dimensions[fila].hidden]
+
+
+def test_br_r17_02_con_un_solo_pi_se_ocultan_las_filas_de_pi_que_sobran_de_los_dos_bloques(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    hoja = _libro(_generar(base, ids["sin_calificados"], tmp_path))[HOJA]
+    assert hoja["B17"].value == "1.1" and hoja["B24"].value == "1.1"
+    assert _ocultas(hoja, (17, 18, 19, 24, 25, 26)) == [18, 19, 25, 26]
+    # No se borran filas ni se ocultan las de las frecuencias, que comparten filas con el recuadro A.
+    assert _ocultas(hoja, (29, 30, 31, 34, 35, 36)) == []
+    assert hoja["B18"].value is None and hoja["B25"].value is None
+
+
+def test_br_r17_02_con_tres_pi_ninguna_fila_de_los_bloques_queda_oculta(r17_correcto: Path) -> None:
+    hoja = _libro(r17_correcto)[HOJA]
+    assert _ocultas(hoja, (17, 18, 19, 24, 25, 26)) == []
+    assert _ocultas(hoja, (29, 30, 31, 34, 35, 36)) == []
+
+
+def test_br_r17_04_los_bloques_se_separan_con_una_linea_vacia_y_un_solo_pi_no_la_lleva() -> None:
+    a, b = r17.componer_recuadros([("5.1", "OPORTUNIDAD_MEJORA", "c1", "a1"), ("5.2", None, "", ""),
+                                   ("5.3", "BUENA_PRACTICA", "c3", "a3")])
+    assert a == "PI 5.1 · Oportunidad de mejora\nc1\n\nPI 5.2 · Sin calificaciones en esta carga.\n\nPI 5.3 · Buena práctica\nc3"
+    assert b == a.replace("c1", "a1").replace("c3", "a3")
+    assert r17.componer_recuadros([("6.1", "OPORTUNIDAD_MEJORA", "=x", "y")]) == (
+        "PI 6.1 · Oportunidad de mejora\n=x", "PI 6.1 · Oportunidad de mejora\ny")
+    assert "\n\n" not in r17.componer_recuadros([("6.1", None, "", "")])[0]
+    with pytest.raises(ValueError):
+        r17.componer_recuadros([("6.1", "OTRO", "c", "a")])
