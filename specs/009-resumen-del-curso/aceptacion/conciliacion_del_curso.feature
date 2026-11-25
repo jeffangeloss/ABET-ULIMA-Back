@@ -11,7 +11,7 @@
 # - La tabla maestra inventada es la de ensayo_y_conciliacion.feature de la spec 008, con la 701, la 702 y la 703 de
 #   5643 en 2026-1, y las cargas salen del ensayo de esa spec.
 # - El promedio de la tabla maestra es la media de CALIFICACIÓN de los alumnos calificados, redondeada a dos
-#   decimales, y el porcentaje cuenta los alumnos en el nivel esperado o superior (valor provisional de D-56).
+#   decimales, y el porcentaje cuenta los alumnos en el nivel esperado o superior (D-56, cerrada el 2026-11-25 sin cambio).
 
 Característica: Conciliación del resumen del curso con la tabla maestra
   Como dueño técnico, quiero que el conciliador compare el resumen del curso con la tabla maestra, para probar

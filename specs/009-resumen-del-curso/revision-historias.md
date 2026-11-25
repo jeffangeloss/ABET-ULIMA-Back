@@ -92,6 +92,6 @@ El humo de P8 (C-44) es una tarea `[Front]`. La estimación suma unas 18 h más 
 
 ## Decisiones que salen de la revisión
 
-- D-56 a Stefanny Montaño, las fórmulas DAX de las medidas del tablero.
+- D-56 a Stefanny Montaño, las fórmulas DAX de las medidas del tablero. Cerrada el 2026-11-25 con las fórmulas leídas del archivo, sin cambio del valor provisional (`spec.md`, Clarifications).
 - D-57 a la coordinación y a la Oficina de Calidad, si la coordinación ve vistas por profesor.
 - J-60 a J-64 a Jefferson, que la spec lista con su valor provisional.
