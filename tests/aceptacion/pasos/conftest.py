@@ -61,6 +61,7 @@ import pytest
 from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 from pytest_bdd import given, parsers, then, when
+from openpyxl import load_workbook
 from pytest_bdd.scenario import scenario_wrapper_template_registry
 
 from abet_carga.carga import Configuracion
@@ -1759,3 +1760,141 @@ def correr_q15(ctx: Escenario) -> subprocess.CompletedProcess[str]:
                            ctx.api.base.nombre, "-c", bloque_de_q15()],
                           env={**entorno, "PGOPTIONS": "-c client_min_messages=notice"},
                           capture_output=True, text=True, check=False)
+
+
+# Spec 010. Profesores y R-17 de profesores_en_el_r17.feature y privacidad_del_nombre.feature (T032 a T035)
+
+EXPORT_410_010 = "gc_SINTETICO_20262_450002_410_fullgc_2026-11-04-14-36-02.xlsx"
+HOJA_R17 = "Cursos de Carrera"
+
+
+def _asignatura_de(numero: str) -> str:
+    """La 70N es de 5643 y las demás de 450002, como en los datos inventados de la spec 008."""
+    return "5643" if numero.startswith("70") else ASIGNATURA
+
+
+def profesor_de_la_seccion_010(ctx: Escenario, numero: str) -> str:
+    """Correo del profesor inventado que dicta la sección en las semillas, docente70N@example.invalid o docente41N."""
+    return f"docente{numero}@example.invalid"
+
+
+def publicar_y_declarar_010(ctx: Escenario, numero: str, asignatura: str | None = None, periodo: str | None = None,
+                            por: str | None = None, coordinacion: bool = False) -> int:
+    """Sube el export inventado de la sección por la ruta 5 como su profesor, declara su análisis y la deja PUBLICADA.
+
+    El export de 450002 es el de la 410 del generador y el de 5643 es el de ctx.export_de_quimica(). Con coordinacion,
+    para una sección sin profesor como la 704, la carga se sube con un profesor asignado un instante y la cuenta de la
+    coordinación queda como autora (subida_por) con el corte 2 que la API todavía no tiene, sin cambiar la asignación
+    de nadie al terminar. Guarda la carga en ctx.extras["cargas_010"] y deja en ctx.extras["quien_010"] a quien genera.
+    """
+    asignatura = asignatura or _asignatura_de(numero)
+    seccion_id = ctx.seccion_de(numero, asignatura, periodo)
+    if asignatura == "5643":
+        contenido, nombre = ctx.export_de_quimica(numero)
+    else:
+        contenido, nombre = ctx.de_inventados(EXPORT_410_010), EXPORT_410_010
+    quien = por or profesor_de_la_seccion_010(ctx, numero)
+    temporal = None
+    if coordinacion:
+        asignados = ctx.filas("SELECT 1 FROM acceso.docente_seccion WHERE seccion_id = %s", seccion_id)
+        assert not asignados, f"la {numero} ya tiene profesor y no necesita al de la coordinación"
+        temporal = "docente703@example.invalid"
+        ctx.api.dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) VALUES (%s, %s)",
+                              (ctx.usuario_id(temporal), seccion_id))
+    respuesta = A.subir(ctx.sesion(temporal or quien), seccion_id, contenido, nombre)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    carga_id = int(respuesta.json()["carga_id"])
+    C.declarar(ctx.api.dueno, carga_id, correo=temporal or quien)
+    if coordinacion:
+        ctx.api.dueno.execute("UPDATE abet.carga SET subida_por = %s WHERE carga_id = %s", (ctx.usuario_id(quien), carga_id))
+        ctx.api.dueno.execute("DELETE FROM acceso.docente_seccion WHERE usuario_id = %s AND seccion_id = %s",
+                              (ctx.usuario_id(temporal), seccion_id))
+    ctx.carga_id = carga_id
+    ctx.extras.setdefault("cargas_010", {})[numero] = carga_id
+    ctx.extras["quien_010"] = quien
+    return carga_id
+
+
+@given(parsers.re(r'la (?P<numero>[0-9]+)(?: y la (?P<otra>[0-9]+))?(?: de (?P<asignatura>[0-9]+))?'
+                  r'(?: en (?P<periodo>[0-9]{4}-[0-9]))? publicadas? '
+                  r'(?:por (?P<correo>[^ ]+)(?P<corte> en el corte 2)? )?con su análisis declarado'))
+def _publicada_con_su_analisis_010(ctx: Escenario, numero: str, otra: str | None, asignatura: str | None,
+                                   periodo: str | None, correo: str | None, corte: str | None) -> None:
+    for seccion in (numero, otra):
+        if seccion is not None:
+            publicar_y_declarar_010(ctx, seccion, asignatura, periodo, por=correo, coordinacion=corte is not None)
+            if otra is not None:
+                ctx.extras["quien_010"] = profesor_de_la_seccion_010(ctx, numero)
+
+
+def sembrar_profesor_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str, *,
+                         rol: str = "PROFESOR", activo: bool = True) -> None:
+    """Usuario con nombre asignado a la sección en acceso.docente_seccion, sembrado por el dueño de la base."""
+    ctx.api.dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol, activo, nombre) VALUES (%s, %s, %s, %s)",
+                          (correo, rol, activo, nombre))
+    ctx.api.dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id) VALUES (%s, %s)",
+                          (ctx.usuario_id(correo), ctx.seccion_de(numero, asignatura)))
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" con el nombre "(?P<nombre>[^"]+)" asignado a la (?P<numero>[0-9]+) de '
+                  r'"?(?P<asignatura>[0-9]+)"?'))
+def _profesor_con_nombre_asignado_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str) -> None:
+    sembrar_profesor_010(ctx, correo, nombre, numero, asignatura)
+
+
+@given(parsers.re(r'una cuenta COORDINADOR inactiva "(?P<correo>[^"]+)" con el nombre "(?P<nombre>[^"]+)" asignada a la '
+                  r'(?P<numero>[0-9]+) de (?P<asignatura>[0-9]+)'))
+def _coordinador_inactivo_asignado_010(ctx: Escenario, correo: str, nombre: str, numero: str, asignatura: str) -> None:
+    sembrar_profesor_010(ctx, correo, nombre, numero, asignatura, rol="COORDINADOR", activo=False)
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" con el nombre nulo'))
+def _profesor_con_nombre_nulo_010(ctx: Escenario, correo: str) -> None:
+    ctx.api.dueno.execute("UPDATE acceso.usuario_autorizado SET nombre = NULL WHERE correo = %s", (correo,))
+    assert ctx.uno("SELECT nombre IS NULL FROM acceso.usuario_autorizado WHERE correo = %s", correo) is True
+
+
+@given(parsers.re(r'"(?P<correo>[^"]+)" dado de baja con activo falso'))
+def _dado_de_baja_010(ctx: Escenario, correo: str) -> None:
+    assert ctx.api.dueno.execute("UPDATE acceso.usuario_autorizado SET activo = false WHERE correo = %s",
+                                 (correo,)).rowcount == 1
+
+
+@given(parsers.re(r'la (?P<numero>[0-9]+) de (?P<asignatura>[0-9]+) sin filas en acceso\.docente_seccion'))
+def _seccion_sin_profesor_010(ctx: Escenario, numero: str, asignatura: str) -> None:
+    assert ctx.uno("SELECT count(*) FROM acceso.docente_seccion WHERE seccion_id = %s",
+                   ctx.seccion_de(numero, asignatura)) == 0
+
+
+def generar_r17_010(ctx: Escenario, quien: str | None = None, veces: int = 1) -> None:
+    """Descarga el R-17 de ctx.carga_id por la ruta 7 con la sesión de quien y guarda cada libro leído con openpyxl."""
+    correo = quien or ctx.extras["quien_010"]
+    libros = []
+    for _ in range(veces):
+        respuesta = ctx.sesion(correo).get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
+        ctx.respuesta = respuesta
+        libros.append(respuesta)
+    ctx.extras["libros_010"] = libros
+    ctx.extras["quien_010"] = correo
+
+
+def hoja_r17_010(ctx: Escenario, indice: int = -1) -> Any:
+    """Hoja «Cursos de Carrera» del R-17 descargado, o falla con el código HTTP y sin repetir el cuerpo."""
+    respuesta = ctx.extras["libros_010"][indice]
+    assert respuesta.status_code == 200, f"la ruta 7 respondió {respuesta.status_code}"
+    return load_workbook(io.BytesIO(respuesta.content))[HOJA_R17]
+
+
+@when("se genera el R-17 de esa carga")
+def _genera_el_r17_010(ctx: Escenario) -> None:
+    generar_r17_010(ctx)
+
+
+@when("se genera el R-17 de esa carga dos veces")
+def _genera_el_r17_dos_veces_010(ctx: Escenario) -> None:
+    generar_r17_010(ctx, veces=2)
+
+
+@when(parsers.re(r'(?P<correo>[^ "]+@[^ "]+) genera el R-17 de esa carga'))
+def _genera_el_r17_como_010(ctx: Escenario, correo: str) -> None:
+    generar_r17_010(ctx, correo)

@@ -4,10 +4,10 @@
 -- profesor y, desde V1_14, el alcance de la carrera AMB de la coordinación. No asigna contraseñas, que el comando de
 -- US-05 guarda aparte como hash, ni crea estudiantes ni cargas.
 -- Todo es inventado. Los correos terminan en @example.invalid y el archivo no trae códigos de estudiante.
--- Se corre con el usuario dueño de la base y la conexión directa, después de V1_09 y de V1_16, que trae la columna nombre
--- de los profesores (spec 010), y se puede repetir. Cada INSERT
--- usa ON CONFLICT DO NOTHING, así que otra corrida no duplica filas ni cambia las que ya existen, y la comprobación
--- final detiene el script, y deshace todo, si una fila existente no es la que el script espera.
+-- Se corre con el usuario dueño de la base y la conexión directa, después de V1_09, y se puede repetir. Cada INSERT
+-- usa ON CONFLICT DO NOTHING, así que otra corrida no duplica filas ni cambia las que ya existen, salvo el nombre nulo
+-- de un profesor, que completa el último INSERT de usuarios si la base ya tiene V1_16 (spec 010). La comprobación final
+-- detiene el script, y deshace todo, si una fila existente no es la que el script espera.
 -- En las pruebas va después de db/pruebas/datos_sinteticos.sql, que ya trae la vigencia, la sección 410 y su plan.
 --
 --   psql "host=$NEON_HOST dbname=$NEON_DB user=$NEON_DB_USER sslmode=verify-full sslrootcert=system" \
@@ -47,13 +47,28 @@ WHERE pe.codigo = '2026-2'
 ON CONFLICT DO NOTHING;
 
 -- Usuarios de prueba del piloto (valor provisional de D-13), activos y sin contraseña.
+INSERT INTO acceso.usuario_autorizado (correo, rol)
+VALUES ('coordinacion@example.invalid', 'COORDINADOR'),
+       ('docente410@example.invalid', 'PROFESOR'),
+       ('docente411@example.invalid', 'PROFESOR')
+ON CONFLICT DO NOTHING;
+
 -- Desde V1_16 (spec 010, FR-013) cada profesor lleva su nombre inventado, y la cuenta COORDINADOR queda sin nombre. Una
 -- segunda corrida completa solo el nombre nulo de un usuario que ya existe y no cambia uno que ya tiene.
-INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
-VALUES ('coordinacion@example.invalid', 'COORDINADOR', NULL),
-       ('docente410@example.invalid', 'PROFESOR', 'Profesor Inventado Cuatrocientos Diez'),
-       ('docente411@example.invalid', 'PROFESOR', 'Profesor Inventado Cuatrocientos Once')
-ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+DO $$
+BEGIN
+    -- Una base anterior a V1_16 no tiene la columna nombre y solo recibe los usuarios del INSERT anterior, así que las
+    -- bases de prueba que migran por partes siguen sirviendo.
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'acceso'
+               AND table_name = 'usuario_autorizado' AND column_name = 'nombre') THEN
+        INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+        VALUES ('coordinacion@example.invalid', 'COORDINADOR', NULL),
+               ('docente410@example.invalid', 'PROFESOR', 'Profesor Inventado Cuatrocientos Diez'),
+               ('docente411@example.invalid', 'PROFESOR', 'Profesor Inventado Cuatrocientos Once')
+        ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+    END IF;
+END
+$$;
 
 -- Cada profesor dicta su sección. El coordinador no tiene secciones, porque ve todas las de la carrera.
 INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)

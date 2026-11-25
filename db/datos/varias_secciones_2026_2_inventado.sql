@@ -83,10 +83,23 @@ JOIN abet.asignatura a ON a.codigo = v.asignatura
 ON CONFLICT DO NOTHING;
 
 -- Profesor de prueba con varias secciones, activo y sin contraseña.
+INSERT INTO acceso.usuario_autorizado (correo, rol)
+VALUES ('docente.varias@example.invalid', 'PROFESOR')
+ON CONFLICT DO NOTHING;
+
 -- Desde V1_16 (spec 010, FR-013) lleva su nombre inventado, que una segunda corrida completa solo si está nulo.
-INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
-VALUES ('docente.varias@example.invalid', 'PROFESOR', 'Profesor Inventado Varias')
-ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+DO $$
+BEGIN
+    -- Una base anterior a V1_16 no tiene la columna nombre y solo recibe los usuarios del INSERT anterior, así que las
+    -- bases de prueba que migran por partes siguen sirviendo.
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'acceso'
+               AND table_name = 'usuario_autorizado' AND column_name = 'nombre') THEN
+        INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+        VALUES ('docente.varias@example.invalid', 'PROFESOR', 'Profesor Inventado Varias')
+        ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
+    END IF;
+END
+$$;
 
 -- Las tres secciones que dicta. Cada fila de VALUES va en su propia línea, porque db/pruebas/correr_pruebas.sh quita la
 -- de la 410 de 450010 en una copia de este archivo para probar que la comprobación final ve la asignación que falta.

@@ -314,7 +314,9 @@ def test_br_r17_02_la_cabecera_y_el_bloque_ii_muestran_las_cifras_de_la_vista(
 ) -> None:
     base, ids = base_410
     hoja = _libro(r17_correcto)[HOJA]
-    assert [hoja[ref].value for ref in ("D8", "D10", "D11", "I11")] == ["450002", None, "410", "2026-2"]
+    # Cambio del 2026-11-25 (spec 010, BR-R17-14). D10 lleva el nombre inventado del profesor de la 410 y ya no queda vacía.
+    assert [hoja[ref].value for ref in ("D8", "D10", "D11", "I11")] == [
+        "450002", "Profesor Inventado Cuatrocientos Diez", "410", "2026-2"]
     nombre = _consulta(base, "SELECT nombre FROM abet.asignatura WHERE codigo = %s", ("450002",))[0][0]
     assert hoja["D9"].value == nombre
     assert [hoja[f"B{fila}"].value for fila in (24, 25, 26)] == list(PIS_410)
@@ -642,7 +644,10 @@ def test_br_r17_07_el_correo_de_quien_sube_va_solo_en_la_hoja_constancia(r17_cor
     assert en_constancia == [f"Subido por {correo}"]
     assert not [c for fila in libro[HOJA].iter_rows() for c in fila if "@" in str(c.value or "")]
     hoja = libro[HOJA]
-    assert hoja["D10"].value is None and all(hoja[f"D{fila}"].value is None for fila in FILAS_DE_LA_TABLA)
+    # Cambio del 2026-11-25 (spec 010). D10 lleva el nombre del profesor, y la columna D de la tabla de estudiantes sigue
+    # vacía, sin nombres de estudiantes ni de profesores (BR-R17-07 y BR-R17-14).
+    assert hoja["D10"].value == "Profesor Inventado Cuatrocientos Diez"
+    assert all(hoja[f"D{fila}"].value is None for fila in FILAS_DE_LA_TABLA)
     # Ni la hoja del reporte ni las propiedades ni otra parte del zip, salvo la hoja «Constancia» (sheet2.xml).
     fuera_de_la_constancia = b"".join(datos for nombre, datos in _partes(r17_correcto).items()
                                       if nombre != "xl/worksheets/sheet2.xml")
@@ -1040,3 +1045,124 @@ def test_br_r17_04_los_bloques_se_separan_con_una_linea_vacia_y_un_solo_pi_no_la
     assert "\n\n" not in r17.componer_recuadros([("6.1", None, "", "")])[0]
     with pytest.raises(ValueError):
         r17.componer_recuadros([("6.1", "OTRO", "c", "a")])
+
+
+# BR-R17-14: los profesores de la sección en D10 (spec 010, US-97 y US-98).
+
+PROFESORES = r17.profesores_de_d10
+
+
+@pytest.mark.parametrize(("nombre", "clave"), [
+    ("Ángel", "angel"), ("ÁNGEL", "angel"), ("Ñandú", "nandu"), ("Müller", "muller"), ("Beto", "beto"),
+    ("A\u0301ngel", "angel"), ("Ça va", "ca va"), ("", ""),
+])
+def test_br_r17_14_la_clave_de_orden_quita_las_tildes_y_las_mayusculas(nombre: str, clave: str) -> None:
+    assert r17.clave_de_orden(nombre) == clave
+
+
+def test_br_r17_14_los_profesores_salen_en_orden_alfabetico_sin_tildes_ni_mayusculas_y_separados_por_coma() -> None:
+    assert PROFESORES([(3, "Profesor Inventado Beto"), (1, "Profesor Inventado Ángel"),
+                       (2, "profesor Inventado Carlos")]) == (
+        "Profesor Inventado Ángel, Profesor Inventado Beto, profesor Inventado Carlos")
+    # Sin la clave, el orden de bytes pondría «Ángel» al final, y con la tilde sola «Zeta» iría antes que «Ángel».
+    assert PROFESORES([(1, "Zeta"), (2, "Ángel"), (3, "ángela")]) == "Ángel, ángela, Zeta"
+    assert sorted(["Zeta", "Ángel"]) == ["Zeta", "Ángel"]
+
+
+def test_br_r17_14_dos_profesores_homonimos_salen_los_dos_en_el_orden_de_su_usuario_id() -> None:
+    assert PROFESORES([(9, "Profesor Inventado Uno"), (4, "Profesor Inventado Uno"), (7, "Profesor Inventado Cero")]) == (
+        "Profesor Inventado Cero, Profesor Inventado Uno, Profesor Inventado Uno")
+    # El orden no depende del de entrada.
+    assert PROFESORES([(4, "A"), (9, "A")]) == PROFESORES([(9, "A"), (4, "A")]) == "A, A"
+
+
+def test_br_r17_14_sin_profesores_con_nombre_d10_queda_sin_valor() -> None:
+    assert PROFESORES([]) is None
+
+
+@pytest.mark.parametrize(("lineas", "alto"), [(1, 15.0), (2, 30.0), (3, 45.0), (0, 15.0), (27, 405.0), (28, 409.0),
+                                              (500, 409.0)])
+def test_br_r17_14_el_alto_de_la_fila_10_crece_por_lineas_y_no_pasa_de_409(lineas: int, alto: float) -> None:
+    assert r17.alto_de_la_fila_10(lineas) == alto
+
+
+def _hoja_con_d10(tmp_path: Path, nombres: str | None) -> Worksheet:
+    hoja = openpyxl.load_workbook(r17.PLANTILLA)[HOJA]
+    r17._profesores_en_d10(hoja, nombres)
+    return hoja
+
+
+def test_br_r17_14_con_un_nombre_d10_trae_ajuste_de_texto_y_la_fila_10_no_cambia(tmp_path: Path) -> None:
+    hoja = _hoja_con_d10(tmp_path, "Profesor Inventado Setecientos Uno")
+    assert hoja["D10"].value == "Profesor Inventado Setecientos Uno"
+    assert hoja["D10"].alignment.wrap_text is True and hoja["D10"].alignment.vertical == "top"
+    assert hoja.row_dimensions[10].height is None
+    assert hoja["B10"].value == "Profesor:"
+
+
+def test_br_r17_14_con_tres_nombres_largos_la_fila_10_pasa_a_dos_lineas(tmp_path: Path) -> None:
+    nombres = PROFESORES([(1, "Profesor Inventado Bartolomé Cuatrecasas Villanueva"),
+                          (2, "Profesor Inventado Ángel Echeverría Santisteban"), (3, "Profesor Inventado Setecientos Tres")])
+    hoja = _hoja_con_d10(tmp_path, nombres)
+    assert hoja.row_dimensions[10].height == 30.0
+    # Ninguna otra fila de la cabecera cambia de alto.
+    assert [hoja.row_dimensions[fila].height for fila in (8, 9, 11)] == [None, None, None]
+
+
+def test_br_r17_14_un_texto_enorme_no_pasa_de_409_puntos(tmp_path: Path) -> None:
+    hoja = _hoja_con_d10(tmp_path, ", ".join(f"Profesor Inventado Número {'Largo' * 20}{n}" for n in range(60)))
+    assert hoja.row_dimensions[10].height == 409.0
+
+
+def test_br_r17_14_sin_nombres_la_celda_y_la_fila_quedan_como_en_la_plantilla(tmp_path: Path) -> None:
+    hoja = _hoja_con_d10(tmp_path, None)
+    assert hoja["D10"].value is None and hoja.row_dimensions[10].height is None
+    assert str(next(r for r in hoja.merged_cells.ranges if r.min_row == 10 and r.min_col == 4)) == "D10:I10"
+
+
+def test_br_r17_14_un_nombre_que_empieza_por_igual_queda_como_texto_con_prefijo_de_cita(tmp_path: Path) -> None:
+    hoja = _hoja_con_d10(tmp_path, "=Profesor Inventado Fórmula")
+    assert hoja["D10"].data_type == "s" and hoja["D10"].quotePrefix is True
+
+
+def test_br_r17_14_solo_salen_los_profesores_de_la_seccion_con_nombre_y_sin_filtro_de_baja(
+    base_410: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_410
+    with psycopg.connect(base.conexion, autocommit=True) as dueno:
+        dueno.execute("INSERT INTO acceso.usuario_autorizado (correo, rol, activo, nombre) VALUES"
+                      " ('docente740@example.invalid', 'PROFESOR', false, 'Profesor Inventado Ángel'),"
+                      " ('docente741@example.invalid', 'PROFESOR', true, NULL),"
+                      " ('coordinador.anterior@example.invalid', 'COORDINADOR', true, 'Profesor Inventado Coordinador'),"
+                      " ('docente742@example.invalid', 'PROFESOR', true, 'Profesor Inventado De Otra Seccion')")
+        dueno.execute("INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)"
+                      " SELECT u.usuario_id, s.seccion_id FROM acceso.usuario_autorizado u, abet.seccion s"
+                      " JOIN abet.asignatura a USING (asignatura_id)"
+                      " WHERE a.codigo = '450002' AND ((u.correo IN ('docente740@example.invalid', 'docente741@example.invalid',"
+                      " 'coordinador.anterior@example.invalid') AND s.numero = '410')"
+                      " OR (u.correo = 'docente742@example.invalid' AND s.numero = '411'))")
+    try:
+        ruta = _generar(base, ids["correcta"], tmp_path)
+        assert _libro(ruta)[HOJA]["D10"].value == "Profesor Inventado Ángel, Profesor Inventado Cuatrocientos Diez"
+        todo = " ".join(_textos(_libro(ruta)))
+        assert "docente74" not in todo and "Coordinador" not in todo and "De Otra Seccion" not in todo
+    finally:
+        with psycopg.connect(base.conexion, autocommit=True) as dueno:
+            dueno.execute("DELETE FROM acceso.docente_seccion WHERE usuario_id IN (SELECT usuario_id"
+                          " FROM acceso.usuario_autorizado WHERE correo LIKE 'docente74%' OR correo = 'coordinador.anterior@example.invalid')")
+            dueno.execute("DELETE FROM acceso.usuario_autorizado WHERE correo LIKE 'docente74%'"
+                          " OR correo = 'coordinador.anterior@example.invalid'")
+
+
+def test_br_r17_14_una_base_sin_la_columna_nombre_da_d10_vacia_en_lugar_de_un_error(
+    base_410: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_410
+    with psycopg.connect(base.conexion, autocommit=True) as dueno:
+        dueno.execute("ALTER TABLE acceso.usuario_autorizado RENAME COLUMN nombre TO nombre_oculto")
+    try:
+        ruta = _generar(base, ids["correcta"], tmp_path)
+        assert _libro(ruta)[HOJA]["D10"].value is None
+    finally:
+        with psycopg.connect(base.conexion, autocommit=True) as dueno:
+            dueno.execute("ALTER TABLE acceso.usuario_autorizado RENAME COLUMN nombre_oculto TO nombre")
