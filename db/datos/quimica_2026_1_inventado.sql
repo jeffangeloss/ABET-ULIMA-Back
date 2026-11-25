@@ -6,7 +6,8 @@
 -- el plan de medición, que llegan con db/datos/plan_quimica_2026_1.sql, ni contraseñas, estudiantes o cargas.
 -- Todo es inventado. Los correos terminan en @example.invalid y el archivo no trae códigos de estudiante. Las secciones
 -- de la capacitación real viven fuera del repositorio (D-10).
--- Se corre con el usuario dueño de la base y la conexión directa, después de V1_12 y V1_14 y de
+-- Se corre con el usuario dueño de la base y la conexión directa, después de V1_12, V1_14 y V1_16 (el nombre de los
+-- profesores, spec 010) y de
 -- db/datos/alcance_coordinacion_ambiental.sql, y se puede repetir. Cada INSERT usa ON CONFLICT DO NOTHING, así que
 -- otra corrida no duplica filas ni cambia las que ya existen, y la comprobación final detiene el script, y deshace
 -- todo, si una fila existente no es la que el script espera. db/pruebas/correr_pruebas.sh lo aplica dos veces.
@@ -28,12 +29,14 @@ JOIN abet.periodo pe ON pe.codigo = '2026-1'
 JOIN abet.asignatura a ON a.codigo = '5643'
 ON CONFLICT DO NOTHING;
 
-INSERT INTO acceso.usuario_autorizado (correo, rol)
-VALUES ('docente701@example.invalid', 'PROFESOR'),
-       ('docente702@example.invalid', 'PROFESOR'),
-       ('docente703@example.invalid', 'PROFESOR'),
-       ('coordinador.quimica@example.invalid', 'COORDINADOR')
-ON CONFLICT DO NOTHING;
+-- Desde V1_16 (spec 010, FR-013) cada profesor lleva su nombre inventado y la coordinación queda sin nombre. Una segunda
+-- corrida completa solo el nombre nulo de un usuario que ya existe y no cambia uno que ya tiene.
+INSERT INTO acceso.usuario_autorizado (correo, rol, nombre)
+VALUES ('docente701@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Uno'),
+       ('docente702@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Dos'),
+       ('docente703@example.invalid', 'PROFESOR', 'Profesor Inventado Setecientos Tres'),
+       ('coordinador.quimica@example.invalid', 'COORDINADOR', NULL)
+ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre);
 
 -- Un profesor por sección, y la 704 queda sin profesor (SIN_PROFESOR en la ruta 17).
 INSERT INTO acceso.docente_seccion (usuario_id, seccion_id)

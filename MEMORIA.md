@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: V1_16 con su restricción, Q15 con el filtro ampliado, los permisos de la columna y los siete escenarios de US-95 (T020 y T021). Antes, el contrato y el arnés de la spec 010 (T012 a T014)
+- **Último cambio**: los nombres inventados de las semillas y su prueba de repositorio (T022). Antes, V1_16, Q15 y los permisos de la columna nombre (T020 y T021)
 - **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
-- **Siguiente paso**: T022 y T023 de la base y después T030 a T036 del Back
+- **Siguiente paso**: T023 de la consulta informativa y después T030 a T036 del Back
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 02:10 (Lima) · feat/010-nombre-del-profesor · Nombres inventados en las semillas y prueba de repositorio (T022)
+- Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `db/datos/periodo_2026_2_inventado.sql`, `varias_secciones_2026_2_inventado.sql` y `quimica_2026_1_inventado.sql` asignan a sus profesores los nombres inventados de las convenciones de la spec 010 con `ON CONFLICT (correo) DO UPDATE SET nombre = coalesce(acceso.usuario_autorizado.nombre, EXCLUDED.nombre)`, y las cuentas COORDINADOR quedan sin nombre. `tests/semillas_inventadas.py` carga las semillas una por una en una base desechable y revisa la forma de cada nombre y el dominio de cada correo, y lista los CSV que git rastrea con una columna nombre fuera de `tests/datos_inventados/`. `tests/test_semillas_con_nombre.py` lo prueba.
+- Por qué: FR-013 de la spec 010 y el escenario 4 y 5 de US-99, para que develop de Neon reciba los nombres inventados sin pisar uno existente y para que git lleve solo nombres inventados.
+- Lo que debe hacer, cómo se probó: `uv run --frozen --no-build python -m pytest -q -p no:cacheprovider tests/test_semillas_con_nombre.py` da 44 pruebas en verde. Las tres semillas dejan seis nombres de la forma «Profesor Inventado» con palabras de solo letras y todos los correos en `example.invalid`, una segunda corrida no cambia un nombre que ya existe, y el repositorio real no rastrea ningún CSV con la columna nombre fuera de los datos inventados. `bash db/pruebas/correr_pruebas.sh` termina en «RESULTADO: todo pasó».
+- Lo que no debe hacer, cómo se probó: Con una semilla que asigna un nombre fuera de la forma la prueba falla con «periodo_2026_2_inventado.sql: 1 nombre fuera de la forma inventada», y con un correo de otro dominio falla con «1 correo fuera de example.invalid», sin repetir ningún valor. Con un CSV con la columna nombre agregado al índice de un repositorio temporal falla nombrando el archivo, también con otro separador, BOM, UTF-16 y mayúsculas. Un CSV bajo `tests/datos_inventados/`, uno con «nombre_de_la_seccion» o sin agregar al índice no falla, y sin repositorio git la revisión falla y no pasa en silencio. Las pruebas de la forma y de la prueba de repositorio estaban en rojo antes de tocar las semillas (3 fallas).
+- Correcciones: Ninguna.
+- Cómo se reporta: Esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: T023 (consulta informativa) y T030 a T036 del Back. Las semillas ahora exigen V1_16, así que una base sin esa migración, como una abet_sis_med_dev anterior, las rechaza hasta migrar. El orden en Neon sigue el de J-71.
 
 ### 2026-11-25 01:50 (Lima) · feat/010-nombre-del-profesor · V1_16, Q15 y permisos de la columna nombre (T020 y T021)
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
