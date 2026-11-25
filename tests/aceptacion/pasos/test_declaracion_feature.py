@@ -4,7 +4,7 @@ El .feature manda. Ningún paso cambia un texto para que el escenario pase, y ca
 respuesta de la API o contra la base, sin dobles del sistema bajo prueba. Este módulo enlaza con @scenario los
 escenarios del Back que piden solo las rutas 14 a 16 y V1_15. Quedan fuera, con su tarea, los que piden el R-17 con el
 análisis (US-49, «Corregir una declaración…» y «Una sección con todos sus PI en la meta…», T033 y T037), los de Q16 y
-Q17 y los de la base sola («Las tablas de V1_15…» y «La base rechaza…», T038), los de la herencia de US-54 (T036) y los
+Q17 y los de la base sola («Las tablas de V1_15…» y «La base rechaza…», T038) y los
 @delegado_a_vitest, que prueba el Front. «con su análisis declarado» es el paso compartido de conftest.py, que llama a
 declarar() de tests/cargas_de_prueba.py con los registros de prueba de la sección (T037, FR-017).
 
@@ -191,7 +191,32 @@ def test_sin_cache() -> None:
     """US-53."""
 
 
-# US-54, solo el 409 de la ruta 15, porque la herencia llega con T036
+# US-54 (T036)
+
+@scenario(FEATURE, "La carga nueva hereda el análisis declarado con el tipo de sus cifras")
+def test_hereda_lo_declarado() -> None:
+    """US-54, AD-17."""
+
+
+@scenario(FEATURE, "Un PI que queda sin calificaciones en la carga nueva no se hereda")
+def test_sin_calificaciones_no_se_hereda() -> None:
+    """US-54."""
+
+
+@scenario(FEATURE, "Sin texto declarado se hereda lo que haya, o nada")
+def test_hereda_lo_que_haya() -> None:
+    """US-54, con sus dos Ejemplos."""
+
+
+@scenario(FEATURE, "Subir el mismo archivo no cambia nada")
+def test_mismo_archivo() -> None:
+    """US-54."""
+
+
+@scenario(FEATURE, "Un reemplazo hecho por coordinación hereda igual y coordinación no ve el texto heredado")
+def test_reemplazo_de_coordinacion() -> None:
+    """US-54, BR-MEJORA-05."""
+
 
 @scenario(FEATURE, "Un PUT a la carga reemplazada responde 409 con la carga nueva")
 def test_put_a_la_reemplazada() -> None:
@@ -774,6 +799,153 @@ def _comando_termina(ctx: Escenario, mensaje: str) -> None:
 def _comando_sin_archivos(ctx: Escenario) -> None:
     carpeta = ctx.extras["carpeta"]
     assert not carpeta.exists() or list(carpeta.iterdir()) == []
+
+
+# US-54, la herencia al leer (T036)
+
+def _profesor_de_la_410(ctx: Escenario) -> str:
+    return ctx.profesor or str(ctx.uno(
+        "SELECT u.correo FROM acceso.docente_seccion d JOIN acceso.usuario_autorizado u USING (usuario_id)"
+        " WHERE d.seccion_id = %s", ctx.seccion_id("410")))
+
+
+@given(parsers.re(r'que "(?P<nombre>[^"]+)" está subido a la sección (?P<numero>[0-9]+) con respuesta 201 y su '
+                  r'carga_id A(?P<texto>, con su análisis declarado|, con un borrador guardado y sin declaración)?'))
+def _subida_a(ctx: Escenario, nombre: str, numero: str, texto: str | None) -> None:
+    profesor = _profesor_de_la_410(ctx)
+    respuesta = ctx.subir(profesor, ctx.de_inventados(nombre), nombre, numero)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    ctx.extras["cargas"] = {"A": ctx.carga_id}
+    if texto == ", con su análisis declarado":
+        _cargas().declarar(ctx.api.dueno, ctx.carga_id, REGISTROS["410"], correo=profesor)
+    elif texto:
+        _guardar_de_prueba(ctx, profesor, 0)
+        assert ctx.cuenta("mejora_declaracion", "carga_id = %s", ctx.carga_id) == 0
+    ctx.antes = ctx.conteos()
+
+
+def _reemplazar_a(ctx: Escenario, correo: str, que: str, numero: str = "410") -> None:
+    if que.startswith("una copia"):
+        contenido, nombre = ctx.copia_de(que)
+    else:
+        nombre = que.removeprefix("el archivo ").strip('"')
+        contenido = ctx.de_inventados(nombre)
+    anterior = ctx.extras["cargas"]["A"]
+    ctx.subir(correo, contenido, nombre, numero, params={"reemplaza": str(anterior)})
+    if ctx.respuesta.status_code == 201:
+        ctx.extras["cargas"]["B"] = ctx.carga_id
+        assert ctx.uno("SELECT estado FROM abet.carga WHERE carga_id = %s", anterior) == "REEMPLAZADA"
+    else:
+        ctx.carga_id = anterior
+
+
+@when(parsers.re(r'se envía POST /api/secciones/\{sección (?P<numero>[0-9]+)\}/cargas\?reemplaza=\{A\} con '
+                 r'(?P<que>una copia de "[^"]+" .+|el archivo "[^"]+")'))
+def _reemplaza(ctx: Escenario, numero: str, que: str) -> None:
+    _reemplazar_a(ctx, _profesor_de_la_410(ctx), que, numero)
+
+
+@when(parsers.re(r'"(?P<correo>[^"]+)" reemplaza A con (?P<que>una copia de "[^"]+" .+)'))
+def _reemplaza_quien(ctx: Escenario, correo: str, que: str) -> None:
+    _reemplazar_a(ctx, correo, que)
+    assert ctx.respuesta.status_code == 201, ctx.respuesta.text
+
+
+@when("se envía GET /api/cargas/{B}/mejora")
+def _pide_mejora_de_b(ctx: Escenario) -> None:
+    ctx.pedir(f"/api/cargas/{ctx.extras['cargas']['B']}/mejora")
+
+
+def _heredada(ctx: Escenario) -> dict[str, Any]:
+    respuesta = ctx.respuesta
+    assert respuesta.status_code == 200, respuesta.text
+    assert respuesta.headers["cache-control"] == "no-store"
+    return respuesta.json()
+
+
+def _textos_de_a(borrador: dict[str, Any]) -> list[tuple[str, str | None, str | None]]:
+    return [(i["pi"], i["causa"], i["accion"]) for i in borrador["indicadores"]]
+
+
+@then(parsers.re(r'la API responde 200 con borrador con los registros (?:declarados de A en (?P<tres>5\.1, 5\.2 y 5\.3), '
+                 r'version 0|de A solo en (?P<dos>5\.1 y 5\.2)) y heredado_de igual a A'))
+def _hereda(ctx: Escenario, tres: str | None, dos: str | None) -> None:
+    cuerpo = _heredada(ctx)
+    pis = re.findall(r"[0-9]\.[0-9]+", tres or dos)
+    assert cuerpo["heredado_de"] == ctx.extras["cargas"]["A"]
+    assert cuerpo["declaracion"] is None and cuerpo["borrador_pendiente"] is False and cuerpo["puede_editar"] is True
+    assert cuerpo["borrador"]["version"] == 0
+    assert _textos_de_a(cuerpo["borrador"]) == [(pi, *REGISTROS["410"][pi]) for pi in pis]
+    ctx.extras["heredado"] = cuerpo["borrador"]
+
+
+@then('5.1 y 5.2 traen tipo "OPORTUNIDAD_MEJORA", y 5.3 trae tipo "BUENA_PRACTICA" con su causa y su acción de A')
+def _tipos_nuevos(ctx: Escenario) -> None:
+    indicadores = ctx.extras["heredado"]["indicadores"]
+    assert [(i["pi"], i["tipo"]) for i in indicadores] == [("5.1", OM), ("5.2", OM), ("5.3", BP)]
+    # El tipo es el de la ruta 13 de la carga nueva, y A tenía los tres PI como OM.
+    ctx.carga_id = ctx.extras["cargas"]["B"]
+    assert {pi: tipo for pi, tipo in _tipos(ctx, ctx.profesor).items()} == {"5.1": OM, "5.2": OM, "5.3": BP}
+    assert ctx.filas("SELECT DISTINCT tipo FROM abet.mejora_declaracion_pi WHERE carga_id = %s",
+                     ctx.extras["cargas"]["A"]) == [(OM,)]
+
+
+@then("el R-17 de la carga B responde 409 hasta declarar")
+def _r17_de_b(ctx: Escenario) -> None:
+    ctx.carga_id = ctx.extras["cargas"]["B"]
+    # La herencia no escribe nada en la carga nueva hasta el primer PUT.
+    assert ctx.cuenta("mejora_borrador", "carga_id = %s", ctx.carga_id) == 0
+    assert _r17(ctx).status_code == 409, ctx.respuesta.text
+    heredado = [{"pi": i["pi"], "tipo": i["tipo"], "causa": i["causa"], "accion": i["accion"]}
+                for i in ctx.extras["heredado"]["indicadores"]]
+    assert _put(ctx, ctx.profesor, heredado, 0).status_code == 200, ctx.respuesta.text
+    assert _r17(ctx).status_code == 409, ctx.respuesta.text
+    assert _post(ctx, ctx.profesor, 1).status_code == 201, ctx.respuesta.text
+    assert _r17(ctx).status_code == 200, ctx.respuesta.text
+    assert _mejora(ctx)["heredado_de"] is None
+
+
+@then("la API responde 200 con borrador nulo y heredado_de nulo")
+def _sin_herencia(ctx: Escenario) -> None:
+    cuerpo = _heredada(ctx)
+    assert (cuerpo["borrador"], cuerpo["heredado_de"], cuerpo["declaracion"]) == (None, None, None)
+
+
+@then("la API responde 200 con el borrador de A como borrador, version 0 y heredado_de igual a A")
+def _hereda_el_borrador(ctx: Escenario) -> None:
+    cuerpo = _heredada(ctx)
+    assert cuerpo["heredado_de"] == ctx.extras["cargas"]["A"] and cuerpo["borrador"]["version"] == 0
+    # La copia deja 5.3 en VERDE, así que el texto de A llega a la carga nueva con el tipo BP.
+    assert [(i["pi"], i["tipo"], i["causa"], i["accion"]) for i in cuerpo["borrador"]["indicadores"]] == [
+        (pi, tipo, *REGISTROS["410"][pi]) for pi, tipo in (("5.1", OM), ("5.2", OM), ("5.3", BP))]
+
+
+@then("la API responde 200 sin carga nueva")
+def _sin_carga_nueva(ctx: Escenario) -> None:
+    assert ctx.respuesta.status_code == 200, ctx.respuesta.text
+    assert ctx.respuesta.json()["carga_id"] == ctx.extras["cargas"]["A"]
+    assert "B" not in ctx.extras["cargas"]
+
+
+@then("la API responde 200 con heredado_de igual a A y borrador nulo")
+def _coordinacion_sin_borrador(ctx: Escenario) -> None:
+    cuerpo = _heredada(ctx)
+    assert cuerpo["heredado_de"] == ctx.extras["cargas"]["A"]
+    assert (cuerpo["borrador"], cuerpo["declaracion"], cuerpo["puede_editar"]) == (None, None, False)
+
+
+@then("la respuesta no trae el texto heredado")
+def _sin_texto_heredado(ctx: Escenario) -> None:
+    assert not any(texto in ctx.respuesta.text for par in REGISTROS["410"].values() for texto in par)
+
+
+@then(parsers.re(r'GET /api/cargas/\{B\}/mejora de "(?P<correo>[^"]+)" trae el borrador heredado'))
+def _profesor_ve_lo_heredado(ctx: Escenario, correo: str) -> None:
+    respuesta = ctx.sesion(correo).get(f"/api/cargas/{ctx.extras['cargas']['B']}/mejora")
+    assert respuesta.status_code == 200, respuesta.text
+    cuerpo = respuesta.json()
+    assert cuerpo["heredado_de"] == ctx.extras["cargas"]["A"] and cuerpo["borrador"]["version"] == 0
+    assert _textos_de_a(cuerpo["borrador"]) == [(pi, *REGISTROS["410"][pi]) for pi in PIS]
 
 
 # Entonces, la corrección de una declaración

@@ -21,8 +21,12 @@ docs/03-api/contrato.md del Front.
 4. El tipo de cada PI lo fija el semáforo de la ruta 13, que app/rutas/resultados.indicadores_de_la_carga() calcula
    en la misma transacción (BR-MEJORA-03). La ruta 16 guarda esa foto (J-40) y comprueba con las funciones de
    abet_carga/r17.py que los recuadros A y B compuestos quepan en el R-17 (BR-R17-04).
-5. El estado PROPUESTA de cada indicador declarado lo deriva la ruta 14 y la base no lo guarda (D-42). La herencia
-   de US-54 (heredado_de) llega con T036, y hasta entonces heredado_de es nulo.
+5. El estado PROPUESTA de cada indicador declarado lo deriva la ruta 14 y la base no lo guarda (D-42).
+6. La herencia de US-54 (BR-MEJORA-13, T036) ocurre al leer, en la misma instantánea, y nunca escribe. Una carga sin
+   borrador ni declaración que reemplaza a otra recibe, por pi_id, los textos de la declaración vigente de la anterior
+   o, si no tiene, los de su borrador, solo en los PI que la carga nueva reconoce y que en ella llevan registro, con el
+   tipo de su propio semáforo, version 0 y heredado_de igual a la carga anterior. Sin ningún texto que heredar,
+   borrador y heredado_de quedan nulos. El coordinador recibe heredado_de y nunca el texto.
 """
 
 from __future__ import annotations
@@ -98,6 +102,14 @@ FROM abet.mejora_declaracion_pi d
 JOIN abet.pi p ON p.pi_id = d.pi_id
 WHERE d.declaracion_id = %s
 ORDER BY p.so_numero, p.numero
+"""
+_REEMPLAZA = "SELECT reemplaza_carga_id FROM abet.carga WHERE carga_id = %s"
+_TEXTOS_DECLARADOS_POR_PI = """
+SELECT pi_id, causa, accion FROM abet.mejora_declaracion_pi WHERE declaracion_id = %s
+"""
+_TEXTOS_DEL_BORRADOR_POR_PI = """
+SELECT pi_id, causa, accion FROM abet.mejora_borrador_pi
+WHERE carga_id = %s AND (causa IS NOT NULL OR accion IS NOT NULL)
 """
 _PRIMER_BORRADOR = """
 INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por) VALUES (%s, 1, %s)
@@ -294,6 +306,33 @@ def _declaracion(abierta: psycopg.Connection[Any], carga_id: int) -> tuple[dict[
     return {"declarada_en": _hora(vigente["declarada_en"]), "indicadores": indicadores}, vigente["version_borrador"]
 
 
+def _herencia(abierta: psycopg.Connection[Any], carga_id: int) -> tuple[int | None, dict[str, Any] | None]:
+    """Carga de origen y borrador heredado de US-54 para una carga sin borrador ni declaración, o (None, None).
+
+    Lee sin escribir (AD-17). Los textos salen de la declaración vigente de la carga que esta reemplaza o, sin ella, de
+    su borrador, y pasan por pi_id solo a los PI de esta carga que llevan registro, con el tipo que fija hoy su
+    semáforo. Un PI que en la carga nueva queda SIN_DATO o que ella no mide no se hereda.
+    """
+    [anterior] = abierta.execute(_REEMPLAZA, (carga_id,)).fetchone() or [None]
+    if anterior is None:
+        return None, None
+    [vigente] = _filas(abierta, _VIGENTE, anterior) or [None]
+    origen = (_filas(abierta, _TEXTOS_DECLARADOS_POR_PI, vigente["declaracion_id"]) if vigente is not None
+              else _filas(abierta, _TEXTOS_DEL_BORRADOR_POR_PI, anterior))
+    textos = {fila["pi_id"]: fila for fila in origen}
+    columnas = {fila["pi_codigo"]: fila["pi_id"] for fila in _filas(abierta, _COLUMNAS, carga_id)}
+    elementos = []
+    for indicador in _indicadores(abierta, carga_id):
+        if indicador["tipo_registro"] is None:
+            continue
+        texto = textos.get(columnas.get(indicador["pi"]), {})
+        elementos.append({"pi": indicador["pi"], "tipo": indicador["tipo_registro"],
+                          "causa": texto.get("causa"), "accion": texto.get("accion")})
+    if not any(e["causa"] is not None or e["accion"] is not None for e in elementos):
+        return None, None
+    return anterior, {"version": 0, "actualizado_en": None, "indicadores": elementos}
+
+
 # Ruta 14
 
 @router.get("/cargas/{carga_id}/mejora")
@@ -313,9 +352,13 @@ def leer_mejora(
         [cabecera] = _filas(abierta, _CABECERA_DEL_BORRADOR, carga_id) or [None]
         # El coordinador nunca recibe el texto del borrador (BR-MEJORA-05).
         borrador = _borrador(abierta, carga_id) if puede_editar else None
+        heredado_de = None
+        if declaracion is None and cabecera is None:
+            heredado_de, heredado = _herencia(abierta, carga_id)
+            borrador = heredado if puede_editar else None
     pendiente = cabecera is not None and (declarada is None or cabecera["version"] > declarada)
     return JSONResponse({"declaracion": declaracion, "borrador": borrador, "borrador_pendiente": pendiente,
-                         "heredado_de": None, "puede_editar": puede_editar})
+                         "heredado_de": heredado_de, "puede_editar": puede_editar})
 
 
 def _violacion(falla: psycopg.errors.CheckViolation) -> JSONResponse:
