@@ -21,6 +21,7 @@ ella.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 from typing import Any
@@ -465,6 +466,27 @@ def test_la_spec_005_trae_85_escenarios_con_118_casos_y_23_van_a_vitest() -> Non
         assert "V1_12" not in " ".join(e.name for e in feature.scenarios.values()), nombre
     assert (escenarios, casos, delegados) == (85, 118, 23)
     assert historias == {f"US-{n}" for n in range(45, 55)}
+
+
+def _titulos_enlazados() -> set[str]:
+    """Títulos que algún módulo de pasos enlaza con @scenario(FEATURE, «título»), leídos del código sin importarlo."""
+    titulos = set()
+    for modulo in (RAIZ / "tests" / "aceptacion" / "pasos").glob("test_*.py"):
+        for nodo in ast.walk(ast.parse(modulo.read_text(encoding="utf-8"))):
+            if (isinstance(nodo, ast.Call) and getattr(nodo.func, "id", None) == "scenario" and len(nodo.args) >= 2
+                    and isinstance(nodo.args[1], ast.Constant)):
+                titulos.add(nodo.args[1].value)
+    return titulos
+
+
+def test_cada_escenario_de_la_spec_005_sin_vitest_tiene_su_paso_de_pytest_bdd() -> None:
+    # T038 de specs/005-oportunidades-de-mejora/tasks.md. Un escenario sin @delegado_a_vitest que ningún módulo enlaza
+    # con @scenario no corre en ninguna parte, así que esta prueba lo nombra antes de que quede sin probar.
+    enlazados = _titulos_enlazados()
+    sin_enlace = [f"{ruta.rsplit('/', 1)[1]}: {escenario.name}" for ruta in SPEC_005
+                  for escenario in _feature(ruta).scenarios.values()
+                  if "delegado_a_vitest" not in escenario.tags and escenario.name not in enlazados]
+    assert sin_enlace == []
 
 
 def test_la_spec_006_trae_19_escenarios_con_29_casos_y_ninguno_va_a_vitest() -> None:

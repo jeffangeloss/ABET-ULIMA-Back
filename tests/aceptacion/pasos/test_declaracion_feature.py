@@ -2,11 +2,12 @@
 
 El .feature manda. Ningún paso cambia un texto para que el escenario pase, y cada «Entonces» se comprueba contra la
 respuesta de la API o contra la base, sin dobles del sistema bajo prueba. Este módulo enlaza con @scenario los
-escenarios del Back que piden solo las rutas 14 a 16 y V1_15. Quedan fuera, con su tarea, los que piden el R-17 con el
-análisis (US-49, «Corregir una declaración…» y «Una sección con todos sus PI en la meta…», T033 y T037), los de Q16 y
-Q17 y los de la base sola («Las tablas de V1_15…» y «La base rechaza…», T038) y los
-@delegado_a_vitest, que prueba el Front. «con su análisis declarado» es el paso compartido de conftest.py, que llama a
-declarar() de tests/cargas_de_prueba.py con los registros de prueba de la sección (T037, FR-017).
+escenarios del Back de declaracion.feature, los de las rutas 14 a 16 y V1_15, los del R-17 con el análisis (US-49,
+T033 y T037), los de la herencia de US-54 (T036) y, desde T038, los de la base sola («Las tablas de V1_15…» y «La base
+rechaza…») y los de Q16 y Q17. Quedan fuera solo los @delegado_a_vitest, que prueba el Front. «con su análisis
+declarado» es el paso compartido de conftest.py, que llama a declarar() de tests/cargas_de_prueba.py con los registros
+de prueba de la sección (T037, FR-017). Los escenarios de Q16 y Q17 corren los cuerpos de db/pruebas/pruebas.sql sobre
+las cargas del escenario, y la corrida completa del archivo la hace db/pruebas/correr_pruebas.sh.
 
 Los registros de prueba son los del encabezado del .feature, inventados y sin datos de estudiantes. Las subidas van por
 la API, así que los carga_id salen de sus respuestas y nunca se suponen.
@@ -24,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import psycopg
+from psycopg.conninfo import make_conninfo
 from openpyxl import load_workbook
 from pytest_bdd import given, parsers, scenario, then, when
 
@@ -221,6 +223,36 @@ def test_reemplazo_de_coordinacion() -> None:
 @scenario(FEATURE, "Un PUT a la carga reemplazada responde 409 con la carga nueva")
 def test_put_a_la_reemplazada() -> None:
     """US-54, AD-27."""
+
+
+@scenario(FEATURE, "Las tablas de V1_15 no tienen estado, responsable ni plazo, y abet_app no corrige una declaración")
+def test_tablas_sin_estado_y_permisos() -> None:
+    """US-47, BR-MEJORA-07 y BR-MEJORA-12."""
+
+
+@scenario(FEATURE, "La base rechaza un código en el borrador aunque la API se salte la validación")
+def test_base_rechaza_codigo_en_el_borrador() -> None:
+    """US-53, BR-MEJORA-10."""
+
+
+@scenario(FEATURE, "La base rechaza un correo en la declaración")
+def test_base_rechaza_correo_en_la_declaracion() -> None:
+    """US-53, BR-MEJORA-10."""
+
+
+@scenario(FEATURE, "Q16 y Q17 dan 0 filas con declaraciones sanas")
+def test_q16_y_q17_en_cero() -> None:
+    """US-53, BR-MEJORA-11."""
+
+
+@scenario(FEATURE, "Q17 ve un PI con calificados sin su registro en la declaración vigente")
+def test_q17_ve_el_pi_que_falta() -> None:
+    """US-53, BR-MEJORA-11."""
+
+
+@scenario(FEATURE, "Neon corre los mismos controles")
+def test_neon_corre_los_mismos_controles() -> None:
+    """US-53, BR-MEJORA-11."""
 
 
 # Ayudas
@@ -993,3 +1025,172 @@ def _dos_declaraciones(ctx: Escenario) -> None:
                            " WHERE d.declaracion_id = %s ORDER BY cc.pi_codigo", primera)
     assert anteriores == [(pi, *REGISTROS["410"][pi]) for pi in PIS]
     assert ctx.cuenta("mejora_declaracion_pi", "declaracion_id = %s", segunda) == 3
+
+
+# La base sola y los controles Q16 y Q17 (T038, US-47 y US-53)
+
+CONTROLES_NEON = RAIZ / "db" / "plataforma" / "neon" / "controles_neon.sql"
+PRUEBAS_SQL = RAIZ / "db" / "pruebas" / "pruebas.sql"
+PROHIBIDAS = {"estado", "responsable", "plazo"}
+
+
+def _control_de_pruebas(nombre: str) -> str:
+    """Cuerpo de Q16 o Q17 tal como lo trae db/pruebas/pruebas.sql en su lista control_cero."""
+    encontrado = re.search(rf"\('{nombre}', '[^']*', \$q\$(.*?)\$q\$\)", PRUEBAS_SQL.read_text(encoding="utf-8"), re.S)
+    assert encontrado is not None, f"pruebas.sql no trae {nombre}"
+    return encontrado.group(1).strip()
+
+
+def _sin_espacios(texto: str) -> str:
+    return " ".join(texto.split())
+
+
+@given("la base con V1_15 y db/plataforma/neon/crear_rol_app.sql aplicado")
+def _base_con_v1_15_y_rol(ctx: Escenario) -> None:
+    for tabla in TABLAS_V1_15:
+        assert ctx.uno("SELECT to_regclass(%s) IS NOT NULL", f"abet.{tabla}"), f"falta abet.{tabla}"
+    assert ctx.uno("SELECT has_table_privilege(%s, 'abet.mejora_declaracion', 'INSERT')", ctx.api.base.rol_app)
+
+
+@when(parsers.re(r"se consultan las columnas de abet\.mejora_borrador, abet\.mejora_borrador_pi, "
+                 r"abet\.mejora_declaracion y abet\.mejora_declaracion_pi en information_schema\.columns"))
+def _consulta_columnas(ctx: Escenario) -> None:
+    ctx.extras["columnas"] = ctx.filas(
+        "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'abet'"
+        " AND table_name = ANY(%s)", list(TABLAS_V1_15))
+    assert {t for t, _ in ctx.extras["columnas"]} == set(TABLAS_V1_15)
+
+
+@then("ninguna columna se llama estado, responsable ni plazo")
+def _sin_columnas_de_gestion(ctx: Escenario) -> None:
+    assert not {c for _, c in ctx.extras["columnas"]} & PROHIBIDAS
+
+
+def _privilegio(ctx: Escenario, tabla: str, privilegio: str) -> bool:
+    return bool(ctx.uno("SELECT has_table_privilege(%s, %s, %s)", ctx.api.base.rol_app, f"abet.{tabla}", privilegio))
+
+
+@then("has_table_privilege de abet_app es verdadero para INSERT y falso para UPDATE y DELETE en "
+      "abet.mejora_declaracion y abet.mejora_declaracion_pi")
+def _declaracion_solo_insert(ctx: Escenario) -> None:
+    for tabla in ("mejora_declaracion", "mejora_declaracion_pi"):
+        assert _privilegio(ctx, tabla, "INSERT"), tabla
+        assert not _privilegio(ctx, tabla, "UPDATE"), tabla
+        assert not _privilegio(ctx, tabla, "DELETE"), tabla
+
+
+@then("has_table_privilege de abet_app es falso para DELETE en abet.mejora_borrador y abet.mejora_borrador_pi")
+def _borrador_sin_delete(ctx: Escenario) -> None:
+    for tabla in ("mejora_borrador", "mejora_borrador_pi"):
+        assert not _privilegio(ctx, tabla, "DELETE"), tabla
+
+
+def _carga_410_publicada(ctx: Escenario) -> int:
+    respuesta = ctx.subir("docente410@example.invalid", ctx.de_inventados("sintetico_20262_450002_410.xlsx"),
+                          "sintetico_20262_450002_410.xlsx", "410")
+    assert respuesta.status_code == 201, respuesta.text
+    assert ctx.uno("SELECT estado FROM abet.carga WHERE carga_id = %s", ctx.carga_id) == "PUBLICADA"
+    return int(ctx.carga_id)
+
+
+@given("una conexión directa con el rol abet_app y la carga PUBLICADA de la sección 410 con la cabecera de su borrador")
+def _directa_con_cabecera_de_borrador(ctx: Escenario) -> None:
+    _carga_410_publicada(ctx)
+    ctx.directa = ctx.pila.enter_context(psycopg.connect(
+        make_conninfo(ctx.api.base.conexion, user=ctx.api.base.rol_app), autocommit=True))
+    assert ctx.directa.execute("SELECT current_user").fetchone()[0] == ctx.api.base.rol_app
+    ctx.api.dueno.execute("INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por) VALUES (%s, 1, %s)",
+                          (ctx.carga_id, ctx.usuario_id("docente410@example.invalid")))
+
+
+@given("una conexión directa del dueño de la base y la carga PUBLICADA de la sección 410 con la cabecera de una "
+       "declaración")
+def _directa_con_cabecera_de_declaracion(ctx: Escenario) -> None:
+    _carga_410_publicada(ctx)
+    ctx.directa = ctx.api.dueno
+    ctx.extras["declaracion_id"] = ctx.uno(
+        "INSERT INTO abet.mejora_declaracion (carga_id, version_borrador, declarada_por) VALUES (%s, 1, %s)"
+        " RETURNING declaracion_id", ctx.carga_id, ctx.usuario_id("docente410@example.invalid"))
+
+
+@when(parsers.re(r'esa conexión inserta en abet\.mejora_borrador_pi la causa "(?P<causa>[^"]+)" para el PI '
+                 r'(?P<pi>[0-9.]+)'))
+def _inserta_causa_en_el_borrador(ctx: Escenario, causa: str, pi: str) -> None:
+    ctx.intentar("INSERT INTO abet.mejora_borrador_pi (carga_id, pi_id, causa) SELECT carga_id, pi_id, %s"
+                 " FROM abet.carga_columna WHERE carga_id = %s AND pi_codigo = %s", causa, ctx.carga_id, pi)
+
+
+@when(parsers.re(r'esa conexión inserta en abet\.mejora_declaracion_pi la acción "(?P<accion>[^"]+)" para el PI '
+                 r'(?P<pi>[0-9.]+)'))
+def _inserta_accion_en_la_declaracion(ctx: Escenario, accion: str, pi: str) -> None:
+    # 5.1 de la 410 da 63,6 % contra 80,0 % y queda en ROJO, así que solo el texto puede fallar.
+    ctx.intentar("INSERT INTO abet.mejora_declaracion_pi (declaracion_id, pi_id, carga_id, tipo, causa, accion,"
+                 " logro_pct, meta_pct, semaforo) SELECT %s, pi_id, carga_id, 'OPORTUNIDAD_MEJORA',"
+                 " 'Una causa inventada.', %s, 63.6, 80.0, 'ROJO' FROM abet.carga_columna"
+                 " WHERE carga_id = %s AND pi_codigo = %s", ctx.extras["declaracion_id"], accion, ctx.carga_id, pi)
+
+
+@when("el dueño de la base corre db/pruebas/pruebas.sql")
+def _corre_pruebas_sql(ctx: Escenario) -> None:
+    # La corrida entera de pruebas.sql la hace db/pruebas/correr_pruebas.sh sobre sus propias bases, con su caso de
+    # Q16 y Q17 de la línea «ok Q16 y Q17 en 0 filas». Aquí se corren los dos controles, tal como los trae
+    # pruebas.sql, sobre las cargas declaradas por la API de este escenario.
+    assert "ok Q16 y Q17 en 0 filas con la 410 declarada" in PRUEBAS_SQL.read_text(encoding="utf-8")
+    ctx.extras["controles"] = {nombre: ctx.filas(_control_de_pruebas(nombre)) for nombre in ("Q16", "Q17")}
+
+
+@then("Q16 y Q17 devuelven 0 filas")
+def _q16_y_q17_en_cero(ctx: Escenario) -> None:
+    assert ctx.extras["controles"] == {"Q16": [], "Q17": []}
+    assert len(ctx.extras["declaradas"]) == 2
+
+
+@given("una transacción del dueño de la base que quita la fila de 5.3 de la declaración vigente de esa carga y se "
+       "deshace al final")
+def _transaccion_que_quita_5_3(ctx: Escenario) -> None:
+    transaccion = ctx.pila.enter_context(psycopg.connect(ctx.api.base.conexion))
+    ctx.extras["transaccion"] = transaccion
+    quitadas = transaccion.execute(
+        "DELETE FROM abet.mejora_declaracion_pi d USING abet.carga_columna cc WHERE cc.carga_id = d.carga_id"
+        " AND cc.pi_id = d.pi_id AND cc.pi_codigo = '5.3' AND d.carga_id = %s AND d.declaracion_id = ("
+        "SELECT max(declaracion_id) FROM abet.mejora_declaracion WHERE carga_id = %s)", (ctx.carga_id, ctx.carga_id))
+    assert quitadas.rowcount == 1
+
+
+@when("corre Q17 dentro de esa transacción")
+def _corre_q17_en_la_transaccion(ctx: Escenario) -> None:
+    ctx.extras["filas_q17"] = ctx.extras["transaccion"].execute(_control_de_pruebas("Q17")).fetchall()
+    ctx.extras["transaccion"].rollback()
+
+
+@then("Q17 devuelve 1 fila con esa carga y el PI 5.3, sin ningún texto del profesor")
+def _q17_devuelve_5_3(ctx: Escenario) -> None:
+    assert ctx.extras["filas_q17"] == [(ctx.carga_id, "5.3")]
+    # Se deshizo: la declaración vigente sigue con sus tres filas y Q17 vuelve a dar 0.
+    assert ctx.cuenta("mejora_declaracion_pi", "carga_id = %s", ctx.carga_id) == 3
+    assert ctx.filas(_control_de_pruebas("Q17")) == []
+
+
+@given("db/plataforma/neon/controles_neon.sql")
+def _dado_controles_neon(ctx: Escenario) -> None:
+    assert CONTROLES_NEON.is_file()
+
+
+@when("pruebas.sql lo compara con sus controles de 0 filas")
+def _compara_con_pruebas_sql(ctx: Escenario) -> None:
+    texto = CONTROLES_NEON.read_text(encoding="utf-8")
+    bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set (q[0-9]{2}) :ROW_COUNT", texto, flags=re.S)
+    ctx.extras["neon"] = {nombre: (_sin_espacios(cuerpo), variable) for nombre, cuerpo, variable in bloques}
+    ctx.extras["texto_neon"] = texto
+
+
+@then(r"trae Q16 y Q17 iguales salvo espacios, cada uno con su \set qNN :ROW_COUNT, y su cierre los suma")
+def _neon_trae_q16_y_q17(ctx: Escenario) -> None:
+    texto = ctx.extras["texto_neon"]
+    cierre = texto.split("controles_en_cero", 1)[0].rsplit("SELECT (", 1)[-1]
+    for nombre in ("Q16", "Q17"):
+        cuerpo, variable = ctx.extras["neon"][nombre]
+        assert cuerpo == _sin_espacios(_control_de_pruebas(nombre)), f"{nombre} difiere de pruebas.sql"
+        assert variable == nombre.lower()
+        assert texto.count(rf"\set {variable} :ROW_COUNT") == 1, nombre
+        assert f":{variable}" in cierre, nombre
