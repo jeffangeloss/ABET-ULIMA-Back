@@ -73,10 +73,11 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-ACCESO-08 | acceso | 15 | Ninguna | Con escenario |
 | BR-ACCESO-09 | acceso | 5 | Ninguna | Con escenario |
 | BR-ACCESO-10 | acceso | 1 | tests/test_rutas_protegidas.py | Con escenario |
-| BR-ACCESO-11 | acceso | 19 | tests/test_cargar_programacion.py | Con escenario |
+| BR-ACCESO-11 | acceso | 26 | tests/test_cargar_programacion.py | Con escenario |
 | BR-ACCESO-12 | acceso | 2 | Ninguna | Con escenario |
 | BR-ACCESO-13 | acceso | 11 | Ninguna | Con escenario |
 | BR-ACCESO-14 | acceso | 8 | Ninguna | Con escenario |
+| BR-ACCESO-15 | acceso | 9 | Ninguna | Con escenario |
 | BR-AVANCE-01 | avance | 3 | Ninguna | Con escenario |
 | BR-AVANCE-02 | avance | 4 | Ninguna | Con escenario |
 | BR-AVANCE-03 | avance | 2 | Ninguna | Con escenario |
@@ -135,6 +136,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-R17-11 | r17 | 4 | tests/test_r17.py, tests/test_descripcion_instrumento.py | Con escenario |
 | BR-R17-12 | r17 | 8 | Ninguna | Con escenario |
 | BR-R17-13 | r17 | 8 | Ninguna | Con escenario |
+| BR-R17-14 | r17 | 14 | Ninguna | Con escenario |
 | BR-RESULTADOS-01 | resultados | 5 | tests/test_api_resultados.py | Con escenario |
 | BR-RESULTADOS-02 | resultados | 4 | tests/test_api_resultados.py | Con escenario |
 | BR-RESULTADOS-03 | resultados | 5 | tests/test_api_resultados.py | Con escenario |
