@@ -37,6 +37,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 
 ## Registro
 
+### 2026-11-25 07:20 (Lima) · feat/010-nombre-del-profesor · Caracteres invisibles de V1_16 escritos como escapes (S6389 de SonarCloud)
+- Quién: Claude Code en la sesión principal, sin subagentes ni Codex.
+- Qué cambió: las dos listas de caracteres de formato de `ck_usuario_autorizado_nombre` en `db/migration/V1_16__nombre_del_usuario.sql` pasan de caracteres literales a escapes `\uXXXX` y `\UXXXXXXXX` de las expresiones regulares de PostgreSQL, con los mismos puntos de código, y el BOM de un encabezado de `tests/test_semillas_con_nombre.py` pasa a `\ufeff`.
+- Por qué: SonarCloud falla en el PR #61 con text:S6389 (carácter bidireccional en la línea 25 de V1_16), que pone la calificación de seguridad en 3. Un carácter invisible escrito tal cual en el código no se ve al revisarlo.
+- Lo que debe hacer, cómo se probó: `bash db/pruebas/correr_pruebas.sh` da «RESULTADO: todo pasó» con la restricción nueva, los pasos de `nombre_en_la_base.feature` dan 15 passed y `tests/test_semillas_con_nombre.py` 44 passed. Un recorrido en Python de los archivos de la rama no encuentra otro carácter de formato literal.
+- Lo que no debe hacer, cómo se probó: la restricción sigue rechazando los mismos caracteres, como prueban los Ejemplos de `nombre_en_la_base.feature` y A11 de `db/pruebas/pruebas.sql`.
+- Correcciones: V1_16 ya está aplicada en develop de Neon, así que su suma de control cambia y se actualiza con `flyway repair` desde el Windows. La restricción de develop es la misma en significado, escrita con los caracteres literales.
+- Cómo se reporta: esta entrada y el PR #61.
+- Pendiente y siguiente paso: `flyway repair` y `validate` en develop, SonarCloud en verde y la fusión de los PR #61 y #45.
+
 ### 2026-11-25 07:00 (Lima) · feat/010-nombre-del-profesor · Cierre de la spec 010 en el Back (T050 y T060)
 - Quién: agente Implementer (Sonnet) sobre las copias `wt/back-010f` y `wt/front-010f`, sin subagentes.
 - Qué cambió: `specs/010-nombre-del-profesor/audit.md` con el cruce de 5 historias y 30 escenarios, `tasks.md` con T050 y T060 marcadas, línea Verification del 2026-11-25 en las specs vivas `acceso` y `r17`, y `CHANGELOG.md` de los dos repos en «Sin publicar».

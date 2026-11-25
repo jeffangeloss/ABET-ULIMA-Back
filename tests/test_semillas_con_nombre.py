@@ -169,7 +169,7 @@ def test_un_csv_inventado_o_sin_la_columna_nombre_no_falla(semillas: ModuleType,
 
 
 @pytest.mark.parametrize("encabezado", ["periodo,correo,NOMBRE", "periodo;correo;nombre", "periodo\tcorreo\tnombre",
-                                        '"periodo","correo","nombre"', "﻿nombre,correo", "periodo, correo , nombre"])
+                                        '"periodo","correo","nombre"', "\ufeffnombre,correo", "periodo, correo , nombre"])
 def test_la_columna_nombre_se_reconoce_con_otro_separador_otra_forma_o_con_bom(
         semillas: ModuleType, tmp_path: Path, encabezado: str) -> None:
     repo = _repo(tmp_path)

@@ -22,8 +22,8 @@ ALTER TABLE acceso.usuario_autorizado
         AND nombre <> ''
         AND nombre !~ '  '
         AND nombre !~ '[[:cntrl:]\u0080-\u009F]'
-        AND nombre !~ '[­​-‏‪-‮⁠-⁤﻿]'
-        AND nombre !~ '[؜᠎  ⁦-⁩￹-￻\U000E0001\U000E0020-\U000E007F]'
+        AND nombre !~ '[\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\uFEFF]'
+        AND nombre !~ '[\u061C\u180E\u2028\u2029\u2066-\u2069\uFFF9-\uFFFB\U000E0001\U000E0020-\U000E007F]'
         AND nombre !~ '[@,0-9]'
         AND nombre IS NFC NORMALIZED);
 
