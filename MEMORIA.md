@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: la columna nombre de la programación docente con su SQL y los siete escenarios de US-96 (T030, T031 y T036). Antes, los profesores en D10 del R-17, la cabida de la fila 10 y la consulta de profesores sin nombre (T023, T032 a T034)
+- **Último cambio**: las pruebas de privacidad del nombre (T035). Antes, la columna nombre de la programación docente (T030, T031 y T036)
 - **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
-- **Siguiente paso**: T035 de la privacidad del nombre y después los comandos de cierre
+- **Siguiente paso**: T040, T050 y T060 y las tareas de Jefferson T070 a T074; la demo de Química sigue con la coordinación
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 03:50 (Lima) · feat/010-nombre-del-profesor · El nombre sale solo en D10, pruebas de privacidad (T035)
+- Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `tests/aceptacion/pasos/test_privacidad_del_nombre_feature.py` enlaza los cinco escenarios de US-99. Comprueba que el nombre de la 701 no está fuera de D10 ni en la hoja «Constancia», en el nombre del archivo, en `docProps` ni en las demás partes del libro, que `GET /api/sesion`, `GET /api/cargas` y `GET /api/cargas/{carga_id}` no lo traen y que `subida_por` sigue siendo el correo, que el registro `abet.api` no lo contiene, que las tres semillas solo dejan nombres de la forma inventada con correos de `example.invalid` y que git no rastrea ningún CSV con la columna `nombre` fuera de `tests/datos_inventados/`. No cambia código de la aplicación.
+- Por qué: US-99 y FR-012 y FR-013 de la spec 010, para cumplir la Ley 29733 y el DS 016-2024-JUS con la mínima exposición del nombre.
+- Lo que debe hacer, cómo se probó: `uv run --frozen --no-build python -m pytest -q -p no:cacheprovider tests/aceptacion/pasos/test_privacidad_del_nombre_feature.py` da 5 pruebas en verde. La prueba del registro corre un control positivo, que sube un archivo vacío y exige ver la línea `evento=archivo_detenido` antes de buscar el nombre, porque un flujo sin fallas no escribe nada en `abet.api`. La declaración del análisis pasa por las rutas 15 y 16.
+- Lo que no debe hacer, cómo se probó: Una mutación temporal que copia el nombre a K12 y a las propiedades del libro hizo fallar el escenario 1 con «['K12'] == []» y se revirtió. Una semilla con un nombre fuera de la forma falla nombrando el archivo y sin repetir el nombre, y un CSV con la columna agregado al índice de una copia temporal falla nombrando el archivo, mientras uno bajo `tests/datos_inventados/` no falla.
+- Correcciones: Ninguna.
+- Cómo se reporta: Esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: El cierre de la spec (T050 y T060, con `audit.md`, las líneas Verification y `CHANGELOG.md`), el humo del Front (T040) y todo lo de Jefferson (T071 a T074).
 
 ### 2026-11-25 03:30 (Lima) · feat/010-nombre-del-profesor · Columna nombre en la programación docente (T030, T031 y T036)
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
