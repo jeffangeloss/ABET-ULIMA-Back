@@ -41,7 +41,7 @@ FIJAR = ("UPDATE abet.plan_medicion pm SET descripcion_instrumento = %s FROM abe
          " abet.periodo pe WHERE p.pi_id = pm.pi_id AND a.asignatura_id = pm.asignatura_id"
          " AND pe.periodo_id = pm.periodo_id AND p.codigo = %s AND a.codigo = %s AND pe.codigo = %s")
 PLANTILLA = RAIZ / "plantillas" / "R017_ambiental_general.xlsx"
-OM, BP, SIN_CALIFICACIONES = "Oportunidad de mejora.", "Buena práctica.", "Sin calificaciones en esta carga."
+OM, BP, SIN_CALIFICACIONES = "Oportunidad de mejora", "Buena práctica", "Sin calificaciones en esta carga."
 CORRECCION_410 = ("La entrega coincidió con la semana de parciales y de feriado.",
                   "Mover la entrega a la semana 10 y revisar el avance en tutoría.")
 TEXTOS = {
@@ -136,10 +136,19 @@ def _registros() -> dict[str, tuple[str, str]]:
     return dict(_cargas().REGISTROS_DE_PRUEBA["410"])
 
 
-def _parrafos(ctx: Escenario, celda: str) -> list[str]:
+def _bloques(ctx: Escenario, celda: str) -> list[tuple[str, str]]:
+    """Los bloques de un recuadro, separados por una línea vacía, como pares (rótulo, texto).
+
+    Un bloque con tipo trae el rótulo en su primera línea y el texto debajo. Uno sin calificaciones es una sola
+    línea, y su texto queda vacío.
+    """
     hoja = _hoja(ctx)
     assert hoja[celda].data_type == "s", hoja[celda].data_type
-    return hoja[celda].value.split("\n")
+    pares = []
+    for bloque in hoja[celda].value.split("\n\n"):
+        rotulo, _, texto = bloque.partition("\n")
+        pares.append((rotulo, texto))
+    return pares
 
 
 def _tabla_de_frecuencias(ctx: Escenario) -> list[list[Any]]:
@@ -359,35 +368,36 @@ def _no_repetidas(ctx: Escenario) -> None:
 
 # Entonces, US-50
 
-@then(parsers.re(r'(?P<celda>B29|B34) trae como cadena tres párrafos separados por un salto de línea, en este orden'))
-def _tres_parrafos(ctx: Escenario, celda: str, datatable: list[list[str]]) -> None:
-    assert datatable[0] == ["párrafo"]
-    assert _parrafos(ctx, celda) == [fila[0] for fila in datatable[1:]]
+@then(parsers.re(r'(?P<celda>B29|B34) trae como cadena tres bloques separados por una línea vacía, en este orden'))
+def _tres_bloques(ctx: Escenario, celda: str, datatable: list[list[str]]) -> None:
+    assert datatable[0] == ["rótulo", "texto"]
+    assert _bloques(ctx, celda) == [(fila[0], fila[1]) for fila in datatable[1:]]
 
 
-@then("ningún párrafo trae una cifra de logro ni de meta")
+@then("ningún bloque trae una cifra de logro ni de meta")
 def _sin_cifras(ctx: Escenario) -> None:
     for celda in ("B29", "B34"):
-        for parrafo in _parrafos(ctx, celda):
-            resto = re.sub(r"^[0-9]+\.[0-9]+ · ", "", parrafo)
-            assert "%" not in resto and not re.search(r"[0-9]+[,.][0-9]", resto), parrafo
+        for rotulo, _texto in _bloques(ctx, celda):
+            resto = re.sub(r"^PI [0-9]+\.[0-9]+ · ", "", rotulo)
+            assert "%" not in resto and not re.search(r"[0-9]+[,.][0-9]", resto), rotulo
 
 
-@then(parsers.re(r'el (?P<orden>primer|tercer) párrafo de (?P<celda>B29|B34) es (?:la cadena )?«(?P<texto>[^»]+)»'))
-def _parrafo(ctx: Escenario, orden: str, celda: str, texto: str) -> None:
-    assert _parrafos(ctx, celda)[0 if orden == "primer" else 2] == texto
+@then(parsers.re(r'el (?P<orden>primer|tercer) bloque de (?P<celda>B29|B34) tiene el rótulo «(?P<rotulo>[^»]+)» '
+                 r'y el texto «(?P<texto>[^»]+)»'))
+def _bloque(ctx: Escenario, orden: str, celda: str, rotulo: str, texto: str) -> None:
+    assert _bloques(ctx, celda)[0 if orden == "primer" else 2] == (rotulo, texto)
 
 
-@then(parsers.re(r'los párrafos de 5\.1 y 5\.2 empiezan con «(?P<a>[^»]+)» y «(?P<b>[^»]+)»'))
-def _empiezan(ctx: Escenario, a: str, b: str) -> None:
+@then(parsers.re(r'los bloques de 5\.1 y 5\.2 tienen los rótulos «(?P<a>[^»]+)» y «(?P<b>[^»]+)»'))
+def _rotulos(ctx: Escenario, a: str, b: str) -> None:
     for celda in ("B29", "B34"):
-        primero, segundo, _ = _parrafos(ctx, celda)
-        assert primero.startswith(a + " ") and segundo.startswith(b + " "), (primero, segundo)
+        primero, segundo, _ = _bloques(ctx, celda)
+        assert (primero[0], segundo[0]) == (a, b), (primero, segundo)
 
 
-@then(parsers.re(r'el tercer párrafo de B29 y el de B34 son «(?P<texto>[^»]+)»(?: \(propuesta\))?'))
+@then(parsers.re(r'el tercer bloque de B29 y el de B34 son la línea «(?P<texto>[^»]+)» sin texto debajo(?: \(propuesta\))?'))
 def _tercero_en_los_dos(ctx: Escenario, texto: str) -> None:
-    assert _parrafos(ctx, "B29")[2] == _parrafos(ctx, "B34")[2] == texto
+    assert _bloques(ctx, "B29")[2] == _bloques(ctx, "B34")[2] == (texto, "")
 
 
 @then("ningún recuadro trae texto del profesor para 5.3")
@@ -396,7 +406,7 @@ def _sin_texto_de_5_3(ctx: Escenario) -> None:
     for celda in ("B29", "B34"):
         texto = _hoja(ctx)[celda].value
         assert causa not in texto and accion not in texto
-        assert [p for p in texto.split("\n") if p.startswith("5.3")] == [f"5.3 · {SIN_CALIFICACIONES}"]
+        assert [p for p in texto.split("\n\n") if p.startswith("PI 5.3")] == [f"PI 5.3 · {SIN_CALIFICACIONES}"]
     assert ctx.cuenta("mejora_declaracion_pi", "carga_id = %s AND pi_id = (SELECT pi_id FROM abet.carga_columna"
                       " WHERE carga_id = %s AND pi_codigo = '5.3')", ctx.carga_id, ctx.carga_id) == 0
 
@@ -435,7 +445,7 @@ def _alto(ctx: Escenario) -> None:
     hoja = _hoja(ctx)
     for celda, fila, indice in (("B29", 31, 0), ("B34", 36, 1)):
         texto = hoja[celda].value
-        assert [p.split(f"{OM} ", 1)[1] for p in texto.split("\n")] == [
+        assert [p.split("\n", 1)[1] for p in texto.split("\n\n")] == [
             ctx.extras["registros"][pi][indice] for pi in PIS]
         alto = hoja.row_dimensions[fila].height
         assert alto == r17.alto_de_fila_final(r17.lineas_del_recuadro(texto))
@@ -467,11 +477,11 @@ def _sin_formulas(ctx: Escenario) -> None:
                 if celda.data_type == "f"]
 
 
-@then("los párrafos de 5.2 y 5.3 no cambian")
+@then("los bloques de 5.2 y 5.3 no cambian")
 def _no_cambian(ctx: Escenario) -> None:
     registros = _registros()
     for celda, indice in (("B29", 0), ("B34", 1)):
-        assert _parrafos(ctx, celda)[1:] == [f"{pi} · {OM} {registros[pi][indice]}" for pi in ("5.2", "5.3")]
+        assert _bloques(ctx, celda)[1:] == [(f"PI {pi} · {OM}", registros[pi][indice]) for pi in ("5.2", "5.3")]
 
 
 @then("abet.mejora_declaracion conserva la declaración anterior con sus filas de abet.mejora_declaracion_pi")

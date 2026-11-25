@@ -52,10 +52,13 @@ conexión que recibe, sin escribir en la base ni confirmar o deshacer su transac
    generar() lee la constancia, las cifras y la declaración en una sola transacción READ ONLY y REPEATABLE READ,
    así que el libro y su análisis salen de la misma instantánea. Si la conexión ya está dentro de una transacción,
    lee en esa, que es la de quien llama.
-10. Los recuadros B29:I31 y B34:I36 los arman componer_recuadros() (un párrafo por PI con su prefijo sin
-   cifras, BR-R17-04, US-50), lineas_del_recuadro() y alto_de_fila_final() (cabida determinista, tope de
-   409 puntos) y aplicar_recuadros(). El tipo de cada párrafo sale de la foto de la declaración y no del
-   semáforo de hoy, y un PI sin calificaciones lleva «5.3 · Sin calificaciones en esta carga.» (J-40, D-40).
+10. Los recuadros B29:I31 y B34:I36 los arman componer_recuadros() (un bloque por PI, con «PI 5.2 · Oportunidad de
+   mejora» en su propia línea y el texto debajo, sin cifras, BR-R17-04, US-50, y una línea vacía entre bloques),
+   lineas_del_recuadro() y alto_de_fila_final() (cabida determinista, tope de 409 puntos) y aplicar_recuadros(). El
+   tipo de cada bloque sale de la foto de la declaración y no del semáforo de hoy, y un PI sin calificaciones lleva
+   la línea «PI 5.3 · Sin calificaciones en esta carga.» (J-40, D-40).
+11. Con menos de 3 PI, las filas de PI sin uso de los bloques I y II (18 y 19, 25 y 26 con un PI) quedan ocultas, sin
+   borrarlas, y las filas 29 a 31 de las frecuencias nunca se ocultan (BR-R17-02).
 
 El conteo por nivel, la cifra entre paréntesis y el porcentaje sobre el total van en K28:Q31, la
 zona libre que propone plantillas/README.md, y M24 a M26 repiten los conteos de la hoja original.
@@ -336,23 +339,27 @@ def _cabecera(hoja: Worksheet, filas: list[dict[str, Any]], carrera: str) -> Non
 
 
 def componer_recuadros(pis: list[tuple[str, str | None, str, str]]) -> tuple[str, str]:
-    """Compone un párrafo por PI para el recuadro de causas y el de acciones."""
+    """Compone un bloque por PI para el recuadro de causas y el de acciones.
+
+    Un PI con tipo lleva «PI 5.2 · Oportunidad de mejora», el rótulo en su propia línea y el texto debajo. Uno sin
+    calificaciones lleva una sola línea. Una línea vacía separa los bloques.
+    """
     causas = []
     acciones = []
     # El tipo usa el vocabulario de tipo_de_registro(), de la ruta 13 y de ck_mejora_declaracion_pi_tipo (BR-MEJORA-03).
-    rotulos = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora.", "BUENA_PRACTICA": "Buena práctica."}
+    rotulos = {"OPORTUNIDAD_MEJORA": "Oportunidad de mejora", "BUENA_PRACTICA": "Buena práctica"}
     for pi, tipo, causa, accion in pis:
         if tipo is None:
-            parrafo = f"{pi} · Sin calificaciones en esta carga."
-            causas.append(parrafo)
-            acciones.append(parrafo)
+            bloque = f"PI {pi} · Sin calificaciones en esta carga."
+            causas.append(bloque)
+            acciones.append(bloque)
         else:
             if tipo not in rotulos:
                 raise ValueError(f"Tipo de registro desconocido para el PI {pi}: {tipo!r}.")
-            prefijo = f"{pi} · {rotulos[tipo]} "
-            causas.append(prefijo + causa)
-            acciones.append(prefijo + accion)
-    return "\n".join(causas), "\n".join(acciones)
+            encabezado = f"PI {pi} · {rotulos[tipo]}\n"
+            causas.append(encabezado + causa)
+            acciones.append(encabezado + accion)
+    return "\n\n".join(causas), "\n\n".join(acciones)
 
 
 def lineas_del_recuadro(texto: str, ancho: float = 208.6) -> int:
@@ -408,6 +415,10 @@ def _bloques(hoja: Worksheet, filas: list[dict[str, Any]], plan: dict[str, dict[
         _escribir(hoja, f"E{bloque_ii}", _fraccion(fila["pct_logro_sobre_calificados"]), "0.0%")
         _escribir(hoja, f"G{bloque_ii}", _fraccion(fila["meta_logro_pct"]))
         _escribir(hoja, f"H{bloque_ii}", _plan_de_accion(fila))
+    # Las filas de PI que la carga no usa se ocultan, sin borrarlas ni tocar las combinadas (BR-R17-02, 2026-11-24).
+    for indice in range(len(filas), TOPE_DE_PI):
+        hoja.row_dimensions[FILAS_DEL_BLOQUE_I[indice]].hidden = True
+        hoja.row_dimensions[FILAS_DEL_BLOQUE_II[indice]].hidden = True
 
 
 def _plan_de_accion(fila: dict[str, Any]) -> str | None:

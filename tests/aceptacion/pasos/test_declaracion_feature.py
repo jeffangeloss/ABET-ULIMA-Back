@@ -995,16 +995,16 @@ def _anterior_vigente(ctx: Escenario) -> None:
 def _r17_anterior(ctx: Escenario) -> None:
     b29, b34 = _b29_y_b34(ctx)
     assert (b29, b34) == ctx.extras["anterior"]
-    assert b29.split("\n")[0] == f"5.1 · Oportunidad de mejora. {REGISTROS['410']['5.1'][0]}"
+    assert b29.split("\n\n")[0] == f"PI 5.1 · Oportunidad de mejora\n{REGISTROS['410']['5.1'][0]}"
 
 
 @then("el R-17 de esa carga toma el texto nuevo de 5.1")
 def _r17_nuevo(ctx: Escenario) -> None:
     b29, b34 = _b29_y_b34(ctx)
-    assert b29.split("\n")[0] == f"5.1 · Oportunidad de mejora. {CORRECCION_410[0]}"
-    assert b34.split("\n")[0] == f"5.1 · Oportunidad de mejora. {CORRECCION_410[1]}"
+    assert b29.split("\n\n")[0] == f"PI 5.1 · Oportunidad de mejora\n{CORRECCION_410[0]}"
+    assert b34.split("\n\n")[0] == f"PI 5.1 · Oportunidad de mejora\n{CORRECCION_410[1]}"
     anterior_a, anterior_b = ctx.extras["anterior"]
-    assert b29.split("\n")[1:] == anterior_a.split("\n")[1:] and b34.split("\n")[1:] == anterior_b.split("\n")[1:]
+    assert b29.split("\n\n")[1:] == anterior_a.split("\n\n")[1:] and b34.split("\n\n")[1:] == anterior_b.split("\n\n")[1:]
 
 
 @then(parsers.re(r'GET /api/cargas/\{carga_id\}/mejora responde los tres indicadores declarados con estado "PROPUESTA"'))
