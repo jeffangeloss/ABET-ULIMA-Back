@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: las pruebas de privacidad del nombre (T035). Antes, la columna nombre de la programación docente (T030, T031 y T036)
+- **Último cambio**: la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
 - **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
-- **Siguiente paso**: T040, T050 y T060 y las tareas de Jefferson T070 a T074; la demo de Química sigue con la coordinación
+- **Siguiente paso**: T040, T050 y T060 y las tareas de Jefferson T070 a T074
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 04:10 (Lima) · feat/010-nombre-del-profesor · Corrección de la prueba de abet_app y suite completa
+- Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `tests/aceptacion/pasos/test_nombre_en_la_base_feature.py` compara el nombre de docente410 antes y después del UPDATE que `abet_app` intenta, en lugar de exigir que sea nulo.
+- Por qué: La suite completa dio 1 falla en 2765 pruebas, porque desde T022 las semillas dan nombre a docente410 y el paso suponía el nombre nulo. La entrada «Nombres inventados en las semillas y prueba de repositorio (T022)» no corrió ese módulo.
+- Lo que debe hacer, cómo se probó: `uv run --frozen --no-build python -m pytest -q -p no:cacheprovider tests/aceptacion/pasos/test_nombre_en_la_base_feature.py` da 15 pruebas en verde. La suite completa antes de la corrección dio 2764 en verde, 18 omitidas y la falla corregida, y `bash db/pruebas/correr_pruebas.sh` termina en «RESULTADO: todo pasó».
+- Lo que no debe hacer, cómo se probó: Si el UPDATE de `abet_app` cambiara el nombre, la comparación fallaría, porque el nombre nuevo ya no sería el de antes ni el de la prueba. El UPDATE y el INSERT siguen recibiendo 42501 y la base queda igual.
+- Correcciones: La entrada «Profesores en D10, cabida de la fila 10 y consulta informativa (T023, T032 a T034)» dice que `tests/test_r17.py` tiene 100 pruebas, y tiene 85. La entrada de la columna nombre de la programación cuenta 35 pruebas de `programacion_docente.feature`, que son las del archivo de la spec 006 sin cambio. Ninguna de las dos cambia el resultado.
+- Cómo se reporta: Esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: El cierre de la spec (T050 y T060), el humo del Front (T040) y las tareas de Jefferson (T070 a T074).
 
 ### 2026-11-25 03:50 (Lima) · feat/010-nombre-del-profesor · El nombre sale solo en D10, pruebas de privacidad (T035)
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.

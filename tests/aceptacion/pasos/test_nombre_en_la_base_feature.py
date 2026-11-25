@@ -224,9 +224,12 @@ def _consulta_sin_error(ctx: Escenario) -> None:
 @then(parsers.re(r'un UPDATE de nombre de abet_app responde con el SQLSTATE (?P<codigo>[0-9]{5})'))
 def _app_no_actualiza_el_nombre(ctx: Escenario, codigo: str) -> None:
     assert codigo == SIN_PERMISO
+    consulta = "SELECT nombre FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'"
+    antes = ctx.uno(consulta)
     assert _sqlstate(ctx.extras["app_010"], "UPDATE acceso.usuario_autorizado SET nombre = 'Profesor Inventado Uno'"
                      " WHERE correo = 'docente410@example.invalid'") == codigo
-    assert ctx.uno("SELECT nombre IS NULL FROM acceso.usuario_autorizado WHERE correo = 'docente410@example.invalid'")
+    # El nombre de las semillas (T022) o su ausencia queda como estaba.
+    assert ctx.uno(consulta) == antes != "Profesor Inventado Uno"
 
 
 @then(parsers.re(r'un INSERT con nombre de abet_app responde con el SQLSTATE (?P<codigo>[0-9]{5})'))
