@@ -7,7 +7,9 @@ Subcomandos.
   indicator, PI) y su motivo, leídos de la constancia que guarda la base. Nunca imprime un nombre,
   un acceso ni el valor leído de una celda (BR-CARGA-17).
 - r17 --carga --correo --carpeta escribe en la carpeta constancia_<carga_id>.json, el cuerpo de
-  BR-R17-10, y el R-17 de una carga PUBLICADA (BR-R17-01 a BR-R17-09).
+  BR-R17-10, y el R-17 de una carga PUBLICADA (BR-R17-01 a BR-R17-09). Una carga PUBLICADA sin su
+  declaración vigente completa termina con el mensaje de DeclaracionPendiente, el mismo de la API, sin
+  escribir ningún archivo (BR-R17-12, spec 005, US-49).
 
 Los dos preguntan antes a app/permisos.py, el único dueño de BR-ACCESO-07 y BR-ACCESO-08. Si el
 usuario no tiene la sección a su cargo, o si el usuario, la sección o la carga no existen, el
@@ -30,7 +32,9 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sys
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -160,19 +164,29 @@ def _subcomando_r17(conexion: psycopg.Connection[Any], opciones: argparse.Namesp
     usuario_id = _uno(conexion, _USUARIO, opciones.correo)
     if not permisos.puede_leer(conexion, usuario_id, seccion_id):
         raise _SinAlcance()
-    opciones.carpeta.mkdir(parents=True, exist_ok=True)
-    cuerpo = constancia.armar(conexion, opciones.carga)
-    ruta_constancia = opciones.carpeta / f"constancia_{opciones.carga}.json"
-    ruta_constancia.write_text(json.dumps(cuerpo, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Constancia: {ruta_constancia}")
-    try:
-        ruta = r17.generar(conexion, opciones.carga, opciones.carpeta)
-    except r17.CargaNoPublicada:
-        print("R-17: no se genera, porque la carga no está publicada.")
-        return NO_PUBLICADA
-    except r17.SeccionSuperaPlantilla:
-        print("R-17: no se genera, porque la sección no cabe en la plantilla.")
-        return NO_PUBLICADA
+    # El R-17 se arma primero en una carpeta temporal, así que una carga sin su declaración vigente completa
+    # (BR-R17-12) termina con el mensaje de la API sin escribir ningún archivo, ni la constancia.
+    with tempfile.TemporaryDirectory(prefix="abet_r17_") as temporal:
+        try:
+            armado: Path | None = r17.generar(conexion, opciones.carga, Path(temporal))
+            motivo = None
+        except r17.DeclaracionPendiente as pendiente:
+            print(pendiente.mensaje)
+            return NO_PUBLICADA
+        except r17.CargaNoPublicada:
+            armado, motivo = None, "R-17: no se genera, porque la carga no está publicada."
+        except r17.SeccionSuperaPlantilla:
+            armado, motivo = None, "R-17: no se genera, porque la sección no cabe en la plantilla."
+        opciones.carpeta.mkdir(parents=True, exist_ok=True)
+        cuerpo = constancia.armar(conexion, opciones.carga)
+        ruta_constancia = opciones.carpeta / f"constancia_{opciones.carga}.json"
+        ruta_constancia.write_text(json.dumps(cuerpo, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"Constancia: {ruta_constancia}")
+        if armado is None:
+            print(motivo)
+            return NO_PUBLICADA
+        ruta = opciones.carpeta / armado.name
+        shutil.move(armado, ruta)
     print(f"R-17: {ruta}")
     print(f"Logro sobre calificados: {_logros(ruta)}")
     return PUBLICADA

@@ -85,3 +85,45 @@ def test_en_un_export_de_texto_la_columna_queda_con_celdas_vacias(arnes: ModuleT
 def test_un_numero_de_filas_que_no_es_el_del_export_detiene_la_copia(arnes: ModuleType, generador: ModuleType) -> None:
     with pytest.raises(AssertionError, match="trae 11 filas de datos y no 12"):
         arnes.armar_archivo(_Escenario(generador), f'una copia de "{CORRECTO}" con la columna 5.3 vacía en sus 12 filas')
+
+
+# Regla «con la columna X.Y vacía en las filas N y M» y su forma de tres filas (T012 y FR-017 de la spec 005).
+# Las filas son las del export, desde la 2, como en la regla de una sola fila. Los niveles de 5.3 de la 410 son
+# 2 = 3, 3 = 4, 4 = 3, 5 = 3, 6 = 2, 7 = 4, 8 = 3, 9 = 1, 10 = 4, 11 = 3 y 12 = 2.
+NIVELES_5_3 = [3, 4, 3, 3, 2, 4, 3, 1, 4, 3, 2]
+
+
+@pytest.mark.parametrize(("filas", "vacias"), [("las filas 2 y 6", (2, 6)), ("las filas 2, 3 y 9", (2, 3, 9))])
+def test_la_columna_queda_vacia_solo_en_las_filas_nombradas(arnes: ModuleType, generador: ModuleType, filas: str,
+                                                          vacias: tuple[int, ...]) -> None:
+    escenario = _Escenario(generador)
+    contenido, nombre = arnes.armar_archivo(escenario, f'una copia de "{CORRECTO}" con la columna 5.3 vacía en {filas}')
+
+    copia = generador.leer_export(contenido)
+    original = generador.leer_export(escenario.de_inventados(CORRECTO))
+    assert nombre == CORRECTO
+    assert _columna(original, "5.3") == NIVELES_5_3
+    assert _columna(copia, "5.3") == [None if fila in vacias else nivel for fila, nivel in zip(FILAS, NIVELES_5_3)]
+    for pi in ("5.1", "5.2", "Username"):
+        assert _columna(copia, pi) == _columna(original, pi)
+
+
+def test_las_filas_2_y_6_dan_7_de_9_y_las_2_3_y_9_dan_6_de_8_en_el_lector(arnes: ModuleType,
+                                                                          generador: ModuleType) -> None:
+    # Las cifras de la tabla de la spec 005, con nivel esperado 3, antes de que la base cuente nada.
+    for cambio, esperado in (("las filas 2 y 6", (7, 9)), ("las filas 2, 3 y 9", (6, 8))):
+        contenido, nombre = arnes.armar_archivo(_Escenario(generador),
+                                                f'una copia de "{CORRECTO}" con la columna 5.3 vacía en {cambio}')
+        leido = leer(contenido, nombre_archivo=nombre)
+        posicion = [c.pi_codigo for c in leido.columnas_pi].index("5.3")
+        niveles = [fila.valores_pi[posicion] for fila in leido.filas]
+        calificados = [n for n in niveles if n is not None]
+        assert (sum(1 for n in calificados if n >= 3), len(calificados)) == esperado
+
+
+@pytest.mark.parametrize("cambio", ["con la columna 5.3 vacía en las filas 2 y 13", "con la columna 5.3 vacía en las filas 6 y 6",
+                                    "con la columna 5.3 vacía en las filas 1, 3 y 9"])
+def test_una_fila_fuera_del_export_o_repetida_detiene_la_copia(arnes: ModuleType, generador: ModuleType,
+                                                               cambio: str) -> None:
+    with pytest.raises(AssertionError, match="fuera de las filas de datos|se repite"):
+        arnes.armar_archivo(_Escenario(generador), f'una copia de "{CORRECTO}" {cambio}')

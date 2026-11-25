@@ -134,8 +134,11 @@ CUBIERTO_POR_VITEST = {
         VITEST_APP + "la cabecera ofrece una sola vez «Ver mis logros por SO», que abre P6, y P6 vuelve a P2 con «Volver»",
         VITEST_APP + "P4 de una carga publicada ofrece también el enlace a P6",
     ],
+    # Cambia el 2026-11-24 (spec 005, J-32). El título del escenario de la spec 004 no cambia, pero P6 ya no ofrece el R-17
+    # y lleva a P4 con «Ver la carga de la sección N de A». La prueba del Front conserva el cuerpo de sus aserciones y su
+    # título, antes «ofrece el R-17 solo de cada sección publicada, con el carga_id de su carga», dice ahora lo que prueba.
     "P6 ofrece el R-17 de cada sección publicada": [
-        VITEST_P6 + "ofrece el R-17 solo de cada sección publicada, con el carga_id de su carga",
+        VITEST_P6 + "ofrece Ver la carga solo de cada sección publicada, con el carga_id de su carga, y ningún enlace al R-17",
     ],
     "P6 no pinta lo que no se mide": [
         VITEST_P6 + "escribe lo que no se mide y no dibuja ninguna barra de 0 %",
@@ -287,6 +290,7 @@ def _pide_y_descarga(ctx: Escenario, periodo: str, cuales: str) -> None:
         assert len(cargas) == 3, cargas
     libros = {}
     for carga_id in cargas:
+        ctx.declarada_antes_del_r17(carga_id)
         descarga = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
         assert descarga.status_code == 200, descarga.text
         libros[carga_id] = load_workbook(io.BytesIO(descarga.content), data_only=True)[r17.HOJA]
@@ -519,8 +523,8 @@ def _conservan_filas(ctx: Escenario, lista: str) -> None:
 @then('las consultas de control Q01 a Q14 devuelven 0 filas')
 def _q01_a_q14(ctx: Escenario) -> None:
     consultas = _conftest(ctx).consultas_de_control()
-    # Q18 a Q21 llegan con la spec 008 (FR-021), y este escenario nombra Q01 a Q14.
-    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    # Q16 y Q17 llegan con la spec 005 y Q18 a Q21 con la spec 008 (FR-021), y este escenario nombra Q01 a Q14.
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(16, 22))]
     for nombre, consulta in ((n, c) for n, c in consultas.items() if n <= "Q14"):
         assert ctx.filas(consulta) == [], f"{nombre} devuelve filas"
 

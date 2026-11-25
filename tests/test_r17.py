@@ -199,6 +199,10 @@ def _cargas_de_la_410(conexion: psycopg.Connection) -> dict[str, int]:
         nombre_archivo="gc_SINTETICO_20262_450020_307_fullgc_2026-11-04.csv",
         filas=[fila(2, "99000461", (3,)), fila(3, "99000462", (4,))],
     )
+    # Desde US-49 el R-17 sale solo con la declaración vigente completa (T037).
+    for clave in ("correcta", "un_pi", "dos_so", "cuatro_pi", "142", "143", "sin_evidencia", "sin_reglas", "en_la_meta",
+                  "hostil", "texto"):
+        CARGAS.declarar(conexion, ids[clave])
     return ids
 
 
@@ -215,6 +219,7 @@ def base_con_error(base_desechable: ModuleType) -> Iterator[tuple[Any, dict[str,
         with psycopg.connect(base.conexion) as conexion:
             reemplazada = CARGAS.preparar_410(conexion)
             ids = {"reemplazada": reemplazada, "con_error": CARGAS.con_error(conexion, reemplazada)}
+            CARGAS.declarar(conexion, ids["con_error"])
         yield base, ids
 
 
@@ -241,6 +246,8 @@ def base_aprobada(base_desechable: ModuleType) -> Iterator[tuple[Any, dict[str, 
                 conjunto="R-PRUEBA-INCOMPLETO",
                 filas=CARGAS.filas_inventadas(3, desde=99000012, niveles=(3, 3, 3)),
             )
+            for carga_id in ids.values():
+                CARGAS.declarar(conexion, carga_id)
         yield base, ids
 
 
@@ -259,6 +266,7 @@ def base_mutada(base_desechable: ModuleType) -> Iterator[tuple[Any, int]]:
                       "AND p.pi_id = m.pi_id AND e.codigo = %s AND p.codigo = %s")
             conexion.execute(cambio, ("CALIFICADO", 1, carga_id, "99000001", "5.1"))
             conexion.execute(cambio, ("SIN_EVIDENCIA", None, carga_id, "99000002", "5.2"))
+            CARGAS.declarar(conexion, carga_id)
         yield base, carga_id
 
 
@@ -461,15 +469,21 @@ def test_br_r17_03_una_medicion_sin_evidencia_sale_del_denominador_y_no_del_tota
 
 # BR-R17-04: valores sin fórmulas en las filas fijas de la plantilla, con el logotipo.
 
-def test_br_r17_04_ninguna_celda_trae_formulas_ni_ref_y_los_recuadros_quedan_vacios(r17_correcto: Path) -> None:
+def test_br_r17_04_ninguna_celda_del_libro_es_una_formula_ni_trae_ref_y_los_recuadros_salen_de_la_declaracion(
+    r17_correcto: Path,
+) -> None:
+    # Desde la spec 005 (US-50) el invariante es «ninguna celda del libro es una fórmula», porque un texto del profesor
+    # que empieza por «=» queda como cadena detrás de su prefijo.
     libro = _libro(r17_correcto)
     celdas = [celda for hoja in libro.worksheets for fila in hoja.iter_rows() for celda in fila]
     assert not [celda.coordinate for celda in celdas if celda.data_type == "f"]
-    assert not [texto for texto in _textos(libro) if texto.startswith("=") or "#REF!" in texto]
+    assert not [texto for texto in _textos(libro) if "#REF!" in texto]
     assert not [nombre for nombre, datos in _partes(r17_correcto).items() if b"<f>" in datos or b"#REF!" in datos]
     hoja = libro[HOJA]
+    assert hoja["B29"].value.split("\n") == [f"{pi} · Oportunidad de mejora. Causa de prueba del PI {pi}." for pi in PIS_410]
+    assert hoja["B34"].value.split("\n") == [f"{pi} · Oportunidad de mejora. Acción de prueba del PI {pi}." for pi in PIS_410]
     for rango in ("B29:I31", "B34:I36"):
-        assert all(celda.value is None for fila in hoja[rango] for celda in fila), rango
+        assert all(celda.value is None for fila in hoja[rango] for celda in fila if celda.coordinate not in ("B29", "B34"))
 
 
 def test_br_r17_04_el_porcentaje_del_bloque_ii_no_queda_sobre_un_relleno_automatico(r17_correcto: Path) -> None:
@@ -802,6 +816,7 @@ def r17_con_descripciones(base_desechable: ModuleType, tmp_path_factory: pytest.
                     "abet.periodo pe WHERE p.pi_id = pm.pi_id AND a.asignatura_id = pm.asignatura_id "
                     "AND pe.periodo_id = pm.periodo_id AND p.codigo = %s AND a.codigo = '450002' AND pe.codigo = '2026-2'",
                     (texto, pi))
+            CARGAS.declarar(conexion, carga_id)
         return _generar(base, carga_id, tmp_path_factory.mktemp("r17_descripciones"))
 
 
@@ -824,3 +839,170 @@ def test_br_r17_11_una_descripcion_que_parece_formula_queda_como_cadena(r17_con_
     assert hoja["G18"].value == FORMULA_5_2
     assert hoja["G18"].data_type == "s"
     assert not [nombre for nombre, datos in _partes(r17_con_descripciones).items() if b"<f>" in datos]
+
+
+# BR-R17-12 y BR-R17-04: R-17 solo con la declaración vigente completa, con los recuadros desde ella (spec 005,
+# US-49 y US-50, T033).
+
+PENDIENTE = "Complete la causa y la acción de cada indicador en la página de la carga antes de descargar el R-17."
+TEXTOS_415 = {
+    "5.1": ("La entrega coincidió con la semana de parciales.", "Mover la entrega a la semana 10."),
+    "5.2": ("=SUMA(1;2)", "Publicar la rúbrica en la semana 8."),
+    "5.3": ("El trabajo en equipo se evaluó solo al final.", "Revisar el trabajo en equipo en dos avances."),
+}
+
+
+class _CursorQueAnota(psycopg.Cursor):
+    """Cursor que anota cada sentencia de la conexión, para ver la transacción con que lee r17.generar()."""
+
+    anotadas: list[str] = []
+
+    def execute(self, query: Any, params: Any = None, **opciones: Any) -> Any:  # type: ignore[override]
+        _CursorQueAnota.anotadas.append(str(query).strip())
+        return super().execute(query, params, **opciones)
+
+
+@pytest.fixture(scope="module")
+def base_pendiente(base_desechable: ModuleType) -> Iterator[tuple[Any, dict[str, int]]]:
+    """Base con cargas PUBLICADAS en cada estado de la declaración: sin nada, con borrador, incompleta y completa."""
+    with base_desechable.abierta(datos_2026_2=False, despues=[CARGAS.SINTETICOS, base_desechable.DATOS_2026_2]) as base:
+        with psycopg.connect(base.conexion) as conexion:
+            ids = {"sin_nada": CARGAS.preparar_410(conexion)}
+
+            def publicar(numero: str, niveles: tuple[int | None, ...], desde: int) -> int:
+                return CARGAS.publicar(
+                    conexion, asignatura="450002", numero=numero, pis=list(PIS_410),
+                    nombre_archivo=f"export_450002_{numero}.xlsx", hoja=f"gc_SINTETICO_20262_450002_{numero}_f",
+                    filas=CARGAS.filas_inventadas(3, desde=desde, niveles=niveles))
+
+            ids["solo_borrador"] = publicar("411", (2, 2, 2), 99000951)
+            conexion.execute("INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por) "
+                             "SELECT carga_id, 1, subida_por FROM abet.carga WHERE carga_id = %s",
+                             (ids["solo_borrador"],))
+            conexion.execute("INSERT INTO abet.mejora_borrador_pi (carga_id, pi_id, causa, accion) "
+                             "SELECT carga_id, pi_id, 'Una causa inventada.', 'Una acción inventada.' "
+                             "FROM abet.carga_columna WHERE carga_id = %s", (ids["solo_borrador"],))
+            ids["incompleta"] = publicar("412", (2, 2, 2), 99000961)
+            CARGAS.declarar(conexion, ids["incompleta"], pis=["5.1", "5.2"])
+            ids["vigente_incompleta"] = publicar("413", (2, 2, 2), 99000971)
+            CARGAS.declarar(conexion, ids["vigente_incompleta"])
+            CARGAS.declarar(conexion, ids["vigente_incompleta"], pis=["5.1"])
+            ids["completa"] = publicar("415", (2, 2, 2), 99000981)
+            CARGAS.declarar(conexion, ids["completa"], TEXTOS_415)
+            # J-40. La foto de 5.3 dice VERDE y BUENA_PRACTICA aunque la vista lo dé hoy en ROJO, como tras bajar la meta.
+            conexion.execute(
+                "UPDATE abet.mejora_declaracion_pi d SET tipo = 'BUENA_PRACTICA', semaforo = 'VERDE' "
+                "FROM abet.carga_columna cc WHERE cc.carga_id = d.carga_id AND cc.pi_id = d.pi_id "
+                "AND d.carga_id = %s AND cc.pi_codigo = '5.3'", (ids["completa"],))
+            ids["sin_notas_en_5_3"] = publicar("416", (3, 3, None), 99000991)
+            CARGAS.declarar(conexion, ids["sin_notas_en_5_3"])
+            ids["sin_calificados"] = CARGAS.publicar(
+                conexion, asignatura="450020", numero="308", pis=["1.1"], nombre_archivo="export_450020_308.xlsx",
+                hoja="gc_SINTETICO_20262_450020_308_f", filas=CARGAS.filas_inventadas(2, desde=99000471, niveles=(None,)))
+            CARGAS.declarar(conexion, ids["sin_calificados"])
+        yield base, ids
+
+
+@pytest.mark.parametrize("caso", ["sin_nada", "solo_borrador", "incompleta", "vigente_incompleta"])
+def test_br_r17_12_sin_la_declaracion_vigente_completa_no_hay_r17_ni_archivo(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path, caso: str,
+) -> None:
+    base, ids = base_pendiente
+    with pytest.raises(r17.DeclaracionPendiente) as error:
+        _generar(base, ids[caso], tmp_path)
+    assert isinstance(error.value, r17.R17NoDisponible)
+    assert (error.value.mensaje, error.value.codigo_http) == (PENDIENTE, 409)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_br_r17_12_una_base_anterior_a_v1_15_da_el_409_de_la_declaracion_y_no_un_500(
+    base_desechable: ModuleType, tmp_path: Path,
+) -> None:
+    """Sin abet.mejora_declaracion la carga no puede tener declaración: DeclaracionPendiente, no UndefinedTable."""
+    with base_desechable.abierta(hasta=(1, 14), datos_2026_2=False,
+                                 despues=[CARGAS.SINTETICOS, base_desechable.DATOS_2026_2]) as anterior:
+        with psycopg.connect(anterior.conexion) as conexion:
+            carga_id = CARGAS.preparar_410(conexion)
+            assert conexion.execute("SELECT to_regclass('abet.mejora_declaracion')").fetchone() == (None,)
+        with pytest.raises(r17.DeclaracionPendiente) as error:
+            _generar(anterior, carga_id, tmp_path)
+    assert (error.value.mensaje, error.value.codigo_http) == (PENDIENTE, 409)
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_br_r17_12_una_carga_rechazada_sin_declaracion_da_el_409_de_no_publicada(
+    base_410: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_410
+    assert _consulta(base, "SELECT count(*) FROM abet.mejora_declaracion WHERE carga_id = %s", (ids["sin_5_2"],)) == [(0,)]
+    with pytest.raises(r17.CargaNoPublicada):
+        _generar(base, ids["sin_5_2"], tmp_path)
+
+
+def test_br_r17_12_una_carga_sin_ningun_pi_calificado_sale_con_la_declaracion_sin_filas(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    assert _consulta(base, "SELECT count(*) FROM abet.mejora_declaracion_pi WHERE carga_id = %s",
+                     (ids["sin_calificados"],)) == [(0,)]
+    hoja = _libro(_generar(base, ids["sin_calificados"], tmp_path))[HOJA]
+    assert (hoja["B29"].value, hoja["B34"].value) == ("1.1 · Sin calificaciones en esta carga.",) * 2
+
+
+def test_br_r17_04_los_recuadros_traen_un_parrafo_por_pi_con_el_tipo_de_la_foto(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    hoja = _libro(_generar(base, ids["completa"], tmp_path))[HOJA]
+    assert hoja["B29"].value.split("\n") == [
+        "5.1 · Oportunidad de mejora. La entrega coincidió con la semana de parciales.",
+        "5.2 · Oportunidad de mejora. =SUMA(1;2)",
+        "5.3 · Buena práctica. El trabajo en equipo se evaluó solo al final.",
+    ]
+    assert hoja["B34"].value.split("\n") == [
+        "5.1 · Oportunidad de mejora. Mover la entrega a la semana 10.",
+        "5.2 · Oportunidad de mejora. Publicar la rúbrica en la semana 8.",
+        "5.3 · Buena práctica. Revisar el trabajo en equipo en dos avances.",
+    ]
+    # Las cifras siguen saliendo de la vista, que da 5.3 en 0 %, y el prefijo no las repite (J-40).
+    assert hoja["E26"].value == 0 and hoja["H26"].value == NO_LOGRADO
+    for celda in ("B29", "B34"):
+        assert hoja[celda].data_type == "s"
+        alineacion = hoja[celda].alignment
+        assert (alineacion.wrap_text, alineacion.vertical, alineacion.horizontal) == (True, "top", "left")
+    assert hoja.row_dimensions[31].height == r17.alto_de_fila_final(r17.lineas_del_recuadro(hoja["B29"].value))
+    assert hoja.row_dimensions[36].height == r17.alto_de_fila_final(r17.lineas_del_recuadro(hoja["B34"].value))
+
+
+def test_br_r17_04_un_pi_sin_calificaciones_se_nombra_sin_analisis(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    hoja = _libro(_generar(base, ids["sin_notas_en_5_3"], tmp_path))[HOJA]
+    for celda in ("B29", "B34"):
+        assert hoja[celda].value.split("\n")[-1] == "5.3 · Sin calificaciones en esta carga."
+        assert "del PI 5.3" not in hoja[celda].value
+
+
+def test_br_r17_04_ninguna_celda_del_libro_es_una_formula_aunque_el_profesor_escriba_una(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    ruta = _generar(base, ids["completa"], tmp_path)
+    libro = _libro(ruta)
+    assert not [celda.coordinate for hoja in libro.worksheets for fila in hoja.iter_rows() for celda in fila
+                if celda.data_type == "f"]
+    assert not [nombre for nombre, datos in _partes(ruta).items() if b"<f>" in datos]
+
+
+def test_br_r17_12_generar_lee_en_una_sola_transaccion_read_only_y_repeatable_read(
+    base_pendiente: tuple[Any, dict[str, int]], tmp_path: Path,
+) -> None:
+    base, ids = base_pendiente
+    _CursorQueAnota.anotadas = []
+    with psycopg.connect(base.conexion_app, cursor_factory=_CursorQueAnota) as conexion:
+        r17.generar(conexion, ids["completa"], tmp_path)
+        assert conexion.info.transaction_status == psycopg.pq.TransactionStatus.IDLE
+    anotadas = _CursorQueAnota.anotadas
+    assert anotadas[0] == "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+    assert any("abet.mejora_declaracion" in sentencia for sentencia in anotadas[1:])

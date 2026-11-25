@@ -1206,6 +1206,23 @@ $q$),
  SELECT a.carga_id FROM abet.carga a
  WHERE a.estado = 'REEMPLAZADA' AND NOT EXISTS (SELECT 1 FROM abet.carga n WHERE n.reemplaza_carga_id = a.carga_id)
 $q$),
+('Q16', 'causa o acción del análisis por indicador con un código de 8 dígitos o un correo (spec 005)', $q$
+ SELECT 'mejora_borrador_pi' AS tabla, b.carga_id, b.pi_id FROM abet.mejora_borrador_pi b
+ WHERE b.causa ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+    OR b.accion ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+ UNION ALL
+ SELECT 'mejora_declaracion_pi', d.declaracion_id, d.pi_id FROM abet.mejora_declaracion_pi d
+ WHERE d.causa ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+    OR d.accion ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+$q$),
+('Q17', 'declaración vigente de una carga PUBLICADA sin la fila de un PI con calificados (spec 005)', $q$
+ SELECT d.carga_id, p.codigo AS pi FROM abet.mejora_declaracion d
+ JOIN abet.carga c ON c.carga_id = d.carga_id AND c.estado = 'PUBLICADA'
+ JOIN abet.carga_columna cc ON cc.carga_id = d.carga_id JOIN abet.pi p ON p.pi_id = cc.pi_id
+ WHERE d.declaracion_id = (SELECT max(v.declaracion_id) FROM abet.mejora_declaracion v WHERE v.carga_id = d.carga_id)
+   AND EXISTS (SELECT 1 FROM abet.medicion m WHERE m.carga_columna_id = cc.carga_columna_id AND m.estado_evidencia = 'CALIFICADO')
+   AND NOT EXISTS (SELECT 1 FROM abet.mejora_declaracion_pi dp WHERE dp.declaracion_id = d.declaracion_id AND dp.pi_id = cc.pi_id)
+$q$),
 ('Q18', 'curso con plan de medición de dos carreras en el mismo periodo (spec 008)', $q$
  SELECT a.codigo AS asignatura, pe.codigo AS periodo FROM abet.plan_medicion pm
  JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
@@ -1310,6 +1327,23 @@ INSERT INTO acceso.usuario_autorizado (correo, rol) VALUES ('coordinacion.sin.al
 -- Q21 (spec 008): la 411 de 450002 con un curso de Blackboard que declara otra sección.
 UPDATE abet.seccion s SET curso_blackboard = 'SINTETICO_20262_450002_499'
 FROM abet.asignatura a WHERE a.asignatura_id = s.asignatura_id AND a.codigo = '450002' AND s.numero = '411';
+-- Q16 y Q17 (spec 005): la 410 de 450002 declara solo 5.1, aunque 5.2 y 5.3 tienen calificados, y su borrador trae
+-- un código en 5.1, que la transacción deja pasar al quitar ck_mejora_borrador_pi_sin_codigos.
+ALTER TABLE abet.mejora_borrador_pi DROP CONSTRAINT ck_mejora_borrador_pi_sin_codigos;
+INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por)
+SELECT c.carga_id, 1, u.usuario_id
+FROM abet.carga c JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002', acceso.usuario_autorizado u
+WHERE s.numero = '410' AND c.estado = 'PUBLICADA' AND u.correo = 'docente410@example.invalid';
+INSERT INTO abet.mejora_borrador_pi (carga_id, pi_id, causa, accion)
+SELECT b.carga_id, cc.pi_id, '99000004 no entregó', 'Mover la entrega a la semana 10.'
+FROM abet.mejora_borrador b JOIN abet.carga_columna cc ON cc.carga_id = b.carga_id AND cc.pi_codigo = '5.1';
+INSERT INTO abet.mejora_declaracion (carga_id, version_borrador, declarada_por)
+SELECT carga_id, version, actualizado_por FROM abet.mejora_borrador;
+INSERT INTO abet.mejora_declaracion_pi (declaracion_id, pi_id, carga_id, tipo, causa, accion, logro_pct, meta_pct, semaforo)
+SELECT d.declaracion_id, cc.pi_id, d.carga_id, 'OPORTUNIDAD_MEJORA', 'La entrega coincidió con la semana de parciales.',
+       'Mover la entrega a la semana 10.', 63.6, 80.0, 'ROJO'
+FROM abet.mejora_declaracion d JOIN abet.carga_columna cc ON cc.carga_id = d.carga_id AND cc.pi_codigo = '5.1';
 -- Q09: la conversión pasa a DEFINIDO sin ninguna fila.
 UPDATE abet.parametro_valor SET estado = 'DEFINIDO' WHERE clave = 'CONVERSION_NIVEL_0_1';
 -- Q11: el conjunto aprobado vuelve a dejar CORTE_ROJO PENDIENTE.
@@ -1321,7 +1355,8 @@ DECLARE
     q   record;
     v_n bigint;
 BEGIN
-    FOR q IN SELECT * FROM control_cero WHERE id IN ('Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q18', 'Q19', 'Q20', 'Q21')
+    FOR q IN SELECT * FROM control_cero WHERE id IN ('Q06', 'Q07', 'Q08', 'Q09', 'Q10', 'Q11', 'Q12', 'Q13', 'Q14', 'Q16', 'Q17',
+                                                   'Q18', 'Q19', 'Q20', 'Q21')
                ORDER BY id LOOP
         EXECUTE 'SELECT count(*) FROM (' || q.consulta || ') AS t' INTO v_n;
         IF v_n = 0 THEN
@@ -1361,8 +1396,52 @@ BEGIN
     RAISE NOTICE 'ok Q15 el filtro de Q04 sobre acceso solo encuentra usuario_autorizado.correo';
 END $$;
 
--- db/plataforma/neon/controles_neon.sql debe traer Q01 a Q14 y Q18 a Q21 iguales a las de arriba, salvo espacios, cada una sola
--- entre su \echo y su \set qNN :ROW_COUNT, y su cierre debe sumar las dieciocho (T025 y FR-021 de la spec 008). Las órdenes de psql que fijan
+-- Q16 y Q17 con una declaración sana (spec 005, US-53, escenario 7). La 410 de 450002 declara sus tres PI con textos de
+-- prueba y las dos dan 0 filas. Sin la fila de 5.3 de la declaración vigente, Q17 devuelve una sola fila con la carga
+-- y el PI 5.3, sin ningún texto del profesor. Todo ocurre en una transacción que se deshace.
+BEGIN;
+INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por)
+SELECT c.carga_id, 1, u.usuario_id
+FROM abet.carga c JOIN abet.seccion s ON s.seccion_id = c.seccion_id
+JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id AND a.codigo = '450002', acceso.usuario_autorizado u
+WHERE s.numero = '410' AND c.estado = 'PUBLICADA' AND u.correo = 'docente410@example.invalid';
+INSERT INTO abet.mejora_borrador_pi (carga_id, pi_id, causa, accion)
+SELECT b.carga_id, cc.pi_id, 'La entrega coincidió con la semana de parciales.', 'Publicar la rúbrica en la semana 8.'
+FROM abet.mejora_borrador b JOIN abet.carga_columna cc ON cc.carga_id = b.carga_id;
+INSERT INTO abet.mejora_declaracion (carga_id, version_borrador, declarada_por)
+SELECT carga_id, version, actualizado_por FROM abet.mejora_borrador;
+INSERT INTO abet.mejora_declaracion_pi (declaracion_id, pi_id, carga_id, tipo, causa, accion, logro_pct, meta_pct, semaforo)
+SELECT d.declaracion_id, b.pi_id, d.carga_id, 'OPORTUNIDAD_MEJORA', b.causa, b.accion, 63.6, 80.0, 'ROJO'
+FROM abet.mejora_declaracion d JOIN abet.mejora_borrador_pi b ON b.carga_id = d.carga_id;
+DO $$
+DECLARE
+    q16      text := (SELECT consulta FROM control_cero WHERE id = 'Q16');
+    q17      text := (SELECT consulta FROM control_cero WHERE id = 'Q17');
+    v_n      bigint;
+    v_filas  text;
+BEGIN
+    IF (SELECT count(*) FROM abet.mejora_declaracion_pi) <> 3 THEN
+        RAISE EXCEPTION 'FALLA Q16 y Q17: la declaración de prueba de la 410 debía tener tres filas';
+    END IF;
+    EXECUTE 'SELECT (SELECT count(*) FROM (' || q16 || ') AS a) + (SELECT count(*) FROM (' || q17 || ') AS b)' INTO v_n;
+    IF v_n <> 0 THEN
+        RAISE EXCEPTION 'FALLA Q16 y Q17: con la declaración sana de la 410 devuelven % filas', v_n;
+    END IF;
+    DELETE FROM abet.mejora_declaracion_pi dp USING abet.pi p WHERE p.pi_id = dp.pi_id AND p.codigo = '5.3';
+    EXECUTE 'SELECT string_agg(c.numero || '':'' || t.pi, '','') FROM (' || q17 || ') AS t'
+            || ' JOIN abet.carga ca ON ca.carga_id = t.carga_id JOIN abet.seccion c ON c.seccion_id = ca.seccion_id'
+       INTO v_filas;
+    IF v_filas IS DISTINCT FROM '410:5.3' THEN
+        RAISE EXCEPTION 'FALLA Q17: sin la fila de 5.3 debía devolver solo la 410 con el PI 5.3 y devolvió %', v_filas;
+    END IF;
+    RAISE NOTICE 'ok Q16 y Q17 en 0 filas con la 410 declarada, y Q17 ve el PI 5.3 que falta en la declaración vigente';
+END $$;
+ROLLBACK;
+
+-- db/plataforma/neon/controles_neon.sql debe traer Q01 a Q14 y Q16 a Q21 iguales a las de arriba, salvo espacios, cada una sola
+-- entre su \echo y su \set qNN :ROW_COUNT, y su cierre debe sumar las veinte (T025 y FR-021 de la spec 008, T039 de la
+-- spec 005). Q16 y Q17 van dentro de un \if que las corre solo con V1_15, con un \gset que lo decide y un \set q16 0 y un
+-- \set q17 0 en el \else, que son las únicas órdenes de más. Las órdenes de psql que fijan
 -- variables en ese archivo son solo \set ON_ERROR_STOP 1, un \set qNN :ROW_COUNT por consulta y el \gset del cierre,
 -- sin repetirse. Así, un \set qNN de más, un \set que no lee :ROW_COUNT, un control que falta, una condición agregada
 -- a una consulta o una consulta comentada rompen la prueba. correr_pruebas.sh pasa la ruta del archivo en la variable
@@ -1389,6 +1468,9 @@ BEGIN
         SELECT '\set ON_ERROR_STOP 1' AS orden
         UNION ALL SELECT '\set ' || lower(id) || ' :ROW_COUNT' FROM control_cero
         UNION ALL SELECT '\gset'
+        UNION ALL SELECT '\gset'
+        UNION ALL SELECT '\set q16 0'
+        UNION ALL SELECT '\set q17 0'
     )
     SELECT (SELECT string_agg(orden, ' | ' ORDER BY orden COLLATE "C")
               FROM (SELECT orden FROM archivo EXCEPT ALL SELECT orden FROM esperado) AS s),
@@ -1409,9 +1491,9 @@ BEGIN
     END LOOP;
     SELECT '(' || string_agg(':' || lower(id), ' + ' ORDER BY id) || ') = 0' INTO v_suma FROM control_cero;
     IF position('SELECT ' || v_suma || ' AS controles_en_cero \gset' IN regexp_replace(v_crudo, '\s+', ' ', 'g')) = 0 THEN
-        RAISE EXCEPTION 'FALLA controles_neon.sql: su cierre no suma las dieciocho consultas como %', v_suma;
+        RAISE EXCEPTION 'FALLA controles_neon.sql: su cierre no suma las veinte consultas como %', v_suma;
     END IF;
-    RAISE NOTICE 'ok controles_neon.sql trae Q01 a Q14 y Q18 a Q21 iguales a las de pruebas.sql, cada una con su único \set qNN :ROW_COUNT, solo las órdenes esperadas que fijan variables y el cierre que las suma todas';
+    RAISE NOTICE 'ok controles_neon.sql trae Q01 a Q14 y Q16 a Q21 iguales a las de pruebas.sql, cada una con su único \set qNN :ROW_COUNT, solo las órdenes esperadas que fijan variables y el cierre que las suma todas';
 END $$;
 \else
 \echo '  aviso: sin -v controles_neon=<ruta> no se compara controles_neon.sql con estas consultas'

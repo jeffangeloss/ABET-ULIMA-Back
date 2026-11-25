@@ -397,6 +397,8 @@ def _pide(ctx: Escenario, rutas: str, numero: str | None) -> None:
         elif "{carga}" in camino:
             assert ctx.carga_id is not None, "el escenario no tiene «esa carga»"
             camino = camino.replace("{carga}", str(ctx.carga_id))
+        if camino.endswith("/r17.xlsx"):
+            ctx.declarada_antes_del_r17(int(camino.split("/")[3]))
         respuestas[ruta] = ctx.pedir(camino)
     ctx.extras["respuestas"] = respuestas
 

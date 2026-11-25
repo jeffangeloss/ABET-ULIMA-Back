@@ -21,6 +21,7 @@ ella.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,10 @@ R17 = "specs/001-mvp-carga-r17/aceptacion/r17_constancia.feature"
 EXPORTS = "specs/003-exports-blackboard/aceptacion/exports_blackboard.feature"
 RESULTADOS = "specs/004-reportes-docente/aceptacion/resultados.feature"
 ALCANCE = "specs/004-reportes-docente/aceptacion/alcance_y_privacidad.feature"
+# Los cuatro archivos de la spec 005, con las historias que spec.md asigna a cada uno (T012 de su tasks.md).
+HISTORIAS_DE_LA_SPEC_005 = {"semaforo": (45, 46), "declaracion": (47, 48, 49, 53, 54), "r17_desde_la_base": (50, 51),
+                            "navegacion": (52,)}
+SPEC_005 = tuple(f"specs/005-oportunidades-de-mejora/aceptacion/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_005)
 PROGRAMACION = "specs/006-programacion-docente/aceptacion/programacion_docente.feature"
 SIN_DOCENTE = "specs/006-programacion-docente/aceptacion/secciones_sin_docente.feature"
 SIGUIENTE_PASO = "specs/007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
@@ -90,6 +95,30 @@ class _EscenariosDeAlcance:
     """Funciones que scenarios() arma para alcance_y_privacidad.feature (spec 004) con la ruta relativa a la raíz."""
 
     scenarios(ALCANCE)
+
+
+class _EscenariosDelSemaforo:
+    """Funciones que scenarios() arma para semaforo.feature (spec 005) con la ruta relativa a la raíz."""
+
+    scenarios(SPEC_005[0])
+
+
+class _EscenariosDeLaDeclaracion:
+    """Funciones que scenarios() arma para declaracion.feature (spec 005) con la ruta relativa a la raíz."""
+
+    scenarios(SPEC_005[1])
+
+
+class _EscenariosDelR17DesdeLaBase:
+    """Funciones que scenarios() arma para r17_desde_la_base.feature (spec 005) con la ruta relativa a la raíz."""
+
+    scenarios(SPEC_005[2])
+
+
+class _EscenariosDeLaNavegacion:
+    """Funciones que scenarios() arma para navegacion.feature (spec 005) con la ruta relativa a la raíz."""
+
+    scenarios(SPEC_005[3])
 
 
 class _EscenariosDeProgramacion:
@@ -208,13 +237,15 @@ class _EscenariosDeMatrizCumplimiento:
 
 _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports,
             RESULTADOS: _EscenariosDeResultados, ALCANCE: _EscenariosDeAlcance,
+            **dict(zip(SPEC_005, (_EscenariosDelSemaforo, _EscenariosDeLaDeclaracion, _EscenariosDelR17DesdeLaBase,
+                                  _EscenariosDeLaNavegacion), strict=True)),
             PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente,
             SIGUIENTE_PASO: _EscenariosDelSiguientePaso, ANTES_DE_SUBIR: _EscenariosDeAntesDeSubir,
             QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance,
             **{ruta: clase for ruta, clase in zip(SPEC_008, (_EscenariosDeCatalogoIndustrial, _EscenariosDeAlcanceCoordinacion, _EscenariosDePeriodoElegido, _EscenariosDeExportsCapacitacion, _EscenariosDeCargaQuimica, _EscenariosDeR17Industrial, _EscenariosDeAvanceDelCurso, _EscenariosDeSistemaVisual, _EscenariosDeEnsayoYConciliacion, _EscenariosDeCapacitacionEnDevelop, _EscenariosDeGuiaYPrivacidad, _EscenariosDeMatrizCumplimiento), strict=True)}}
 _POR_ARCHIVO = pytest.mark.parametrize("ruta", list(_ARMADAS),
                                        ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
-                                            "alcance_y_privacidad", "programacion_docente", "secciones_sin_docente",
+                                            "alcance_y_privacidad", *HISTORIAS_DE_LA_SPEC_005, "programacion_docente", "secciones_sin_docente",
                                             "siguiente_paso", "antes_de_subir", "que_corregir", "rotulos_por_cuenta",
                                             "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
@@ -408,6 +439,54 @@ def test_cada_escenario_de_la_spec_004_lleva_su_etiqueta_y_la_pantalla_va_a_vite
         assert "spec004" in escenario.tags, f"{escenario.name}: {sorted(escenario.tags)}"
         pantalla = escenario.name.startswith("P6 ") or any("P6" in paso.name for paso in escenario.steps)
         assert pantalla == ("delegado_a_vitest" in escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+
+
+def test_la_spec_005_trae_85_escenarios_con_118_casos_y_23_van_a_vitest() -> None:
+    # T003 y T012 de specs/005-oportunidades-de-mejora/tasks.md, con los cuatro .feature definitivos del 2026-11-24.
+    # Cada escenario lleva @spec005, @corte1 y una sola historia de las que spec.md asigna a su archivo. Un escenario
+    # que nombra una pantalla, de P1 a P7, lleva @delegado_a_vitest y ninguno más, porque lo prueba Vitest en el Front.
+    # Los Antecedentes de los tres archivos con base piden V1_15, la migración de la spec (FR-004 de la spec 008).
+    escenarios, casos, delegados, historias = 0, 0, 0, set()
+    for nombre, ruta in zip(HISTORIAS_DE_LA_SPEC_005, SPEC_005, strict=True):
+        propias = {f"US-{n}" for n in HISTORIAS_DE_LA_SPEC_005[nombre]}
+        feature = _feature(ruta)
+        for escenario in feature.scenarios.values():
+            escenarios += 1
+            casos += sum(len(t.examples) for t in escenario.examples) if escenario.templated else 1
+            assert {"spec005", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            [historia] = [t for t in escenario.tags if re.fullmatch(r"US-\d{2}", t)]
+            assert historia in propias, f"{nombre}: «{escenario.name}» lleva {historia}"
+            historias.add(historia)
+            pantalla = bool(_PANTALLA.search(escenario.name)) or any(_PANTALLA.search(p.name) for p in escenario.steps)
+            assert pantalla == ("delegado_a_vitest" in escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            delegados += pantalla
+        if nombre != "navegacion":
+            [base] = [p.name for p in feature.background.steps if p.name.startswith("una base PostgreSQL 18")]
+            assert "con las migraciones V1_01 a V1_15" in base, f"{nombre}: {base}"
+        assert "V1_12" not in " ".join(e.name for e in feature.scenarios.values()), nombre
+    assert (escenarios, casos, delegados) == (85, 118, 23)
+    assert historias == {f"US-{n}" for n in range(45, 55)}
+
+
+def _titulos_enlazados() -> set[str]:
+    """Títulos que algún módulo de pasos enlaza con @scenario(FEATURE, «título»), leídos del código sin importarlo."""
+    titulos = set()
+    for modulo in (RAIZ / "tests" / "aceptacion" / "pasos").glob("test_*.py"):
+        for nodo in ast.walk(ast.parse(modulo.read_text(encoding="utf-8"))):
+            if (isinstance(nodo, ast.Call) and getattr(nodo.func, "id", None) == "scenario" and len(nodo.args) >= 2
+                    and isinstance(nodo.args[1], ast.Constant)):
+                titulos.add(nodo.args[1].value)
+    return titulos
+
+
+def test_cada_escenario_de_la_spec_005_sin_vitest_tiene_su_paso_de_pytest_bdd() -> None:
+    # T038 de specs/005-oportunidades-de-mejora/tasks.md. Un escenario sin @delegado_a_vitest que ningún módulo enlaza
+    # con @scenario no corre en ninguna parte, así que esta prueba lo nombra antes de que quede sin probar.
+    enlazados = _titulos_enlazados()
+    sin_enlace = [f"{ruta.rsplit('/', 1)[1]}: {escenario.name}" for ruta in SPEC_005
+                  for escenario in _feature(ruta).scenarios.values()
+                  if "delegado_a_vitest" not in escenario.tags and escenario.name not in enlazados]
+    assert sin_enlace == []
 
 
 def test_la_spec_006_trae_19_escenarios_con_29_casos_y_ninguno_va_a_vitest() -> None:

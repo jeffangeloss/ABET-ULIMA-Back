@@ -23,7 +23,9 @@ declara, así que un seccion_id en la consulta deja la respuesta igual.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any
 
 import psycopg
@@ -32,14 +34,14 @@ from fastapi.responses import JSONResponse
 from psycopg.rows import dict_row
 
 from abet_carga import constancia
-from abet_carga.resultados import cifra, en_meta
+from abet_carga.resultados import cifra, en_meta, redactar_hallazgo, semaforo, tipo_de_registro
 from app import permisos, sesion
 from app.configuracion import PERIODO, PERIODO_MAL_FORMADO, ajustes_de, conexion, error
 
 # BR-ACCESO-10. El router exige la sesión, así que ninguna ruta suya responde sin ella aunque la olvide.
 router = APIRouter(dependencies=[Depends(sesion.usuario_actual)])
 
-_SOLO_LECTURA = "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
+SOLO_LECTURA = "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"
 
 # Por sección visible, los PI de su plan, como GET /api/secciones, y su carga PUBLICADA con su conjunto de reglas.
 _SECCIONES = """
@@ -116,7 +118,7 @@ def listar(
 def leer(conexion: psycopg.Connection[Any], usuario_id: int, periodo: str) -> dict[str, Any]:
     """Cuerpo de la ruta 12 para el usuario y el periodo, leído en una sola instantánea de solo lectura."""
     with conexion.transaction():
-        conexion.execute(_SOLO_LECTURA)
+        conexion.execute(SOLO_LECTURA)
         visibles = permisos.secciones_visibles(conexion, usuario_id, periodo)
         ids = [visible.seccion_id for visible in visibles]
         detalle = {fila["seccion_id"]: fila for fila in _filas(conexion, _SECCIONES, secciones=ids)}
@@ -135,8 +137,13 @@ def _filas(conexion: psycopg.Connection[Any], consulta: str, **parametros: objec
         return cursor.execute(consulta, parametros).fetchall()
 
 
-def _indicadores(conexion: psycopg.Connection[Any], cargas: list[int]) -> dict[int, _Carga]:
-    """Indicadores de cada carga, con las cifras de la vista y el catálogo del plan, en el orden del SO y del PI."""
+def _indicadores(conexion: psycopg.Connection[Any], cargas: list[int],
+                 armar: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]] | None = None) -> dict[int, _Carga]:
+    """Indicadores de cada carga, con las cifras de la vista y el catálogo del plan, en el orden del SO y del PI.
+
+    armar arma cada objeto desde la fila del plan y la de la vista, y sin él vale _indicador(), el de la ruta 12.
+    """
+    armar = armar or _indicador
     if not cargas:
         return {}
     cifras = {(fila["carga_id"], fila["pi"]): fila for fila in _filas(conexion, _INDICADORES, cargas=cargas)}
@@ -147,7 +154,7 @@ def _indicadores(conexion: psycopg.Connection[Any], cargas: list[int]) -> dict[i
             raise RuntimeError(f"La vista no trae el PI {plan['pi']} del plan de la carga {plan['carga_id']}.")
         carga = por_carga[plan["carga_id"]]
         carga.provisional = carga.provisional or bool(fila["provisional"])
-        carga.indicadores.append(_indicador(plan, fila))
+        carga.indicadores.append(armar(plan, fila))
     # La vista y el plan se leen en la misma instantánea y con las mismas uniones, así que coinciden fila por fila.
     if cifras:
         raise RuntimeError(f"Filas de la vista sin su PI en el plan de la carga: {sorted(cifras)}")
@@ -190,4 +197,59 @@ def _seccion(visible: permisos.SeccionVisible, detalle: dict[str, Any], indicado
         # provisional es el de la vista, igual en todas las filas de la carga porque depende de su conjunto de reglas.
         "provisional": carga.provisional if carga is not None else None,
         "indicadores": carga.indicadores if carga is not None else [],
+    }
+
+
+# Ruta 13 de la spec 005 (BR-MEJORA-01 a BR-MEJORA-05), que la ruta de app/rutas/cargas.py lee dentro de la misma
+# instantánea en que comprueba el alcance.
+
+# El estado de la carga, su conjunto de reglas con sus claves en PENDIENTE, la marca provisional con la expresión de la
+# vista y la meta y el corte rojo DEFINIDOS de abet.parametro_valor, en porcentaje como meta_logro_pct de la vista.
+_CABECERA = """
+SELECT c.estado, cr.version AS conjunto_reglas, cr.estado AS conjunto_reglas_estado,
+       COALESCE(array_agg(pv.clave) FILTER (WHERE pv.estado = 'PENDIENTE'), '{}') AS pendientes,
+       cr.estado <> 'APROBADO'
+       OR COUNT(CASE WHEN pv.clave IN ('NIVEL_ESPERADO', 'META_LOGRO', 'TRATO_SIN_EVIDENCIA')
+                      AND pv.estado = 'DEFINIDO' THEN 1 END) < 3 AS provisional,
+       ROUND(100.0 * MAX(pv.valor_numero) FILTER (WHERE pv.clave = 'META_LOGRO' AND pv.estado = 'DEFINIDO'), 1)
+           AS meta_pct,
+       ROUND(100.0 * MAX(pv.valor_numero) FILTER (WHERE pv.clave = 'CORTE_ROJO' AND pv.estado = 'DEFINIDO'), 1)
+           AS corte_rojo_pct
+FROM abet.carga c
+JOIN abet.conjunto_reglas cr      ON cr.conjunto_reglas_id = c.conjunto_reglas_id
+LEFT JOIN abet.parametro_valor pv ON pv.conjunto_reglas_id = cr.conjunto_reglas_id
+WHERE c.carga_id = %(carga)s
+GROUP BY c.estado, cr.version, cr.estado
+"""
+
+
+def indicadores_de_la_carga(conexion: psycopg.Connection[Any], carga_id: int) -> dict[str, Any] | None:
+    """Cuerpo de la ruta 13 de una carga PUBLICADA, o None si la carga no existe o no está PUBLICADA.
+
+    Se llama dentro de la transacción READ ONLY y REPEATABLE READ de la ruta, así que la cabecera, las cifras de la
+    vista y el plan salen de la misma instantánea (BR-MEJORA-01).
+    """
+    [cabecera] = _filas(conexion, _CABECERA, carga=carga_id) or [None]
+    if cabecera is None or cabecera["estado"] != "PUBLICADA":
+        return None
+    corte: Decimal | None = cabecera["corte_rojo_pct"]
+
+    def armar(plan: dict[str, Any], fila: dict[str, Any]) -> dict[str, Any]:
+        logro, meta = fila["pct_logro_sobre_calificados"], fila["meta_logro_pct"]
+        color = semaforo(logro, meta, corte)
+        return {**_indicador(plan, fila), "semaforo": color,
+                "hallazgo": redactar_hallazgo(plan["pi"], logro, meta, fila["nivel_esperado"]),
+                "tipo_registro": tipo_de_registro(color)}
+
+    carga = _indicadores(conexion, [carga_id], armar).get(carga_id, _Carga())
+    return {
+        "carga_id": carga_id,
+        "estado": cabecera["estado"],
+        "provisional": bool(cabecera["provisional"]),
+        "conjunto_reglas": cabecera["conjunto_reglas"],
+        "conjunto_reglas_estado": cabecera["conjunto_reglas_estado"],
+        "parametros_pendientes": constancia.en_orden(cabecera["pendientes"]),
+        "meta_pct": cifra(cabecera["meta_pct"]),
+        "corte_rojo_pct": cifra(corte),
+        "indicadores": carga.indicadores,
     }

@@ -102,6 +102,20 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-CARGA-18 | carga-export | 6 | Ninguna | Con escenario |
 | BR-CARGA-19 | carga-export | 11 | Ninguna | Con escenario |
 | BR-CARGA-20 | carga-export | 8 | Ninguna | Con escenario |
+| BR-MEJORA-01 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-02 | mejora | 4 | Ninguna | Con escenario |
+| BR-MEJORA-03 | mejora | 2 | Ninguna | Con escenario |
+| BR-MEJORA-04 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-05 | mejora | 6 | Ninguna | Con escenario |
+| BR-MEJORA-06 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-07 | mejora | 4 | Ninguna | Con escenario |
+| BR-MEJORA-08 | mejora | 2 | Ninguna | Con escenario |
+| BR-MEJORA-09 | mejora | 5 | Ninguna | Con escenario |
+| BR-MEJORA-10 | mejora | 5 | Ninguna | Con escenario |
+| BR-MEJORA-11 | mejora | 3 | Ninguna | Con escenario |
+| BR-MEJORA-12 | mejora | 1 | Ninguna | Con escenario |
+| BR-MEJORA-13 | mejora | 6 | Ninguna | Con escenario |
+| BR-MEJORA-14 | mejora | 8 | Ninguna | Con escenario |
 | BR-PERIODO-01 | periodo | 1 | tests/test_api_resultados.py | Con escenario |
 | BR-PERIODO-02 | periodo | 6 | Ninguna | Con escenario |
 | BR-PERIODO-03 | periodo | 4 | Ninguna | Con escenario |
@@ -111,7 +125,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-R17-01 | r17 | 3 | Ninguna | Con escenario |
 | BR-R17-02 | r17 | 5 | test_br_r17_02_m24_a_m26_siguen_el_corte_fijo_con_reglas_aprobadas, tests/test_r17.py | Con escenario |
 | BR-R17-03 | r17 | 3 | Ninguna | Con escenario |
-| BR-R17-04 | r17 | 1 | Ninguna | Con escenario |
+| BR-R17-04 | r17 | 9 | Ninguna | Con escenario |
 | BR-R17-05 | r17 | 2 | Ninguna | Con escenario |
 | BR-R17-06 | r17 | 3 | test_br_r17_06_el_r17_no_deja_que_el_navegador_adivine_su_tipo, tests/test_api_cargas.py | Con escenario |
 | BR-R17-07 | r17 | 2 | Ninguna | Con escenario |
@@ -119,6 +133,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | BR-R17-09 | r17 | 2 | Ninguna | Con escenario |
 | BR-R17-10 | r17 | 7 | Ninguna | Con escenario |
 | BR-R17-11 | r17 | 4 | tests/test_r17.py, tests/test_descripcion_instrumento.py | Con escenario |
+| BR-R17-12 | r17 | 8 | Ninguna | Con escenario |
 | BR-R17-13 | r17 | 8 | Ninguna | Con escenario |
 | BR-RESULTADOS-01 | resultados | 5 | tests/test_api_resultados.py | Con escenario |
 | BR-RESULTADOS-02 | resultados | 4 | tests/test_api_resultados.py | Con escenario |
@@ -145,7 +160,7 @@ Traza que genera `scripts/matriz_cumplimiento.py` (US-90, T055). No se edita a m
 | US-59 | siguiente_paso.feature | «Ver por qué se rechazó» abre P4 de la carga rechazada más reciente | Vitest tests/pantallas/MisSecciones.test.tsx › abre P4 de la primera rechazada de esa sección en el orden de la ruta 8 | Con prueba |
 | US-59 | siguiente_paso.feature | Si la ruta 8 falla, P2 sigue con la ruta 4 y no muestra error | Vitest tests/pantallas/MisSecciones.test.tsx › conserva las secciones y permite subir si la ruta 8 da 500 | Con prueba |
 | US-59 | siguiente_paso.feature | Sin secciones asignadas, P2 dice a quién acudir y no pide la ruta 8 | Vitest tests/pantallas/MisSecciones.test.tsx › sin secciones muestra un texto y no una lista vacía | Con prueba |
-| US-59 | siguiente_paso.feature | La coordinación no recibe las líneas del profesor | Vitest tests/pantallas/MisSecciones.test.tsx › el coordinador no ve Subir export y sí el resultado y la descarga del R-17 publicada | Con prueba |
+| US-59 | siguiente_paso.feature | La coordinación no recibe las líneas del profesor | Vitest tests/pantallas/MisSecciones.test.tsx › el coordinador no ve Subir export, ve Ver resultado y P2 ya no ofrece Descargar R-17 | Con prueba |
 | US-60 | antes_de_subir.feature | P3 lista antes del campo de archivo lo que el profesor debe tener listo | Vitest tests/pantallas/SubirExport.test.tsx › US-60: en $modo, Antes de subir presenta las cuatro líneas en orden antes del campo de archivo | Con prueba |
 | US-60 | antes_de_subir.feature | La primera línea nombra los PI de la sección elegida | Vitest tests/pantallas/SubirExport.test.tsx › US-60: la primera línea usa los PI de la sección y dice $nombres | Con prueba |
 | US-60 | antes_de_subir.feature | El apartado sale solo del plan y no lee el archivo | Vitest tests/pantallas/SubirExport.test.tsx › US-60: elegir un archivo conserva el apartado del plan y no envía peticiones hasta Subir | Con prueba |

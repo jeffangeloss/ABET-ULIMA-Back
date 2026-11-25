@@ -60,7 +60,7 @@ from app.configuracion import (
     error,
     registrar_falla,
 )
-from app.rutas import avance, cargas, periodos, resultados, secciones, sesion
+from app.rutas import avance, cargas, mejora, periodos, resultados, secciones, sesion
 
 __all__ = ["Ajustes", "ConfiguracionDeLaApi", "app", "crear_app"]
 _GENERICOS = {404: "La ruta no existe.", 405: "El método no se admite en esta ruta."}
@@ -104,7 +104,7 @@ def crear_app(ajustes: Ajustes | None = None) -> FastAPI:
     aplicacion.add_exception_handler(StarletteHTTPException, _http)
     aplicacion.add_exception_handler(RequestValidationError, _validacion)
     aplicacion.middleware("http")(_sin_trazas)
-    for modulo in (sesion, secciones, cargas, resultados, periodos, avance):
+    for modulo in (sesion, secciones, cargas, mejora, resultados, periodos, avance):
         aplicacion.include_router(modulo.router, prefix="/api")
     return aplicacion
 

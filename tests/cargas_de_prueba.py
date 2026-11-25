@@ -15,6 +15,11 @@ reemplaza con el conjunto inventado R-PRUEBA-APROBADO del caso A03 de pruebas.sq
 rechazar() registran cargas nuevas de cualquier asignatura y sección del plan. Los códigos son
 inventados, de 99000000 a 99999999, y los correos terminan en @example.invalid.
 
+Para la spec 005 (T037, FR-017), conjunto_semaforo() registra R-PRUEBA-SEMAFORO, APROBADO y completo, con
+META_LOGRO 0,80, NIVEL_ESPERADO 3 y CORTE_ROJO 0,75, cada uno cambiable, y declarar() registra y declara la
+causa y la acción de prueba de cada PI con calificados de una carga PUBLICADA, como la ruta 16, porque desde
+US-49 el R-17 sale solo con la declaración vigente completa.
+
 Para la spec 006, base_de_partida_006() siembra la base de partida de la programación docente, sin
 secciones ni profesores, y entorno_de_programacion() y correr_programacion() corren
 db/herramientas/cargar_programacion.py como proceso aparte contra una base desechable, siempre con las
@@ -30,6 +35,7 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import psycopg
 
@@ -41,6 +47,7 @@ HOJA_410 = "gc_SINTETICO_20262_450002_410_f"
 PERIODO = "2026-2"
 BORRADOR = "R-2026-BORRADOR"
 APROBADO = "R-PRUEBA-APROBADO"
+SEMAFORO = "R-PRUEBA-SEMAFORO"
 
 
 @dataclass(frozen=True)
@@ -135,12 +142,15 @@ def preparar_410(conexion: psycopg.Connection) -> int:
 
 def conjunto_aprobado(
     conexion: psycopg.Connection, version: str = APROBADO, *, completo: bool = True, aprobado: bool = True,
+    meta_logro: float | None = 0.70, nivel_esperado: int | None = 2, corte_rojo: float | None = 0.50,
 ) -> None:
     """Conjunto de reglas inventado con los valores del caso A03 de db/pruebas/pruebas.sql.
 
     Con completo falso deja TRATO_SIN_EVIDENCIA en PENDIENTE, así que el R-17 sigue provisional
     aunque el conjunto esté aprobado. Con aprobado falso el conjunto queda en BORRADOR con los cinco
-    parámetros DEFINIDOS, y el R-17 también sigue provisional.
+    parámetros DEFINIDOS, y el R-17 también sigue provisional. meta_logro, nivel_esperado y corte_rojo
+    cambian sus tres valores, y None deja ese parámetro en PENDIENTE (spec 005, R-PRUEBA-SEMAFORO con
+    0,80, 3 y 0,75).
     """
     estado, por, fecha = ("APROBADO", "Comité de prueba", "2026-10-01") if aprobado else ("BORRADOR", None, None)
     conexion.execute(
@@ -149,10 +159,13 @@ def conjunto_aprobado(
         (version, estado, por, fecha),
     )
     trato = ("DEFINIDO", None, "SE_EXCLUYE_DEL_DENOMINADOR") if completo else ("PENDIENTE", None, None)
+    def numero(valor: float | None) -> tuple[str, float | None, None]:
+        return ("DEFINIDO" if valor is not None else "PENDIENTE", valor, None)
+
     valores = [
-        ("META_LOGRO", "DEFINIDO", 0.70, None),
-        ("NIVEL_ESPERADO", "DEFINIDO", 2, None),
-        ("CORTE_ROJO", "DEFINIDO", 0.50, None),
+        ("META_LOGRO", *numero(meta_logro)),
+        ("NIVEL_ESPERADO", *numero(nivel_esperado)),
+        ("CORTE_ROJO", *numero(corte_rojo)),
         ("CONVERSION_NIVEL_0_1", "DEFINIDO", None, None),
         ("TRATO_SIN_EVIDENCIA", *trato),
     ]
@@ -168,6 +181,17 @@ def conjunto_aprobado(
             "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
             (nivel, valor, version),
         )
+
+
+def conjunto_semaforo(conexion: psycopg.Connection, version: str = SEMAFORO, **cambios: float | int | None) -> None:
+    """R-PRUEBA-SEMAFORO de la spec 005, APROBADO y completo, con META_LOGRO 0,80, NIVEL_ESPERADO 3 y CORTE_ROJO 0,75.
+
+    cambios reemplaza meta_logro, nivel_esperado o corte_rojo, y None deja ese parámetro en PENDIENTE.
+    """
+    valores: dict[str, Any] = {"meta_logro": 0.80, "nivel_esperado": 3, "corte_rojo": 0.75}
+    desconocidos = set(cambios) - set(valores)
+    assert not desconocidos, f"R-PRUEBA-SEMAFORO no tiene {sorted(desconocidos)}"
+    conjunto_aprobado(conexion, version, **{**valores, **cambios})
 
 
 def conjunto_pendiente(conexion: psycopg.Connection, version: str) -> None:
@@ -278,6 +302,92 @@ def aprobar(conexion: psycopg.Connection, anterior: int) -> int:
     """Reemplaza la carga con el mismo archivo y el conjunto R-PRUEBA-APROBADO, como el caso A03."""
     conjunto_aprobado(conexion)
     return reemplazar(conexion, anterior, conjunto=APROBADO)
+
+
+# Los registros de prueba de declaracion.feature y r17_desde_la_base.feature, inventados y sin datos de estudiantes.
+REGISTROS_DE_PRUEBA = {
+    "410": {
+        "5.1": ("La entrega coincidió con la semana de parciales.",
+                "Mover la entrega a la semana 10 y revisar el avance en clase."),
+        "5.2": ("Los grupos no recibieron la rúbrica antes de la entrega.", "Publicar la rúbrica en la semana 8."),
+        "5.3": ("El trabajo en equipo se evaluó solo al final.", "Revisar el trabajo en equipo en dos avances."),
+    },
+    "412": {
+        "5.1": ("Los grupos presentaron avances semanales en clase.", "Mantener las revisiones semanales del avance."),
+        "5.2": ("La entrega coincidió con la semana de parciales.",
+                "Mover la entrega a la semana 10 y revisar el avance en clase."),
+        "5.3": ("Los roles del equipo rotaron en cada entrega.", "Compartir la rotación de roles con las otras secciones."),
+    },
+}
+
+
+def textos_de_prueba(pi: str) -> tuple[str, str]:
+    """Causa y acción inventadas del PI, sin códigos ni correos, que declarar() usa cuando no recibe otras."""
+    return f"Causa de prueba del PI {pi}.", f"Acción de prueba del PI {pi}."
+
+
+def declarar(
+    conexion: psycopg.Connection,
+    carga_id: int,
+    textos: dict[str, tuple[str, str]] | None = None,
+    *,
+    pis: Sequence[str] | None = None,
+    correo: str | None = None,
+) -> int:
+    """Registra y declara la causa y la acción de cada PI con calificados de una carga PUBLICADA (T037, FR-017).
+
+    Hace lo que harían las rutas 15 y 16 con la conexión del dueño de la base: sube la versión del borrador, guarda en él
+    los textos de cada PI, escribe una declaración nueva, que pasa a ser la vigente, y una fila por PI con el tipo y la
+    foto del logro, la meta y el semáforo de la ruta 13 (J-40). textos da (causa, acción) por PI, y un PI que no trae
+    usa textos_de_prueba(). Un PI sin calificados no lleva fila aunque textos lo nombre (D-40). pis limita la declaración a esos PI, para probar una declaración incompleta. Un PI SIN_DATO
+    con calificados, que la ruta 16 no deja declarar, queda como OPORTUNIDAD_MEJORA con la foto nula, que la base
+    admite. Devuelve el declaracion_id.
+    """
+    from app.rutas.resultados import indicadores_de_la_carga
+
+    with conexion.transaction():
+        cuerpo = indicadores_de_la_carga(conexion, carga_id)
+        assert cuerpo is not None, f"la carga {carga_id} no está PUBLICADA"
+        calificados = [i for i in cuerpo["indicadores"] if i["calificados"] > 0]
+        if pis is not None:
+            assert set(pis) <= {i["pi"] for i in calificados}, pis
+            calificados = [i for i in calificados if i["pi"] in pis]
+        textos = textos or {}
+        assert set(textos) <= {i["pi"] for i in cuerpo["indicadores"]}, f"textos de PI que la carga no mide: {sorted(textos)}"
+        autor = (usuario(conexion, correo) if correo else
+                 int(uno(conexion, "SELECT coalesce(c.subida_por, (SELECT min(usuario_id) FROM acceso.usuario_autorizado))"
+                         " FROM abet.carga c WHERE c.carga_id = %s", (carga_id,))))
+        version = int(uno(
+            conexion,
+            "INSERT INTO abet.mejora_borrador (carga_id, version, actualizado_por) VALUES (%s, 1, %s) "
+            "ON CONFLICT (carga_id) DO UPDATE SET version = abet.mejora_borrador.version + 1, actualizado_en = now(), "
+            "actualizado_por = EXCLUDED.actualizado_por RETURNING version",
+            (carga_id, autor),
+        ))
+        declaracion_id = int(uno(
+            conexion,
+            "INSERT INTO abet.mejora_declaracion (carga_id, version_borrador, declarada_por) VALUES (%s, %s, %s) "
+            "RETURNING declaracion_id",
+            (carga_id, version, autor),
+        ))
+        for indicador in calificados:
+            causa, accion = textos.get(indicador["pi"]) or textos_de_prueba(indicador["pi"])
+            pi_id = uno(conexion, "SELECT pi_id FROM abet.carga_columna WHERE carga_id = %s AND pi_codigo = %s",
+                        (carga_id, indicador["pi"]))
+            conexion.execute(
+                "INSERT INTO abet.mejora_borrador_pi (carga_id, pi_id, causa, accion) VALUES (%s, %s, %s, %s) "
+                "ON CONFLICT (carga_id, pi_id) DO UPDATE SET causa = EXCLUDED.causa, accion = EXCLUDED.accion",
+                (carga_id, pi_id, causa, accion),
+            )
+            semaforo = indicador["semaforo"] if indicador["semaforo"] in ("VERDE", "AMBAR", "ROJO") else None
+            conexion.execute(
+                "INSERT INTO abet.mejora_declaracion_pi (declaracion_id, pi_id, carga_id, tipo, causa, accion, "
+                "logro_pct, meta_pct, semaforo) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (declaracion_id, pi_id, carga_id, indicador["tipo_registro"] or "OPORTUNIDAD_MEJORA", causa, accion,
+                 indicador["pct_sobre_calificados"] if semaforo else None,
+                 indicador["meta_pct"] if semaforo else None, semaforo),
+            )
+    return declaracion_id
 
 
 def publicar(

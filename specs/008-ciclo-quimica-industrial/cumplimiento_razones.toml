@@ -59,8 +59,8 @@ razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título ex
 [[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/siguiente_paso.feature"
 escenario = "La coordinación no recibe las líneas del profesor"
-pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "el coordinador no ve Subir export y sí el resultado y la descarga del R-17 publicada" }]
-razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto."
+pruebas = [{ archivo = "tests/pantallas/MisSecciones.test.tsx", titulo = "el coordinador no ve Subir export, ve Ver resultado y P2 ya no ofrece Descargar R-17" }]
+razon = "Prueba de la etapa A de la spec 007, anterior a la regla del título exacto. Cambia el 2026-11-24: el Front de la spec 005 (J-32) le cambió la aserción de la descarga del R-17 por su ausencia y el título, que antes decía «y la descarga del R-17 publicada», lo dice ahora. Las líneas del profesor que prueba este escenario no cambian."
 
 [[escenarios]]
 archivo = "007-experiencia-por-cuenta/aceptacion/antes_de_subir.feature"

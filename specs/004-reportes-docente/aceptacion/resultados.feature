@@ -107,11 +107,17 @@ Característica: Resultados del profesor por SO, calculados desde la base
     Y P4 de la carga de la 410 ofrece también «Ver mis logros por SO» (propuesta)
     Y P6 vuelve a P2 con «Volver» (propuesta)
 
+  # Cambio del 2026-11-24 (spec 005, J-32 y FR-009). El R-17 solo sale con la declaración vigente completa, así que P6
+  # ya no lo ofrece y lleva a P4, el único lugar que lo ofrece. El título del escenario no cambia, porque es la clave de
+  # las referencias de la spec viva `resultados`, de `test_resultados_feature.py` y de `audit.md`. Su primer «Entonces»
+  # decía, hasta el 2026-11-23, «la sección 412 de "450002" ofrece el enlace «Descargar R-17 de la sección 412 de
+  # 450002» (propuesta), que apunta a /api/cargas/{carga_id de esa sección}/r17.xlsx». La prueba del Front pasa a
+  # llamarse «ofrece Ver la carga solo de cada sección publicada, con el carga_id de su carga, y ningún enlace al R-17».
   @US-37 @corte1 @spec004 @delegado_a_vitest
   Escenario: P6 ofrece el R-17 de cada sección publicada
     Dado una respuesta de GET /api/resultados con la sección 412 de "450002" PUBLICADA y las secciones 410 y 412 de "450010" en "SIN_CARGA"
     Cuando "docente.varias@example.invalid" abre P6
-    Entonces la sección 412 de "450002" ofrece el enlace «Descargar R-17 de la sección 412 de 450002» (propuesta), que apunta a /api/cargas/{carga_id de esa sección}/r17.xlsx
+    Entonces la sección 412 de "450002" ofrece el enlace «Ver la carga de la sección 412 de 450002» (propuesta), que abre P4 con el carga_id de esa sección y no ofrece «Descargar R-17»
     Y las secciones 410 y 412 de "450010" no ofrecen ningún enlace de R-17
 
   # US-39: Distinguir lo que todavía no tiene resultado

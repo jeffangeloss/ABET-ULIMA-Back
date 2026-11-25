@@ -6,7 +6,7 @@
 # docente recibe al instante un reporte de su sección», y ninguna ruta entrega hoy cifras por carga (la
 # constancia no las trae y la ruta 12 es de la pantalla P6).
 #
-# Cambio del 2026-11-21 (borrador, pendiente de la reaprobación de Jefferson). Cada indicador de la ruta 13
+# Cambio del 2026-11-21, aprobado por Jefferson en el chat el 2026-11-21 («Sí, apruébalas»). Cada indicador de la ruta 13
 # suma hallazgo y tipo_registro, porque el profesor registra por PI una oportunidad de mejora (OM) o una buena
 # práctica (BP) que fija el semáforo, como pide Claudia León («incluso cuando se supera el valor de
 # referencia, deberíamos hacer el análisis de causas hasta llegar a la BP»). La 412 de 450002 es el ejemplo
@@ -53,12 +53,16 @@
 # - «con su análisis declarado» llama a declarar() de tests/cargas_de_prueba.py, que registra y declara la
 #   causa y la acción de prueba de cada PI con calificados (FR-017), porque desde US-49 el R-17 sale solo con
 #   la declaración vigente completa.
-# - Los Antecedentes nombran V1_11, porque J-41 construye primero la ruta 13 y P4 (US-45 y US-46) y V1_12
-#   todavía no existe. US-47 los lleva a V1_12 en el mismo cambio que crea esa migración (T021 y T012). El
-#   escenario «Las cifras y el semáforo coinciden con el R-17 de la misma carga» necesita V1_12, las rutas 14
+# - La migración de la spec es V1_15 y no V1_12, porque la spec 008 toma V1_12 a V1_14 (FR-004 de la spec 008).
+#   Los Antecedentes nombran V1_15 desde T012 y T021 de la spec 005, el 2026-11-24, aunque J-41 construye
+#   primero la ruta 13 y P4 (US-45 y US-46), que no leen sus tablas. El
+#   escenario «Las cifras y el semáforo coinciden con el R-17 de la misma carga» necesita V1_15, las rutas 14
 #   a 16 y US-49, así que su prueba se escribe en la segunda etapa de J-41, junto con declarar() (T037).
 # - Lo marcado «(propuesta)» no está fijado en las decisiones y lo decide la revisión de la spec. D-35
 #   (valor de CORTE_ROJO), D-39 y D-40 siguen abiertas con la Coordinación.
+# - Definitivo desde el 2026-11-24 (T012). El analizador de pytest-bdd lee este archivo en
+#   tests/aceptacion/pasos/test_lectura_gherkin_es.py, y las reglas BR-MEJORA-01 a BR-MEJORA-05 y BR-MEJORA-14 de
+#   specs/features/mejora/mejora.spec.md citan sus escenarios por el título.
 
 Característica: El semáforo de una carga publicada, calculado en el Back y mostrado en P4
   Como profesor de Ingeniería Ambiental, quiero ver en P4, justo después de subir el export, la tabla de
@@ -67,7 +71,7 @@ Característica: El semáforo de una carga publicada, calculado en el Back y mos
   analizar en cada indicador.
 
   Antecedentes:
-    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_11, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
+    Dado una base PostgreSQL 18 desechable con las migraciones V1_01 a V1_15, los datos de db/datos/periodo_2026_2_inventado.sql y, después, los de db/datos/varias_secciones_2026_2_inventado.sql
     Y la API conectada a esa base con el rol abet_app y configurada con PERIODO_VIGENTE "2026-2", CONJUNTO_REGLAS "R-2026-BORRADOR" y GUARDIA_DATOS_INVENTADOS "1"
     Y plan_medicion registra los PI 5.1, 5.2 y 5.3 para la asignatura "450002" en "2026-2"
     Y acceso.docente_seccion asigna la sección 410 de "450002" a "docente410@example.invalid", la 411 de "450002" a "docente411@example.invalid" y la 412 de "450002" a "docente.varias@example.invalid"

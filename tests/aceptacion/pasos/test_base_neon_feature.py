@@ -101,11 +101,11 @@ def _repetibles(ctx: Escenario) -> None:
 
 def _controles() -> dict[str, str]:
     """Q01 a Q14 de controles_neon.sql, copia literal de las de db/pruebas/pruebas.sql. Desde la spec 008 el archivo
-    suma Q18 a Q21 (FR-021), que estos escenarios de la spec 001 no nombran."""
+    suma Q18 a Q21 (FR-021) y desde la spec 005 Q16 y Q17, que estos escenarios de la spec 001 no nombran."""
     texto = CONTROLES.read_text(encoding="utf-8")
     bloques = re.findall(r"\\echo '(Q[0-9]{2})\.[^\n]*\n(.*?);\n\\set q[0-9]{2} :ROW_COUNT", texto, flags=re.S)
     consultas = {nombre: consulta.strip() for nombre, consulta in bloques}
-    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(18, 22))]
+    assert sorted(consultas) == [f"Q{n:02d}" for n in (*range(1, 15), *range(16, 22))]
     return {nombre: consulta for nombre, consulta in consultas.items() if nombre <= "Q14"}
 
 

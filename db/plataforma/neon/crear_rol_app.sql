@@ -20,7 +20,12 @@
 --            coordinacion_alcance; INSERT solo de sesion.usuario_id, sesion.hash_token e
 --            intento_fallido.hash_cuenta, porque las fechas de una sesión y de un intento salen de los valores por
 --            defecto de la base; UPDATE solo de sesion.expira_en, para el cierre de sesión.
--- El rol no tiene DELETE ni TRUNCATE en ninguna tabla, no escribe conjunto_reglas, parametro_valor, catalogo_*,
+--   mejora   desde V1_15 (spec 005, BR-MEJORA-12), SELECT de mejora_borrador, mejora_borrador_pi, mejora_declaracion
+--            y mejora_declaracion_pi; INSERT de carga_id, version y actualizado_por y UPDATE de version,
+--            actualizado_en y actualizado_por en mejora_borrador; INSERT de carga_id, pi_id, causa y accion y UPDATE
+--            de causa y accion en mejora_borrador_pi; INSERT de tabla completa en las dos tablas de la declaración,
+--            que el rol no corrige ni borra. Un PI vaciado en el borrador queda con causa y accion nulas por UPDATE.
+-- El rol no tiene DELETE ni TRUNCATE en ninguna tabla, tampoco en las cuatro de V1_15, no escribe conjunto_reglas, parametro_valor, catalogo_*,
 -- plan_medicion, seccion, usuario_autorizado, credencial, docente_seccion ni coordinacion_alcance, y no cambia
 -- conjunto_reglas_id, subida_por, archivo_id, seccion_id ni reemplaza_carga_id de una carga. Tampoco toca acceso.codigo_acceso, que
 -- llega con el corte 2, cuando T083 le suma SELECT, INSERT y el UPDATE de intentos y usado_en.
@@ -106,13 +111,29 @@ GRANT INSERT (hash_cuenta) ON acceso.intento_fallido TO :"rol_app";
 SELECT format('GRANT SELECT ON acceso.coordinacion_alcance TO %I', :'rol_app')
 WHERE to_regclass('acceso.coordinacion_alcance') IS NOT NULL \gexec
 
+-- Desde V1_15 (spec 005, US-47, US-48 y BR-MEJORA-12), la aplicación guarda el borrador por columnas exactas e inserta
+-- la declaración, sin DELETE. actualizado_en y declarada_en toman now() por defecto al insertar, y la ruta 15 fija
+-- actualizado_en en cada UPDATE. En una base anterior a V1_15 las tablas no existen y las órdenes no corren.
+SELECT orden FROM (VALUES
+    (format('GRANT SELECT ON abet.mejora_borrador, abet.mejora_borrador_pi, abet.mejora_declaracion, '
+            'abet.mejora_declaracion_pi TO %I', :'rol_app')),
+    (format('GRANT INSERT (carga_id, version, actualizado_por), UPDATE (version, actualizado_en, actualizado_por) '
+            'ON abet.mejora_borrador TO %I', :'rol_app')),
+    (format('GRANT INSERT (carga_id, pi_id, causa, accion), UPDATE (causa, accion) ON abet.mejora_borrador_pi TO %I',
+            :'rol_app')),
+    (format('GRANT INSERT ON abet.mejora_declaracion, abet.mejora_declaracion_pi TO %I', :'rol_app'))
+) AS t (orden)
+WHERE to_regclass('abet.mejora_borrador') IS NOT NULL \gexec
+
 -- Comprobación final. Se detiene, y la transacción se deshace, si algo queda distinto de lo que promete el archivo.
 -- Las funciones has_*_privilege cuentan también lo que llega por PUBLIC.
 DO $$
 DECLARE
-    v_rol   text := current_setting('abet.rol_app');
-    r       record;
-    v_texto text;
+    v_rol    text := current_setting('abet.rol_app');
+    r        record;
+    v_texto  text;
+    -- Las cuatro tablas de V1_15 suman permisos a las listas exactas, solo en una base que ya las tiene.
+    v_mejora boolean := to_regclass('abet.mejora_borrador') IS NOT NULL;
 BEGIN
     SELECT rolsuper, rolbypassrls, rolcreaterole, rolcreatedb, rolreplication, rolcanlogin
       INTO r FROM pg_roles WHERE rolname = v_rol;
@@ -142,17 +163,19 @@ BEGIN
     IF v_texto IS NOT NULL THEN
         RAISE EXCEPTION 'El rol % puede modificar o vaciar %', v_rol, v_texto;
     END IF;
-    -- INSERT de tabla completa solo en las siete tablas de una carga.
+    -- INSERT de tabla completa solo en las siete tablas de una carga y, desde V1_15, en las dos de la declaración.
     SELECT string_agg(n.nspname || '.' || c.relname, ',' ORDER BY n.nspname, c.relname) INTO v_texto
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname IN ('abet', 'acceso') AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
       AND has_table_privilege(v_rol, c.oid, 'INSERT');
     IF v_texto IS DISTINCT FROM 'abet.archivo_origen,abet.carga,abet.carga_columna,abet.carga_fila,abet.estudiante,'
-                                || 'abet.medicion,abet.rechazo_fila' THEN
+                                || 'abet.medicion,'
+                                || (CASE WHEN v_mejora THEN 'abet.mejora_declaracion,abet.mejora_declaracion_pi,' ELSE '' END)
+                                || 'abet.rechazo_fila' THEN
         RAISE EXCEPTION 'El rol % inserta filas completas en otras tablas que las de una carga (%)', v_rol, v_texto;
     END IF;
     -- INSERT por columnas, que has_table_privilege no ve, solo en las columnas de sesion e intento_fallido que no
-    -- tienen valor por defecto.
+    -- tienen valor por defecto y, desde V1_15, en las del borrador sin valor por defecto.
     SELECT string_agg(n.nspname || '.' || c.relname || '.' || a.attname, ',' ORDER BY n.nspname, c.relname, a.attnum)
       INTO v_texto
     FROM pg_attribute a
@@ -161,8 +184,12 @@ BEGIN
     WHERE n.nspname IN ('abet', 'acceso') AND c.relkind IN ('r', 'p', 'v', 'm', 'f') AND a.attnum > 0
       AND NOT a.attisdropped AND NOT has_table_privilege(v_rol, c.oid, 'INSERT')
       AND has_column_privilege(v_rol, c.oid, a.attnum, 'INSERT');
-    IF v_texto IS DISTINCT FROM 'acceso.intento_fallido.hash_cuenta,acceso.sesion.usuario_id,acceso.sesion.hash_token' THEN
-        RAISE EXCEPTION 'El rol % inserta otras columnas que usuario_id y hash_token de sesion y hash_cuenta de intento_fallido (%)', v_rol, v_texto;
+    IF v_texto IS DISTINCT FROM (CASE WHEN v_mejora THEN 'abet.mejora_borrador.carga_id,abet.mejora_borrador.version,'
+                                    || 'abet.mejora_borrador.actualizado_por,abet.mejora_borrador_pi.carga_id,'
+                                    || 'abet.mejora_borrador_pi.pi_id,abet.mejora_borrador_pi.causa,'
+                                    || 'abet.mejora_borrador_pi.accion,' ELSE '' END)
+                                || 'acceso.intento_fallido.hash_cuenta,acceso.sesion.usuario_id,acceso.sesion.hash_token' THEN
+        RAISE EXCEPTION 'El rol % inserta otras columnas que usuario_id y hash_token de sesion, hash_cuenta de intento_fallido y las del borrador de V1_15 (%)', v_rol, v_texto;
     END IF;
     SELECT string_agg(n.nspname || '.' || c.relname || '.' || a.attname, ',' ORDER BY n.nspname, c.relname, a.attnum)
       INTO v_texto
@@ -172,12 +199,22 @@ BEGIN
     WHERE n.nspname IN ('abet', 'acceso') AND c.relkind IN ('r', 'p') AND a.attnum > 0 AND NOT a.attisdropped
       AND has_column_privilege(v_rol, c.oid, a.attnum, 'UPDATE');
     IF v_texto IS DISTINCT FROM 'abet.carga.estado,abet.carga.filas_leidas,abet.carga.filas_aceptadas,'
-                                || 'abet.carga.filas_rechazadas,abet.carga.terminada_en,acceso.sesion.expira_en' THEN
-        RAISE EXCEPTION 'El rol % actualiza otras columnas que el estado y los conteos de la carga y el vencimiento de la sesión (%)', v_rol, v_texto;
+                                || 'abet.carga.filas_rechazadas,abet.carga.terminada_en,'
+                                || (CASE WHEN v_mejora THEN 'abet.mejora_borrador.version,abet.mejora_borrador.actualizado_en,'
+                                        || 'abet.mejora_borrador.actualizado_por,abet.mejora_borrador_pi.causa,'
+                                        || 'abet.mejora_borrador_pi.accion,' ELSE '' END)
+                                || 'acceso.sesion.expira_en' THEN
+        RAISE EXCEPTION 'El rol % actualiza otras columnas que el estado y los conteos de la carga, el vencimiento de la sesión y las del borrador de V1_15 (%)', v_rol, v_texto;
     END IF;
     IF to_regclass('acceso.coordinacion_alcance') IS NOT NULL
        AND NOT has_table_privilege(v_rol, 'acceso.coordinacion_alcance', 'SELECT') THEN
         RAISE EXCEPTION 'El rol % no lee el alcance de las coordinaciones (V1_14)', v_rol;
+    END IF;
+    IF v_mejora AND (NOT has_table_privilege(v_rol, 'abet.mejora_borrador', 'SELECT')
+                     OR NOT has_table_privilege(v_rol, 'abet.mejora_borrador_pi', 'SELECT')
+                     OR NOT has_table_privilege(v_rol, 'abet.mejora_declaracion', 'SELECT')
+                     OR NOT has_table_privilege(v_rol, 'abet.mejora_declaracion_pi', 'SELECT')) THEN
+        RAISE EXCEPTION 'El rol % no lee las cuatro tablas del análisis por indicador (V1_15)', v_rol;
     END IF;
     IF NOT has_table_privilege(v_rol, 'abet.v_r17_por_pi', 'SELECT')
        OR NOT has_table_privilege(v_rol, 'abet.v_tabla_maestra_pi', 'SELECT')

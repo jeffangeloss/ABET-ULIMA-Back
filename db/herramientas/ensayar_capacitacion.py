@@ -23,7 +23,8 @@ El ensayo prueba a la vez el generador, el lector, la regla de la meta, el R-17 
 3. Cada export sube con cargar() de la biblioteca abet_carga, como el profesor de su sección (el primero por
    usuario_id si hay más de uno), con el conjunto de reglas de --reglas o de CONJUNTO_REGLAS. La guardia de datos
    inventados queda encendida salvo con --datos-reales. Cada carga PUBLICADA sin filas rechazadas deja su R-17 en
-   --r17 con abet_carga.r17.generar().
+   --r17 con abet_carga.r17.generar(), sin exigir la declaración del análisis por indicador de la spec 005, que el
+   profesor hace después en la sala, así que sus recuadros A y B quedan vacíos.
 4. Después corre db/herramientas/conciliar_tabla_maestra.py como proceso aparte, con la tabla maestra, la carpeta de
    los R-17 y el rol de solo lectura de --rol-lectura (abet_respaldo por omisión), con PGPASSWORD_LECTURA como su
    contraseña si existe. Sus líneas van tal cual en el informe del ensayo.
@@ -239,7 +240,9 @@ def subir(conexion: psycopg.Connection, manifiesto: Manifiesto, configuracion: C
                           "rechazadas.")
             limpias = False
         try:
-            r17.generar(conexion, resultado.carga_id, carpeta_r17)
+            # El ensayo compara solo las cifras del R-17 con la tabla maestra, en una base aparte y antes de que
+            # ningún profesor declare su análisis, así que no exige la declaración de BR-R17-12 (spec 005, US-49).
+            r17.generar(conexion, resultado.carga_id, carpeta_r17, exigir_declaracion=False)
         except r17.R17NoDisponible:
             lineas.append(f"Sección {export.seccion}. {R17_NO_DISPONIBLE}")
             limpias = False

@@ -1,5 +1,5 @@
--- Consultas de control Q01 a Q14 y, desde la spec 008, Q18 a Q21 para la base de Neon (US-01, FR-001, SC-002, T027
--- y FR-021 de la spec 008). Son copia literal de las de db/pruebas/pruebas.sql, escritas como consultas sueltas, y
+-- Consultas de control Q01 a Q14, Q16 y Q17 desde la spec 005 y Q18 a Q21 desde la spec 008 para la base de Neon
+-- (US-01, FR-001, SC-002, T027, FR-018 de la spec 005 y FR-021 de la spec 008). Son copia literal de las de db/pruebas/pruebas.sql, escritas como consultas sueltas, y
 -- db/pruebas/correr_pruebas.sh comprueba que no se aparten de ellas. Cada consulta debe devolver 0 filas.
 -- Se corre con el usuario abet_respaldo, de solo lectura, y la conexión directa, en cada rama de Neon.
 --
@@ -7,7 +7,8 @@
 --        -f db/plataforma/neon/controles_neon.sql
 --
 -- La sesión pasa a solo lectura antes de la primera consulta, así que el script no escribe aunque lo corra el dueño
--- de la base. Al final informa si las dieciocho consultas devuelven 0 filas; si alguna devuelve filas, termina con
+-- de la base. Q16 y Q17 leen las tablas de V1_15 y corren solo si la base ya las tiene, así que el archivo sigue
+-- sirviendo en una rama anterior a V1_15. Al final informa si las veinte consultas devuelven 0 filas; si alguna devuelve filas, termina con
 -- error para que la terminal o la integración continua (continuous integration, CI) lo noten. Las filas que muestra
 -- una consulta con falla son identificadores internos y nombres de columnas, nunca códigos ni nombres de estudiantes.
 
@@ -100,6 +101,32 @@ SHOW default_transaction_read_only;
  WHERE a.estado = 'REEMPLAZADA' AND NOT EXISTS (SELECT 1 FROM abet.carga n WHERE n.reemplaza_carga_id = a.carga_id);
 \set q14 :ROW_COUNT
 
+SELECT to_regclass('abet.mejora_borrador') IS NOT NULL AS con_v1_15 \gset
+\if :con_v1_15
+\echo 'Q16. Causa o acción del análisis por indicador con un código de 8 dígitos o un correo (spec 005).'
+ SELECT 'mejora_borrador_pi' AS tabla, b.carga_id, b.pi_id FROM abet.mejora_borrador_pi b
+ WHERE b.causa ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+    OR b.accion ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+ UNION ALL
+ SELECT 'mejora_declaracion_pi', d.declaracion_id, d.pi_id FROM abet.mejora_declaracion_pi d
+ WHERE d.causa ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+'
+    OR d.accion ~ '(^|[^0-9])[0-9]{8}([^0-9]|$)|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+';
+\set q16 :ROW_COUNT
+
+\echo 'Q17. Declaración vigente de una carga PUBLICADA sin la fila de un PI con calificados (spec 005).'
+ SELECT d.carga_id, p.codigo AS pi FROM abet.mejora_declaracion d
+ JOIN abet.carga c ON c.carga_id = d.carga_id AND c.estado = 'PUBLICADA'
+ JOIN abet.carga_columna cc ON cc.carga_id = d.carga_id JOIN abet.pi p ON p.pi_id = cc.pi_id
+ WHERE d.declaracion_id = (SELECT max(v.declaracion_id) FROM abet.mejora_declaracion v WHERE v.carga_id = d.carga_id)
+   AND EXISTS (SELECT 1 FROM abet.medicion m WHERE m.carga_columna_id = cc.carga_columna_id AND m.estado_evidencia = 'CALIFICADO')
+   AND NOT EXISTS (SELECT 1 FROM abet.mejora_declaracion_pi dp WHERE dp.declaracion_id = d.declaracion_id AND dp.pi_id = cc.pi_id);
+\set q17 :ROW_COUNT
+\else
+\echo 'Q16 y Q17 esperan a V1_15 (spec 005), que esta base todavía no tiene.'
+\set q16 0
+\set q17 0
+\endif
+
 \echo 'Q18. Curso con plan de medición de dos carreras en el mismo periodo (spec 008).'
  SELECT a.codigo AS asignatura, pe.codigo AS periodo FROM abet.plan_medicion pm
  JOIN abet.asignatura a ON a.asignatura_id = pm.asignatura_id JOIN abet.periodo pe ON pe.periodo_id = pm.periodo_id
@@ -126,10 +153,14 @@ SHOW default_transaction_read_only;
    AND s.curso_blackboard !~ ('(^|_)' || pe.anio || pe.ciclo || '_' || a.codigo || '_' || s.numero || '$');
 \set q21 :ROW_COUNT
 
-SELECT (:q01 + :q02 + :q03 + :q04 + :q05 + :q06 + :q07 + :q08 + :q09 + :q10 + :q11 + :q12 + :q13 + :q14 + :q18 + :q19 + :q20 + :q21) = 0
+SELECT (:q01 + :q02 + :q03 + :q04 + :q05 + :q06 + :q07 + :q08 + :q09 + :q10 + :q11 + :q12 + :q13 + :q14 + :q16 + :q17 + :q18 + :q19 + :q20 + :q21) = 0
        AS controles_en_cero \gset
 \if :controles_en_cero
-    \echo 'RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.'
+    \if :con_v1_15
+        \echo 'RESULTADO: Q01 a Q14 y Q16 a Q21 devuelven 0 filas.'
+    \else
+        \echo 'RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.'
+    \endif
 \else
     \echo 'RESULTADO: al menos una consulta de control devuelve filas, con el detalle en su bloque de arriba.'
     DO $$ BEGIN RAISE EXCEPTION 'Consultas de control con filas'; END $$;

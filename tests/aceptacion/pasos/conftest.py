@@ -26,6 +26,9 @@ lo que repiten sus Antecedentes y sus escenarios.
   «no ganan ninguna fila» admiten tablas de acceso, las consultas de control admiten rangos como «Q01 a Q14 y Q18
   a Q21», la base desechable de la spec 008 nombra cada pieza que le falta con su tarea, y cada escenario
   @playwright registra su prueba de e2e/ del Front con registrar_playwright().
+- La spec 005 (T012 de su tasks.md). Los Antecedentes de sus cuatro .feature piden V1_15, que la base desechable
+  comprueba por sus cuatro tablas, y REGLAS_DE_COPIA suma «con la columna X.Y vacía en las filas N y M» y su forma
+  de tres filas, «en las filas N, M y P».
 
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
@@ -71,6 +74,8 @@ DESCRIPCION_DE_PRUEBA = "Texto de prueba del Portafolio 3"
 # Tablas de abet que escriben los guiones de datos de la spec 008 (vigencia, plan y secciones), que Escenario.conteos()
 # suma a las de la carga para las listas de «no ganan ninguna fila».
 DE_LOS_GUIONES_008 = ("catalogo_vigencia", "plan_medicion", "seccion")
+# Tablas de V1_15 del análisis por indicador (spec 005, T032), que Escenario.conteos() suma cuando la base las tiene.
+DE_LA_MEJORA_005 = ("mejora_borrador", "mejora_borrador_pi", "mejora_declaracion", "mejora_declaracion_pi")
 ASIGNATURA = "450002"
 # Campos que un error del corte 2 suma a detail (contrato, sección 3.1).
 CAMPOS_EXTRA_DE_UN_ERROR = frozenset({"requiere_confirmacion", "carga_publicada"})
@@ -293,13 +298,16 @@ class Escenario:
 
         Las listas de «no ganan ninguna fila» comparan con este conteo, así que un escenario que nombra una tabla de
         acceso toma su conteo previo con este método y no con api.conteos(), que cuenta solo las de abet. Desde la spec 008
-        suma también las tablas de abet que escriben los guiones de datos de Química (DE_LOS_GUIONES_008).
+        suma también las tablas de abet que escriben los guiones de datos de Química (DE_LOS_GUIONES_008), y desde V1_15
+        las cuatro del análisis por indicador de la spec 005 (DE_LA_MEJORA_005).
         """
         de_acceso = [fila[0] for fila in self.filas(
             "SELECT table_name FROM information_schema.tables WHERE table_schema = 'acceso'"
             " AND table_type = 'BASE TABLE' ORDER BY table_name")]
+        de_v1_15 = [fila[0] for fila in self.filas(
+            "SELECT tablename FROM pg_tables WHERE schemaname = 'abet' AND tablename = ANY(%s)", list(DE_LA_MEJORA_005))]
         de_los_guiones = {tabla: int(self.api.uno(sql.SQL("SELECT count(*) FROM abet.{}").format(sql.Identifier(tabla))))
-                          for tabla in DE_LOS_GUIONES_008}
+                          for tabla in (*DE_LOS_GUIONES_008, *sorted(de_v1_15))}
         return {**self.api.conteos(), **de_los_guiones, **{f"acceso.{tabla}": int(self.api.uno(
             sql.SQL("SELECT count(*) FROM acceso.{}").format(sql.Identifier(tabla)))) for tabla in de_acceso}}
 
@@ -350,6 +358,10 @@ class Escenario:
 
     def huella(self, contenido: bytes) -> str:
         return hashlib.sha256(contenido).hexdigest()
+
+    def declarada_antes_del_r17(self, carga_id: int | None) -> None:
+        """declarada_antes_del_r17() de este módulo, para los pasos de otros archivos (spec 005, US-49)."""
+        declarada_antes_del_r17(self, carga_id)
 
     def copia_de(self, texto: str) -> tuple[bytes, str]:
         """Archivo que describe una frase como «una copia de "X" con ...». Devuelve sus bytes y su nombre."""
@@ -500,12 +512,36 @@ def _pi_vacio(ctx: Escenario, nombre: str, pi: str, f: str) -> tuple[bytes, str]
     return _con_celda(ctx, nombre, f, pi, None), nombre
 
 
+def _pi_vacio_en_filas(ctx: Escenario, nombre: str, pi: str, filas: str) -> tuple[bytes, str]:
+    """La columna del PI vacía en cada fila de la lista «2 y 6» o «2, 3 y 9», y lo demás sin cambios (spec 005, FR-017)."""
+    export = _export(ctx, nombre)
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in re.findall(r"[0-9]+", filas):
+        assert 2 <= int(fila) <= len(export.filas) + 1, f"el export no tiene la fila de datos {fila}"
+        export = ctx.generador.con_celda(export, int(fila), pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
 def _pi_vacio_en_todas(ctx: Escenario, nombre: str, pi: str, n: str) -> tuple[bytes, str]:
     """La columna del PI sin ningún nivel en las N filas de datos, y las demás columnas sin cambios (spec 004, T012)."""
     export = _export(ctx, nombre)
     assert len(export.filas) == int(n), f"el export trae {len(export.filas)} filas de datos y no {n}"
     vacio = "" if es_de_texto(nombre) else None
     for fila in range(2, len(export.filas) + 2):
+        export = ctx.generador.con_celda(export, fila, pi, vacio)
+    return _a_bytes(ctx, nombre, export), nombre
+
+
+def _pi_vacio_en_filas(ctx: Escenario, nombre: str, pi: str, filas: str) -> tuple[bytes, str]:
+    """La columna del PI vacía en dos o tres filas del export, como «2 y 6» o «2, 3 y 9» (spec 005, FR-017)."""
+    export = _export(ctx, nombre)
+    numeros = [int(f) for f in re.findall(r"[0-9]+", filas)]
+    assert len(set(numeros)) == len(numeros), f"una fila se repite en «{filas}»"
+    for fila in numeros:
+        assert 2 <= fila <= len(export.filas) + 1, \
+            f"la fila {fila} está fuera de las filas de datos 2 a {len(export.filas) + 1}"
+    vacio = "" if es_de_texto(nombre) else None
+    for fila in numeros:
         export = ctx.generador.con_celda(export, fila, pi, vacio)
     return _a_bytes(ctx, nombre, export), nombre
 
@@ -783,7 +819,10 @@ REGLAS_DE_COPIA: list[tuple[str, Any]] = [
     (r'con el Username (?P<v>vacío|[0-9]+) en la fila (?P<f>[0-9]+)', _celda_username),
     (r'cuya columna (?P<pi>[0-9]\.[0-9]) trae "(?P<v>[^"]*)" en la fila (?P<f>[0-9]+)', _celda_pi),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en la fila (?P<f>[0-9]+)', _pi_vacio),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en las filas (?P<filas>[0-9]+(?:, [0-9]+)* y [0-9]+)', _pi_vacio_en_filas),
     (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en sus (?P<n>[0-9]+) filas', _pi_vacio_en_todas),
+    (r'con la columna (?P<pi>[0-9]\.[0-9]) vacía en las filas (?P<filas>[0-9]+(?:, [0-9]+)? y [0-9]+)',
+     _pi_vacio_en_filas),
     (r'con una columna más "(?P<enc>[^"]+)"', _columna_mas),
     (r'con un (?P<v>-?[0-9]+) en la columna (?P<pi>[0-9]\.[0-9]) de las (?P<n>[0-9]+) filas de datos', _nivel_en_todas),
     (r'con la hoja renombrada "(?P<hoja>[^"]+)"(?: y el nombre "(?P<otro>[^"]+)")?', _hoja),
@@ -926,6 +965,11 @@ def _base_desechable(ctx: Escenario, ultima: str, resto: str) -> None:
         # V1_11 suma abet.plan_medicion.descripcion_instrumento con ck_plan_medicion_descripcion (spec 005, US-51).
         assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
             "falta la migración V1_11"
+    if int(ultima) >= 15:
+        # V1_15 crea las cuatro tablas del análisis por indicador (spec 005, J-38, T021).
+        assert ctx.uno("SELECT count(*) FROM pg_tables WHERE schemaname = 'abet' AND tablename IN ('mejora_borrador',"
+                       " 'mejora_borrador_pi', 'mejora_declaracion', 'mejora_declaracion_pi')") == 4, \
+            "falta la migración V1_15"
     assert ctx.uno("SELECT count(*) FROM abet.periodo WHERE codigo = '2026-2'") == 1, "faltan los datos de 2026-2"
     if con_varias:
         assert ctx.uno("SELECT count(*) FROM acceso.usuario_autorizado WHERE correo = %s", A.VARIAS_CORREO) == 1
@@ -993,15 +1037,79 @@ def _subido_antes(ctx: Escenario, quien: str, que: str, numero: str) -> Any:
     return respuesta
 
 
+def _unico_profesor(ctx: Escenario, numero: str) -> str:
+    """El profesor asignado a la sección de 450002, para una subida que no nombra quién sube y llega antes de toda
+    sesión, como en los escenarios de 401 y 403 de semaforo.feature (spec 005)."""
+    correos = [fila[0] for fila in ctx.filas(
+        "SELECT u.correo FROM acceso.docente_seccion d JOIN acceso.usuario_autorizado u USING (usuario_id)"
+        " WHERE d.seccion_id = %s", ctx.seccion_id(numero))]
+    assert len(correos) == 1, f"la sección {numero} no tiene un único profesor asignado: {len(correos)}"
+    return correos[0]
+
+
 @given(parsers.re(r'que (?P<que>"[^"]+"|una copia de "[^"]+" .+?) está subid[oa](?: por "(?P<quien>[^"]+)")? '
                   r'a la sección (?P<numero>[0-9]+)(?: con respuesta 201(?: y su carga_id)?'
                   r'| y su carga está "(?P<estado>[A-Z]+)" con (?P<motivo>[A-Z_]+))'))
 def _subido_a_la_seccion(ctx: Escenario, que: str, quien: str | None, numero: str, estado: str | None,
                          motivo: str | None) -> None:
-    respuesta = _subido_antes(ctx, quien or ctx.profesor, que, numero)
+    respuesta = _subido_antes(ctx, quien or ctx.profesor or _unico_profesor(ctx, numero), que, numero)
     if estado is not None:
         assert respuesta.json()["estado"] == estado
         assert ctx.cuenta("rechazo_fila", "carga_id = %s AND motivo = %s", ctx.carga_previa, motivo) >= 1
+    ctx.antes = ctx.conteos()
+
+
+# Dado, la subida con su análisis declarado (spec 005, US-49, T037)
+
+def declarar_la_carga(ctx: Escenario, correo: str, numero: str) -> None:
+    """Declara con declarar() de tests/cargas_de_prueba.py los registros de prueba de la sección en cada PI con
+    calificados, como lo harían las rutas 15 y 16 (FR-017). La 412 usa los suyos y las demás, copias de la 410, los de
+    la 410. Anota la carga en ctx.extras["declaradas"]."""
+    assert ctx.carga_id is not None, ctx.respuesta.text
+    registros = C.REGISTROS_DE_PRUEBA["412" if numero == "412" else "410"]
+    C.declarar(ctx.api.dueno, ctx.carga_id, registros, correo=correo)
+    ctx.extras.setdefault("declaradas", []).append(ctx.carga_id)
+
+
+def declarada_antes_del_r17(ctx: Escenario, carga_id: int | None) -> None:
+    """Declara la carga, si está PUBLICADA y todavía no tiene declaración, antes de que un escenario de las specs 001,
+    003, 004 u 008 pida su R-17.
+
+    Desde US-49 (spec 005, BR-R17-12) el R-17 sale solo con la declaración vigente completa, y la spec dice que esos
+    escenarios «ahora declaran antes de descargar» (US-49 y T037). Sus .feature no lo nombran, así que este paso lo
+    hace con declarar() de tests/cargas_de_prueba.py y los textos de prueba de cada PI. Una carga que no está
+    PUBLICADA o que ya tiene una declaración no cambia, así que el 409 de una carga rechazada y el 403 de una ajena
+    siguen como antes.
+    """
+    if carga_id is None:
+        return
+    estado = ctx.filas("SELECT c.estado, (SELECT count(*) FROM abet.mejora_declaracion d WHERE d.carga_id = c.carga_id)"
+                       " FROM abet.carga c WHERE c.carga_id = %s", carga_id)
+    if estado and estado[0] == ("PUBLICADA", 0):
+        C.declarar(ctx.api.dueno, carga_id)
+
+
+@given(parsers.re(r'que (?:"(?P<correo>[^"]+)" tiene subid[oa] (?P<que_de>"[^"]+"|una copia de "[^"]+" .+?)|'
+                  r'(?P<que>"[^"]+"|una copia de "[^"]+" .+?) está subid[oa]) a la sección (?P<numero>[0-9]+) con '
+                  r'respuesta 201 y su carga_id, con su análisis declarado'))
+def _subido_y_declarado(ctx: Escenario, correo: str | None, que_de: str | None, que: str | None, numero: str) -> None:
+    profesor = correo or _unico_profesor(ctx, numero)
+    texto = que_de or que
+    origen = re.fullmatch(r'una copia de "[^"]*_(?P<seccion>[0-9]{3})\.xlsx" .+', texto)
+    if origen is not None and origen["seccion"] != numero:
+        # semaforo.feature sube a la 411 una copia de la 410. La copia es la del curso de la sección que la recibe, así
+        # que su hoja nombra esa sección, como el export de Blackboard de la 411, y el lector no la rechaza por
+        # SECCION_NO_COINCIDE.
+        contenido, nombre = ctx.copia_de(texto)
+        export = ctx.generador.leer_export(contenido)
+        export = ctx.generador.con_hoja(export, export.hoja.replace(f"_{origen['seccion']}_", f"_{numero}_"))
+        respuesta = ctx.subir(profesor, _a_bytes(ctx, nombre, export), nombre, numero)
+        assert respuesta.status_code == 201, respuesta.text
+        ctx.carga_previa = ctx.carga_id
+    else:
+        respuesta = _subido_antes(ctx, profesor, texto, numero)
+    assert respuesta.status_code == 201 and respuesta.json()["estado"] == "PUBLICADA", respuesta.text
+    declarar_la_carga(ctx, profesor, numero)
     ctx.antes = ctx.conteos()
 
 

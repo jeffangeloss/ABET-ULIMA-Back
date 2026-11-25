@@ -59,3 +59,56 @@ def test_br_resultados_06_el_plan_de_accion_del_r17_sigue_la_misma_regla(logro: 
     else:
         assert texto == (r17.LOGRADO if logro >= meta else r17.NO_LOGRADO)
     assert (texto == r17.LOGRADO) is (resultados.en_meta(logro, meta) is True)
+
+
+@pytest.mark.parametrize(
+    ("logro", "meta", "corte", "esperado"),
+    [
+        (D("80.0"), D("80.0"), D("75.0"), "VERDE"),
+        (D("81.8"), D("80.0"), D("75.0"), "VERDE"),
+        (D("77.8"), D("80.0"), D("75.0"), "AMBAR"),
+        (D("75.0"), D("80.0"), D("75.0"), "AMBAR"),
+        (D("74.9"), D("80.0"), D("75.0"), "ROJO"),
+        (D("72.7"), D("80.0"), D("75.0"), "ROJO"),
+        (D("77.8"), D("80.0"), None, "ROJO"),
+        (D("75.0"), D("80.0"), None, "ROJO"),
+        (D("80.0"), D("80.0"), None, "VERDE"),
+        (D("0.0"), D("80.0"), D("0.0"), "AMBAR"),
+        (None, D("80.0"), D("75.0"), "SIN_DATO"),
+        (D("77.8"), None, D("75.0"), "SIN_DATO"),
+        (None, None, None, "SIN_DATO"),
+    ],
+)
+def test_br_mejora_02_semaforo_por_meta_y_corte_rojo(logro, meta, corte, esperado):
+    assert resultados.semaforo(logro, meta, corte) == esperado
+
+
+@pytest.mark.parametrize(
+    ("semaforo", "esperado"),
+    [
+        ("VERDE", "BUENA_PRACTICA"),
+        ("AMBAR", "OPORTUNIDAD_MEJORA"),
+        ("ROJO", "OPORTUNIDAD_MEJORA"),
+        ("SIN_DATO", None),
+    ],
+)
+def test_br_mejora_03_tipo_de_registro_por_semaforo(semaforo, esperado):
+    assert resultados.tipo_de_registro(semaforo) == esperado
+
+
+@pytest.mark.parametrize(
+    ("pi", "logro", "meta", "nivel_esperado", "texto"),
+    [
+        ("5.1", D("63.6"), D("80.0"), 3, "5.1: 63,6 % en Satisfactorio o más, meta 80,0 %"),
+        ("5.3", D("80.0"), D("80.0"), 3, "5.3: 80,0 % en Satisfactorio o más, meta 80,0 %"),
+        ("5.1", D("90.9"), D("70.0"), 2, "5.1: 90,9 % en En proceso o más, meta 70,0 %"),
+        ("5.2", D("0"), D("80"), 1, "5.2: 0,0 % en No satisfactorio o más, meta 80,0 %"),
+        ("5.2", D("100"), D("80"), 4, "5.2: 100,0 % en Sobresaliente o más, meta 80,0 %"),
+        ("5.3", None, D("80.0"), 3, "5.3: sin calificaciones en esta carga."),
+        ("5.1", D("63.6"), None, 3, "5.1: el conjunto de reglas no define la meta o el nivel esperado."),
+        ("5.1", D("63.6"), D("80.0"), None, "5.1: el conjunto de reglas no define la meta o el nivel esperado."),
+        ("5.1", None, D("80.0"), None, "5.1: el conjunto de reglas no define la meta o el nivel esperado."),
+    ],
+)
+def test_br_mejora_01_redactar_hallazgo_con_cifras_y_casos_sin_cifra(pi, logro, meta, nivel_esperado, texto):
+    assert resultados.redactar_hallazgo(pi, logro, meta, nivel_esperado) == texto

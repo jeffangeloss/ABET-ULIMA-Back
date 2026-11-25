@@ -67,7 +67,7 @@ Los escenarios viven en `specs/004-reportes-docente/aceptacion/resultados.featur
 | --- | --- | --- |
 | P6 agrupa los PI por SO y escribe cada cifra | `MisLogros.test.tsx` › «agrupa los PI bajo su SO y cada fila escribe su PI, su sección, su porcentaje, su fracción y su estado» y «cada barra lleva aria-hidden, su ancho es el porcentaje y la meta va marcada con una línea y con texto» | aprobado |
 | P6 se abre desde P2 y desde P4 sin confundirse con «Ver resultado» | `App.test.tsx` › «la cabecera ofrece una sola vez «Ver mis logros por SO», que abre P6, y P6 vuelve a P2 con «Volver»» y «P4 de una carga publicada ofrece también el enlace a P6» | aprobado |
-| P6 ofrece el R-17 de cada sección publicada | `MisLogros.test.tsx` › «ofrece el R-17 solo de cada sección publicada, con el carga_id de su carga» | aprobado |
+| P6 ofrece el R-17 de cada sección publicada | `MisLogros.test.tsx` › «ofrece el R-17 solo de cada sección publicada, con el carga_id de su carga» | aprobado el 2026-11-22. Cambia el 2026-11-24 (spec 005, J-32): P6 ya no ofrece el R-17 y la prueba, con el título «ofrece Ver la carga solo de cada sección publicada, con el carga_id de su carga, y ningún enlace al R-17», comprueba que lleva a P4 |
 | P6 no ofrece subir exports | `MisLogros.test.tsx` › «no ofrece Subir export al profesor ni al coordinador» | aprobado |
 | P6 no pinta lo que no se mide | `MisLogros.test.tsx` › «escribe lo que no se mide y no dibuja ninguna barra de 0 %» | aprobado |
 | P6 muestra la espera, el error y la lista vacía | `MisLogros.test.tsx` › «dice que espera mientras la API responde, el error del servicio y la lista vacía» y `App.test.tsx` › «un 401 en P6 vuelve a P1 con el aviso de sesión vencida» | aprobado |

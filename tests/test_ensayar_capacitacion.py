@@ -238,7 +238,7 @@ def _subir_con(modulo: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     monkeypatch.setattr(modulo.constancia, "armar", lambda _c, carga_id: {
         "filas_aceptadas": cuerpos[carga_id][0], "filas_rechazadas": cuerpos[carga_id][1]})
 
-    def generar(_c: object, carga_id: int, carpeta: Path) -> Path:
+    def generar(_c: object, carga_id: int, carpeta: Path, **_opciones: object) -> Path:
         if carga_id in sin_r17:
             raise modulo.r17.R17NoDisponible
         return carpeta / f"R017_{carga_id}.xlsx"

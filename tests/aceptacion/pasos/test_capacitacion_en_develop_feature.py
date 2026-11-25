@@ -325,7 +325,9 @@ def _develop_en_v1_11(ctx: Escenario) -> None:
         assert ctx.uno("SELECT estado FROM abet.carga WHERE carga_id = %s", resultado.carga_id) == "PUBLICADA"
         carpeta = _tmp(ctx) / "r17_antes"
         carpeta.mkdir()
-        ctx.extras["r17_antes"] = celdas(r17.generar(conexion, resultado.carga_id, carpeta).read_bytes())
+        # La base todavía no tiene V1_15, así que el R-17 de antes sale sin la declaración de la spec 005.
+        ctx.extras["r17_antes"] = celdas(r17.generar(conexion, resultado.carga_id, carpeta,
+                                                     exigir_declaracion=False).read_bytes())
     ctx.carga_id = resultado.carga_id
     armar_flyway(ctx, "1.11")
     escribir_programacion(ctx)
@@ -513,11 +515,20 @@ def _mismo_r17(ctx: Escenario) -> None:
     # Con el Back nuevo y el rol de la aplicación que nació en V1_11, como abet_app en Neon. El ingreso y la ruta 12
     # leen acceso.coordinacion_alcance, así que sin el SELECT del callback responden 500.
     cliente = ctx.sesion(A.DOCENTE_410)
-    for ruta in ("/api/sesion", "/api/secciones", f"/api/cargas/{ctx.carga_id}/r17.xlsx"):
+    for ruta in ("/api/sesion", "/api/secciones"):
         assert cliente.get(ruta).status_code == 200, ruta
     assert ctx.uno("SELECT has_table_privilege(%s, 'acceso.coordinacion_alcance', 'SELECT')", ctx.api.base.rol_app)
-    descarga = cliente.get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
-    despues, antes = celdas(descarga.content), ctx.extras["r17_antes"]
+    # Desde la spec 005 (US-49) la ruta 7 pide la declaración vigente, que una base en V1_14 no puede tener, así que
+    # responde el 409 de la declaración pendiente, después del alcance, y no un 403 ni un 500. Las celdas se comparan
+    # con el mismo generador y el rol de la aplicación, sin la declaración, como el R-17 de antes.
+    pendiente = cliente.get(f"/api/cargas/{ctx.carga_id}/r17.xlsx")
+    assert pendiente.status_code == 409 and pendiente.json()["detail"] == r17.DeclaracionPendiente.mensaje
+    carpeta = _tmp(ctx) / "r17_despues"
+    carpeta.mkdir()
+    with psycopg.connect(ctx.api.base.conexion) as conexion:
+        conexion.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(ctx.api.base.rol_app)))
+        despues = celdas(r17.generar(conexion, ctx.carga_id, carpeta, exigir_declaracion=False).read_bytes())
+    antes = ctx.extras["r17_antes"]
     assert len(antes) > 50, "el R-17 de antes no trae las celdas de la carga"
     assert sorted(despues) == sorted(antes)
     for clave, valor in antes.items():

@@ -35,7 +35,10 @@ def _modulo(nombre: str) -> ModuleType:
 
 
 A = _modulo("api_de_prueba")
+C = _modulo("cargas_de_prueba")
 plantilla, base, api = A.plantilla, A.base, A.api
+PENDIENTE = {"detail": "Complete la causa y la acción de cada indicador en la página de la carga antes de descargar "
+                       "el R-17."}
 AJENA = {"detail": "La sección no está a su cargo."}
 GUARDIA = ("El piloto solo admite códigos inventados, de 99000000 a 99999999. Revise la fila 4. "
            "No se guardó nada.")
@@ -304,6 +307,7 @@ def test_br_acceso_08_el_coordinador_no_sube_en_el_corte_1_pero_lee_constancia_y
     assert subida.status_code == 403 and subida.json() == AJENA
     assert api.conteos() == antes
     assert coordinacion.get(f"/api/cargas/{publicada['carga_id']}").json() == publicada
+    C.declarar(api.dueno, publicada["carga_id"])
     assert coordinacion.get(f"/api/cargas/{publicada['carga_id']}/r17.xlsx").status_code == 200
 
 
@@ -335,6 +339,7 @@ def test_br_periodo_04_una_seccion_sin_plan_no_admite_la_subida(api: object) -> 
 def test_br_r17_06_09_el_r17_se_descarga_con_sus_cabeceras_y_su_hoja_constancia(api: object) -> None:
     cliente = api.sesion(A.DOCENTE_410)
     carga_id = A.subir(cliente, api.seccion("410"), A.archivo(A.CON_ERROR), A.CON_ERROR).json()["carga_id"]
+    C.declarar(api.dueno, carga_id)
     respuesta = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
     assert respuesta.status_code == 200
     assert respuesta.headers["content-type"] == A.XLSX
@@ -350,6 +355,7 @@ def test_br_r17_06_09_el_r17_se_descarga_con_sus_cabeceras_y_su_hoja_constancia(
 def test_br_r17_06_el_r17_no_deja_que_el_navegador_adivine_su_tipo(api: object) -> None:
     cliente = api.sesion(A.DOCENTE_410)
     carga_id = A.subir(cliente, api.seccion("410"), A.archivo(A.CON_ERROR), A.CON_ERROR).json()["carga_id"]
+    C.declarar(api.dueno, carga_id)
     respuesta = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
     assert respuesta.status_code == 200
     assert respuesta.headers.get("x-content-type-options") == "nosniff"
@@ -363,12 +369,39 @@ def test_br_r17_01_una_carga_rechazada_no_tiene_r17(api: object) -> None:
     assert respuesta.json() == {"detail": "La carga no está publicada y no tiene R-17."}
 
 
+# BR-R17-12 (spec 005, US-49): el R-17 solo con la declaración vigente completa
+
+@pytest.mark.parametrize("correo", [A.DOCENTE_410, A.COORDINACION])
+def test_br_r17_12_sin_declaracion_la_ruta_7_responde_409_sin_archivo_y_con_ella_200(api: object, correo: str) -> None:
+    carga_id = A.subir(api.sesion(A.DOCENTE_410), api.seccion("410"), A.archivo(A.CON_ERROR),
+                       A.CON_ERROR).json()["carga_id"]
+    cliente = api.sesion(correo)
+    respuesta = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
+    assert respuesta.status_code == 409 and respuesta.json() == PENDIENTE
+    assert respuesta.headers["content-type"] == "application/json"
+    assert "content-disposition" not in respuesta.headers
+    assert respuesta.headers["cache-control"] == "no-store"
+    C.declarar(api.dueno, carga_id, pis=["5.1", "5.2"])
+    assert cliente.get(f"/api/cargas/{carga_id}/r17.xlsx").json() == PENDIENTE
+    C.declarar(api.dueno, carga_id)
+    descarga = cliente.get(f"/api/cargas/{carga_id}/r17.xlsx")
+    assert descarga.status_code == 200 and descarga.headers["content-type"] == A.XLSX
+
+
+def test_br_r17_12_el_409_de_no_publicada_manda_sobre_el_de_la_declaracion(api: object) -> None:
+    cliente = api.sesion(A.DOCENTE_410)
+    carga_id = A.subir(cliente, api.seccion("410"), A.archivo("sin_5_2_410.xlsx"), "sin_5_2_410.xlsx").json()["carga_id"]
+    assert api.uno("SELECT count(*) FROM abet.mejora_declaracion WHERE carga_id = %s", carga_id) == 0
+    assert cliente.get(f"/api/cargas/{carga_id}/r17.xlsx").json() == {"detail": "La carga no está publicada y no tiene R-17."}
+
+
 # Caché: ninguna respuesta de /api con datos de la sesión queda guardada (propuesta del contrato)
 
 def test_toda_respuesta_de_la_api_lleva_cache_control_no_store(api: object) -> None:
     cliente = api.sesion(A.DOCENTE_410)
     subida = A.subir(cliente, api.seccion("410"), A.archivo(A.CON_ERROR), A.CON_ERROR)
     carga_id = subida.json()["carga_id"]
+    C.declarar(api.dueno, carga_id)
     respuestas = {
         "POST cargas": subida,
         "GET sesion": cliente.get("/api/sesion"),

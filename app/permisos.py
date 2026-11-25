@@ -13,7 +13,8 @@ periodo (valor provisional de J-50 para un curso compartido), y una fila de asig
 asignatura en el periodo de la fila. _ALCANCE une las filas de la cuenta. puede_subir() no cambia, así que el
 coordinador sigue sin subir una carga nueva, y puede_reemplazar() sigue el alcance de la lectura (D-52).
 alcance_de() resume el alcance para GET /api/sesion y periodos_visibles() da los periodos de la ruta 18.
-puede_ver_avance() deja leer la ruta 17 solo a una cuenta activa con rol COORDINADOR (BR-ACCESO-12) y no da secciones
+puede_declarar() deja escribir el análisis por indicador de las rutas 15 y 16 de la spec 005 solo al profesor asignado
+(BR-MEJORA-05). puede_ver_avance() deja leer la ruta 17 solo a una cuenta activa con rol COORDINADOR (BR-ACCESO-12) y no da secciones
 nuevas, porque las del avance son las de secciones_visibles() (BR-AVANCE-02).
 
 Las rutas de secciones, cargas, constancia y R-17 y el comando python -m abet_carga preguntan aquí
@@ -154,6 +155,16 @@ def puede_reemplazar(conexion: Connection[Any], usuario_id: int, seccion_id: int
 def puede_leer(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:
     """Si el usuario lee la sección, sus cargas, su constancia y su R-17 (BR-ACCESO-07 y BR-ACCESO-08)."""
     return _alcanza(conexion, usuario_id, seccion_id, coordinador_alcanza=True)
+
+
+def puede_declarar(conexion: Connection[Any], usuario_id: int, seccion_id: int) -> bool:
+    """Si el usuario escribe el borrador y la declaración del análisis por indicador de la sección (BR-MEJORA-05).
+
+    Solo escribe el profesor asignado en acceso.docente_seccion, y el coordinador lee con puede_leer() sin escribir
+    (J-33 y AD-09). Vive aparte de puede_subir(), aunque hoy tenga su mismo alcance, porque la escritura del coordinador
+    de curso o de área queda para el R-18 (D-42).
+    """
+    return _alcanza(conexion, usuario_id, seccion_id, coordinador_alcanza=False)
 
 
 def _alcanza(conexion: Connection[Any], usuario_id: int, seccion_id: int, *, coordinador_alcanza: bool) -> bool:

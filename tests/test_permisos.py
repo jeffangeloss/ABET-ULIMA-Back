@@ -240,3 +240,30 @@ def test_br_acceso_08_corte2_una_seccion_o_un_usuario_que_no_existen_no_reemplaz
     ids = _secciones(conexion)
     assert not permisos.puede_reemplazar(conexion, _usuario(conexion, COORDINACION), 2_000_000_000)
     assert not permisos.puede_reemplazar(conexion, 2_000_000_000, ids[("450002", "410")])
+
+
+# BR-MEJORA-05 (spec 005, T032): quién escribe el borrador y la declaración del análisis por indicador.
+
+def test_br_mejora_05_solo_el_profesor_asignado_declara_en_su_seccion(conexion: psycopg.Connection) -> None:
+    ids = _secciones(conexion)
+    varias = _usuario(conexion, VARIAS_CORREO)
+    for clave, seccion_id in ids.items():
+        assert permisos.puede_declarar(conexion, varias, seccion_id) is (clave in DE_VARIAS)
+    docente_410 = _usuario(conexion, DOCENTE_410)
+    assert permisos.puede_declarar(conexion, docente_410, ids[("450002", "410")])
+    assert not permisos.puede_declarar(conexion, docente_410, ids[("450002", "411")])
+
+
+def test_br_mejora_05_el_coordinador_lee_y_no_declara(conexion: psycopg.Connection) -> None:
+    coordinacion = _usuario(conexion, COORDINACION)
+    for seccion_id in _secciones(conexion).values():
+        assert permisos.puede_leer(conexion, coordinacion, seccion_id)
+        assert not permisos.puede_declarar(conexion, coordinacion, seccion_id)
+
+
+@pytest.mark.usefixtures("inactivo")
+def test_br_mejora_05_un_usuario_inactivo_o_que_no_existe_no_declara(conexion: psycopg.Connection) -> None:
+    ids = _secciones(conexion)
+    assert not permisos.puede_declarar(conexion, _usuario(conexion, DOCENTE_410), ids[("450002", "410")])
+    assert not permisos.puede_declarar(conexion, 2_000_000_000, ids[("450002", "410")])
+    assert not permisos.puede_declarar(conexion, _usuario(conexion, VARIAS_CORREO), 2_000_000_000)

@@ -124,12 +124,12 @@ crear_rol() { env -u APP_DB_CLAVE "$PSQL" -X -q -v ON_ERROR_STOP=1 -v rol_app="$
 controles() {
     local salida
     if ! salida="$("$PSQL" -X -q -d "$1" -f "$RAIZ/plataforma/neon/controles_neon.sql" 2>&1)" \
-       || ! grep -qxF 'RESULTADO: Q01 a Q14 y Q18 a Q21 devuelven 0 filas.' <<<"$salida"; then
+       || ! grep -qxF 'RESULTADO: Q01 a Q14 y Q16 a Q21 devuelven 0 filas.' <<<"$salida"; then
         printf '%s\n' "$salida"
         echo "FALLA controles_neon.sql en $1"
         return 1
     fi
-    echo "ok controles_neon.sql en $1  Q01 a Q14 y Q18 a Q21 devuelven 0 filas."
+    echo "ok controles_neon.sql en $1  Q01 a Q14 y Q16 a Q21 devuelven 0 filas."
 }
 
 # Un caso que debe fallar. Exige la salida 3 de psql, la de un error con ON_ERROR_STOP, y el texto esperado en la
