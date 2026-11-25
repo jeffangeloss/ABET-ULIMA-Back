@@ -48,6 +48,7 @@ Característica: Nombre del profesor en la base
       | espacio de ancho cero    | "Profesor Inventado​Uno"             |
       | arroba                   | "docente732@example.invalid"              |
       | dígito                   | "Profesor Inventado 732"                  |
+      | coma                     | "Inventado, Profesor"                     |
       | forma NFD                | "Profesor Inventado Ángel"          |
 
   @spec010 @corte1 @US-95

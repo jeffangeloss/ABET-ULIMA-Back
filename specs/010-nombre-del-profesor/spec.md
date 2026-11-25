@@ -2,7 +2,7 @@
 
 **Feature Branch**: `docs/010-nombre-del-profesor` del Back (PR a `develop`), con la implementación en `feat/010-nombre-del-profesor` después de la aprobación y de la fusión de `fix/r17-recuadros-y-filas-de-pi`
 **Created**: 2026-11-24
-**Status**: Borrador para aprobación de Jefferson
+**Status**: Aprobada por Jefferson en el chat el 2026-11-24 («Apruebo la spec 010, sepáralos por coma»), con el separador de D10 cambiado a la coma (J-68)
 **Input**: «no tenemos campo del nombre del profesor en las tablas? porque normal si le asignas nombre a los correos de prueba» y, ante la pregunta de qué va en D10 cuando la sección tiene varios profesores, «Sí, escribe la spec con los profesores asignados»
 
 ## Épica
@@ -34,7 +34,7 @@ Los escenarios viven en `specs/010-nombre-del-profesor/aceptacion/`, en español
 ### Session 2026-11-24
 
 - Q: ¿Por qué el nombre va en `acceso` y no en `abet`? → A: Q04 prohíbe columnas de nombre en `estudiante`, `medicion`, `carga`, `rechazo_fila` y `carga_columna`, y los roles de lectura `abet_lectura` y `powerbi_lectura` no tienen acceso a `acceso`. El usuario ya vive en `acceso` por esa razón (V1_09).
-- Q: ¿Qué va en D10 con varios profesores? → A: Los nombres de todos los profesores asignados a la sección en `acceso.docente_seccion`, en orden alfabético sin tildes ni mayúsculas y separados por «; », como pidió Jefferson. El rótulo «Profesor:» de B10:C10 no cambia.
+- Q: ¿Qué va en D10 con varios profesores? → A: Los nombres de todos los profesores asignados a la sección en `acceso.docente_seccion`, en orden alfabético sin tildes ni mayúsculas y separados por «, », como pidió Jefferson. El rótulo «Profesor:» de B10:C10 no cambia.
 - Q: ¿Y si un profesor no tiene nombre? → A: Se omite de D10 y su correo no lo reemplaza, porque el R-17 sale de la carrera hacia los revisores de ABET y BR-R17-07 deja el correo solo en la hoja «Constancia».
 - Q: ¿D-12 queda resuelta? → A: No. El pedido de Jefferson cambia su valor provisional, y la decisión sigue con la Coordinación de Ambiental y la Oficina de Calidad. El llenado de D10 vive en una función aislada para revertirlo sin tocar el resto de la cabecera.
 
@@ -92,7 +92,7 @@ Como profesor o coordinación que entrega el R-17 a la carrera, quiero que el va
 
 **Why this priority**: es el segundo pedido literal de Jefferson y el único cambio visible de la spec. La plantilla base de la carrera trae la celda y hoy se llena a mano.
 
-**Independent Test**: con la 701 de 5643 publicada y su análisis declarado, el R-17 trae en D10 «Profesor Inventado Setecientos Uno», y con tres profesores asignados trae «Profesor Inventado Ángel; Profesor Inventado Beto; Profesor Inventado Setecientos Uno» en dos generaciones seguidas.
+**Independent Test**: con la 701 de 5643 publicada y su análisis declarado, el R-17 trae en D10 «Profesor Inventado Setecientos Uno», y con tres profesores asignados trae «Profesor Inventado Ángel, Profesor Inventado Beto, Profesor Inventado Setecientos Uno» en dos generaciones seguidas.
 
 **Base**: `abet_carga/r17.py` (`generar()`, `_cabecera()` y una función nueva y aislada que lee los profesores de la sección, propuesta), `abet.carga.seccion_id`, `acceso.docente_seccion` y `acceso.usuario_autorizado`, `lineas_del_recuadro()`, `plantillas/README.md` (fila de D10), `tests/test_r17.py` y `specs/features/r17/r17.spec.md` (BR-R17-07 y BR-R17-14).
 **Pantalla**: ninguna. El libro se descarga por la ruta 7.
@@ -100,7 +100,7 @@ Como profesor o coordinación que entrega el R-17 a la carrera, quiero que el va
 **Acceptance Scenarios** (`specs/010-nombre-del-profesor/aceptacion/profesores_en_el_r17.feature`):
 
 1. **Una sección con un profesor trae su nombre en D10**, en Ambiental y en Industrial, con B10 igual a «Profesor:».
-2. **Varios profesores salen en orden alfabético sin tildes ni mayúsculas, separados por «; », y el orden es estable.**
+2. **Varios profesores salen en orden alfabético sin tildes ni mayúsculas, separados por «, », y el orden es estable.**
 3. **Un profesor dado de baja sigue en D10 de su sección.**
 4. **Solo los profesores de la sección salen en D10**, sin los de otra sección ni una cuenta COORDINADOR asignada.
 5. **Un nombre que parece fórmula queda como texto.**
@@ -159,14 +159,14 @@ Como dueño técnico del repositorio público, quiero pruebas que fijen que el n
 
 ## Requirements *(mandatory)*
 
-- **FR-001** La migración `V1_16__nombre_del_usuario.sql` (propuesta, solo DDL) agrega `acceso.usuario_autorizado.nombre varchar(120) NULL` y la restricción `ck_usuario_autorizado_nombre`. La restricción exige que el nombre sea igual a su versión recortada, no esté vacío, no tenga dos espacios seguidos, no tenga caracteres de control (`[[:cntrl:]]`) ni los de formato U+00AD, U+200B a U+200F, U+202A a U+202E, U+2060 a U+2064 y U+FEFF, no tenga arroba ni dígitos y cumpla `nombre IS NFC NORMALIZED`. La migración actualiza el `COMMENT ON SCHEMA acceso`, que hoy dice que el correo es el único dato de contacto, y comenta la columna como dato personal de la Ley 29733 y el DS 016-2024-JUS.
+- **FR-001** La migración `V1_16__nombre_del_usuario.sql` (propuesta, solo DDL) agrega `acceso.usuario_autorizado.nombre varchar(120) NULL` y la restricción `ck_usuario_autorizado_nombre`. La restricción exige que el nombre sea igual a su versión recortada, no esté vacío, no tenga dos espacios seguidos, no tenga caracteres de control (`[[:cntrl:]]`) ni los de formato U+00AD, U+200B a U+200F, U+202A a U+202E, U+2060 a U+2064 y U+FEFF, no tenga arroba, coma ni dígitos y cumpla `nombre IS NFC NORMALIZED`. La migración actualiza el `COMMENT ON SCHEMA acceso`, que hoy dice que el correo es el único dato de contacto, y comenta la columna como dato personal de la Ley 29733 y el DS 016-2024-JUS.
 - **FR-002** Q15 de `db/pruebas/pruebas.sql` suma al filtro de `acceso` la condición `column_name LIKE '%nombre%'` y espera exactamente `usuario_autorizado.correo,usuario_autorizado.nombre`, con el mensaje «FALLA Q15: en acceso solo usuario_autorizado.correo y usuario_autorizado.nombre deben pasar el filtro» (propuesta). El paso `_correr_q15` de `tests/aceptacion/pasos/test_base_neon_feature.py` corre el bloque de Q15 del archivo y no el texto de Q04. Q04 y `controles_neon.sql` no cambian.
 - **FR-003** `crear_rol_app.sql` no cambia. `probar_rol_app.sql` suma que `abet_app` lee `nombre` y recibe 42501 en un INSERT o un UPDATE de `acceso.usuario_autorizado`. Las pruebas de `crear_roles_lectura.sql` suman que `abet_lectura` y `powerbi_lectura` reciben 42501 sobre esa tabla y que `abet_respaldo` la lee. `db/README.md` declara que el respaldo de Neon lleva nombres de profesores y entra al tratamiento de la Ley 29733.
 - **FR-004** `cargar_programacion.py` acepta una columna opcional `nombre`, en el archivo y en cada fila. Antes de conectarse, normaliza el nombre a NFC, quita los espacios a los lados y colapsa los internos a uno, y aplica la misma regla de FR-001. Una celda vacía significa sin nombre. Un nombre inválido rechaza el archivo con «Fila N. El nombre no es válido.» (propuesta) y dos nombres distintos para un mismo correo lo rechazan con «Fila N. El correo trae otro nombre en otra fila.» (propuesta), sin repetir ningún valor.
 - **FR-005** `cargar_programacion.sql` guarda el nombre de un correo nuevo en el INSERT que ya existe y completa el de un correo existente con un UPDATE acotado a `WHERE nombre IS NULL`, que pasa a ser la segunda actualización permitida. Un correo existente con otro nombre no cambia y el informe dice «Aviso. <correo> ya tiene otro nombre en la base y no se cambia.» (propuesta). El guion nunca cambia `rol` ni `activo` y nunca asigna nombre a una cuenta COORDINADOR.
 - **FR-006** Con la columna `nombre` en el archivo, la línea de resumen es «Resumen. N secciones nuevas, N usuarios nuevos, N asignaciones nuevas y N nombres completados.» (propuesta), donde «nombres completados» cuenta solo usuarios que ya existían con el nombre nulo. Un archivo que solo completa nombres cierra con «Cambios guardados.». Sin la columna, el informe es el de la spec 006. Ningún informe, registro ni mensaje de error escribe un nombre.
 - **FR-007** La spec 010 cambia con fecha FR-002, FR-005, FR-007, FR-009 y FR-013 de la spec 006 y BR-ACCESO-11, y adapta `test_las_columnas_ajenas_se_ignoran_sin_leer_sus_valores` para que las columnas distintas de `nombre` sigan ignoradas sin leer sus valores.
-- **FR-008** `generar()` de `abet_carga/r17.py` lee, dentro de su transacción READ ONLY con REPEATABLE READ (BR-R17-12), los usuarios de `acceso.docente_seccion` de `abet.carga.seccion_id` con `rol = 'PROFESOR'`, sin filtrar por `activo` y con `nombre` no nulo. Una función aislada (propuesta) los ordena en Python por la clave del nombre en NFD sin marcas diacríticas y con `casefold()`, con `usuario_id` de desempate, los une con «; » y devuelve el texto que `_cabecera()` escribe en D10 con `_escribir`. Sin nombres, D10 queda vacía.
+- **FR-008** `generar()` de `abet_carga/r17.py` lee, dentro de su transacción READ ONLY con REPEATABLE READ (BR-R17-12), los usuarios de `acceso.docente_seccion` de `abet.carga.seccion_id` con `rol = 'PROFESOR'`, sin filtrar por `activo` y con `nombre` no nulo. Una función aislada (propuesta) los ordena en Python por la clave del nombre en NFD sin marcas diacríticas y con `casefold()`, con `usuario_id` de desempate, los une con «, » y devuelve el texto que `_cabecera()` escribe en D10 con `_escribir`. Sin nombres, D10 queda vacía.
 - **FR-009** D10:I10 lleva ajuste de texto, y una función pura de cabida calcula el alto de la fila 10 por líneas con `lineas_del_recuadro()` y el ancho de D10:I10, sin pasar de 409 puntos. Las filas 9 y 11 y las filas 29 a 36 no cambian, y no hay tope de caracteres ni respuesta 422 por la cabida de D10. La implementación se construye después de fusionar `fix/r17-recuadros-y-filas-de-pi` y no modifica `alto_de_fila_final()`.
 - **FR-010** Un profesor sin nombre se omite de D10 y su correo no lo reemplaza. Una sección sin profesores con nombre responde 200 con D10 vacía, y `generar()` no suma ningún error nuevo. La hoja «Constancia», el JSON de la constancia y BR-R17-09 y BR-R17-10 no cambian.
 - **FR-011** La consulta informativa `db/plataforma/neon/profesores_sin_nombre.sql` (propuesta) recibe `-v periodo`, pasa la sesión a solo lectura antes de la primera consulta y devuelve solo dos números, las secciones del periodo con carga PUBLICADA que tienen algún PROFESOR asignado sin nombre y los profesores asignados sin nombre, sin correos, nombres ni números de sección. No es un control de `pruebas.sql` ni de `controles_neon.sql`.
@@ -207,7 +207,7 @@ De Jefferson (J).
 | J-65 | Un campo `nombre` o dos campos, `nombres` y `apellidos` | Un campo de 120 caracteres, tal como lo escribe la carrera |
 | J-66 | Dígitos en el nombre | La base los rechaza y los nombres inventados van en letras |
 | J-67 | Quiénes salen en D10 | Todo PROFESOR de `acceso.docente_seccion` con nombre, activo o dado de baja, sin corte temporal. La alternativa del crítico filtra `asignado_en <= carga.terminada_en` y deja D10 vacía si la programación se carga después de publicar |
-| J-68 | Orden, separador y largo de D10 | Alfabético sin tildes ni mayúsculas en Python, con `usuario_id` de desempate, separador «; », sin tope y con el alto de la fila 10 calculado |
+| J-68 | Orden, separador y largo de D10 | Alfabético sin tildes ni mayúsculas en Python, con `usuario_id` de desempate, separador «, » por decisión de Jefferson del 2026-11-24, que exige que el nombre no tenga coma (FR-001), sin tope y con el alto de la fila 10 calculado |
 | J-69 | Profesor sin nombre | Se omite de D10, sin el correo de relleno y sin aviso en la hoja «Constancia» |
 | J-70 | Corrección de un nombre mal escrito y retiro a pedido del titular | El dueño de la base corre desde la Mac un psql no interactivo en el Windows por `en_windows.py`, con el correo y el nombre por la entrada estándar, nunca en una sesión interactiva. La alternativa del crítico son las banderas `--corregir-nombres` y `--retirar-nombres` de `cargar_programacion.py` |
 | J-71 | Cuándo y dónde se aplica | V1_16 primero en develop de Neon con respaldo previo y en la rama principal con el permiso de Jefferson, y el código después de fusionar `fix/r17-recuadros-y-filas-de-pi`, con unas 17 h más el cierre |

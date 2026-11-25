@@ -15,8 +15,8 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-24
 - **Rama de trabajo**: `docs/010-nombre-del-profesor`, con la spec 010 en borrador. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 está en `fix/r17-recuadros-y-filas-de-pi`, sin push
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: la spec 010 en borrador (EP-10, US-95 a US-99), que guarda el nombre del profesor en `acceso` y llena D10 del R-17 con los profesores asignados a la sección. Antes, la fusión de la spec 005 en `develop` y Neon develop en V1_15
-- **En curso**: la aprobación de la spec 010 por Jefferson y los PR de `fix/r17-recuadros-y-filas-de-pi` (Back) y `docs/r17-recuadros-y-filas-de-pi` (Front)
+- **Último cambio**: la aprobación de la spec 010 con D10 separada por comas. Antes, la spec 010 en borrador (EP-10, US-95 a US-99), que guarda el nombre del profesor en `acceso` y llena D10 del R-17 con los profesores asignados a la sección. Antes, la fusión de la spec 005 en `develop` y Neon develop en V1_15
+- **En curso**: el contrato, el plan y las tareas de la spec 010, y los PR de `fix/r17-recuadros-y-filas-de-pi` (Back) y `docs/r17-recuadros-y-filas-de-pi` (Front)
 - **Siguiente paso**: con la aprobación, el contrato, el plan y las tareas de la spec 010; la demo de Química sigue con la coordinación, y la spec 009 espera su construcción
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 00:05 (Lima) · docs/010-nombre-del-profesor · Aprobación de la spec 010 con D10 separada por comas
+- Quién: Claude Code en la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `spec.md` pasa a «Aprobada» con la cita de Jefferson, y D10 separa los nombres con «, » en la aclaración, el Independent Test, el escenario 2 de US-97, FR-008 y J-68. FR-001 suma la coma a los caracteres que `ck_usuario_autorizado_nombre` rechaza, y `nombre_en_la_base.feature` suma el ejemplo «coma». `profesores_en_el_r17.feature` espera la coma, AD-67 de `revision-historias.md` anota el cambio y `specs/README.md` marca la spec como aprobada.
+- Por qué: Jefferson aprueba la spec en el chat el 2026-11-24 («Apruebo la spec 010, sepáralos por coma»). Un nombre con coma haría ambigua la lista de D10, así que la base lo rechaza.
+- Lo que debe hacer, cómo se probó: `pytest_bdd.feature.get_features` lee los cuatro `.feature` y cuenta 30 escenarios, y `grep '«; »'` ya no encuentra el separador anterior en `spec.md`.
+- Lo que no debe hacer, cómo se probó: no cambia código ni migraciones, y los ejemplos siguen con nombres que empiezan por «Profesor Inventado» y correos `@example.invalid`.
+- Correcciones: ninguna.
+- Cómo se reporta: esta entrada y el PR de `docs/010-nombre-del-profesor`.
+- Pendiente y siguiente paso: las reglas BR-ACCESO-15 y BR-R17-14, el contrato del Front, el plan y las tareas, y después la construcción en `feat/010-nombre-del-profesor`.
 
 ### 2026-11-24 23:40 (Lima) · docs/010-nombre-del-profesor · Spec 010 en borrador: nombre del profesor en la base y en el R-17
 - Quién: la sesión principal con un workflow de ocho agentes. Tres agentes Sonnet proponen candidatas desde la coordinación, la administración de la base y la privacidad, tres lentes Sonnet (necesidad, solapamiento y verificabilidad) intentan refutarlas, un crítico Opus juzga 26 decisiones técnicas (13 SE_SOSTIENE, 12 CAMBIAR y 1 DUDOSA) y un redactor Opus consolida. La sesión principal revisa el encabezado, la tabla de cambios, las aclaraciones y que los nombres de ejemplo sean inventados.

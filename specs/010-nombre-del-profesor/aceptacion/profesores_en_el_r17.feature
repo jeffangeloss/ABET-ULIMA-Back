@@ -45,12 +45,12 @@ Característica: El R-17 nombra a los profesores de la sección
       | 701     | 5643       | 2026-1  | Profesor Inventado Setecientos Uno    | Carrera de Ingeniería Industrial |
 
   @spec010 @corte1 @US-97
-  Escenario: Varios profesores salen en orden alfabético sin tildes ni mayúsculas, separados por punto y coma, y el orden es estable
+  Escenario: Varios profesores salen en orden alfabético sin tildes ni mayúsculas, separados por coma, y el orden es estable
     Dado "docente721@example.invalid" con el nombre "Profesor Inventado Beto" asignado a la 701 de 5643
     Y "docente722@example.invalid" con el nombre "Profesor Inventado Ángel" asignado a la 701 de 5643
     Y la 701 de 5643 publicada con su análisis declarado
     Cuando se genera el R-17 de esa carga dos veces
-    Entonces D10 vale "Profesor Inventado Ángel; Profesor Inventado Beto; Profesor Inventado Setecientos Uno" las dos veces
+    Entonces D10 vale "Profesor Inventado Ángel, Profesor Inventado Beto, Profesor Inventado Setecientos Uno" las dos veces
 
   @spec010 @corte1 @US-97
   Escenario: Un profesor dado de baja sigue en D10 de su sección
@@ -58,7 +58,7 @@ Característica: El R-17 nombra a los profesores de la sección
     Y la 701 de 5643 publicada con su análisis declarado
     Y "docente722@example.invalid" dado de baja con activo falso
     Cuando coordinador.quimica@example.invalid genera el R-17 de esa carga
-    Entonces D10 vale "Profesor Inventado Ángel; Profesor Inventado Setecientos Uno"
+    Entonces D10 vale "Profesor Inventado Ángel, Profesor Inventado Setecientos Uno"
 
   @spec010 @corte1 @US-97
   Escenario: Solo los profesores de la sección salen en D10
