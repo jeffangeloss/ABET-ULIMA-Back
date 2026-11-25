@@ -15,9 +15,9 @@ Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores
 
 - [x] T010 [Back] BR-ACCESO-15 y BR-R17-14 en las specs vivas `acceso` y `r17`, con los cambios fechados de BR-ACCESO-01, BR-ACCESO-11 y BR-R17-07, y la fila de `specs/README.md` [US-95] [US-96] [US-97] [US-98] [US-99] · 2026-11-25
 - [x] T011 [Front] Línea fechada «cambio del 2026-11-25 (spec 010, propuesta)» en `docs/03-api/contrato.md`, en la ruta 7 y en la sección 13.6, con AD-76 y sin ruta ni JSON nuevo [US-97] · 2026-11-25
-- [ ] T012 [Back] Cambio fechado de FR-002, FR-005, FR-007, FR-009 y FR-013 en `specs/006-programacion-docente/spec.md` y del valor provisional de D-12 en `specs/001-mvp-carga-r17/spec.md`, y la fila de D10 de `plantillas/README.md` [US-96] [US-97] · 1 h
-- [ ] T013 [Back] `db/README.md` con el uso de la columna `nombre` del guion, la declaración de que el respaldo de Neon lleva nombres de profesores y entra a la Ley 29733, el orden V1_16 antes de la carga de nombres y el comando de `en_windows.py` sin ningún valor secreto [US-95] [US-96] · 1 h
-- [ ] T014 [Back] Pasos compartidos de los Antecedentes de la spec 010 en `tests/aceptacion/pasos/conftest.py`, con la base desechable de Ambiental en 2026-2 y de Química en 2026-1 y sus nombres inventados, y el conteo de la spec 010 (30 escenarios) en `tests/aceptacion/pasos/test_lectura_gherkin_es.py` [US-95..US-99] · 2 h
+- [x] T012 [Back] Cambio fechado de FR-002, FR-005, FR-007, FR-009 y FR-013 en `specs/006-programacion-docente/spec.md` y del valor provisional de D-12 en `specs/001-mvp-carga-r17/spec.md`, y la fila de D10 de `plantillas/README.md` [US-96] [US-97] · 2026-11-25
+- [x] T013 [Back] `db/README.md` con el uso de la columna `nombre` del guion, la declaración de que el respaldo de Neon lleva nombres de profesores y entra a la Ley 29733, el orden V1_16 antes de la carga de nombres y el comando de `en_windows.py` sin ningún valor secreto [US-95] [US-96] · 2026-11-25
+- [x] T014 [Back] Pasos compartidos de los Antecedentes de la spec 010 en `tests/aceptacion/pasos/conftest.py`, con la base desechable de Ambiental en 2026-2 y de Química en 2026-1 y sus nombres inventados, y el conteo de la spec 010 (30 escenarios) en `tests/aceptacion/pasos/test_lectura_gherkin_es.py` [US-95..US-99] · 2026-11-25
 
 ## Fase 2 · Base
 

@@ -59,6 +59,11 @@ HISTORIAS_DE_LA_SPEC_008 = {
 }
 SPEC_008_DIR = "specs/008-ciclo-quimica-industrial/aceptacion"
 SPEC_008 = tuple(f"{SPEC_008_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_008)
+# Los cuatro archivos de la spec 010, con las historias que spec.md asigna a cada uno (T014 de su tasks.md).
+HISTORIAS_DE_LA_SPEC_010 = {"nombre_en_la_base": (95,), "programacion_con_nombre": (96,),
+                            "profesores_en_el_r17": (97, 98), "privacidad_del_nombre": (99,)}
+SPEC_010_DIR = "specs/010-nombre-del-profesor/aceptacion"
+SPEC_010 = tuple(f"{SPEC_010_DIR}/{nombre}.feature" for nombre in HISTORIAS_DE_LA_SPEC_010)
 # Archivos sin Antecedentes (spec 007, FR-017). El esquema del lector de antes_de_subir.feature corre sin base y
 # no hereda ninguna sesión, y cada escenario de rotulos_por_cuenta.feature escribe su propia sesión. En la spec 008,
 # los escenarios de la siembra, la guía, la privacidad, la matriz y el sistema visual arman cada uno lo suyo.
@@ -235,6 +240,30 @@ class _EscenariosDeMatrizCumplimiento:
     scenarios(f"{SPEC_008_DIR}/matriz_cumplimiento.feature")
 
 
+class _EscenariosDeNombreEnLaBase:
+    """Funciones que scenarios() arma para nombre_en_la_base.feature (spec 010) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_010_DIR}/nombre_en_la_base.feature")
+
+
+class _EscenariosDeProgramacionConNombre:
+    """Funciones que scenarios() arma para programacion_con_nombre.feature (spec 010) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_010_DIR}/programacion_con_nombre.feature")
+
+
+class _EscenariosDeProfesoresEnElR17:
+    """Funciones que scenarios() arma para profesores_en_el_r17.feature (spec 010) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_010_DIR}/profesores_en_el_r17.feature")
+
+
+class _EscenariosDePrivacidadDelNombre:
+    """Funciones que scenarios() arma para privacidad_del_nombre.feature (spec 010) con la ruta relativa a la raíz."""
+
+    scenarios(f"{SPEC_010_DIR}/privacidad_del_nombre.feature")
+
+
 _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _EscenariosDeExports,
             RESULTADOS: _EscenariosDeResultados, ALCANCE: _EscenariosDeAlcance,
             **dict(zip(SPEC_005, (_EscenariosDelSemaforo, _EscenariosDeLaDeclaracion, _EscenariosDelR17DesdeLaBase,
@@ -242,12 +271,14 @@ _ARMADAS = {CARGA: _EscenariosDeCarga, R17: _EscenariosDeR17, EXPORTS: _Escenari
             PROGRAMACION: _EscenariosDeProgramacion, SIN_DOCENTE: _EscenariosSinDocente,
             SIGUIENTE_PASO: _EscenariosDelSiguientePaso, ANTES_DE_SUBIR: _EscenariosDeAntesDeSubir,
             QUE_CORREGIR: _EscenariosDeQueCorregir, ROTULOS: _EscenariosDeRotulos, AVANCE: _EscenariosDelAvance,
-            **{ruta: clase for ruta, clase in zip(SPEC_008, (_EscenariosDeCatalogoIndustrial, _EscenariosDeAlcanceCoordinacion, _EscenariosDePeriodoElegido, _EscenariosDeExportsCapacitacion, _EscenariosDeCargaQuimica, _EscenariosDeR17Industrial, _EscenariosDeAvanceDelCurso, _EscenariosDeSistemaVisual, _EscenariosDeEnsayoYConciliacion, _EscenariosDeCapacitacionEnDevelop, _EscenariosDeGuiaYPrivacidad, _EscenariosDeMatrizCumplimiento), strict=True)}}
+            **{ruta: clase for ruta, clase in zip(SPEC_008, (_EscenariosDeCatalogoIndustrial, _EscenariosDeAlcanceCoordinacion, _EscenariosDePeriodoElegido, _EscenariosDeExportsCapacitacion, _EscenariosDeCargaQuimica, _EscenariosDeR17Industrial, _EscenariosDeAvanceDelCurso, _EscenariosDeSistemaVisual, _EscenariosDeEnsayoYConciliacion, _EscenariosDeCapacitacionEnDevelop, _EscenariosDeGuiaYPrivacidad, _EscenariosDeMatrizCumplimiento), strict=True)},
+            **dict(zip(SPEC_010, (_EscenariosDeNombreEnLaBase, _EscenariosDeProgramacionConNombre,
+                                  _EscenariosDeProfesoresEnElR17, _EscenariosDePrivacidadDelNombre), strict=True))}
 _POR_ARCHIVO = pytest.mark.parametrize("ruta", list(_ARMADAS),
                                        ids=["carga", "r17_constancia", "exports_blackboard", "resultados",
                                             "alcance_y_privacidad", *HISTORIAS_DE_LA_SPEC_005, "programacion_docente", "secciones_sin_docente",
                                             "siguiente_paso", "antes_de_subir", "que_corregir", "rotulos_por_cuenta",
-                                            "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008])
+                                            "avance_del_registro", *HISTORIAS_DE_LA_SPEC_008, *HISTORIAS_DE_LA_SPEC_010])
 _ENCABEZADO = re.compile(r"^[ \t]*(Escenario|Esquema del escenario):[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 _CARACTERISTICA = re.compile(r"^[ \t]*Característica:[ \t]*(.+?)[ \t]*$", re.MULTILINE)
 # Palabras de paso del español de Gherkin (gherkin-languages.json), sin el asterisco. Y, E y Pero
@@ -366,6 +397,10 @@ def test_cada_esquema_trae_todas_las_filas_de_sus_ejemplos(ruta: str) -> None:
             assert lineas[tabla.line_number - 1].strip().startswith("Ejemplos:")
             assert tabla.examples, f"{esquema.name}: una tabla de Ejemplos sin filas"
             for parametro in tabla.example_params:
+                # Cambio del 2026-11-25 (T014 de la spec 010). Una columna «caso» sin uso en los pasos es el rótulo de la
+                # fila, como en los Ejemplos de nombre_en_la_base.feature, y no un parámetro olvidado.
+                if parametro == "caso" and f"<{parametro}>" not in texto_de_pasos:
+                    continue
                 assert f"<{parametro}>" in texto_de_pasos, f"{esquema.name}: <{parametro}> no aparece en los pasos"
     for escenario in feature.scenarios.values():
         if not escenario.templated:
@@ -568,3 +603,26 @@ def test_la_spec_008_trae_202_escenarios_con_258_casos_41_van_a_vitest_y_14_a_pl
     assert (escenarios, casos) == (202, 258)
     assert (delegados, del_navegador) == (41, 14)
     assert historias == {f"US-{n}" for n in range(67, 91)}
+
+
+def test_la_spec_010_trae_30_escenarios_con_42_casos_y_ninguno_va_a_vitest_ni_a_playwright() -> None:
+    # T003 y T014 de specs/010-nombre-del-profesor/tasks.md. Cada escenario lleva @spec010, @corte1 y una sola historia
+    # de las que spec.md asigna a su archivo, y ninguno lleva @delegado_a_vitest ni @playwright, porque la spec no
+    # cambia ninguna pantalla ni ruta (AD-76). Las cinco historias, de US-95 a US-99, tienen al menos un escenario, y
+    # los Antecedentes de los cuatro archivos piden la base de la spec 010 con V1_16.
+    escenarios, casos, historias = 0, 0, set()
+    for nombre, ruta in zip(HISTORIAS_DE_LA_SPEC_010, SPEC_010, strict=True):
+        propias = {f"US-{n}" for n in HISTORIAS_DE_LA_SPEC_010[nombre]}
+        feature = _feature(ruta)
+        for escenario in feature.scenarios.values():
+            escenarios += 1
+            casos += sum(len(t.examples) for t in escenario.examples) if escenario.templated else 1
+            assert {"spec010", "corte1"} <= set(escenario.tags), f"{escenario.name}: {sorted(escenario.tags)}"
+            [historia] = [t for t in escenario.tags if re.fullmatch(r"US-\d{2}", t)]
+            assert historia in propias, f"{nombre}: «{escenario.name}» lleva {historia}"
+            historias.add(historia)
+            assert not {"delegado_a_vitest", "playwright"} & set(escenario.tags), escenario.name
+        pasos = " ".join(paso.name for paso in feature.background.steps)
+        assert "V1_16" in pasos or "spec 010" in pasos, f"{nombre}: {pasos}"
+    assert (escenarios, casos) == (30, 42)
+    assert historias == {f"US-{n}" for n in range(95, 100)}

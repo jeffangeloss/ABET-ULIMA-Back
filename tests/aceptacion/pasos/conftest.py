@@ -30,6 +30,10 @@ lo que repiten sus Antecedentes y sus escenarios.
   comprueba por sus cuatro tablas, y REGLAS_DE_COPIA suma «con la columna X.Y vacía en las filas N y M» y su forma
   de tres filas, «en las filas N, M y P».
 
+- La spec 010 (T014 de su tasks.md). Los Antecedentes de sus cuatro .feature piden V1_16 y los nombres inventados de las
+  semillas, que el arnés comprueba nombrando cada pieza que falta con su tarea, y el archivo base de la programación
+  suma la columna nombre con los de «Profesor Inventado Cuatrocientos Diez» y «Cuatrocientos Once».
+
 Los exports modificados se arman en memoria con scripts/generar_exports_inventados.py y nunca se
 versionan.
 """
@@ -1516,6 +1520,11 @@ def correr_guion_006(ctx: Escenario, *argumentos: str, aplicar: bool = False, en
 @given("una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_11, la "
        "vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni profesores")
 def _base_de_partida_006(ctx: Escenario) -> None:
+    armar_base_de_partida_006(ctx)
+
+
+def armar_base_de_partida_006(ctx: Escenario) -> None:
+    """Base de la variante «programacion», con la vigencia, el plan y ningún profesor, que repiten las specs 006 y 010."""
     ctx.crear_base("programacion")
     assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
     assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_plan_medicion_descripcion'") == 1, \
@@ -1636,3 +1645,92 @@ def delegar_a_playwright(request: pytest.FixtureRequest, cubiertos: dict[str, li
     """registrar_playwright() con el escenario que pytest-bdd arma para la prueba en curso."""
     plantilla = scenario_wrapper_template_registry[request.node.function]
     registrar_playwright(request.node, plantilla.name, set(plantilla.tags), cubiertos, texto)
+
+
+# Spec 010. Antecedentes de sus cuatro .feature y archivo base con nombres (T014 de su tasks.md)
+
+# Piezas que pide cada forma de la base de la spec 010, con la tarea que construye cada una.
+MIGRACION_V1_16 = ("db/migration/V1_16__*.sql", "T020")
+NOMBRES_INVENTADOS_010 = {
+    "docente410@example.invalid": "Profesor Inventado Cuatrocientos Diez",
+    "docente411@example.invalid": "Profesor Inventado Cuatrocientos Once",
+    "docente701@example.invalid": "Profesor Inventado Setecientos Uno",
+    "docente702@example.invalid": "Profesor Inventado Setecientos Dos",
+    "docente703@example.invalid": "Profesor Inventado Setecientos Tres",
+}
+NOMBRES_DE_LA_PROGRAMACION_010 = ("Profesor Inventado Cuatrocientos Diez", "Profesor Inventado Cuatrocientos Once")
+
+
+def piezas_de_la_spec_010_que_faltan(raiz: Path = RAIZ) -> list[str]:
+    """Piezas de la spec 010 que una base de sus Antecedentes pide y que todavía no están, con su tarea."""
+    return [f"{patron} ({tarea})" for patron, tarea in (MIGRACION_V1_16,) if not list(raiz.glob(patron))]
+
+
+def nombres_que_faltan_010(ctx: Escenario) -> list[str]:
+    """Correos de las semillas que no traen su nombre inventado de las convenciones de spec.md (T022), sin repetir nombres."""
+    en_la_base = dict(ctx.filas("SELECT correo, nombre FROM acceso.usuario_autorizado WHERE correo = ANY(%s)",
+                                list(NOMBRES_INVENTADOS_010)))
+    return [correo for correo, nombre in NOMBRES_INVENTADOS_010.items() if en_la_base.get(correo) != nombre]
+
+
+def exigir_v1_16(ctx: Escenario) -> None:
+    """La base trae la columna nombre de V1_16, con su restricción, o el escenario nombra la pieza que falta."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    assert ctx.uno("SELECT count(*) FROM information_schema.columns WHERE table_schema = 'acceso'"
+                   " AND table_name = 'usuario_autorizado' AND column_name = 'nombre'") == 1, "falta la migración V1_16"
+    assert ctx.uno("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_usuario_autorizado_nombre'") == 1, \
+        "falta la migración V1_16"
+
+
+@given("una base desechable migrada hasta V1_16")
+def _base_migrada_hasta_v1_16(ctx: Escenario) -> None:
+    """Base de los datos de 2026-2 con las migraciones V1_01 a V1_16, en el clúster desechable y con el rol abet_app."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    ctx.crear_base("periodo")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    exigir_v1_16(ctx)
+
+
+@given("una base desechable de la spec 010 con los datos inventados de Ambiental en 2026-2 y de Química en 2026-1 y sus "
+       "nombres inventados")
+def _base_de_la_spec_010(ctx: Escenario) -> None:
+    """Base de Ambiental en 2026-2 y de Química en 2026-1 con su plan, V1_16 y los nombres inventados de las semillas."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    ctx.crear_base("quimica_plan")
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+    exigir_v1_16(ctx)
+    sin_nombre = nombres_que_faltan_010(ctx)
+    assert not sin_nombre, (f"las semillas de db/datos/ no traen el nombre inventado de {len(sin_nombre)} profesores"
+                            " (T022)")
+
+
+@given(parsers.re(r"una base desechable de partida de la spec 006, en PostgreSQL 18 con las migraciones V1_01 a V1_16, "
+                  r"la vigencia de AMB-2026 en 2026-2 y el plan de medición de 450002 y 450010, sin secciones ni "
+                  r"profesores"))
+def _base_de_partida_006_con_nombre(ctx: Escenario) -> None:
+    """La base de partida de la spec 006 con V1_16, para que la columna nombre del archivo tenga dónde guardarse."""
+    faltan = piezas_de_la_spec_010_que_faltan()
+    assert not faltan, f"la base de la spec 010 espera {', '.join(faltan)}"
+    armar_base_de_partida_006(ctx)
+    exigir_v1_16(ctx)
+
+
+def archivo_con_nombres_006(ctx: Escenario) -> ArchivoDeProgramacion:
+    """Archivo base de la spec 006 con la columna nombre al final, que nace con los nombres de las dos filas."""
+    archivo = archivo_006(ctx)
+    assert "nombre" not in archivo.encabezados, "el archivo del escenario ya trae la columna nombre"
+    archivo.encabezados.append("nombre")
+    for fila, nombre in zip(archivo.filas, NOMBRES_DE_LA_PROGRAMACION_010, strict=True):
+        fila.append(nombre)
+    return archivo
+
+
+@given("el archivo base con nombres en tmp_path")
+def _archivo_base_con_nombres(ctx: Escenario) -> None:
+    archivo = archivo_con_nombres_006(ctx)
+    assert tuple(archivo.encabezados) == (*ENCABEZADOS_006, "nombre")
+    assert [fila[3] for fila in archivo.filas] == ["docente410@example.invalid", "docente411@example.invalid"]
+    assert [fila[-1] for fila in archivo.filas] == list(NOMBRES_DE_LA_PROGRAMACION_010)

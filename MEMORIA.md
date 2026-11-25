@@ -13,11 +13,11 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ## Punto actual
 
 - **Fecha**: 2026-11-25
-- **Rama de trabajo**: `docs/010-nombre-del-profesor`, con la spec 010 aprobada y su fase 1 de contrato, su plan y sus tareas. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
+- **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: la revisión del revisor Opus, que marca T004 como hecha y escribe los caracteres invisibles de los Ejemplos como secuencias. Antes, BR-ACCESO-15 y BR-R17-14 en las specs vivas, con los cambios fechados de BR-ACCESO-01, BR-ACCESO-11 y BR-R17-07, el plan (fases 0 a 7) y las tareas de la spec 010 con unas 30 horas, y la matriz de cumplimiento regenerada. Antes, la aprobación de la spec 010 con D10 separada por comas
-- **En curso**: los PR de `docs/010-nombre-del-profesor` (Back y Front), que esperan el permiso de Jefferson
-- **Siguiente paso**: fusionar los PR con el permiso de Jefferson y construir la spec 010 en `feat/010-nombre-del-profesor` desde T012, porque `fix/r17-recuadros-y-filas-de-pi` ya está en `develop`; la demo de Química sigue con la coordinación, y la spec 009 espera su construcción
+- **Último cambio**: el contrato y el arnés de la spec 010 (T012 a T014), con los cambios fechados de las specs 001 y 006, `db/README.md` y los pasos compartidos de los Antecedentes. Antes, la revisión del revisor Opus de la fase 1 de la spec 010
+- **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
+- **Siguiente paso**: T020 a T023 de la base (V1_16, Q15, permisos, semillas con nombres inventados y la consulta informativa) y después T030 a T036 del Back
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 01:30 (Lima) · feat/010-nombre-del-profesor · Contrato y arnés de la spec 010 (T012 a T014)
+- Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `specs/006-programacion-docente/spec.md` suma el cambio fechado de FR-002, FR-005, FR-007, FR-009 y FR-013, `specs/001-mvp-carga-r17/spec.md` el de D-12 y `plantillas/README.md` la fila de D10. `db/README.md` suma el apartado «El nombre del profesor (spec 010)» con el uso de la columna `nombre`, la declaración del respaldo de Neon dentro de la Ley 29733, el orden V1_16 antes de la carga y el comando de `en_windows.py` sin valores secretos. `tests/aceptacion/pasos/conftest.py` suma los pasos de los Antecedentes de la spec 010 (base migrada hasta V1_16, base con los nombres inventados, base de partida de la spec 006 con V1_16 y archivo base con nombres) y `test_lectura_gherkin_es.py` suma la lectura de los cuatro `.feature` (30 escenarios y 42 casos) y la tolerancia a una columna «caso» que solo rotula la fila. `test_pasos_compartidos_spec_010.py` prueba esos pasos.
+- Por qué: T012 a T014 de `specs/010-nombre-del-profesor/tasks.md`, que cierran la fase de contrato antes de construir la base y el Back (FR-007, FR-015 y FR-016 de la spec 010).
+- Lo que debe hacer, cómo se probó: `uv run --frozen --no-build python -m pytest -q -p no:cacheprovider tests/aceptacion/pasos/test_lectura_gherkin_es.py tests/aceptacion/pasos/test_pasos_compartidos_spec_010.py tests/aceptacion/pasos/test_pasos_compartidos_spec_008.py` pasa. Cada Antecedente de los cuatro `.feature` lo reconoce un solo paso, y la base de la spec 010 nombra la pieza que falta con su tarea.
+- Lo que no debe hacer, cómo se probó: Las mismas pruebas comprueban que V1_15, V1_17 y V1_160 no sirven como «migrada hasta V1_16», que la base de la spec 009 no se confunde con la de la spec 010, que el paso de la spec 006 con V1_11 sigue con su expresión, que una base sin nombres inventados falla nombrando la tarea T022 sin repetir ningún nombre y que el archivo base no suma dos veces la columna `nombre`.
+- Correcciones: El conteo de casos de la spec 010 es 42 y no 41, y la prueba genérica de Ejemplos admite una columna «caso» sin uso en los pasos.
+- Cómo se reporta: Esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: T020 a T023 de la base (V1_16, Q15, permisos, semillas y consulta informativa) y T030 a T036 del Back.
 
 ### 2026-11-25 01:20 (Lima) · docs/010-nombre-del-profesor · Revisión de la fase 1 de la spec 010 por el revisor Opus
 - Quién: revisor Opus independiente, delegado por la sesión principal, sin subagentes ni Codex.

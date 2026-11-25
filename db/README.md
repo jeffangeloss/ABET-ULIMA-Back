@@ -27,6 +27,8 @@ Esta carpeta es la semilla del repositorio de la base de datos del sistema de me
 | `plataforma/neon/marcar_entorno.sql` | Marca de entorno de Vercel de cada rama (`abet.entorno`), production en la principal y preview en `develop` (T077) |
 | `plataforma/neon/pi_sin_descripcion_instrumento.sql` | Consulta informativa de solo lectura de los PI del plan de un periodo sin descripción del instrumento (spec 005, US-51) |
 | `herramientas/cargar_programacion.py` y `herramientas/cargar_programacion.sql` | Guion de la programación docente del ciclo, con su SQL, que carga secciones, profesores y asignaciones desde el CSV de la carrera, en seco por omisión (spec 006) |
+| `migration/V1_16__nombre_del_usuario.sql` | Columna opcional `nombre` de `acceso.usuario_autorizado` con su restricción y sus comentarios, solo DDL (spec 010, US-95, propuesta) |
+| `plataforma/neon/profesores_sin_nombre.sql` | Consulta informativa de solo lectura que cuenta las secciones publicadas de un periodo con un profesor sin nombre, sin correos ni nombres (spec 010, US-98, propuesta) |
 | `plataforma/neon/secciones_sin_docente.sql` | Consulta informativa de solo lectura de las secciones de un periodo con plan de medición y sin profesor activo (spec 006, US-58) |
 | `datos/periodo_2026_2_inventado.sql` | Datos inventados del periodo 2026-2, con la vigencia, las secciones 410 y 411, el plan y los usuarios de prueba |
 | `datos/varias_secciones_2026_2_inventado.sql` | Datos inventados del profesor con varias secciones en 2026-2, con el plan de 450010, la 412 de 450002, la 410 y la 412 de 450010 y sus asignaciones |
@@ -99,7 +101,7 @@ La spec 005 la llamaba V1_12, y pasa a V1_15 porque la spec 008 toma V1_12 a V1_
 | `ck_rechazo_fila_motivo` | Los 10 motivos de V1_07 más COLUMNA_CODIGO_AUSENTE, PI_REPETIDO, PERIODO_NO_COINCIDE y SECCION_SIN_DECLARAR |
 | `abet.rechazo_fila.pi_id` | PI del plan que falta en el export (PI_DEL_PLAN_AUSENTE) o que el export repite (PI_REPETIDO), con `fk_rechazo_fila_pi` hacia `abet.pi`, para que la constancia leída después nombre el mismo PI que la respuesta de la subida. `ck_rechazo_fila_pi` lo admite solo con esos dos motivos, y queda nulo en los demás motivos y en los rechazos anteriores a V1_09 |
 
-Con `createSchemas = true`, Flyway crea en cada `migrate` el esquema de la lista `schemas` que falte, aunque la base ya tenga su historial, y lo anota en `flyway_schema_history` como «<< Flyway Schema Creation >>». En una base con V1_01 a V1_08 cuyo entorno lista `acceso`, como `abet_sis_med_dev` con el entorno `dev`, el siguiente `migrate` crea así el esquema antes de V1_09, y el `CREATE SCHEMA IF NOT EXISTS` de V1_09, la única migración que crea un esquema, solo avisa que ya existe. Esa sentencia queda para los caminos con `psql`, como el ensayo de Neon de las pruebas, y para un entorno que no liste `acceso`. Ninguna tabla guarda en claro una contraseña, un token, un código ni el correo escrito en un intento fallido, y el correo de `acceso.usuario_autorizado` es el único dato de contacto de la base. La consulta Q15 de `pruebas/pruebas.sql` aplica el filtro de Q04 al esquema `acceso` y solo encuentra esa columna.
+Con `createSchemas = true`, Flyway crea en cada `migrate` el esquema de la lista `schemas` que falte, aunque la base ya tenga su historial, y lo anota en `flyway_schema_history` como «<< Flyway Schema Creation >>». En una base con V1_01 a V1_08 cuyo entorno lista `acceso`, como `abet_sis_med_dev` con el entorno `dev`, el siguiente `migrate` crea así el esquema antes de V1_09, y el `CREATE SCHEMA IF NOT EXISTS` de V1_09, la única migración que crea un esquema, solo avisa que ya existe. Esa sentencia queda para los caminos con `psql`, como el ensayo de Neon de las pruebas, y para un entorno que no liste `acceso`. Ninguna tabla guarda en claro una contraseña, un token, un código ni el correo escrito en un intento fallido, y el correo de `acceso.usuario_autorizado` es el único dato de contacto de la base. La consulta Q15 de `pruebas/pruebas.sql` aplica el filtro de Q04 al esquema `acceso` y solo encuentra esa columna. **Cambio del 2026-11-25 (spec 010, propuesta).** Desde V1_16, `acceso.usuario_autorizado` suma la columna opcional `nombre`, el correo deja de ser el único dato de contacto del esquema y Q15 encuentra exactamente `usuario_autorizado.correo` y `usuario_autorizado.nombre`.
 
 ## Scripts de plataforma y de datos
 
@@ -207,6 +209,26 @@ python3 -I ~/.claude/scripts/en_windows.py "$ENV_NEON" NEON_HOST,NEON_DB,RESPALD
 ```
 
 El informe de la corrida real trae los correos de los avisos y de los rechazos, y vuelve por la salida de `en_windows.py`. Antes de T063, Jefferson decide si ese informe lo lee solo él en su terminal o si puede pasar por un agente. Además, la rama principal de Neon tiene la 410 y la 411 inventadas de 450002, con los cursos `SINTETICO_…` y los usuarios de `@example.invalid` de `datos/periodo_2026_2_inventado.sql`. Una 410 o una 411 real de 450002 quedaría con el profesor inventado y con el real, y su curso real se rechazaría con «ya tiene otro curso de Blackboard en la base». El guion no resuelve ese choque, así que Jefferson decide antes de T063 si esos datos se retiran a mano, con respaldo, o si se aceptan los avisos.
+
+## El nombre del profesor (spec 010)
+
+`V1_16__nombre_del_usuario.sql` (propuesta, solo DDL) agrega la columna opcional `nombre varchar(120)` a `acceso.usuario_autorizado`, con `ck_usuario_autorizado_nombre`, que exige un nombre recortado, sin dobles espacios, sin caracteres de control ni de formato, sin arroba, coma ni dígitos y en la forma de normalización canónica compuesta de Unicode (Normalization Form C, NFC). El nombre vive solo en `acceso`, porque Q04 prohíbe columnas de nombre de persona en `abet`. Q15 de `pruebas/pruebas.sql` encuentra desde V1_16, en `acceso`, exactamente `usuario_autorizado.correo` y `usuario_autorizado.nombre`. `abet_app` lee la columna con el SELECT de tabla que ya tiene y no la escribe, y `abet_lectura` y `powerbi_lectura` no alcanzan la tabla.
+
+`herramientas/cargar_programacion.py` acepta una columna opcional `nombre` en el CSV de la carrera. Guarda el nombre de un correo nuevo y completa solo el nombre nulo de un usuario que ya existe, sin cambiar un nombre ya guardado, su rol ni su estado, y nunca escribe un nombre en su informe. Un archivo sin esa columna responde como en la spec 006. Los nombres reales entran solo por este guion, con un archivo fuera de todo repositorio y desde el Windows de Jefferson. Una sesión interactiva de psql con un nombre escrito en una sentencia lo dejaría en el historial, así que una corrección puntual corre con psql no interactivo y con el correo y el nombre por la entrada estándar de `en_windows.py`.
+
+El respaldo de Neon con `abet_respaldo` copia `acceso.usuario_autorizado` completa, con los nombres, al Windows y a Google Drive cifrado. Ese respaldo entra así al tratamiento de datos personales de la Ley 29733 y su reglamento, el Decreto Supremo 016-2024-JUS, y su cifrado y su borrado siguen lo que dice el apartado «Respaldo diario».
+
+El orden en Neon es respaldar la rama, aplicar V1_16 con `migrar_neon.sh` y recién después cargar los nombres, porque un archivo con la columna `nombre` falla en una base sin V1_16. Después de V1_16, `plataforma/neon/profesores_sin_nombre.sql` cuenta con `-v periodo=` las secciones publicadas con un profesor sin nombre y debe dar 0 antes de entregar los R-17 del periodo. Cada paso que escribe en Neon espera el permiso de Jefferson. La corrida de la programación con nombres usa el mismo comando de la sección anterior, con un archivo que trae la columna, y no lleva ningún valor secreto en el texto.
+
+```sh
+# Desde la Mac. Las claves viajan por la entrada estándar de SSH y nunca quedan en un archivo ni en un argumento.
+# RUTA_DEL_BACK y la ruta del archivo, que trae la columna nombre, se reemplazan por las del Windows. Corre en seco.
+ENV_NEON="$HOME/Downloads/ABET_SIS_MED/bd/.env.neon"
+python3 -I ~/.claude/scripts/en_windows.py "$ENV_NEON" NEON_HOST,NEON_DB,NEON_DB_USER,NEON_DB_PASSWORD \
+  'cd RUTA_DEL_BACK && PGHOST="$NEON_HOST" PGDATABASE="$NEON_DB" PGUSER="$NEON_DB_USER" PGPASSWORD="$NEON_DB_PASSWORD" \
+   PGSSLMODE=require PGCHANNELBINDING=require PGCLIENTENCODING=UTF8 PSQL="/c/Program Files/PostgreSQL/18/bin/psql" \
+   python -I db/herramientas/cargar_programacion.py --periodo 2026-1 --archivo /c/abet_programacion/programacion_20261.csv'
+```
 
 ## Cómo correr las pruebas hoy, sin Flyway
 
