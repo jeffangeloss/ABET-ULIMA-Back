@@ -182,9 +182,10 @@ def test_el_nombre_se_normaliza_a_nfc_sin_espacios_a_los_lados_ni_dobles(guion: 
     "Profesor Inventado\nCuatrocientos Once", "Profesor Inventado\tUno", "Profesor Inventado\u200bUno",
     "Profesor Inventado\ufeffUno", "Profesor Inventado\u00adUno", "Profesor Inventado\u2060Uno",
     "Profesor Inventado\x07Uno", "Profesor Inventado\x85Uno", "Profesor Inventado\r", "\nProfesor Inventado",
-    "Profesor Inventado " + "a" * 102,
+    "Profesor Inventado " + "a" * 102, "Profesor Inventado\u2028Uno", "Profesor Inventado\u2029Uno",
+    "Profesor Inventado\u2066Uno", "Profesor Inventado\U000e0041Uno",
 ], ids=["arroba", "digito", "coma", "coma_inicial", "salto", "tab", "u200b", "ufeff", "u00ad", "u2060", "bel", "c1", "cr",
-        "salto_al_comienzo", "121_caracteres"])
+        "salto_al_comienzo", "121_caracteres", "u2028", "u2029", "u2066", "etiqueta"])
 def test_un_nombre_invalido_rechaza_la_fila_sin_repetir_su_valor(guion: ModuleType, nombre: str) -> None:
     assert len("Profesor Inventado " + "a" * 102) == 121
     errores = guion.revisar(guion.leer(_con_nombres(NOMBRES[0], nombre)), "2026-2")

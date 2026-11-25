@@ -223,11 +223,11 @@ def _una_semilla_con_otro_nombre_falla(ctx: Escenario) -> None:
     tmp_path: Path = ctx.request.getfixturevalue("tmp_path")
     mala = tmp_path / "quimica_2026_1_inventado.sql"
     mala.write_text((RAIZ / "db" / "datos" / "quimica_2026_1_inventado.sql").read_text(encoding="utf-8")
-                    .replace("Profesor Inventado Setecientos Dos", "Maria Quispe Huaman"), encoding="utf-8")
+                    .replace("Profesor Inventado Setecientos Dos", "Docente Sin Forma Inventada"), encoding="utf-8")
     with ctx.plantillas.base_desechable.abierta(datos_2026_2=False) as base:
         problemas, _ = semillas.cargar_y_revisar(base, [RAIZ / "db" / "datos" / "periodo_2026_2_inventado.sql", mala])
     assert problemas == ["quimica_2026_1_inventado.sql: 1 nombre fuera de la forma inventada"]
-    assert not any("Maria" in p or "Quispe" in p or "Huaman" in p or "docente702" in p for p in problemas)
+    assert not any("Docente" in p or "Sin Forma" in p or "docente702" in p for p in problemas)
 
 
 @when(parsers.re(r'la prueba de repositorio lista los CSV rastreados con git ls-files' + PROPUESTA))

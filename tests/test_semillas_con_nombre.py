@@ -84,11 +84,11 @@ def test_una_semilla_con_un_nombre_fuera_de_la_forma_falla_nombrando_el_archivo_
         semillas: ModuleType, base_desechable: ModuleType, tmp_path: Path) -> None:
     malo = tmp_path / "periodo_2026_2_inventado.sql"
     malo.write_text((DATOS / "periodo_2026_2_inventado.sql").read_text(encoding="utf-8")
-                    .replace("Profesor Inventado Cuatrocientos Diez", "Maria Quispe Huaman"), encoding="utf-8")
+                    .replace("Profesor Inventado Cuatrocientos Diez", "Docente Sin Forma Inventada"), encoding="utf-8")
     with base_desechable.abierta(datos_2026_2=False) as base:
         problemas, _ = semillas.cargar_y_revisar(base, [malo])
     assert problemas == ["periodo_2026_2_inventado.sql: 1 nombre fuera de la forma inventada"]
-    assert not any("Maria" in problema or "Quispe" in problema or "docente410" in problema for problema in problemas)
+    assert not any("Docente" in problema or "Sin Forma" in problema or "docente410" in problema for problema in problemas)
 
 
 def test_una_semilla_con_un_correo_fuera_de_example_invalid_falla_nombrando_el_archivo(

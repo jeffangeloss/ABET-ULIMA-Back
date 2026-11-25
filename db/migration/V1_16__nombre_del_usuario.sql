@@ -13,13 +13,17 @@ ALTER TABLE acceso.usuario_autorizado
     -- locale) ni de formato invisibles (U+00AD, U+200B a U+200F, U+202A a U+202E, U+2060 a U+2064 y U+FEFF), sin
     -- arroba ni dígitos, para que un correo o un código no pase por nombre, sin coma, porque la coma separa a los
     -- profesores en D10 del R-17 (J-68), y en la forma de normalización canónica compuesta de Unicode (NFC), para
-    -- que «Á» se guarde siempre igual.
+    -- que «Á» se guarde siempre igual. Desde la revisión del 2026-11-25 rechaza además los demás caracteres de formato
+    -- de la categoría Cf (U+061C, U+180E, U+2066 a U+2069, U+FFF9 a U+FFFB y las etiquetas U+E0001 y U+E0020 a
+    -- U+E007F) y los separadores de línea y de párrafo U+2028 y U+2029, que parten D10 como un salto de línea, igual
+    -- que cargar_programacion.py.
     ADD CONSTRAINT ck_usuario_autorizado_nombre CHECK (
         nombre = btrim(nombre)
         AND nombre <> ''
         AND nombre !~ '  '
         AND nombre !~ '[[:cntrl:]\u0080-\u009F]'
         AND nombre !~ '[­​-‏‪-‮⁠-⁤﻿]'
+        AND nombre !~ '[؜᠎  ⁦-⁩￹-￻\U000E0001\U000E0020-\U000E007F]'
         AND nombre !~ '[@,0-9]'
         AND nombre IS NFC NORMALIZED);
 

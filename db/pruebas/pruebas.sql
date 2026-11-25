@@ -658,7 +658,8 @@ END $$;
 
 -- A11 (spec 010, US-95). V1_16 agrega acceso.usuario_autorizado.nombre, opcional y de hasta 120 caracteres, con
 -- ck_usuario_autorizado_nombre y su comentario. Un nombre normalizado entra, y uno con espacio a los lados, dos
--- espacios seguidos, vacío, salto de línea, espacio de ancho cero, arroba, coma, dígito o forma NFD se rechaza con
+-- espacios seguidos, vacío, salto de línea, espacio de ancho cero, arroba, coma, dígito, forma NFD, aislante
+-- bidireccional (U+2066), separador de línea (U+2028), marca árabe (U+061C) o etiqueta (U+E0041) se rechaza con
 -- check_violation. Cada intento se deshace con una excepción propia, y ninguna fila queda en la tabla.
 DO $$
 DECLARE
@@ -678,7 +679,8 @@ BEGIN
     FOREACH v_nombre IN ARRAY ARRAY[' Profesor Inventado Uno', 'Profesor  Inventado Uno', '', E'Profesor Inventado\nUno',
                                     E'Profesor Inventado\u200bUno', 'docente732@example.invalid',
                                     'Profesor Inventado 732', 'Inventado, Profesor', E'Profesor Inventado A\u0301ngel',
-                                    repeat('a', 121)] LOOP
+                                    repeat('a', 121), E'Profesor Inventado\u2066Uno', E'Profesor Inventado\u2028Uno',
+                                    E'Profesor Inventado\u061cUno', E'Profesor Inventado\U000E0041Uno'] LOOP
         BEGIN
             INSERT INTO acceso.usuario_autorizado (correo, rol, nombre) VALUES ('docente732@example.invalid', 'PROFESOR', v_nombre);
             RAISE EXCEPTION 'FALLA A11: la base aceptó un nombre que debía rechazar (caso %)', v_n + 1;

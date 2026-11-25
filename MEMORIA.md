@@ -15,7 +15,7 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
+- **Último cambio**: la revisión del revisor Opus, que amplía `ck_usuario_autorizado_nombre` y el guion a los demás caracteres de formato y a los separadores U+2028 y U+2029, y quita de dos pruebas un nombre de apariencia real. Antes, la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
 - **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
 - **Siguiente paso**: T040, T050 y T060 y las tareas de Jefferson T070 a T074
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 05:40 (Lima) · feat/010-nombre-del-profesor · Revisión del Back de la spec 010 (revisor Opus)
+- Quién: revisor Opus independiente, delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `V1_16__nombre_del_usuario.sql` rechaza además U+061C, U+180E, U+2066 a U+2069, U+FFF9 a U+FFFB, las etiquetas U+E0001 y U+E0020 a U+E007F y los separadores U+2028 y U+2029, y `cargar_programacion.py` rechaza en el nombre las categorías Zl y Zp además de Cc y Cf. A11 de `db/pruebas/pruebas.sql` suma cuatro casos y `tests/test_cargar_programacion.py` otros cuatro. FR-001 de la spec 010 lleva el cambio fechado. `tests/test_semillas_con_nombre.py` y `test_privacidad_del_nombre_feature.py` usan «Docente Sin Forma Inventada» en lugar de un nombre de apariencia real.
+- Por qué: una sonda en el clúster desechable muestra que la restricción aceptaba los aislantes bidireccionales U+2066 a U+2069 y otros caracteres de formato Cf fuera de la lista de FR-001, y que la base y el guion aceptaban U+2028 y U+2029, que parten D10 como un salto de línea. SC-003 pide que git no lleve nombres fuera de la forma inventada.
+- Lo que debe hacer, cómo se probó: `bash db/pruebas/correr_pruebas.sh` termina en «RESULTADO: todo pasó», con A11 que rechaza 14 casos. Las pruebas de la spec 010, de la programación docente, de `test_r17.py`, de las semillas y de la consulta informativa dan 590 en verde y 5 omitidas. La suite completa da 2769 en verde y 18 omitidas.
+- Lo que no debe hacer, cómo se probó: los casos de U+2028 y U+2029 del guion estaban en rojo antes del cambio, y la sonda previa muestra que la restricción anterior aceptaba U+2066, U+2028 y U+061C. Un nombre con tildes, eñes, apóstrofo o guion sigue entrando, y los mensajes de rechazo siguen sin repetir el valor.
+- Correcciones: el informe de la construcción no corrió la suite completa después de d57ab48, y esta entrada la corre. La revisión no halla el nombre en la constancia, en el JSON de las rutas, en el registro, en el nombre del archivo ni en las propiedades del libro, y D10 sigue con «, », sin correo de relleno y sin cambios fuera de D10 y de la fila 10.
+- Cómo se reporta: esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: integrar `origin/docs/010-nombre-del-profesor`, que ya trae la spec 009 y choca en `MEMORIA.md` y en `tests/aceptacion/pasos/test_lectura_gherkin_es.py`, y correr de nuevo la suite con la spec 009 sobre V1_16. La coma de ancho completo U+FF0C y los dígitos que no son ASCII siguen admitidos, como dice FR-001, y quedan para Jefferson.
 
 ### 2026-11-25 04:10 (Lima) · feat/010-nombre-del-profesor · Corrección de la prueba de abet_app y suite completa
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.

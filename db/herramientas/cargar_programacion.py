@@ -78,6 +78,9 @@ BASE_NO_RESPONDE_AL_APLICAR = "La base no responde y no se sabe si guardó los c
 # de control, como el salto de línea de Alt+Enter en Excel (Cc). Llegan al copiar una celda desde Outlook o una
 # web y pasan el patrón de ck_usuario_autorizado_correo, así que el correo no sería el que escribe el profesor.
 INVISIBLES = ("Cc", "Cf")
+# El nombre rechaza además los separadores de línea y de párrafo (U+2028 y U+2029), que partirían D10 del R-17 como un
+# salto de línea, igual que ck_usuario_autorizado_nombre desde la revisión del 2026-11-25.
+INVISIBLES_DEL_NOMBRE = (*INVISIBLES, "Zl", "Zp")
 
 
 class ArchivoRechazado(Exception):
@@ -123,7 +126,8 @@ def normalizar_nombre(celda: str) -> str | None:
 
 def nombre_valido(nombre: str) -> bool:
     """Si el nombre normalizado cumple lo que exige ck_usuario_autorizado_nombre (FR-001 de la spec 010)."""
-    return (len(nombre) <= LARGO_NOMBRE and not _con_invisibles(nombre) and not NOMBRE_PROHIBIDO.search(nombre)
+    return (len(nombre) <= LARGO_NOMBRE and not _con_invisibles(nombre, INVISIBLES_DEL_NOMBRE)
+            and not NOMBRE_PROHIBIDO.search(nombre)
             and nombre == normalizar_nombre(nombre))
 
 
@@ -168,8 +172,8 @@ def leer(datos: bytes) -> Lectura:
     return filas
 
 
-def _con_invisibles(texto: str) -> bool:
-    return any(unicodedata.category(caracter) in INVISIBLES for caracter in texto)
+def _con_invisibles(texto: str, categorias: tuple[str, ...] = INVISIBLES) -> bool:
+    return any(unicodedata.category(caracter) in categorias for caracter in texto)
 
 
 def _forma(fila: FilaLeida, periodo: str) -> str | None:
