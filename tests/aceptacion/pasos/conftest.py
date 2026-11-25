@@ -1734,3 +1734,28 @@ def _archivo_base_con_nombres(ctx: Escenario) -> None:
     assert tuple(archivo.encabezados) == (*ENCABEZADOS_006, "nombre")
     assert [fila[3] for fila in archivo.filas] == ["docente410@example.invalid", "docente411@example.invalid"]
     assert [fila[-1] for fila in archivo.filas] == list(NOMBRES_DE_LA_PROGRAMACION_010)
+
+
+# Q15 de db/pruebas/pruebas.sql, que corren la spec 001 (US-04) y la spec 010 (US-95) sobre la base del escenario
+
+PRUEBAS_SQL = RAIZ / "db" / "pruebas" / "pruebas.sql"
+
+
+def bloque_de_q15(texto: str | None = None) -> str:
+    """Bloque DO de Q15 tal como está en pruebas.sql, sin la consulta de Q04 ni ningún otro bloque."""
+    texto = PRUEBAS_SQL.read_text(encoding="utf-8") if texto is None else texto
+    inicio = texto.index("-- Q15 (US-04")
+    bloque = re.search(r"^DO \$\$\n.*?^END \$\$;$", texto[inicio:], flags=re.S | re.M)
+    assert bloque is not None, "pruebas.sql no trae el bloque DO de Q15"
+    assert "FALLA Q15" in bloque.group(0), "el primer bloque DO después de «-- Q15» no es el de Q15"
+    return bloque.group(0)
+
+
+def correr_q15(ctx: Escenario) -> subprocess.CompletedProcess[str]:
+    """Corre el bloque de Q15 con psql sobre la base del escenario, siempre en el clúster desechable. El código de
+    salida es 0 si Q15 pasa, y la salida de errores trae su NOTICE o su FALLA."""
+    entorno = _modulo_de_pruebas("base_desechable")._entorno()
+    return subprocess.run([entorno.get("PSQL", "psql"), "-X", "-q", "-v", "ON_ERROR_STOP=1", "-d",
+                           ctx.api.base.nombre, "-c", bloque_de_q15()],
+                          env={**entorno, "PGOPTIONS": "-c client_min_messages=notice"},
+                          capture_output=True, text=True, check=False)

@@ -163,3 +163,24 @@ def test_el_archivo_base_sin_nombres_no_trae_la_columna_y_no_se_le_suma_dos_vece
     arnes.archivo_con_nombres_006(ctx)
     with pytest.raises(AssertionError, match="ya trae la columna nombre"):
         arnes.archivo_con_nombres_006(ctx)
+
+
+# Bloque de Q15 de pruebas.sql
+
+def test_el_bloque_de_q15_es_solo_el_do_de_pruebas_sql_y_pide_correo_y_nombre(arnes: ModuleType) -> None:
+    bloque = arnes.bloque_de_q15()
+    assert bloque.startswith("DO $$") and bloque.endswith("END $$;")
+    assert "FALLA Q15: en acceso solo usuario_autorizado.correo y usuario_autorizado.nombre deben pasar el filtro" in bloque
+    assert "'usuario_autorizado.correo,usuario_autorizado.nombre'" in bloque
+    assert "Q16" not in bloque and "table_schema = 'acceso'" in bloque
+    assert bloque.count("DO $$") == 1
+
+
+def test_el_bloque_de_q15_se_niega_si_el_primer_do_no_es_el_suyo(arnes: ModuleType) -> None:
+    sin_q15 = "-- Q15 (US-04)\nDO $$\nBEGIN\n    RAISE NOTICE 'otro bloque';\nEND $$;\n"
+    with pytest.raises(AssertionError, match="no es el de Q15"):
+        arnes.bloque_de_q15(sin_q15)
+    with pytest.raises(AssertionError, match="no trae el bloque DO"):
+        arnes.bloque_de_q15("-- Q15 (US-04)\nSELECT 1;\n")
+    with pytest.raises(ValueError):
+        arnes.bloque_de_q15("-- Q16\nSELECT 1;\n")

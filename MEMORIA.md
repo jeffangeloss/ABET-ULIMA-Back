@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: el contrato y el arnés de la spec 010 (T012 a T014), con los cambios fechados de las specs 001 y 006, `db/README.md` y los pasos compartidos de los Antecedentes. Antes, la revisión del revisor Opus de la fase 1 de la spec 010
+- **Último cambio**: V1_16 con su restricción, Q15 con el filtro ampliado, los permisos de la columna y los siete escenarios de US-95 (T020 y T021). Antes, el contrato y el arnés de la spec 010 (T012 a T014)
 - **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
-- **Siguiente paso**: T020 a T023 de la base (V1_16, Q15, permisos, semillas con nombres inventados y la consulta informativa) y después T030 a T036 del Back
+- **Siguiente paso**: T022 y T023 de la base y después T030 a T036 del Back
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 01:50 (Lima) · feat/010-nombre-del-profesor · V1_16, Q15 y permisos de la columna nombre (T020 y T021)
+- Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
+- Qué cambió: `db/migration/V1_16__nombre_del_usuario.sql` agrega `acceso.usuario_autorizado.nombre varchar(120)` nulable, `ck_usuario_autorizado_nombre` y los comentarios del esquema y de la columna. Q15 de `db/pruebas/pruebas.sql` suma `column_name LIKE '%nombre%'` y espera `usuario_autorizado.correo,usuario_autorizado.nombre`, con la aserción A11 de la restricción. `probar_rol_app.sql` suma P48, P49 y N11 (el rol lee la columna y no la escribe) y `crear_roles_lectura.sql` comprueba que los roles de lectura no alcanzan la columna y que `abet_respaldo` sí. `tests/aceptacion/pasos/test_nombre_en_la_base_feature.py` enlaza los siete escenarios de US-95, y `conftest.py` suma `bloque_de_q15()` y `correr_q15()`, que usa también `test_base_neon_feature.py` para correr el bloque de Q15 y no el texto de Q04.
+- Por qué: US-95 y BR-ACCESO-15, FR-001 a FR-003 y FR-016 de la spec 010. La columna vive en `acceso` porque Q04 prohíbe nombres de persona en `abet`.
+- Lo que debe hacer, cómo se probó: `uv run --frozen --no-build python -m pytest -q -p no:cacheprovider tests/aceptacion/pasos/test_nombre_en_la_base_feature.py` da 15 pruebas en verde, con el usuario sin nombre, el nombre con tildes y eñes, Q15, Q04, `abet_app` y los roles de lectura y de respaldo. `bash db/pruebas/correr_pruebas.sh` termina con «RESULTADO: todo pasó», con A11, Q15 y N11 en ok. Las pruebas de `test_base_neon_feature.py` y `test_lectura_gherkin_es.py` siguen en verde.
+- Lo que no debe hacer, cómo se probó: Los nueve casos de Ejemplos (espacio al comienzo, dos espacios, vacío, salto de línea, U+200B, arroba, dígito, coma y NFD) reciben 23514 con el nombre de la restricción y no dejan fila. A11 suma el caso de 121 caracteres. Con una columna `nombre_contacto` en `acceso.credencial` Q15 falla con su mensaje. `abet_app` recibe 42501 en el UPDATE y en el INSERT del nombre (P48 y P49), `abet_lectura` y `powerbi_lectura` reciben 42501 al leer la tabla, y sin la migración las 14 pruebas del archivo fallan.
+- Correcciones: La restricción rechaza además los caracteres de control C1 (U+0080 a U+009F), porque `[[:cntrl:]]` no los cubre en todo locale, y A11 no exige que los datos de prueba estén sin nombre, porque T022 los siembra con nombres inventados.
+- Cómo se reporta: Esta entrada, en un commit local de `feat/010-nombre-del-profesor` sin push.
+- Pendiente y siguiente paso: T022 (semillas con nombres inventados), T023 (consulta informativa) y T030 a T036 del Back. V1_16 no se aplica en Neon, que es tarea de Jefferson (T071).
 
 ### 2026-11-25 01:30 (Lima) · feat/010-nombre-del-profesor · Contrato y arnés de la spec 010 (T012 a T014)
 - Quién: Implementer (Sonnet) delegado por la sesión principal, sin subagentes ni Codex.
