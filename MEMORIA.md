@@ -15,9 +15,9 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 - **Fecha**: 2026-11-25
 - **Rama de trabajo**: `feat/010-nombre-del-profesor`, que sale de `docs/010-nombre-del-profesor` con la spec 010 aprobada. La spec 005 está en `develop` (PR #57, e9b5c7e) y el ajuste de los recuadros y las filas del R-17 también (PR #58, 0d92ad9)
 - **Versión publicada**: 0.3.0, con el tag `v0.3.0` sobre 3ff2c06 de `main` (PR #46) y su Release, en Production de Vercel desde el 2026-11-22. Antes, la 0.2.0 (138dd80) y la 0.1.0 (7325231)
-- **Último cambio**: la revisión del revisor Opus, que amplía `ck_usuario_autorizado_nombre` y el guion a los demás caracteres de formato y a los separadores U+2028 y U+2029, y quita de dos pruebas un nombre de apariencia real. Antes, la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
-- **En curso**: la construcción de la spec 010 en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson
-- **Siguiente paso**: T040, T050 y T060 y las tareas de Jefferson T070 a T074
+- **Último cambio**: el cierre de la spec 010 con su `audit.md`, las líneas Verification de `acceso` y `r17` y el CHANGELOG (T050 y T060, 2026-11-25). Antes, la revisión del revisor Opus, que amplía `ck_usuario_autorizado_nombre` y el guion a los demás caracteres de formato y a los separadores U+2028 y U+2029, y quita de dos pruebas un nombre de apariencia real. Antes, la corrección de la prueba de `abet_app` y la suite completa. Antes, las pruebas de privacidad del nombre (T035)
+- **En curso**: la spec 010 construida en `feat/010-nombre-del-profesor`, sin push ni PR, que esperan el permiso de Jefferson.
+- **Siguiente paso**: T041 y las tareas de Jefferson T070 a T074, la corrida del humo de T040 contra la vista previa y la integración con la spec 009.
 - **Bloqueos**: US-20 (T083 y T086) espera a T018, el dominio y la cuenta de Resend de Jefferson; D-30 (escala de las columnas ABET de 100 puntos), el nombre estándar de la evaluación en Blackboard (el lector no acepta guiones, como «ABET-SO4-PI4.1»), D-38 (nivel esperado según el estadio del curso), D-08 (qué muestran M24 a M26 del R-17 cuando un curso espera un nivel distinto de 3, que se pregunta solo si D-38 fija otro nivel), D-32 a D-34 de la spec 004 y D-35 a D-37 de la spec 005 esperan a Stefanny Montaño, a la Coordinación de Ambiental o a la Oficina de Calidad, y el texto real de la descripción del instrumento espera a D-34; Snyk espera que Jefferson importe los repos en su consola (`docs/devops.md`); el entrenamiento de IA del equipo de Vercel lo apaga Jefferson en Team Settings, Data Preferences (T070); los escenarios pendientes de US-17 siguen en `audit.md`; D-48 a D-55 de la spec 008 y la fecha de la capacitación (J-56) esperan a Stefanny Montaño
 - **Repos relacionados**: `jeffangeloss/ABET-ULIMA-Front` (versión 0.3.0, con el tag `v0.3.0` sobre 39ceeb0 de `main`, PR #31) y `jeffangeloss/ABET_ULIMA` (base con Flyway, ya en `db/`, por archivar)
 
@@ -36,6 +36,16 @@ Este archivo es la memoria de trabajo del repositorio. Lo lee primero cualquier 
 ```
 
 ## Registro
+
+### 2026-11-25 07:00 (Lima) · feat/010-nombre-del-profesor · Cierre de la spec 010 en el Back (T050 y T060)
+- Quién: agente Implementer (Sonnet) sobre las copias `wt/back-010f` y `wt/front-010f`, sin subagentes.
+- Qué cambió: `specs/010-nombre-del-profesor/audit.md` con el cruce de 5 historias y 30 escenarios, `tasks.md` con T050 y T060 marcadas, línea Verification del 2026-11-25 en las specs vivas `acceso` y `r17`, y `CHANGELOG.md` de los dos repos en «Sin publicar».
+- Por qué: cierre de la spec 010 (US-95 a US-99, FR-015 y FR-016).
+- Lo que debe hacer, cómo se probó: `ABET_FRONT_RAIZ=../front-010f uv run --frozen --no-build python -m pytest -q -p no:cacheprovider` da 2772 passed y 15 skipped en 359 s, `bash db/pruebas/correr_pruebas.sh` da «RESULTADO: todo pasó», `scripts/matriz_cumplimiento.py --front ../front-010f --comprobar` da 0 huecos, y en el Front `npm run build`, `npx tsc --noEmit` y `npm test` dan 378 aprobadas y 1 pendiente. `preflight.sh` pasa en los dos.
+- Lo que no debe hacer, cómo se probó: cada título de los 30 escenarios se comprobó contra el `@scenario` de su archivo de pasos, sin enlaces rotos, y la suite no escribe en Neon ni lee datos reales.
+- Correcciones: ninguna en el código. La matriz solo cubre las specs 007 y 008, por lo que el cruce de la 010 va a mano en `audit.md`.
+- Cómo se reporta: `audit.md`, `CHANGELOG.md` y esta entrada, en un commit local sin push.
+- Pendiente y siguiente paso: la corrida del humo de T040 contra la vista previa, T041 y T070 a T074 de Jefferson, y la integración de `origin/docs/010-nombre-del-profesor` con la spec 009, que choca en `MEMORIA.md` y en `test_lectura_gherkin_es.py`.
 
 ### 2026-11-25 05:40 (Lima) · feat/010-nombre-del-profesor · Revisión del Back de la spec 010 (revisor Opus)
 - Quién: revisor Opus independiente, delegado por la sesión principal, sin subagentes ni Codex.

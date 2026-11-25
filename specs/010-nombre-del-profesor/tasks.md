@@ -43,8 +43,8 @@ Cada tarea lleva al comienzo el lugar donde ocurre, como en las specs anteriores
 
 ## Fase 5 a 7 · Pruebas, auditoría y despliegue
 
-- [ ] T050 [Back] Suites completas del Back y del Front, `bash db/pruebas/correr_pruebas.sh`, `preflight.sh` en los dos y la matriz de cumplimiento con `--comprobar` [US-95..US-99] · 1 h
-- [ ] T060 [Back] `audit.md` con el cruce de historia, escenario, prueba y resultado, las líneas Verification fechadas de las specs vivas `acceso` y `r17`, `MEMORIA.md` y `CHANGELOG.md` [US-95..US-99] · 1,5 h
+- [x] T050 [Back] Suites completas del Back y del Front, `bash db/pruebas/correr_pruebas.sh`, `preflight.sh` en los dos y la matriz de cumplimiento con `--comprobar` [US-95..US-99] · 2026-11-25
+- [x] T060 [Back] `audit.md` con el cruce de historia, escenario, prueba y resultado, las líneas Verification fechadas de las specs vivas `acceso` y `r17`, `MEMORIA.md` y `CHANGELOG.md` [US-95..US-99] · 2026-11-25
 - [ ] T070 [Jefferson] Autorizar empujar `feat/010-nombre-del-profesor` del Back y del Front y fusionar sus PR en `develop` [US-95..US-99] · 0,5 h
 - [ ] T071 [Jefferson] Respaldar develop de Neon con `db/herramientas/respaldar_neon.sh` y aplicar V1_16 con `migrar_neon.sh develop` desde el Windows con Flyway 13.9, y correr después las semillas con nombres inventados con psql no interactivo por `en_windows.py` [US-95] [US-99] · 1 h
 - [ ] T072 [Jefferson] Comprobar en develop de Neon el SC-002, con el R-17 de la 701 de 5643 con «Profesor Inventado Setecientos Uno» en D10, Q04 en 0 filas y la consulta informativa en 0 para 2026-1 [US-97] [US-98] · 0,5 h
