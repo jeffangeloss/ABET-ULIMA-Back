@@ -76,20 +76,20 @@ def usuario(conexion: psycopg.Connection, correo: str) -> int:
     return int(uno(conexion, "SELECT usuario_id FROM acceso.usuario_autorizado WHERE correo = %s", (correo,)))
 
 
-def seccion(conexion: psycopg.Connection, asignatura: str, numero: str) -> int:
-    """seccion_id de la sección de 2026-2, que se registra si todavía no existe."""
+def seccion(conexion: psycopg.Connection, asignatura: str, numero: str, periodo: str = PERIODO) -> int:
+    """seccion_id de la sección del periodo (2026-2 por omisión), que se registra si todavía no existe."""
     conexion.execute(
         "INSERT INTO abet.seccion (periodo_id, asignatura_id, numero) "
         "SELECT pe.periodo_id, a.asignatura_id, %s FROM abet.periodo pe, abet.asignatura a "
         "WHERE pe.codigo = %s AND a.codigo = %s ON CONFLICT DO NOTHING",
-        (numero, PERIODO, asignatura),
+        (numero, periodo, asignatura),
     )
     return int(uno(
         conexion,
         "SELECT s.seccion_id FROM abet.seccion s JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id "
         "JOIN abet.asignatura a ON a.asignatura_id = s.asignatura_id "
         "WHERE pe.codigo = %s AND a.codigo = %s AND s.numero = %s",
-        (PERIODO, asignatura, numero),
+        (periodo, asignatura, numero),
     ))
 
 
@@ -143,6 +143,7 @@ def preparar_410(conexion: psycopg.Connection) -> int:
 def conjunto_aprobado(
     conexion: psycopg.Connection, version: str = APROBADO, *, completo: bool = True, aprobado: bool = True,
     meta_logro: float | None = 0.70, nivel_esperado: int | None = 2, corte_rojo: float | None = 0.50,
+    carrera: str = "AMB",
 ) -> None:
     """Conjunto de reglas inventado con los valores del caso A03 de db/pruebas/pruebas.sql.
 
@@ -150,13 +151,13 @@ def conjunto_aprobado(
     aunque el conjunto esté aprobado. Con aprobado falso el conjunto queda en BORRADOR con los cinco
     parámetros DEFINIDOS, y el R-17 también sigue provisional. meta_logro, nivel_esperado y corte_rojo
     cambian sus tres valores, y None deja ese parámetro en PENDIENTE (spec 005, R-PRUEBA-SEMAFORO con
-    0,80, 3 y 0,75).
+    0,80, 3 y 0,75). carrera da la carrera del conjunto, AMB por omisión (IND para las secciones de 5643).
     """
     estado, por, fecha = ("APROBADO", "Comité de prueba", "2026-10-01") if aprobado else ("BORRADOR", None, None)
     conexion.execute(
         "INSERT INTO abet.conjunto_reglas (carrera_id, version, estado, aprobado_por, aprobado_en) "
-        "SELECT carrera_id, %s, %s, %s, CAST(%s AS date) FROM abet.carrera WHERE codigo = 'AMB'",
-        (version, estado, por, fecha),
+        "SELECT carrera_id, %s, %s, %s, CAST(%s AS date) FROM abet.carrera WHERE codigo = %s",
+        (version, estado, por, fecha, carrera),
     )
     trato = ("DEFINIDO", None, "SE_EXCLUYE_DEL_DENOMINADOR") if completo else ("PENDIENTE", None, None)
     def numero(valor: float | None) -> tuple[str, float | None, None]:
@@ -172,14 +173,14 @@ def conjunto_aprobado(
     for clave, estado, numero, texto in valores:
         conexion.execute(
             "INSERT INTO abet.parametro_valor (conjunto_reglas_id, clave, estado, valor_numero, valor_texto) "
-            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
-            (clave, estado, numero, texto, version),
+            "SELECT conjunto_reglas_id, %s, %s, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = %s)",
+            (clave, estado, numero, texto, version, carrera),
         )
     for nivel, valor in ((1, 0.0), (2, 0.3333), (3, 0.6667), (4, 1.0)):
         conexion.execute(
             "INSERT INTO abet.conversion_nivel_0_1 (conjunto_reglas_id, nivel_original, valor_0_1) "
-            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB')",
-            (nivel, valor, version),
+            "SELECT conjunto_reglas_id, %s, %s FROM abet.conjunto_reglas WHERE version = %s AND carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = %s)",
+            (nivel, valor, version, carrera),
         )
 
 
@@ -405,13 +406,18 @@ def publicar(
     avisos: Sequence[tuple[str | None, str]] = (),
     puntajes: dict[str, float | None] | None = None,
     estado: str = "PUBLICADA",
+    periodo: str = PERIODO,
+    carrera: str = "AMB",
+    reemplaza: int | None = None,
 ) -> int:
     """Carga de una sección del plan con sus columnas, filas, mediciones, rechazos de fila y avisos.
 
     Cada rechazo de fila es (fila, PI o None, motivo) y cada aviso es (PI o None, motivo). Las filas
-    rechazadas cuentan como filas de datos, y la carga queda en el estado pedido.
+    rechazadas cuentan como filas de datos, y la carga queda en el estado pedido. periodo y carrera valen 2026-2 y AMB
+    por omisión, y la spec 009 los cambia a 2026-1 e IND para las secciones de 5643, con el conjunto de reglas de esa
+    carrera.
     """
-    seccion_id = seccion(conexion, asignatura, numero)
+    seccion_id = seccion(conexion, asignatura, numero, periodo)
     filas_de_datos = len(filas) + len(rechazos_de_fila)
     archivo_id = uno(
         conexion,
@@ -423,10 +429,10 @@ def publicar(
     carga_id = int(uno(
         conexion,
         "INSERT INTO abet.carga (seccion_id, archivo_id, filas_de_datos, carrera_id, conjunto_reglas_id, "
-        "programa_version, subida_por) "
-        "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s "
-        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = 'AMB') RETURNING carga_id",
-        (seccion_id, archivo_id, filas_de_datos, autor, conjunto),
+        "programa_version, subida_por, reemplaza_carga_id) "
+        "SELECT %s, %s, %s, cr.carrera_id, cr.conjunto_reglas_id, 'v0.0.0-prueba', %s, %s "
+        "FROM abet.conjunto_reglas cr WHERE cr.version = %s AND cr.carrera_id = (SELECT carrera_id FROM abet.carrera WHERE codigo = %s) RETURNING carga_id",
+        (seccion_id, archivo_id, filas_de_datos, autor, reemplaza, conjunto, carrera),
     ))
     columnas = _columnas(conexion, carga_id, seccion_id, pis, puntajes or {})
     for fila in filas:
@@ -443,6 +449,8 @@ def publicar(
             "VALUES (%s, NULL, %s, %s, 'AVISO')",
             (carga_id, columnas.get(pi or ""), motivo),
         )
+    if reemplaza is not None:
+        conexion.execute("UPDATE abet.carga SET estado = 'REEMPLAZADA' WHERE carga_id = %s", (reemplaza,))
     conexion.execute(
         "UPDATE abet.carga SET estado = %s, filas_leidas = %s, filas_aceptadas = %s, filas_rechazadas = %s, "
         "terminada_en = clock_timestamp() WHERE carga_id = %s",
@@ -547,6 +555,19 @@ def _fila(
 def filas_inventadas(cantidad: int, *, desde: int, niveles: Sequence[int | None]) -> list[Fila]:
     """cantidad filas desde la fila 2, con códigos inventados consecutivos y los mismos niveles en cada una."""
     return [Fila(2 + i, str(desde + i), tuple(niveles)) for i in range(cantidad)]
+
+
+def filas_por_nivel(conteos: Sequence[int], *, desde: int, sin_evidencia: int = 0) -> list[Fila]:
+    """Una fila por alumno de un solo PI, con los conteos de alumnos en los niveles 1, 2, 3 y 4 y los sin evidencia.
+
+    conteos son los cuatro conteos de «los niveles [a, b, c, d]» de la spec 009. Las filas empiezan en la fila 2, con
+    códigos inventados consecutivos desde `desde`, que deben quedar en el rango 99.
+    """
+    assert len(conteos) == 4 and all(n >= 0 for n in conteos), f"se piden cuatro conteos no negativos, no {list(conteos)}"
+    niveles: list[int | None] = [nivel for nivel, n in enumerate(conteos, start=1) for _ in range(n)]
+    niveles += [None] * sin_evidencia
+    assert 99000000 <= desde and desde + len(niveles) - 1 <= 99999999, "los códigos inventados salen del rango 99"
+    return [Fila(2 + i, str(desde + i), (nivel,)) for i, nivel in enumerate(niveles)]
 
 
 # Spec 006, base de partida de la programación docente y corrida del guion (T021)
