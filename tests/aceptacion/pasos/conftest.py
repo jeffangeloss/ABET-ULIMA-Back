@@ -26,6 +26,9 @@ lo que repiten sus Antecedentes y sus escenarios.
   «no ganan ninguna fila» admiten tablas de acceso, las consultas de control admiten rangos como «Q01 a Q14 y Q18
   a Q21», la base desechable de la spec 008 nombra cada pieza que le falta con su tarea, y cada escenario
   @playwright registra su prueba de e2e/ del Front con registrar_playwright().
+- La spec 009 (T014 de su tasks.md). Los Antecedentes de resumen_del_curso.feature piden la variante «resumen_curso»
+  (Química con su plan y el plan de 450010), y publicar_seccion_de_quimica() publica la carga de una sección de 5643
+  en 2026-1 con «los niveles [a, b, c, d]» y, si el escenario lo pide, un alumno sin evidencia.
 - La spec 005 (T012 de su tasks.md). Los Antecedentes de sus cuatro .feature piden V1_15, que la base desechable
   comprueba por sus cuatro tablas, y REGLAS_DE_COPIA suma «con la columna X.Y vacía en las filas N y M» y su forma
   de tres filas, «en las filas N, M y P».
@@ -151,6 +154,9 @@ VARIANTES = {
     "quimica_plan_sin_secciones": {},
     # Spec 007, etapa B, construida en T038 de la spec 008. Los datos de 2026-2 con el plan de 450010 en 2026-2.
     "avance": {},
+    # Spec 009. Química con el plan de 5643 en 2026-1 y, en 2026-2, el plan de 450002 y el de 450010, para el resumen del
+    # curso y la lista de cursos de la coordinación.
+    "resumen_curso": {},
 }
 
 
@@ -192,9 +198,17 @@ def sembrar_plan_sin_secciones(conexion: psycopg.Connection) -> None:
                  {"DESCRIPCION_INSTRUMENTO": DESCRIPCION_DE_PRUEBA})
 
 
+def sembrar_resumen_curso(conexion: psycopg.Connection) -> None:
+    """Química con el plan de 5643 en 2026-1 (sembrar_quimica_con_plan) y el plan de 450010 en 2026-2, como en la
+    variante del avance, para US-91 y US-93 de la spec 009."""
+    sembrar_quimica_con_plan(conexion)
+    C.base_del_avance_007(conexion)
+
+
 # Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.
 SIEMBRAS = {"programacion": C.base_de_partida_006, "quimica": sembrar_quimica, "quimica_plan": sembrar_quimica_con_plan,
-            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones, "avance": C.base_del_avance_007}
+            "quimica_plan_sin_secciones": sembrar_plan_sin_secciones, "avance": C.base_del_avance_007,
+            "resumen_curso": sembrar_resumen_curso}
 
 
 class Plantillas:
@@ -1611,6 +1625,74 @@ def _con_alcance(ctx: Escenario, correo: str, rol: str, carrera: str | None, asi
                         " JOIN abet.periodo p USING (periodo_id) WHERE u.correo = %s AND a.codigo = %s"
                         " AND p.codigo = %s AND ca.carrera_id IS NULL", correo, asignatura, periodo)
     assert filas == 1, f"{correo} no tiene una sola fila de alcance de {carrera or asignatura}"
+
+
+# Spec 009. Base y cargas del resumen del curso (T014 de su tasks.md)
+
+FORMAS_DE_LA_BASE_009 = (
+    (r"con el plan de 5643 en 2026-1 y los datos inventados de Química", "resumen_curso", _PIEZAS_DEL_PLAN),
+)
+# Niveles de las tres secciones del primer escenario de resumen_del_curso.feature, con un alumno sin evidencia en la 703.
+NIVELES_DEL_PRIMER_ESCENARIO_009 = {"701": ((1, 2, 4, 3), 0), "702": ((0, 1, 5, 4), 0), "703": ((2, 4, 4, 3), 1)}
+
+
+def forma_de_la_base_009(resto: str) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """Variante y piezas de una forma de la base de la spec 009. Una forma desconocida no adivina su base."""
+    for patron, variante, piezas in FORMAS_DE_LA_BASE_009:
+        if re.fullmatch(patron, resto):
+            return variante, piezas
+    raise AssertionError(f"la base de la spec 009 «{resto}» no tiene variante en conftest.py")
+
+
+@given(parsers.re(r'una base desechable de la spec 009 (?P<resto>con .+)'))
+def _base_de_la_spec_009(ctx: Escenario, resto: str) -> None:
+    variante, piezas = forma_de_la_base_009(resto)
+    faltan = piezas_que_faltan(piezas)
+    assert not faltan, f"la base de la spec 009 espera {', '.join(faltan)}"
+    ctx.crear_base(variante)
+    assert ctx.uno("SHOW server_version_num").startswith("18"), "la base desechable no es PostgreSQL 18"
+
+
+def publicar_seccion_de_quimica(ctx: Escenario, numero: str, niveles: tuple[int, int, int, int],
+                                sin_evidencia: int = 0, *, conjunto: str = C.BORRADOR,
+                                reemplaza: int | None = None) -> int:
+    """Carga PUBLICADA inventada de una sección de 5643 en 2026-1 con el PI 6.1 y los alumnos de «los niveles [a, b, c, d]».
+
+    Los códigos son del rango 99 y distintos en cada sección, la carga es de IND con el conjunto de reglas dado (el
+    borrador de Industrial por omisión) y la sube el profesor de la sección, salvo en la 704, que no tiene. Una sección
+    que no existe, o que ya tiene una carga PUBLICADA sin que se diga cuál reemplaza, hace fallar el paso.
+    """
+    seccion = ctx.filas("SELECT s.seccion_id FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                        " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
+                        " WHERE a.codigo = '5643' AND pe.codigo = '2026-1' AND s.numero = %s", numero)
+    assert seccion, f"la sección {numero} de 5643 no existe en 2026-1"
+    if reemplaza is None:
+        assert ctx.cuenta("carga", "seccion_id = %s AND estado = 'PUBLICADA'", seccion[0][0]) == 0, \
+            f"la sección {numero} ya tiene una carga PUBLICADA"
+    intento = ctx.cuenta("carga", "seccion_id = %s", seccion[0][0])
+    carga = C.publicar(
+        ctx.api.dueno, asignatura="5643", numero=numero, pis=("6.1",), periodo="2026-1", carrera="IND",
+        conjunto=conjunto, reemplaza=reemplaza,
+        subida_por=f"docente{numero}@example.invalid" if numero in ("701", "702", "703") else None,
+        filas=C.filas_por_nivel(niveles, desde=99200000 + int(numero) * 100, sin_evidencia=sin_evidencia),
+        nombre_archivo=f"resumen_curso_{numero}_{intento}.xlsx")
+    ctx.extras.setdefault("cargas", {})[numero] = carga
+    return carga
+
+
+@given(parsers.re(r'la (?P<numero>70[1-4]) publicada con los niveles '
+                  r'\[(?P<niveles>[0-9]+(?:, [0-9]+){3})\](?P<sin> y un alumno sin evidencia)?'))
+def _publicada_con_niveles(ctx: Escenario, numero: str, niveles: str, sin: str | None) -> None:
+    conteos = tuple(int(n) for n in niveles.split(", "))
+    publicar_seccion_de_quimica(ctx, numero, conteos, 1 if sin else 0)  # type: ignore[arg-type]
+
+
+@given(parsers.re(r'la 701, la 702 y la 703 publicadas con los niveles del (?:primer escenario|escenario anterior) '
+                  r'y la 704 sin carga'))
+def _tres_publicadas_del_primer_escenario(ctx: Escenario) -> None:
+    for numero, (niveles, sin) in NIVELES_DEL_PRIMER_ESCENARIO_009.items():
+        publicar_seccion_de_quimica(ctx, numero, niveles, sin)
+    assert ctx.cuenta("carga", "seccion_id = %s", ctx.seccion_de("704")) == 0
 
 
 @when(parsers.re(r'corre la consulta de control (?P<control>Q(?:18|19|20|21))$'))
