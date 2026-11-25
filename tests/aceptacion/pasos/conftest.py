@@ -381,6 +381,18 @@ class Escenario:
         """Archivo que describe una frase como «una copia de "X" con ...». Devuelve sus bytes y su nombre."""
         return armar_archivo(self, texto)
 
+    # Spec 009. Cargas de Química General con «los niveles [a, b, c, d]» (T014 y T020)
+
+    def publicar_seccion_de_quimica(self, numero: str, niveles: tuple[int, int, int, int], sin_evidencia: int = 0,
+                                    **opciones: Any) -> int:
+        """publicar_seccion_de_quimica() de este módulo, para los pasos y las pruebas de otros archivos."""
+        return publicar_seccion_de_quimica(self, numero, niveles, sin_evidencia, **opciones)
+
+    def publicar_las_tres_del_primer_escenario(self) -> None:
+        """La 701, la 702 y la 703 con los niveles del primer escenario de resumen_del_curso.feature."""
+        for numero, (niveles, sin) in NIVELES_DEL_PRIMER_ESCENARIO_009.items():
+            publicar_seccion_de_quimica(self, numero, niveles, sin)
+
     # Spec 008. Secciones, exports y peticiones de Química General (T030 a T033)
 
     def seccion_de(self, numero: str, asignatura: str | None = None, periodo: str | None = None) -> int:
@@ -1655,24 +1667,25 @@ def _base_de_la_spec_009(ctx: Escenario, resto: str) -> None:
 
 def publicar_seccion_de_quimica(ctx: Escenario, numero: str, niveles: tuple[int, int, int, int],
                                 sin_evidencia: int = 0, *, conjunto: str = C.BORRADOR,
-                                reemplaza: int | None = None) -> int:
+                                reemplaza: int | None = None, estado: str = "PUBLICADA") -> int:
     """Carga PUBLICADA inventada de una sección de 5643 en 2026-1 con el PI 6.1 y los alumnos de «los niveles [a, b, c, d]».
 
     Los códigos son del rango 99 y distintos en cada sección, la carga es de IND con el conjunto de reglas dado (el
     borrador de Industrial por omisión) y la sube el profesor de la sección, salvo en la 704, que no tiene. Una sección
-    que no existe, o que ya tiene una carga PUBLICADA sin que se diga cuál reemplaza, hace fallar el paso.
+    que no existe, o que ya tiene una carga PUBLICADA sin que se diga cuál reemplaza, hace fallar el paso. estado deja la
+    carga en otro estado, como RECHAZADA, para las pruebas de la sección sin carga publicada.
     """
     seccion = ctx.filas("SELECT s.seccion_id FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
                         " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
                         " WHERE a.codigo = '5643' AND pe.codigo = '2026-1' AND s.numero = %s", numero)
     assert seccion, f"la sección {numero} de 5643 no existe en 2026-1"
-    if reemplaza is None:
+    if reemplaza is None and estado == "PUBLICADA":
         assert ctx.cuenta("carga", "seccion_id = %s AND estado = 'PUBLICADA'", seccion[0][0]) == 0, \
             f"la sección {numero} ya tiene una carga PUBLICADA"
     intento = ctx.cuenta("carga", "seccion_id = %s", seccion[0][0])
     carga = C.publicar(
         ctx.api.dueno, asignatura="5643", numero=numero, pis=("6.1",), periodo="2026-1", carrera="IND",
-        conjunto=conjunto, reemplaza=reemplaza,
+        conjunto=conjunto, reemplaza=reemplaza, estado=estado,
         subida_por=f"docente{numero}@example.invalid" if numero in ("701", "702", "703") else None,
         filas=C.filas_por_nivel(niveles, desde=99200000 + int(numero) * 100, sin_evidencia=sin_evidencia),
         nombre_archivo=f"resumen_curso_{numero}_{intento}.xlsx")
@@ -1690,8 +1703,7 @@ def _publicada_con_niveles(ctx: Escenario, numero: str, niveles: str, sin: str |
 @given(parsers.re(r'la 701, la 702 y la 703 publicadas con los niveles del (?:primer escenario|escenario anterior) '
                   r'y la 704 sin carga'))
 def _tres_publicadas_del_primer_escenario(ctx: Escenario) -> None:
-    for numero, (niveles, sin) in NIVELES_DEL_PRIMER_ESCENARIO_009.items():
-        publicar_seccion_de_quimica(ctx, numero, niveles, sin)
+    ctx.publicar_las_tres_del_primer_escenario()
     assert ctx.cuenta("carga", "seccion_id = %s", ctx.seccion_de("704")) == 0
 
 
