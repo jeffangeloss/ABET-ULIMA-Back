@@ -22,6 +22,8 @@ pantalla P6 y el R-17 de una carga deciden la meta con la misma regla.
    conteo entre la suma de los conteos con ROUND(numeric, 2), los dos en PostgreSQL. en_meta() decide la meta del curso y de
    cada sección sobre el porcentaje ya redondeado. Si las cargas del PI traen metas distintas, o niveles esperados
    distintos, la meta, el nivel esperado y lo que depende de ellos del curso quedan en None.
+6. cursos_con_plan() es la consulta de la ruta 21 GET /api/resumen-curso/cursos (spec 009, US-93). Da el código y el nombre
+   de cada curso de las secciones dadas que tiene plan de medición en el periodo de la sección, en orden de código.
 """
 
 from __future__ import annotations
@@ -197,3 +199,29 @@ def resumen_del_curso(conexion: Connection[Any], secciones: Sequence[tuple[int, 
             "meta_pct": cifra(meta), "provisional": bool(curso["provisional"]) if curso is not None else False,
             "curso": _curso_del_resumen(curso), "conteo_secciones": _conteo_de_secciones(del_pi), "secciones": del_pi})
     return indicadores
+
+
+# Cursos del alcance con plan de medición, ruta 21 (spec 009, US-93)
+
+_CURSOS_CON_PLAN = """
+SELECT a.codigo, a.nombre
+FROM abet.asignatura a
+WHERE a.asignatura_id IN (
+    SELECT s.asignatura_id
+    FROM abet.seccion s
+    WHERE s.seccion_id = ANY(CAST(%(secciones)s AS int[]))
+      AND EXISTS (SELECT 1 FROM abet.plan_medicion pm
+                  WHERE pm.periodo_id = s.periodo_id AND pm.asignatura_id = s.asignatura_id))
+ORDER BY a.codigo
+"""
+
+
+def cursos_con_plan(conexion: Connection[Any], secciones: Sequence[int]) -> list[dict[str, str]]:
+    """Cursos de las secciones dadas con plan de medición en su periodo, en orden de código (BR-RESULTADOS-12).
+
+    secciones son las que la cuenta ve en el periodo, de app/permisos.secciones_visibles(), así que la lista no trae un
+    curso fuera de su alcance. Se llama dentro de la transacción READ ONLY de la ruta.
+    """
+    with conexion.cursor(row_factory=dict_row) as cursor:
+        return [{"codigo": f["codigo"], "nombre": f["nombre"]}
+                for f in cursor.execute(_CURSOS_CON_PLAN, {"secciones": list(secciones)}).fetchall()]

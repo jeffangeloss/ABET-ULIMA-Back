@@ -199,10 +199,12 @@ def sembrar_plan_sin_secciones(conexion: psycopg.Connection) -> None:
 
 
 def sembrar_resumen_curso(conexion: psycopg.Connection) -> None:
-    """Química con el plan de 5643 en 2026-1 (sembrar_quimica_con_plan) y el plan de 450010 en 2026-2, como en la
-    variante del avance, para US-91 y US-93 de la spec 009."""
+    """Química con el plan de 5643 en 2026-1 (sembrar_quimica_con_plan) y el plan de 450010 en 2026-2, con su sección 410,
+    como en la variante del avance, para US-91 y US-93 de la spec 009."""
     sembrar_quimica_con_plan(conexion)
     C.base_del_avance_007(conexion)
+    # La lista de cursos sale de las secciones que la cuenta alcanza, así que 450010 trae una sección en 2026-2.
+    C.seccion(conexion, "450010", "410")
 
 
 # Siembra en Python de una variante, que corre una sola vez sobre su plantilla con la conexión del dueño.

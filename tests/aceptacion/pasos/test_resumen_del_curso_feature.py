@@ -104,6 +104,18 @@ def test_un_periodo_o_una_asignatura_mal_formados_responden_422() -> None:
     """T021."""
 
 
+# Escenarios de US-93
+
+@scenario(FEATURE, "La coordinación de la carrera recibe la lista de sus cursos con plan en el periodo")
+def test_la_coordinacion_de_la_carrera_recibe_la_lista_de_sus_cursos() -> None:
+    """T022."""
+
+
+@scenario(FEATURE, "La coordinación del curso recibe solo su curso")
+def test_la_coordinacion_del_curso_recibe_solo_su_curso() -> None:
+    """T022."""
+
+
 # Ayudas
 
 def _cuerpo(ctx: Escenario, codigo: int = 200) -> Any:
@@ -213,6 +225,15 @@ def _con_sesion(ctx: Escenario, correo: str) -> None:
 def _con_alcance_de_carrera(ctx: Escenario, correo: str, carrera: str) -> None:
     assert ctx.uno("SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN acceso.usuario_autorizado u USING (usuario_id)"
                    " JOIN abet.carrera c USING (carrera_id) WHERE u.correo = %s AND c.codigo = %s", correo, carrera) == 1
+    ctx.sesion(correo)
+    ctx.extras["con_sesion"] = correo
+
+
+@given(parsers.re(rf'(?P<correo>{CORREO}) con alcance de la asignatura (?P<asignatura>[0-9]+) en (?P<periodo>[0-9]{{4}}-[0-9])'))
+def _con_alcance_de_asignatura(ctx: Escenario, correo: str, asignatura: str, periodo: str) -> None:
+    assert ctx.uno("SELECT count(*) FROM acceso.coordinacion_alcance ca JOIN acceso.usuario_autorizado u USING (usuario_id)"
+                   " JOIN abet.asignatura a USING (asignatura_id) JOIN abet.periodo pe ON pe.periodo_id = ca.periodo_id"
+                   " WHERE u.correo = %s AND a.codigo = %s AND pe.codigo = %s", correo, asignatura, periodo) == 1
     ctx.sesion(correo)
     ctx.extras["con_sesion"] = correo
 
@@ -395,3 +416,42 @@ def _no_revela_si_el_curso_existe(ctx: Escenario) -> None:
     assert ctx.uno("SELECT count(*) FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
                    " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id WHERE a.codigo = '5643'"
                    " AND pe.codigo = '2026-1'") == 4
+
+
+# Entonces, la ruta 21
+
+def _cursos(ctx: Escenario) -> list[dict[str, str]]:
+    cuerpo = _cuerpo(ctx)
+    assert list(cuerpo) == ["periodo", "cursos"]
+    assert all(list(curso) == ["codigo", "nombre"] for curso in cuerpo["cursos"])
+    return cuerpo["cursos"]
+
+
+@then("la respuesta trae 450002 y 450010 en orden de código, con su nombre")
+def _trae_450002_y_450010(ctx: Escenario) -> None:
+    cursos = _cursos(ctx)
+    assert [curso["codigo"] for curso in cursos] == ["450002", "450010"]
+    for curso in cursos:
+        assert curso["nombre"] and curso["nombre"] == ctx.uno("SELECT nombre FROM abet.asignatura WHERE codigo = %s",
+                                                              curso["codigo"])
+    assert _cuerpo(ctx)["periodo"] == "2026-2"
+
+
+@then("no trae cursos de otra carrera")
+def _sin_cursos_de_otra_carrera(ctx: Escenario) -> None:
+    codigos = [curso["codigo"] for curso in _cursos(ctx)]
+    # 5643 es de Industrial, y 450020 de Ambiental no tiene plan en 2026-2, y ninguno de los dos sale.
+    assert ctx.uno("SELECT count(*) FROM abet.plan_medicion pm JOIN abet.asignatura a USING (asignatura_id)"
+                   " WHERE a.codigo = '5643'") > 0
+    assert "5643" not in codigos and "450020" not in codigos
+    # La misma coordinación no ve el curso de Industrial ni en 2026-1, donde sí tiene plan y sus cuatro secciones.
+    otro = ctx.sesion(ctx.extras["con_sesion"]).get(f"{RUTA}/cursos?periodo=2026-1")
+    assert otro.status_code == 200 and otro.json() == {"periodo": "2026-1", "cursos": []}
+
+
+@then("la respuesta trae solo 5643")
+def _trae_solo_5643(ctx: Escenario) -> None:
+    cursos = _cursos(ctx)
+    assert [curso["codigo"] for curso in cursos] == ["5643"]
+    assert cursos[0]["nombre"] == ctx.uno("SELECT nombre FROM abet.asignatura WHERE codigo = '5643'")
+    assert _cuerpo(ctx)["periodo"] == "2026-1"

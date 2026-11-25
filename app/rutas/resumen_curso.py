@@ -1,4 +1,5 @@
-"""GET /api/resumen-curso?periodo=2026-1&asignatura=5643, la ruta 20 del contrato (spec 009, US-91, T021).
+"""GET /api/resumen-curso?periodo=2026-1&asignatura=5643, la ruta 20, y GET /api/resumen-curso/cursos, la ruta 21 del contrato
+(spec 009, US-91 y US-93, T021 y T022).
 
 Las reglas de negocio (business rules, BR) BR-RESULTADOS-12 a BR-RESULTADOS-14 viven en
 specs/features/resultados/resultados.spec.md, y la forma de la respuesta en la sección 16 de docs/03-api/contrato.md del
@@ -17,6 +18,11 @@ Front.
    que salen de la misma instantánea, y la ruta no escribe nada.
 4. La respuesta trae solo las claves de la lista cerrada de la sección 16.2 del contrato, sin correos, nombres, códigos de
    estudiantes, subida_por, nombre_archivo ni sha256.
+5. La ruta 21 (propuesta, sección 16.3) da a la coordinación los cursos con plan de medición en el periodo dentro de su
+   alcance, con su código y su nombre y en orden de código, para el selector de curso de P8. Usa el mismo guardián, el
+   mismo orden 401, 403 y 422, el mismo periodo vigente por omisión y la misma transacción de solo lectura, y sale de
+   app/permisos.secciones_visibles(), así que la coordinación del curso recibe solo su curso y una coordinación sin alcance, la
+   lista vacía.
 """
 
 from __future__ import annotations
@@ -68,3 +74,22 @@ def leer(
     nombre = visibles[0].asignatura_nombre if visibles else None
     return JSONResponse({"periodo": periodo, "asignatura": {"codigo": asignatura, "nombre": nombre},
                          "indicadores": indicadores})
+
+
+@router.get("/resumen-curso/cursos")
+def cursos(
+    request: Request,
+    periodo: str | None = None,
+    usuario: sesion.Usuario = Depends(sesion.usuario_actual),
+    abierta: psycopg.Connection[Any] = Depends(conexion),
+) -> JSONResponse:
+    if not permisos.puede_ver_avance(abierta, usuario.usuario_id):
+        return error(403, permisos.SOLO_COORDINACION)
+    periodo = ajustes_de(request).periodo_vigente if periodo is None else periodo
+    if not PERIODO.fullmatch(periodo):
+        return error(422, PERIODO_MAL_FORMADO)
+    with abierta.transaction():
+        abierta.execute(_SOLO_LECTURA)
+        visibles = permisos.secciones_visibles(abierta, usuario.usuario_id, periodo)
+        lista = resultados.cursos_con_plan(abierta, [v.seccion_id for v in visibles])
+    return JSONResponse({"periodo": periodo, "cursos": lista})

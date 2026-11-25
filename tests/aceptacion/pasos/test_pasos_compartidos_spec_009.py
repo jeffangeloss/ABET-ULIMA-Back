@@ -73,6 +73,17 @@ def test_la_variante_del_resumen_siembra_quimica_con_su_plan_y_el_plan_de_450010
     assert arnes.VARIANTES["resumen_curso"] == {}
 
 
+def test_la_base_del_resumen_trae_450010_con_plan_y_una_seccion_y_5643_con_sus_cuatro(ctx: Any) -> None:
+    ctx.crear_base("resumen_curso")
+    secciones = ctx.filas("SELECT a.codigo, pe.codigo, count(*), (SELECT count(*) FROM abet.plan_medicion pm"
+                          " WHERE pm.asignatura_id = a.asignatura_id AND pm.periodo_id = pe.periodo_id)"
+                          " FROM abet.seccion s JOIN abet.asignatura a USING (asignatura_id)"
+                          " JOIN abet.periodo pe ON pe.periodo_id = s.periodo_id"
+                          " WHERE a.codigo IN ('450010', '450020', '5643') GROUP BY 1, 2, pe.periodo_id, a.asignatura_id"
+                          " ORDER BY 1, 2")
+    assert secciones == [("450010", "2026-2", 1, 3), ("5643", "2026-1", 4, 1)]
+
+
 # La carga de una sección con «los niveles [a, b, c, d]»
 
 @pytest.mark.parametrize(("texto", "numero", "niveles", "sin"), [
